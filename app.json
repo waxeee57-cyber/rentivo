@@ -11,10 +11,12 @@
     "scheme": "rentivo",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
       "backgroundColor": "#0A1628"
     },
     "ios": {
+      "icon": "./assets/icon.png",
       "supportsTablet": false,
       "bundleIdentifier": "com.domrol.rentivo",
       "buildNumber": "1",

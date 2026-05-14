@@ -178,6 +178,7 @@ export default function RootLayout() {
               />
             ) : null}
             <Toast />
+            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 34, backgroundColor: '#0A1628' }} pointerEvents="none" />
           </Fragment>
         </StripeProvider>
       </SafeAreaProvider>
