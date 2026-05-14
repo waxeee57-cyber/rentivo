@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     fontSize: 15,
     color: Colors.text,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceWarm,
   },
   inputFocused: { borderColor: Colors.primary },
   inputError: { borderColor: Colors.error },

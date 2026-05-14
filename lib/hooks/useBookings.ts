@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { fetchUserBookings, fetchBooking } from '@/lib/api/bookings'
 import type { Booking } from '@/types'
 
@@ -6,6 +6,7 @@ export function useBookings(userId: string | null) {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [tick, setTick] = useState(0)
 
   useEffect(() => {
     if (!userId) { setLoading(false); return }
@@ -16,9 +17,11 @@ export function useBookings(userId: string | null) {
       .catch(e => { if (!cancelled) setError(String(e)) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [userId])
+  }, [userId, tick])
 
-  return { bookings, loading, error }
+  const refetch = useCallback(() => setTick(t => t + 1), [])
+
+  return { bookings, loading, error, refetch }
 }
 
 export function useBooking(id: string | null) {

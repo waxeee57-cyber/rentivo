@@ -1,0 +1,151 @@
+import React, { useState } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { router } from 'expo-router'
+import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Button } from '@/components/ui/Button'
+import { Config } from '@/constants/config'
+
+type StepStatus = 'done' | 'pending' | 'active'
+
+const STEPS: { label: string; status: StepStatus }[] = [
+  { label: 'Account created', status: 'done' },
+  { label: 'Connect bank account', status: 'pending' },
+  { label: 'Verify identity', status: 'pending' },
+  { label: 'Start accepting payments', status: 'pending' },
+]
+
+function StepRow({ label, status }: { label: string; status: StepStatus }) {
+  return (
+    <View style={stepStyles.row}>
+      <View style={[stepStyles.dot,
+        status === 'done' && stepStyles.dotDone,
+        status === 'active' && stepStyles.dotActive,
+      ]}>
+        <Text style={stepStyles.dotText}>
+          {status === 'done' ? '✓' : '⏳'}
+        </Text>
+      </View>
+      <Text style={[stepStyles.label, status === 'done' && stepStyles.labelDone]}>
+        {label}
+      </Text>
+    </View>
+  )
+}
+
+const stepStyles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.md },
+  dot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dotDone: { backgroundColor: Colors.success },
+  dotActive: { backgroundColor: Colors.primary },
+  dotText: { fontSize: 12, color: Colors.textInverse, fontWeight: '700' },
+  label: { fontSize: 15, color: Colors.textSecondary },
+  labelDone: { color: Colors.text, fontWeight: '600' },
+})
+
+export default function OperatorStripeScreen() {
+  const [connecting, setConnecting] = useState(false)
+
+  const handleConnect = async () => {
+    if (Config.useMock) {
+      setConnecting(true)
+      setTimeout(() => {
+        router.replace('/(operator)/dashboard')
+      }, 1000)
+      return
+    }
+    // TODO: Open Stripe Connect onboarding URL in WebView
+    // const { data } = await supabase.functions.invoke('create-stripe-account-link')
+    // router.push(`/auth/stripe-webview?url=${data.url}`)
+    router.replace('/(operator)/dashboard')
+  }
+
+  const handleSkip = () => {
+    router.replace('/(operator)/dashboard')
+  }
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={styles.content}>
+        <View style={styles.iconContainer}>
+          <Text style={styles.icon}>💳</Text>
+        </View>
+
+        <Text style={styles.title}>Set up payouts</Text>
+        <Text style={styles.subtitle}>
+          Get paid directly to your bank account when guests book your vehicles.
+        </Text>
+
+        <View style={styles.stepsCard}>
+          {STEPS.map(step => (
+            <StepRow key={step.label} label={step.label} status={step.status} />
+          ))}
+        </View>
+
+        <View style={styles.stripeNote}>
+          <Text style={styles.stripeNoteText}>
+            🔒  Your payouts are processed securely by Stripe. Rentivo never holds your money.
+          </Text>
+        </View>
+
+        <Button
+          title={connecting ? 'Connecting...' : 'Connect with Stripe'}
+          onPress={handleConnect}
+          fullWidth
+          style={styles.connectBtn}
+        />
+
+        <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
+          <Text style={styles.skipText}>Set up later →</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  content: {
+    flex: 1,
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xxxl,
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.xl,
+  },
+  icon: { fontSize: 36 },
+  title: { fontSize: 26, fontWeight: '800', color: Colors.text, marginBottom: Spacing.md, textAlign: 'center' },
+  subtitle: { fontSize: 15, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: Spacing.xl },
+  stepsCard: {
+    width: '100%',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    marginBottom: Spacing.xl,
+  },
+  stripeNote: {
+    backgroundColor: Colors.infoSurface,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.xl,
+    width: '100%',
+  },
+  stripeNoteText: { fontSize: 13, color: Colors.info, lineHeight: 20 },
+  connectBtn: { marginBottom: Spacing.md },
+  skipBtn: { paddingVertical: Spacing.md },
+  skipText: { fontSize: 14, color: Colors.textTertiary },
+})

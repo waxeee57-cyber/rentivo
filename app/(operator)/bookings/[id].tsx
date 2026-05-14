@@ -2,8 +2,10 @@ import React from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -48,13 +50,11 @@ export default function OperatorBookingDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.ref}>#{booking.id.slice(0, 8).toUpperCase()}</Text>
-      </View>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <ScreenHeader
+        title={`#${booking.id.slice(0, 8).toUpperCase()}`}
+        subtitle={booking.listing?.title}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.statusRow}>
@@ -103,6 +103,15 @@ export default function OperatorBookingDetailScreen() {
           </View>
         </Card>
 
+        {/* Message Guest */}
+        <TouchableOpacity
+          style={styles.messageBtn}
+          onPress={() => router.push(`/(operator)/bookings/chat/${booking.id}`)}
+        >
+          <Ionicons name="chatbubble-outline" size={16} color={Colors.primary} />
+          <Text style={styles.messageBtnText}>💬 Message Guest</Text>
+        </TouchableOpacity>
+
         <View style={styles.actions}>
           {booking.status === 'pending' && (
             <>
@@ -124,15 +133,6 @@ export default function OperatorBookingDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-  },
-  back: { fontSize: 16, color: Colors.primary, fontWeight: '600' },
-  ref: { fontSize: 13, color: Colors.textTertiary, fontWeight: '600' },
   content: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
   statusRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base },
   sectionTitle: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, color: Colors.textTertiary, marginBottom: Spacing.sm },
@@ -145,4 +145,18 @@ const styles = StyleSheet.create({
   priceVal: { fontSize: 18, fontWeight: '700', color: Colors.text },
   inspRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   actions: { marginTop: Spacing.md },
+  messageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primarySurface,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.sm,
+    justifyContent: 'center',
+  },
+  messageBtnText: { fontSize: 15, color: Colors.primaryDark, fontWeight: '600' },
 })

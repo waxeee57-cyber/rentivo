@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert,
+  View, Text, ScrollView, StyleSheet, Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -84,13 +85,12 @@ export default function NewListingScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => step > 1 ? setStep(s => s - 1) : router.back()}>
-          <Text style={styles.back}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.stepLabel}>Step {step} of 3</Text>
-      </View>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <ScreenHeader
+        title="Add Vehicle"
+        subtitle={`Step ${step} of 3`}
+        onBack={() => step > 1 ? setStep(s => s - 1) : undefined}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         {step === 1 && (
@@ -152,15 +152,6 @@ export default function NewListingScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-  },
-  back: { fontSize: 16, color: Colors.primary, fontWeight: '600' },
-  stepLabel: { fontSize: 13, color: Colors.textSecondary },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
   stepTitle: { fontSize: 22, fontWeight: '800', color: Colors.text, marginBottom: Spacing.xl },
   fieldLabel: { fontSize: 12, fontWeight: '700', color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.sm },

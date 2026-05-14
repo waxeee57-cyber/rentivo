@@ -33,6 +33,10 @@ export default function FleetScreen() {
           data={fleet}
           keyExtractor={l => l.id}
           contentContainerStyle={styles.list}
+          initialNumToRender={6}
+          maxToRenderPerBatch={4}
+          windowSize={5}
+          removeClippedSubviews
           renderItem={({ item }) => (
             <FleetCard
               listing={item}

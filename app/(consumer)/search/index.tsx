@@ -78,7 +78,11 @@ export default function SearchScreen() {
           numColumns={2}
           contentContainerStyle={styles.grid}
           columnWrapperStyle={styles.columnWrapper}
-          renderItem={({ item }) => <ListingCard listing={item} />}
+          initialNumToRender={6}
+          maxToRenderPerBatch={4}
+          windowSize={5}
+          removeClippedSubviews
+          renderItem={({ item }) => <ListingCard listing={item} showAvailableBadge />}
         />
       )}
     </SafeAreaView>

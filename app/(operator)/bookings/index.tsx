@@ -83,6 +83,10 @@ export default function OperatorBookingsScreen() {
           data={filtered}
           keyExtractor={b => b.id}
           contentContainerStyle={styles.list}
+          initialNumToRender={6}
+          maxToRenderPerBatch={4}
+          windowSize={5}
+          removeClippedSubviews
           renderItem={({ item }) => (
             <BookingRow
               booking={item}

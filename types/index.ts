@@ -1,5 +1,13 @@
 export type UserRole = 'consumer' | 'operator' | null
 
+export type CancellationPolicy = 'flexible' | 'moderate' | 'strict'
+
+export interface CancellationResult {
+  refundAmount: number
+  refundPercent: number
+  message: string
+}
+
 export type RentalCategory =
   | 'car' | 'motorcycle' | 'yacht' | 'villa'
   | 'bike' | 'scooter' | 'kayak' | 'surfboard'
@@ -64,6 +72,7 @@ export interface Listing {
   rules: string | null
   images: string[]
   cover_image_url: string | null
+  cancellation_policy?: CancellationPolicy
   pickup_address: string | null
   latitude: number | null
   longitude: number | null
@@ -164,6 +173,32 @@ export interface Review {
   comment: string | null
   reply: string | null
   reply_at: string | null
+  created_at: string
+}
+
+export interface Conversation {
+  id: string
+  booking_id: string
+  listing_id: string
+  operator_id: string
+  user_id: string | null
+  guest_name: string | null
+  last_message: string | null
+  last_message_at: string | null
+  unread_consumer: number
+  unread_operator: number
+  created_at: string
+  listing?: Listing
+  operator?: Operator
+}
+
+export interface Message {
+  id: string
+  conversation_id: string
+  sender_role: 'consumer' | 'operator' | 'system'
+  sender_id: string | null
+  content: string
+  read: boolean
   created_at: string
 }
 

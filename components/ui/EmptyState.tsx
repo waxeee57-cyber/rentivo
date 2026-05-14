@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { Colors, Spacing } from '@/constants/colors'
+import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 
 interface EmptyStateProps {
@@ -8,19 +8,30 @@ interface EmptyStateProps {
   title: string
   subtitle?: string
   action?: { label: string; onPress: () => void }
+  secondaryAction?: { label: string; onPress: () => void }
 }
 
-export function EmptyState({ emoji = '📭', title, subtitle, action }: EmptyStateProps) {
+export function EmptyState({ emoji = '📭', title, subtitle, action, secondaryAction }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.emoji}>{emoji}</Text>
+      <View style={styles.emojiWrap}>
+        <Text style={styles.emoji}>{emoji}</Text>
+      </View>
       <Text style={styles.title}>{title}</Text>
       {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
       {action && (
         <Button
           title={action.label}
           onPress={action.onPress}
-          style={{ marginTop: Spacing.lg }}
+          style={{ marginTop: Spacing.xl }}
+        />
+      )}
+      {secondaryAction && (
+        <Button
+          title={secondaryAction.label}
+          onPress={secondaryAction.onPress}
+          variant="ghost"
+          style={{ marginTop: Spacing.sm }}
         />
       )}
     </View>
@@ -33,11 +44,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.xxxl,
+    minHeight: 280,
   },
-  emoji: { fontSize: 48, marginBottom: Spacing.base },
+  emojiWrap: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: Colors.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  emoji: { fontSize: 40 },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Colors.text,
     textAlign: 'center',
     marginBottom: Spacing.sm,
@@ -46,6 +69,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 22,
+    maxWidth: 240,
   },
 })

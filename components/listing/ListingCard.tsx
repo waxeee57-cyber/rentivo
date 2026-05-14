@@ -2,83 +2,119 @@ import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
+import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 import { StarRating } from '@/components/ui/StarRating'
 import { formatEUR } from '@/lib/utils/formatCurrency'
-import { getCategoryEmoji } from '@/constants/categories'
+import { getCategoryEmoji, getCategoryLabel } from '@/constants/categories'
 import type { Listing } from '@/types'
 
 const { width } = Dimensions.get('window')
-const CARD_WIDTH = (width - Spacing.base * 3) / 2
+const GRID_CARD_WIDTH = (width - Spacing.base * 3) / 2
 
 interface ListingCardProps {
   listing: Listing
+  variant?: 'full' | 'grid'
+  showAvailableBadge?: boolean
 }
 
-export function ListingCard({ listing }: ListingCardProps) {
+export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: ListingCardProps) {
   const [wishlisted, setWishlisted] = useState(false)
+  const scale = useSharedValue(1)
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
+  const onPressIn = () => { scale.value = withSpring(0.97, { damping: 15 }) }
+  const onPressOut = () => { scale.value = withSpring(1, { damping: 15 }) }
+
+  const isFull = variant === 'full'
 
   return (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => router.push(`/(consumer)/listing/${listing.id}`)}
-      activeOpacity={0.95}
-    >
-      <View style={styles.imageContainer}>
-        <Image
-          source={{ uri: listing.cover_image_url ?? undefined }}
-          style={styles.image}
-          contentFit="cover"
-          placeholder="https://via.placeholder.com/400x250/F5F3EF/A0A0A0?text=Vehicle"
-        />
-        <View style={styles.categoryBadge}>
-          <Text style={styles.categoryEmoji}>{getCategoryEmoji(listing.category)}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.heartBtn}
-          onPress={() => setWishlisted(w => !w)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Text style={[styles.heart, wishlisted && styles.heartActive]}>
-            {wishlisted ? '❤️' : '🤍'}
-          </Text>
-        </TouchableOpacity>
-        {listing.operator?.verified && (
-          <View style={styles.verifiedBadge}>
-            <Text style={styles.verifiedText}>✓</Text>
+    <Reanimated.View style={[isFull ? styles.cardFull : styles.cardGrid, animatedStyle]}>
+      <TouchableOpacity
+        onPress={() => router.push(`/(consumer)/listing/${listing.id}`)}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        activeOpacity={1}
+      >
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: listing.cover_image_url ?? undefined }}
+            style={isFull ? styles.imageFull : styles.imageGrid}
+            contentFit="cover"
+            placeholder="https://via.placeholder.com/400x250/F5F3EF/A0A0A0?text=Vehicle"
+          />
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryText}>
+              {getCategoryEmoji(listing.category)} {getCategoryLabel(listing.category)}
+            </Text>
           </View>
-        )}
-      </View>
+          {showAvailableBadge && listing.available && (
+            <View style={styles.availableBadge}>
+              <Text style={styles.availableBadgeText}>Available now</Text>
+            </View>
+          )}
+          <TouchableOpacity
+            style={styles.heartBtn}
+            onPress={() => setWishlisted(w => !w)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.heart}>{wishlisted ? '❤️' : '🤍'}</Text>
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={1}>{listing.title}</Text>
-        <Text style={styles.operator} numberOfLines={1}>
-          {listing.operator?.name} · {listing.operator?.city}
-        </Text>
-        <View style={styles.row}>
-          <StarRating rating={listing.rating} reviewCount={listing.review_count} size={12} />
-        </View>
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>{formatEUR(listing.price_per_day)}</Text>
-          <Text style={styles.priceUnit}>/day</Text>
-        </View>
-        {(listing.make || listing.model) && (
-          <Text style={styles.makeModel} numberOfLines={1}>
-            {[listing.make, listing.model, listing.year].filter(Boolean).join(' ')}
+        <View style={styles.info}>
+          {isFull ? (
+            <View style={styles.fullRow}>
+              <Text style={styles.titleFull} numberOfLines={1}>{listing.title}</Text>
+              <StarRating rating={listing.rating} reviewCount={listing.review_count} size={12} />
+            </View>
+          ) : (
+            <Text style={styles.titleGrid} numberOfLines={1}>{listing.title}</Text>
+          )}
+
+          <Text style={styles.operator} numberOfLines={1}>
+            {listing.operator?.name} · {listing.operator?.city}
           </Text>
-        )}
-      </View>
-    </TouchableOpacity>
+
+          {isFull && (listing.make || listing.model) && (
+            <View style={styles.detailChips}>
+              {listing.year ? <View style={styles.chip}><Text style={styles.chipText}>{listing.year}</Text></View> : null}
+              {listing.color ? <View style={styles.chip}><Text style={styles.chipText}>{listing.color}</Text></View> : null}
+              {listing.capacity ? <View style={styles.chip}><Text style={styles.chipText}>{listing.capacity} seats</Text></View> : null}
+            </View>
+          )}
+
+          <View style={styles.priceRow}>
+            {!isFull && <StarRating rating={listing.rating} reviewCount={listing.review_count} size={11} />}
+            <Text style={isFull ? styles.priceFull : styles.priceGrid}>{formatEUR(listing.price_per_day)}</Text>
+            <Text style={styles.priceUnit}>/day</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Reanimated.View>
   )
 }
 
 const styles = StyleSheet.create({
-  card: {
-    width: CARD_WIDTH,
+  cardFull: {
+    width: '100%',
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 2,
+    marginBottom: Spacing.md,
+  },
+  cardGrid: {
+    width: GRID_CARD_WIDTH,
     backgroundColor: Colors.surface,
     borderRadius: Radius.xl,
-    borderWidth: 1,
-    borderColor: Colors.border,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -88,42 +124,71 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.base,
   },
   imageContainer: { position: 'relative' },
-  image: { width: '100%', aspectRatio: 16 / 10 },
+  imageFull: { width: '100%', height: 200 },
+  imageGrid: { width: '100%', height: 160 },
   categoryBadge: {
     position: 'absolute',
     top: Spacing.sm,
     left: Spacing.sm,
-    backgroundColor: Colors.overlay,
+    backgroundColor: 'rgba(0,0,0,0.55)',
     borderRadius: Radius.pill,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  categoryEmoji: { fontSize: 12 },
+  categoryText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
   heartBtn: {
     position: 'absolute',
     top: Spacing.sm,
     right: Spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 16,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  heart: { fontSize: 18 },
-  heartActive: {},
-  verifiedBadge: {
+  heart: { fontSize: 16 },
+  info: { padding: 14 },
+  fullRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 2,
+  },
+  titleFull: { fontSize: 16, fontWeight: '700', color: Colors.text, flex: 1, marginRight: Spacing.sm },
+  titleGrid: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: 2 },
+  operator: { fontSize: 12, color: Colors.textSecondary, marginBottom: 6 },
+  detailChips: { flexDirection: 'row', gap: Spacing.xs, marginBottom: 8, flexWrap: 'wrap' },
+  chip: {
+    backgroundColor: Colors.surfaceWarm,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  chipText: { fontSize: 11, color: Colors.textSecondary },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
+  priceFull: { fontSize: 18, fontWeight: '700', color: Colors.primary },
+  priceGrid: { fontSize: 15, fontWeight: '700', color: Colors.text },
+  priceUnit: { fontSize: 12, color: Colors.textSecondary, marginLeft: 2 },
+  availableBadge: {
     position: 'absolute',
     bottom: Spacing.sm,
     left: Spacing.sm,
     backgroundColor: Colors.success,
     borderRadius: Radius.pill,
-    width: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  verifiedText: { fontSize: 11, color: Colors.textInverse, fontWeight: '700' },
-  info: { padding: Spacing.md },
-  title: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  operator: { fontSize: 11, color: Colors.textTertiary, marginBottom: 4 },
-  row: { marginBottom: 4 },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 2 },
-  price: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  priceUnit: { fontSize: 11, color: Colors.textSecondary, marginLeft: 2 },
-  makeModel: { fontSize: 11, color: Colors.textTertiary },
+  availableBadgeText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
 })

@@ -4,6 +4,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { DamagePhotoGrid } from '@/components/damage/DamagePhotoGrid'
@@ -98,14 +99,8 @@ export default function ReturnDamageScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.header}>Return Inspection</Text>
-        <View style={{ width: 50 }} />
-      </View>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <ScreenHeader title="Return Inspection" />
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.subtitle}>Document the vehicle condition at return.</Text>
@@ -206,15 +201,6 @@ export default function ReturnDamageScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-  },
-  back: { fontSize: 16, color: Colors.primary, fontWeight: '600', width: 50 },
-  header: { fontSize: 18, fontWeight: '700', color: Colors.text },
   content: { paddingBottom: Spacing.xxxl },
   subtitle: { fontSize: 14, color: Colors.textSecondary, paddingHorizontal: Spacing.base, marginBottom: Spacing.base },
   sectionTitle: { fontSize: 13, fontWeight: '700', color: Colors.text, marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
