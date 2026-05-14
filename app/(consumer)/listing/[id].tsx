@@ -300,7 +300,11 @@ export default function ListingDetailScreen() {
                   <StarRating rating={listing.rating} reviewCount={listing.review_count} size={14} />
                 </View>
                 {Config.useMock && MOCK_REVIEWS.map((r, i) => (
-                  <ReviewCard key={r.id} review={r} userName={i === 0 ? 'James K.' : 'Sofia M.'} />
+                  <ReviewCard
+                    key={r.id}
+                    review={r}
+                    userName={i === 0 ? 'James K.' : i === 1 ? 'Sophie L.' : 'Carlos M.'}
+                  />
                 ))}
                 {listing.review_count > 2 && (
                   <TouchableOpacity style={styles.seeAllReviews}>

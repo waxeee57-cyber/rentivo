@@ -11,6 +11,7 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useBookings } from '@/lib/hooks/useBookings'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
+import { t } from '@/constants/i18n'
 
 export default function ProfileScreen() {
   const { user, operator, role, signOut, language, setLanguage } = useAuthStore()
@@ -24,16 +25,16 @@ export default function ProfileScreen() {
   const avgRating = Config.useMock ? '4.9' : '—'
 
   const handleSignOut = () => {
-    Alert.alert('Sign out', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: signOut },
+    Alert.alert(t('signOut', language), 'Are you sure?', [
+      { text: t('cancel', language), style: 'cancel' },
+      { text: t('signOut', language), style: 'destructive', onPress: signOut },
     ])
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.title}>{t('profileTitle', language)}</Text>
 
         <View style={styles.profileSection}>
           <Avatar name={name} size={72} />
@@ -45,26 +46,26 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={styles.statItem}
               onPress={() => router.push('/(consumer)/bookings' as Href)}
-              accessibilityLabel={`${tripCount} trips — tap to view bookings`}
+              accessibilityLabel={`${tripCount} ${t('trips', language)}`}
               accessibilityRole="button"
             >
               <Text style={styles.statNum}>{tripCount}</Text>
-              <Text style={styles.statLabel}>Trips</Text>
+              <Text style={styles.statLabel}>{t('trips', language)}</Text>
             </TouchableOpacity>
             <View style={styles.statDivider} />
             <TouchableOpacity
               style={styles.statItem}
               onPress={() => showToast({ message: 'Your reviews coming soon', type: 'info' })}
-              accessibilityLabel={`${reviewCount} reviews`}
+              accessibilityLabel={`${reviewCount} ${t('reviews', language)}`}
               accessibilityRole="button"
             >
               <Text style={styles.statNum}>{reviewCount}</Text>
-              <Text style={styles.statLabel}>Reviews</Text>
+              <Text style={styles.statLabel}>{t('reviews', language)}</Text>
             </TouchableOpacity>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNum}>★{avgRating}</Text>
-              <Text style={styles.statLabel}>Rating</Text>
+              <Text style={styles.statLabel}>{t('rating', language)}</Text>
             </View>
           </View>
 
@@ -73,13 +74,13 @@ export default function ProfileScreen() {
             style={styles.verifyBanner}
             onPress={() => router.push('/(consumer)/profile/verify' as Href)}
           >
-            <Text style={styles.verifyBannerText}>⚠️ Verify your identity</Text>
+            <Text style={styles.verifyBannerText}>{t('verifyIdentityBanner', language)}</Text>
             <Text style={styles.verifyBannerArrow}>→</Text>
           </TouchableOpacity>
         </View>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Language</Text>
+          <Text style={styles.sectionTitle}>{t('sectionLanguage', language)}</Text>
           <View style={styles.langRow}>
             {(['en', 'es', 'hu'] as const).map(lang => (
               <TouchableOpacity
@@ -97,48 +98,48 @@ export default function ProfileScreen() {
 
         {Config.useMock && (
           <Card style={styles.card}>
-            <Text style={styles.sectionTitle}>Switch Role</Text>
+            <Text style={styles.sectionTitle}>{t('sectionSwitchRole', language)}</Text>
             <View style={styles.langRow}>
               <TouchableOpacity
                 style={[styles.langBtn, role === 'consumer' && styles.langBtnActive]}
                 onPress={() => { useAuthStore.getState().setRole('consumer'); router.replace('/(consumer)/explore') }}
               >
-                <Text style={styles.langText}>🌴 Consumer</Text>
+                <Text style={styles.langText}>🌴 {t('roleConsumer', language)}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.langBtn, role === 'host' && styles.langBtnActive]}
                 onPress={() => { useAuthStore.getState().setRole('host'); router.replace('/(host)/dashboard') }}
               >
-                <Text style={styles.langText}>🏠 Host</Text>
+                <Text style={styles.langText}>🏠 {t('roleHost', language)}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.langBtn, role === 'operator' && styles.langBtnActive]}
                 onPress={() => { useAuthStore.getState().setRole('operator'); router.replace('/(operator)/dashboard') }}
               >
-                <Text style={styles.langText}>🏢 Operator</Text>
+                <Text style={styles.langText}>🏢 {t('roleOperator', language)}</Text>
               </TouchableOpacity>
             </View>
           </Card>
         )}
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <MenuItem label="🪪 Identity Verification" onPress={() => router.push('/(consumer)/profile/verify' as Href)} />
+          <Text style={styles.sectionTitle}>{t('sectionAccount', language)}</Text>
+          <MenuItem label={`🪪 ${t('identityVerification', language)}`} onPress={() => router.push('/(consumer)/profile/verify' as Href)} />
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Legal</Text>
-          <MenuItem label="📄 Terms of Service" onPress={() => router.push('/(consumer)/legal/terms' as Href)} />
+          <Text style={styles.sectionTitle}>{t('sectionLegal', language)}</Text>
+          <MenuItem label={`📄 ${t('termsOfService', language)}`} onPress={() => router.push('/(consumer)/legal/terms' as Href)} />
           <Divider />
-          <MenuItem label="🔒 Privacy Policy" onPress={() => router.push('/(consumer)/legal/privacy' as Href)} />
+          <MenuItem label={`🔒 ${t('privacyPolicy', language)}`} onPress={() => router.push('/(consumer)/legal/privacy' as Href)} />
           <Divider />
-          <MenuItem label="🍪 Cookie Policy" onPress={() => router.push('/(consumer)/legal/cookies' as Href)} />
+          <MenuItem label={`🍪 ${t('cookiePolicy', language)}`} onPress={() => router.push('/(consumer)/legal/cookies' as Href)} />
           <Divider />
-          <MenuItem label="❓ Help & Support" onPress={() => Alert.alert('Help & Support', 'Email us at support@rentivo.app\n\nResponse time: within 24 hours', [{ text: 'OK' }])} />
+          <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={() => Alert.alert(t('helpSupport', language), 'Email us at support@rentivo.app\n\nResponse time: within 24 hours', [{ text: 'OK' }])} />
         </Card>
 
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Sign out</Text>
+          <Text style={styles.signOutText}>{t('signOut', language)}</Text>
         </TouchableOpacity>
 
         <Text style={styles.appVersion}>Rentivo v1.0.0</Text>

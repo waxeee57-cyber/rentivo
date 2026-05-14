@@ -13,6 +13,8 @@ import { useListings } from '@/lib/hooks/useListings'
 import { useSearchHistory } from '@/lib/hooks/useSearchHistory'
 import { filterListings } from '@/lib/hooks/useSearch'
 import { CATEGORIES } from '@/constants/categories'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 import type { RentalCategory, SearchFilters } from '@/types'
 import type { SearchState } from '@/lib/hooks/useSearch'
 
@@ -29,6 +31,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 const POPULAR_SUGGESTIONS = ['BMW', 'Vespa', 'Marbella', 'Yacht', 'Villa', 'Convertible']
 
 export default function SearchScreen() {
+  const { language } = useAuthStore()
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<RentalCategory | null>(null)
   const [sortBy, setSortBy] = useState<SortKey>('relevance')
@@ -85,7 +88,7 @@ export default function SearchScreen() {
           <TextInput
             ref={inputRef}
             style={styles.searchInput}
-            placeholder="Cars, boats, villas, bikes..."
+            placeholder={t('searchPlaceholder', language)}
             placeholderTextColor={Colors.textTertiary}
             value={query}
             onChangeText={handleSearch}
@@ -136,7 +139,7 @@ export default function SearchScreen() {
       {/* Category filter */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>
         <CategoryPill
-          label="All"
+          label={t('catAll', language)}
           active={selectedCategory === null}
           onPress={() => setSelectedCategory(null)}
         />

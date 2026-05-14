@@ -85,7 +85,7 @@ export default function ConsumerLayout() {
       <Tabs.Screen
         name="wishlist"
         options={{
-          title: 'Wishlist',
+          title: t('wishlist', language),
           tabBarIcon: ({ focused }) => (
             <Ionicons
               name={focused ? 'heart' : 'heart-outline'}
