@@ -1,4 +1,6 @@
-export type UserRole = 'consumer' | 'operator' | null
+export type UserRole = 'consumer' | 'operator' | 'host' | null
+
+export type OwnerType = 'operator' | 'host'
 
 export type CancellationPolicy = 'flexible' | 'moderate' | 'strict'
 
@@ -22,6 +24,30 @@ export type PaymentStatus =
 
 export type FuelLevel =
   | 'empty' | 'quarter' | 'half' | 'three_quarters' | 'full'
+
+export interface Host {
+  id: string
+  auth_id: string | null
+  name: string
+  bio: string | null
+  avatar_url: string | null
+  phone: string | null
+  email: string | null
+  city: string
+  country: string
+  rating: number
+  review_count: number
+  verified: boolean
+  identity_verified: boolean
+  stripe_account_id: string | null
+  stripe_onboarded: boolean
+  response_rate: number
+  response_time: string
+  member_since: string
+  total_rentals: number
+  active: boolean
+  created_at: string
+}
 
 export interface Operator {
   id: string
@@ -81,6 +107,10 @@ export interface Listing {
   booking_count: number
   created_at: string
   operator?: Operator
+  owner_type?: OwnerType
+  host_id?: string | null
+  host?: Host
+  instant_book?: boolean
 }
 
 export interface RentivoUser {
@@ -136,6 +166,9 @@ export interface Booking {
   created_at: string
   listing?: Listing
   operator?: Operator
+  host_id?: string | null
+  owner_type?: OwnerType
+  host?: Host
 }
 
 export interface DamageReport {

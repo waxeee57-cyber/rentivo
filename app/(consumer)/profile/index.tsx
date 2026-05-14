@@ -1,5 +1,5 @@
-import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native'
+import React, { useEffect, useRef } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import type { Href } from 'expo-router'
@@ -10,6 +10,35 @@ import { Divider } from '@/components/ui/Divider'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useBookings } from '@/lib/hooks/useBookings'
 import { Config } from '@/constants/config'
+
+function AnimatedStat({ value, label }: { value: number; label: string }) {
+  const displayValue = useRef(0)
+  const anim = useRef(new Animated.Value(0)).current
+  const [display, setDisplay] = React.useState(0)
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: value,
+      duration: 800,
+      useNativeDriver: false,
+    }).start()
+    const id = anim.addListener(({ value: v }) => {
+      const rounded = Math.round(v)
+      if (rounded !== displayValue.current) {
+        displayValue.current = rounded
+        setDisplay(rounded)
+      }
+    })
+    return () => anim.removeListener(id)
+  }, [value])
+
+  return (
+    <View style={styles.statItem}>
+      <Text style={styles.statNum}>{display}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  )
+}
 
 export default function ProfileScreen() {
   const { user, operator, role, signOut, language, setLanguage } = useAuthStore()
@@ -38,17 +67,11 @@ export default function ProfileScreen() {
           <Text style={styles.name}>{name}</Text>
           <Text style={styles.email}>{email}</Text>
 
-          {/* Stats row */}
+          {/* Stats row with animated counters */}
           <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNum}>{tripCount}</Text>
-              <Text style={styles.statLabel}>Trips</Text>
-            </View>
+            <AnimatedStat value={tripCount} label="Trips" />
             <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNum}>{reviewCount}</Text>
-              <Text style={styles.statLabel}>Reviews</Text>
-            </View>
+            <AnimatedStat value={reviewCount} label="Reviews" />
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNum}>★{avgRating}</Text>
@@ -94,10 +117,16 @@ export default function ProfileScreen() {
                 <Text style={styles.langText}>🌴 Consumer</Text>
               </TouchableOpacity>
               <TouchableOpacity
+                style={[styles.langBtn, role === 'host' && styles.langBtnActive]}
+                onPress={() => { useAuthStore.getState().setRole('host'); router.replace('/(host)/dashboard') }}
+              >
+                <Text style={styles.langText}>🏠 Host</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[styles.langBtn, role === 'operator' && styles.langBtnActive]}
                 onPress={() => { useAuthStore.getState().setRole('operator'); router.replace('/(operator)/dashboard') }}
               >
-                <Text style={styles.langText}>🚗 Operator</Text>
+                <Text style={styles.langText}>🏢 Operator</Text>
               </TouchableOpacity>
             </View>
           </Card>
@@ -116,7 +145,7 @@ export default function ProfileScreen() {
           <Divider />
           <MenuItem label="🍪 Cookie Policy" onPress={() => router.push('/(consumer)/legal/cookies' as Href)} />
           <Divider />
-          <MenuItem label="❓ Help & Support" onPress={() => {}} />
+          <MenuItem label="❓ Help & Support" onPress={() => Alert.alert('Help & Support', 'Email us at support@rentivo.app\n\nResponse time: within 24 hours', [{ text: 'OK' }])} />
         </Card>
 
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>

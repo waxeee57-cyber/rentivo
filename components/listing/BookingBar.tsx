@@ -1,8 +1,8 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Colors, Spacing } from '@/constants/colors'
-import { Button } from '@/components/ui/Button'
+import * as Haptics from 'expo-haptics'
+import { Colors, Spacing, Radius } from '@/constants/colors'
 import { formatEUR, formatEURDecimal } from '@/lib/utils/formatCurrency'
 
 interface BookingBarProps {
@@ -16,6 +16,13 @@ interface BookingBarProps {
 export function BookingBar({ pricePerDay, totalDays, totalAmount, onPress, disabled }: BookingBarProps) {
   const insets = useSafeAreaInsets()
 
+  const handlePress = () => {
+    if (!disabled) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+      onPress()
+    }
+  }
+
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + Spacing.sm }]}>
       <View style={styles.left}>
@@ -25,12 +32,16 @@ export function BookingBar({ pricePerDay, totalDays, totalAmount, onPress, disab
           <Text style={styles.total}>{`${totalDays} days · ${formatEURDecimal(totalAmount)}`}</Text>
         )}
       </View>
-      <Button
-        title={disabled ? 'Select dates first' : 'Book now'}
-        onPress={onPress}
+      <TouchableOpacity
+        onPress={handlePress}
         disabled={disabled}
-        style={styles.button}
-      />
+        activeOpacity={0.85}
+        style={[styles.bookBtn, disabled && styles.bookBtnDisabled]}
+      >
+        <Text style={styles.bookBtnText}>
+          {disabled ? 'Select dates first' : 'Book now'}
+        </Text>
+      </TouchableOpacity>
     </View>
   )
 }
@@ -50,5 +61,28 @@ const styles = StyleSheet.create({
   price: { fontSize: 20, fontWeight: '700', color: Colors.text },
   unit: { fontSize: 13, color: Colors.textSecondary },
   total: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
-  button: { marginLeft: Spacing.base },
+  bookBtn: {
+    height: 48,
+    borderRadius: Radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xl,
+    backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+    marginLeft: Spacing.base,
+  },
+  bookBtnDisabled: {
+    opacity: 0.5,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  bookBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textInverse,
+  },
 })

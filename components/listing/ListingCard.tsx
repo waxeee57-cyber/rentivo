@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
+import * as Haptics from 'expo-haptics'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 import { StarRating } from '@/components/ui/StarRating'
 import { formatEUR } from '@/lib/utils/formatCurrency'
@@ -53,7 +54,10 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
           )}
           <TouchableOpacity
             style={styles.heartBtn}
-            onPress={() => setWishlisted(w => !w)}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+              setWishlisted(w => !w)
+            }}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={styles.heart}>{wishlisted ? '❤️' : '🤍'}</Text>
@@ -70,9 +74,18 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
             <Text style={styles.titleGrid} numberOfLines={1}>{listing.title}</Text>
           )}
 
-          <Text style={styles.operator} numberOfLines={1}>
-            {listing.operator?.name} · {listing.operator?.city}
-          </Text>
+          <View style={styles.operatorRow}>
+            <Text style={styles.operator} numberOfLines={1}>
+              {listing.owner_type === 'host'
+                ? `${listing.host?.name ?? 'Private host'} · ${listing.host?.city ?? ''}`
+                : `${listing.operator?.name ?? ''} · ${listing.operator?.city ?? ''}`}
+            </Text>
+            {listing.owner_type === 'host' && (
+              <View style={styles.hostBadge}>
+                <Text style={styles.hostBadgeText}>👤</Text>
+              </View>
+            )}
+          </View>
 
           {isFull && (listing.make || listing.model) && (
             <View style={styles.detailChips}>
@@ -157,7 +170,15 @@ const styles = StyleSheet.create({
   },
   titleFull: { fontSize: 16, fontWeight: '700', color: Colors.text, flex: 1, marginRight: Spacing.sm },
   titleGrid: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  operator: { fontSize: 12, color: Colors.textSecondary, marginBottom: 6 },
+  operatorRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
+  operator: { fontSize: 12, color: Colors.textSecondary, flex: 1 },
+  hostBadge: {
+    backgroundColor: Colors.primarySurface,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  hostBadgeText: { fontSize: 10 },
   detailChips: { flexDirection: 'row', gap: Spacing.xs, marginBottom: 8, flexWrap: 'wrap' },
   chip: {
     backgroundColor: Colors.surfaceWarm,

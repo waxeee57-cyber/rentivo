@@ -1,4 +1,4 @@
-import type { Operator, Listing, Booking, DamageReport, Review, Conversation, Message } from '@/types'
+import type { Operator, Host, Listing, Booking, DamageReport, Review, Conversation, Message } from '@/types'
 
 export const MOCK_OPERATOR: Operator = {
   id: 'op-001',
@@ -23,6 +23,68 @@ export const MOCK_OPERATOR: Operator = {
   stripe_account_id: null,
   stripe_onboarded: false,
   created_at: '2024-01-01T00:00:00Z',
+}
+
+export const MOCK_HOST: Host = {
+  id: 'host-001',
+  auth_id: null,
+  name: 'Marco Ferrari',
+  bio: "Local Marbella resident. I rent out my car when I'm traveling. Fast responses, flexible pickup!",
+  avatar_url: null,
+  phone: '+34611222333',
+  email: 'marco@example.com',
+  city: 'Marbella',
+  country: 'ES',
+  rating: 4.7,
+  review_count: 18,
+  verified: true,
+  identity_verified: true,
+  stripe_account_id: null,
+  stripe_onboarded: true,
+  response_rate: 98,
+  response_time: '30 minutes',
+  member_since: '2024-03-15T00:00:00Z',
+  total_rentals: 18,
+  active: true,
+  created_at: '2024-03-15T00:00:00Z',
+}
+
+export const MOCK_HOST_LISTING: Listing = {
+  id: 'lst-006',
+  operator_id: 'op-001',
+  host_id: 'host-001',
+  owner_type: 'host',
+  title: 'Fiat 500 — Cute & Easy to Park',
+  description: "Perfect for exploring Marbella's old town. Easy to park everywhere, great AC, full tank on pickup.",
+  category: 'car',
+  subcategory: null,
+  price_per_day: 3500,
+  price_per_week: 21000,
+  deposit_amount: 10000,
+  currency: 'EUR',
+  available: true,
+  min_rental_days: 1,
+  max_rental_days: 30,
+  capacity: 4,
+  year: 2021,
+  make: 'Fiat',
+  model: '500',
+  color: 'White',
+  license_plate: null,
+  features: ['AC', 'Bluetooth', 'USB', 'Easy parking'],
+  rules: 'No smoking. Return with same fuel level.',
+  images: ['https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800'],
+  cover_image_url: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=800',
+  cancellation_policy: 'flexible',
+  instant_book: true,
+  pickup_address: 'Marbella Old Town, Málaga',
+  latitude: 36.5101,
+  longitude: -4.8824,
+  rating: 4.7,
+  review_count: 18,
+  booking_count: 18,
+  created_at: new Date().toISOString(),
+  host: MOCK_HOST,
 }
 
 export const MOCK_LISTINGS: Listing[] = [
@@ -199,6 +261,7 @@ export const MOCK_LISTINGS: Listing[] = [
     created_at: '2024-01-01T00:00:00Z',
     operator: MOCK_OPERATOR,
   },
+  MOCK_HOST_LISTING,
 ]
 
 const today = new Date()

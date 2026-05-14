@@ -4,7 +4,6 @@ import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Colors } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
-import { useNotificationStore } from '@/lib/store/useNotificationStore'
 import { t } from '@/constants/i18n'
 
 function TabIcon({ name, focused, size = 24 }: {
@@ -32,9 +31,9 @@ const tabIconStyles = StyleSheet.create({
 
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
 
-export default function OperatorLayout() {
+export default function HostLayout() {
   const { language } = useAuthStore()
-  const { operatorUnreadCount } = useNotificationStore()
+
   return (
     <Tabs
       screenOptions={{
@@ -59,11 +58,11 @@ export default function OperatorLayout() {
       }}
     >
       <Tabs.Screen
-        name="dashboard"
+        name="listings"
         options={{
-          title: t('dashboard', language),
+          title: t('listings', language),
           tabBarIcon: ({ focused }) => (
-            <TabIcon name={focused ? 'grid' : 'grid-outline'} focused={focused} />
+            <TabIcon name={focused ? 'list' : 'list-outline'} focused={focused} />
           ),
         }}
         listeners={{ tabPress: triggerHaptic }}
@@ -79,21 +78,9 @@ export default function OperatorLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="fleet"
-        options={{
-          title: t('fleet', language),
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name={focused ? 'car' : 'car-outline'} focused={focused} />
-          ),
-        }}
-        listeners={{ tabPress: triggerHaptic }}
-      />
-      <Tabs.Screen
         name="messages"
         options={{
           title: t('messages', language),
-          tabBarBadge: operatorUnreadCount > 0 ? operatorUnreadCount : undefined,
-          tabBarBadgeStyle: { backgroundColor: Colors.error, fontSize: 10 },
           tabBarIcon: ({ focused }) => (
             <TabIcon name={focused ? 'chatbubbles' : 'chatbubbles-outline'} focused={focused} />
           ),
@@ -111,11 +98,9 @@ export default function OperatorLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       {/* Hidden screens */}
+      <Tabs.Screen name="dashboard" options={{ href: null }} />
+      <Tabs.Screen name="listings/new" options={{ href: null }} />
       <Tabs.Screen name="bookings/[id]" options={{ href: null }} />
-      <Tabs.Screen name="bookings/chat/[bookingId]" options={{ href: null }} />
-      <Tabs.Screen name="fleet/new" options={{ href: null }} />
-      <Tabs.Screen name="fleet/[id]" options={{ href: null }} />
-      <Tabs.Screen name="damage/[bookingId]" options={{ href: null }} />
     </Tabs>
   )
 }

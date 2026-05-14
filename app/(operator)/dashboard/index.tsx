@@ -15,11 +15,11 @@ import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
 import { formatEUR } from '@/lib/utils/formatCurrency'
 
-const QUICK_ACTIONS = [
-  { icon: '＋', label: 'Add vehicle', route: '/(operator)/fleet/add' },
+const QUICK_ACTIONS: { icon: string; label: string; route: string }[] = [
+  { icon: '＋', label: 'Add vehicle', route: '/(operator)/fleet/new' },
   { icon: '📋', label: 'Bookings', route: '/(operator)/bookings' },
-  { icon: '💬', label: 'Messages', route: '/(operator)/bookings' },
-] as const
+  { icon: '💬', label: 'Messages', route: '/(operator)/messages' },
+]
 
 function RevenueSparkline({ bookings }: { bookings: { total_amount: number; start_date: string }[] }) {
   const bars = useMemo(() => {
@@ -108,7 +108,7 @@ export default function DashboardScreen() {
             <TouchableOpacity
               key={action.label}
               style={styles.quickAction}
-              onPress={() => router.push(action.route as any)}
+              onPress={() => router.push(action.route as Parameters<typeof router.push>[0])}
             >
               <View style={styles.quickActionIcon}>
                 <Text style={styles.quickActionIconText}>{action.icon}</Text>

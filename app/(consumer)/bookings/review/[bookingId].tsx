@@ -11,6 +11,7 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { useBooking } from '@/lib/hooks/useBookings'
 import { Config } from '@/constants/config'
+import { formatDateRange } from '@/lib/utils/formatDate'
 import { supabase } from '@/lib/supabase'
 
 function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -109,7 +110,7 @@ export default function ReviewScreen() {
             <Text style={styles.vehicleTitle}>{booking.listing?.title ?? 'Your Rental'}</Text>
             <Text style={styles.vehicleOp}>{booking.operator?.name}</Text>
             <Text style={styles.vehicleDates}>
-              {booking.start_date} – {booking.end_date} · {booking.total_days} days
+              {formatDateRange(booking.start_date, booking.end_date)} · {booking.total_days} days
             </Text>
           </View>
         )}

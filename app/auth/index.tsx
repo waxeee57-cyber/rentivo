@@ -4,18 +4,19 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { Config } from '@/constants/config'
 
 function RoleCard({
   emoji,
   title,
   desc,
-  dark = false,
+  variant = 'light',
   onPress,
 }: {
   emoji: string
   title: string
   desc: string
-  dark?: boolean
+  variant?: 'light' | 'warm' | 'dark'
   onPress: () => void
 }) {
   const scale = useRef(new Animated.Value(1)).current
@@ -23,7 +24,12 @@ function RoleCard({
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
       <TouchableOpacity
-        style={[styles.card, dark ? styles.cardDark : styles.cardLight]}
+        style={[
+          styles.card,
+          variant === 'light' && styles.cardLight,
+          variant === 'warm' && styles.cardWarm,
+          variant === 'dark' && styles.cardDark,
+        ]}
         onPress={onPress}
         onPressIn={() => Animated.spring(scale, { toValue: 0.97, damping: 15, useNativeDriver: true }).start()}
         onPressOut={() => Animated.spring(scale, { toValue: 1, damping: 15, useNativeDriver: true }).start()}
@@ -31,10 +37,10 @@ function RoleCard({
       >
         <Text style={styles.cardEmoji}>{emoji}</Text>
         <View style={styles.cardBody}>
-          <Text style={[styles.cardTitle, dark && styles.cardTitleDark]}>{title}</Text>
-          <Text style={[styles.cardDesc, dark && styles.cardDescDark]}>{desc}</Text>
+          <Text style={[styles.cardTitle, variant === 'dark' && styles.cardTitleDark]}>{title}</Text>
+          <Text style={[styles.cardDesc, variant === 'dark' && styles.cardDescDark]}>{desc}</Text>
         </View>
-        <Text style={[styles.cardArrow, dark && styles.cardArrowDark]}>→</Text>
+        <Text style={[styles.cardArrow, variant === 'dark' && styles.cardArrowDark]}>→</Text>
       </TouchableOpacity>
     </Animated.View>
   )
@@ -43,9 +49,15 @@ function RoleCard({
 export default function RoleSelectionScreen() {
   const { setRole } = useAuthStore()
 
-  const handleSelect = (role: 'consumer' | 'operator') => {
+  const handleSelect = (role: 'consumer' | 'operator' | 'host') => {
     setRole(role)
-    router.push('/auth/login')
+    if (role === 'host') {
+      router.push('/auth/host-setup')
+    } else if (Config.useMock && role === 'operator') {
+      router.replace('/(operator)/dashboard')
+    } else {
+      router.push('/auth/login')
+    }
   }
 
   return (
@@ -59,15 +71,23 @@ export default function RoleSelectionScreen() {
       <View style={styles.cards}>
         <RoleCard
           emoji="🌴"
-          title="I'm a traveler"
+          title="I want to rent"
           desc="Find cars, boats & more"
+          variant="light"
           onPress={() => handleSelect('consumer')}
         />
         <RoleCard
-          emoji="🚗"
-          title="I manage a fleet"
-          desc="List vehicles, track revenue"
-          dark
+          emoji="🏠"
+          title="I have something to rent"
+          desc="List your car, boat or villa"
+          variant="warm"
+          onPress={() => handleSelect('host')}
+        />
+        <RoleCard
+          emoji="🏢"
+          title="I run a rental business"
+          desc="Manage fleet & bookings"
+          variant="dark"
           onPress={() => handleSelect('operator')}
         />
       </View>
@@ -128,6 +148,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.primary,
     shadowColor: Colors.primary,
+  },
+  cardWarm: {
+    backgroundColor: Colors.surfaceWarm,
+    borderWidth: 1.5,
+    borderColor: Colors.text,
+    shadowColor: '#000',
   },
   cardDark: {
     backgroundColor: Colors.primary,

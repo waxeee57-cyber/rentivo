@@ -5,6 +5,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { differenceInDays } from 'date-fns'
+import { formatDateRange } from '@/lib/utils/formatDate'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Colors, Spacing, Radius } from '@/constants/colors'
@@ -53,13 +54,19 @@ export default function ListingDetailScreen() {
     : 0
 
   const dateLabel = startDate && endDate
-    ? `${startDate.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })} – ${endDate.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })} · ${totalDays} days`
+    ? `${formatDateRange(startDate, endDate)} · ${totalDays} days`
     : '📅  Check in  →  Check out'
 
   const policy = (listing.cancellation_policy ?? 'moderate') as CancellationPolicy
 
+  const isHostListing = listing.owner_type === 'host'
+
   const similarListings = Config.useMock
-    ? MOCK_LISTINGS.filter(l => l.id !== listing.id && l.operator_id === listing.operator_id).slice(0, 3)
+    ? MOCK_LISTINGS.filter(l => {
+        if (l.id === listing.id) return false
+        if (isHostListing) return l.host_id === listing.host_id && l.id !== listing.id
+        return l.operator_id === listing.operator_id
+      }).slice(0, 3)
     : []
 
   return (
@@ -125,13 +132,24 @@ export default function ListingDetailScreen() {
 
         {/* Content card */}
         <View style={styles.contentCard}>
-          {listing.operator && (
+          {(listing.operator || listing.host) && (
             <View style={styles.opRow}>
               <View style={styles.opInfo}>
-                <Text style={styles.opName}>{listing.operator.name}</Text>
-                {listing.operator.verified && (
+                <Text style={styles.opName}>
+                  {isHostListing ? listing.host?.name : listing.operator?.name}
+                </Text>
+                {(isHostListing ? listing.host?.verified : listing.operator?.verified) && (
                   <View style={styles.verifiedPill}>
                     <Text style={styles.verifiedText}>✓ Verified</Text>
+                  </View>
+                )}
+                {isHostListing ? (
+                  <View style={[styles.verifiedPill, styles.hostPill]}>
+                    <Text style={[styles.verifiedText, styles.hostPillText]}>👤 Private host</Text>
+                  </View>
+                ) : (
+                  <View style={[styles.verifiedPill, styles.bizPill]}>
+                    <Text style={[styles.verifiedText, styles.bizPillText]}>✓ Verified Business</Text>
                   </View>
                 )}
               </View>
@@ -286,7 +304,49 @@ export default function ListingDetailScreen() {
             </>
           )}
 
-          {listing.operator && (
+          {isHostListing && listing.host && (
+            <>
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>About the host</Text>
+                <View style={styles.hostCard}>
+                  <View style={styles.hostCardTop}>
+                    <View style={styles.hostAvatar}>
+                      <Text style={styles.hostAvatarText}>{listing.host.name[0]}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm }}>
+                        <Text style={styles.hostName}>{listing.host.name}</Text>
+                        {listing.host.verified && (
+                          <Text style={styles.hostVerifiedBadge}>✓ Verified</Text>
+                        )}
+                      </View>
+                      <Text style={styles.hostMeta}>
+                        ★ {listing.host.rating} · {listing.host.review_count} rentals
+                      </Text>
+                      <Text style={styles.hostMeta}>
+                        Responds in ~{listing.host.response_time}
+                      </Text>
+                      <Text style={styles.hostMeta}>
+                        Member since {new Date(listing.host.member_since).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                      </Text>
+                    </View>
+                  </View>
+                  {listing.host.bio && (
+                    <Text style={styles.hostBio}>"{listing.host.bio}"</Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.askQuestionBtn}
+                  onPress={() => router.push(`/(consumer)/bookings/chat/bk-001`)}
+                >
+                  <Ionicons name="chatbubble-outline" size={16} color={Colors.primary} />
+                  <Text style={styles.askQuestionText}>Message host</Text>
+                </TouchableOpacity>
+              </View>
+              <Divider />
+            </>
+          )}
+          {!isHostListing && listing.operator && (
             <>
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>About the operator</Text>
@@ -340,7 +400,9 @@ export default function ListingDetailScreen() {
           {/* Similar listings */}
           {similarListings.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>More from {listing.operator?.name}</Text>
+              <Text style={styles.sectionTitle}>
+                More from {isHostListing ? listing.host?.name : listing.operator?.name}
+              </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.similarScroll}>
                 {similarListings.map(sim => (
                   <TouchableOpacity
@@ -475,6 +537,40 @@ const styles = StyleSheet.create({
   opName: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
   verifiedPill: { backgroundColor: Colors.successSurface, borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
   verifiedText: { fontSize: 11, fontWeight: '700', color: Colors.success },
+  hostPill: { backgroundColor: Colors.primarySurface, borderWidth: 1, borderColor: Colors.primaryLight },
+  hostPillText: { color: Colors.primaryDark },
+  bizPill: { backgroundColor: Colors.infoSurface, borderWidth: 1, borderColor: Colors.info },
+  bizPillText: { color: Colors.info },
+
+  hostCard: {
+    backgroundColor: Colors.surfaceWarm,
+    borderRadius: Radius.xl,
+    padding: Spacing.base,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  hostCardTop: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.md },
+  hostAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: Colors.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hostAvatarText: { fontSize: 22, fontWeight: '700', color: Colors.primary },
+  hostName: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 2 },
+  hostVerifiedBadge: { fontSize: 12, fontWeight: '700', color: Colors.success },
+  hostMeta: { fontSize: 12, color: Colors.textSecondary, marginBottom: 2 },
+  hostBio: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+    lineHeight: 20,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingTop: Spacing.sm,
+  },
 
   priceSection: { marginBottom: Spacing.base },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
@@ -573,7 +669,7 @@ const styles = StyleSheet.create({
   },
   locationMapPreview: {
     width: 90,
-    backgroundColor: '#d6e8f0',
+    backgroundColor: Colors.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },

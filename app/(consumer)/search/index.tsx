@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, FlatList, StyleSheet, ScrollView,
 } from 'react-native'
@@ -11,24 +11,47 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { useListings } from '@/lib/hooks/useListings'
 import { CATEGORIES } from '@/constants/categories'
-import type { RentalCategory, SearchFilters } from '@/types'
+import type { RentalCategory, SearchFilters, Listing } from '@/types'
+
+type SortKey = 'default' | 'price_asc' | 'price_desc' | 'rating'
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'default', label: 'Relevance' },
+  { key: 'price_asc', label: '↑ Price' },
+  { key: 'price_desc', label: '↓ Price' },
+  { key: 'rating', label: '★ Rating' },
+]
+
+function sortListings(listings: Listing[], sortBy: SortKey): Listing[] {
+  const arr = [...listings]
+  if (sortBy === 'price_asc') arr.sort((a, b) => a.price_per_day - b.price_per_day)
+  else if (sortBy === 'price_desc') arr.sort((a, b) => b.price_per_day - a.price_per_day)
+  else if (sortBy === 'rating') arr.sort((a, b) => b.rating - a.rating)
+  return arr
+}
 
 export default function SearchScreen() {
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<RentalCategory | null>(null)
+  const [sortBy, setSortBy] = useState<SortKey>('default')
 
   const filters: SearchFilters = {
     category: selectedCategory ?? undefined,
   }
   const { listings, loading } = useListings(filters)
 
-  const filtered = query.trim()
-    ? listings.filter(l =>
-        l.title.toLowerCase().includes(query.toLowerCase()) ||
-        l.make?.toLowerCase().includes(query.toLowerCase()) ||
-        l.model?.toLowerCase().includes(query.toLowerCase()),
-      )
-    : listings
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    const matched = q
+      ? listings.filter(l =>
+          l.title.toLowerCase().includes(q) ||
+          l.make?.toLowerCase().includes(q) ||
+          l.model?.toLowerCase().includes(q) ||
+          l.operator?.name?.toLowerCase().includes(q),
+        )
+      : listings
+    return sortListings(matched, sortBy)
+  }, [listings, query, sortBy])
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -60,6 +83,17 @@ export default function SearchScreen() {
         ))}
       </ScrollView>
 
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortBar}>
+        {SORT_OPTIONS.map(opt => (
+          <CategoryPill
+            key={opt.key}
+            label={opt.label}
+            active={sortBy === opt.key}
+            onPress={() => setSortBy(opt.key)}
+          />
+        ))}
+      </ScrollView>
+
       {loading ? (
         <FlatList
           data={Array(4).fill(null)}
@@ -70,7 +104,11 @@ export default function SearchScreen() {
           renderItem={() => <SkeletonCard />}
         />
       ) : filtered.length === 0 ? (
-        <EmptyState emoji="🔍" title="No results" subtitle="Try a different search or category" />
+        <EmptyState
+          emoji="🔍"
+          title="No results"
+          subtitle={query ? 'Try different dates or search terms' : 'Try a different category'}
+        />
       ) : (
         <FlatList
           data={filtered}
@@ -94,6 +132,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: '800', color: Colors.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
   searchBar: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
   categories: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm },
+  sortBar: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm },
   grid: { padding: Spacing.base },
   columnWrapper: { justifyContent: 'space-between' },
 })

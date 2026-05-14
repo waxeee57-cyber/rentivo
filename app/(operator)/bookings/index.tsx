@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import React, { useState, useCallback } from 'react'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
@@ -26,8 +26,16 @@ export default function OperatorBookingsScreen() {
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? null)
   const { bookings, loading, refetch } = useOperatorBookings(opId)
   const [activeTab, setActiveTab] = useState<Tab>('pending')
+  const [refreshing, setRefreshing] = useState(false)
 
   const filtered = bookings.filter(b => b.status === activeTab)
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    refetch()
+    await new Promise(r => setTimeout(r, 600))
+    setRefreshing(false)
+  }, [refetch])
 
   const handleConfirm = async (bookingId: string) => {
     try {
@@ -77,7 +85,11 @@ export default function OperatorBookingsScreen() {
       {loading ? (
         <View style={styles.list}>{Array(3).fill(null).map((_, i) => <SkeletonCard key={i} />)}</View>
       ) : filtered.length === 0 ? (
-        <EmptyState emoji="📅" title={`No ${activeTab} bookings`} />
+        <EmptyState
+          emoji="📅"
+          title={`No ${activeTab} bookings`}
+          subtitle={activeTab === 'pending' ? 'New booking requests will appear here' : 'All bookings will appear here when they change status'}
+        />
       ) : (
         <FlatList
           data={filtered}
@@ -87,6 +99,14 @@ export default function OperatorBookingsScreen() {
           maxToRenderPerBatch={4}
           windowSize={5}
           removeClippedSubviews
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.primary}
+              colors={[Colors.primary]}
+            />
+          }
           renderItem={({ item }) => (
             <BookingRow
               booking={item}

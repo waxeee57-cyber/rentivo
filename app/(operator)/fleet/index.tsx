@@ -1,5 +1,5 @@
-import React from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native'
+import React, { useState, useCallback } from 'react'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
@@ -14,7 +14,15 @@ import { MOCK_OPERATOR } from '@/lib/mockData'
 export default function FleetScreen() {
   const { operator } = useAuthStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? null)
-  const { fleet, loading, toggleAvailability } = useFleet(opId)
+  const { fleet, loading, toggleAvailability, refetch } = useFleet(opId)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    refetch()
+    await new Promise(r => setTimeout(r, 600))
+    setRefreshing(false)
+  }, [refetch])
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -37,6 +45,14 @@ export default function FleetScreen() {
           maxToRenderPerBatch={4}
           windowSize={5}
           removeClippedSubviews
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={Colors.primary}
+              colors={[Colors.primary]}
+            />
+          }
           renderItem={({ item }) => (
             <FleetCard
               listing={item}
@@ -70,11 +86,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 8,
   },
   fabText: { fontSize: 28, color: Colors.textInverse, fontWeight: '300', lineHeight: 32 },
 })

@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
+import * as Haptics from 'expo-haptics'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
@@ -20,6 +21,10 @@ function CheckRow({ label, done, insurance }: { label: string; done: boolean; in
 export default function BookingConfirmationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const ref = (id ?? 'XXXXX').slice(0, 8).toUpperCase()
+
+  useEffect(() => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+  }, [])
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>

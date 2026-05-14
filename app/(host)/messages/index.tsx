@@ -1,0 +1,151 @@
+import React, { useState, useCallback } from 'react'
+import {
+  View, Text, FlatList, TouchableOpacity,
+  StyleSheet, RefreshControl,
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
+import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Config } from '@/constants/config'
+import { MOCK_CONVERSATIONS } from '@/lib/mockData'
+import type { Conversation } from '@/types'
+import { format } from 'date-fns'
+
+function formatTime(iso: string): string {
+  try {
+    const date = new Date(iso)
+    const diffMs = Date.now() - date.getTime()
+    const diffDays = diffMs / (1000 * 60 * 60 * 24)
+    if (diffDays < 1) return format(date, 'HH:mm')
+    if (diffDays < 7) return format(date, 'EEE')
+    return format(date, 'MMM d')
+  } catch { return '' }
+}
+
+export default function HostMessagesScreen() {
+  const router = useRouter()
+  const [conversations, setConversations] = useState<Conversation[]>(
+    Config.useMock ? [...MOCK_CONVERSATIONS] : []
+  )
+  const [refreshing, setRefreshing] = useState(false)
+
+  const load = useCallback(() => {
+    if (Config.useMock) {
+      setConversations([...MOCK_CONVERSATIONS])
+    }
+  }, [])
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    load()
+    setRefreshing(false)
+  }
+
+  const handlePress = (conv: Conversation) => {
+    setConversations(prev =>
+      prev.map(c => c.id === conv.id ? { ...c, unread_operator: 0 } : c)
+    )
+    router.push(`/(consumer)/bookings/chat/${conv.booking_id}`)
+  }
+
+  return (
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <ScreenHeader title="Messages" />
+      <FlatList
+        data={conversations}
+        keyExtractor={c => c.id}
+        contentContainerStyle={conversations.length === 0 ? styles.emptyContainer : styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+        }
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.row} onPress={() => handlePress(item)} activeOpacity={0.7}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {(item.guest_name ?? 'G')[0].toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.rowContent}>
+              <View style={styles.rowTop}>
+                <Text
+                  style={[styles.guestName, item.unread_operator > 0 && styles.guestNameUnread]}
+                  numberOfLines={1}
+                >
+                  {item.guest_name ?? 'Guest'}
+                </Text>
+                <Text style={styles.time}>
+                  {item.last_message_at ? formatTime(item.last_message_at) : ''}
+                </Text>
+              </View>
+              <View style={styles.rowBottom}>
+                <Text
+                  style={[styles.lastMsg, item.unread_operator > 0 && styles.lastMsgUnread]}
+                  numberOfLines={1}
+                >
+                  {item.listing?.title ? `${item.listing.title} · ` : ''}{item.last_message ?? ''}
+                </Text>
+                {item.unread_operator > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{item.unread_operator}</Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Text style={styles.emptyIcon}>💬</Text>
+            <Text style={styles.emptyText}>No messages yet</Text>
+          </View>
+        }
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+      />
+    </SafeAreaView>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  listContent: { paddingVertical: Spacing.sm },
+  emptyContainer: { flex: 1 },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 120 },
+  emptyIcon: { fontSize: 48, marginBottom: Spacing.base },
+  emptyText: { fontSize: 16, color: Colors.textSecondary },
+  separator: { height: 1, backgroundColor: Colors.border, marginLeft: 72 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: 14,
+    gap: Spacing.base,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: { fontSize: 20, color: Colors.primary, fontWeight: '700' },
+  rowContent: { flex: 1, gap: 4 },
+  rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  guestName: { fontSize: 15, fontWeight: '600', color: Colors.text, flex: 1, marginRight: 8 },
+  guestNameUnread: { fontWeight: '700' },
+  time: { fontSize: 12, color: Colors.textTertiary },
+  lastMsg: { fontSize: 14, color: Colors.textSecondary, flex: 1, marginRight: 8 },
+  lastMsgUnread: { color: Colors.text, fontWeight: '500' },
+  badge: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.pill,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  badgeText: { fontSize: 11, fontWeight: '700', color: Colors.textInverse },
+})

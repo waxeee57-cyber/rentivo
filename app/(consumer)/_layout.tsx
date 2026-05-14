@@ -63,7 +63,7 @@ export default function ConsumerLayout() {
       }}
     >
       <Tabs.Screen
-        name="explore/index"
+        name="explore"
         options={{
           title: t('explore', language),
           tabBarIcon: ({ focused }) => (
@@ -73,7 +73,7 @@ export default function ConsumerLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="search/index"
+        name="search"
         options={{
           title: t('search', language),
           tabBarIcon: ({ focused }) => (
@@ -83,7 +83,7 @@ export default function ConsumerLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="bookings/index"
+        name="bookings"
         options={{
           title: t('bookings', language),
           tabBarBadge: bookingsBadge > 0 ? bookingsBadge : undefined,
@@ -95,7 +95,7 @@ export default function ConsumerLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="profile/index"
+        name="profile"
         options={{
           title: t('profile', language),
           tabBarIcon: ({ focused }) => (

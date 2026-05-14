@@ -60,11 +60,11 @@ export default function OperatorProfileScreen() {
       )}
 
       <Card style={styles.card}>
-        <MenuItem label="Business settings" onPress={() => {}} />
+        <MenuItem label="Business settings" onPress={() => Alert.alert('Business Settings', 'Manage your business profile, VAT number, and documents in the web dashboard at dashboard.rentivo.app', [{ text: 'OK' }])} />
         <Divider />
-        <MenuItem label="Payout settings" onPress={() => {}} />
+        <MenuItem label="Payout settings" onPress={() => Alert.alert('Payout Settings', 'Configure your bank account and payout schedule at dashboard.rentivo.app → Payouts', [{ text: 'OK' }])} />
         <Divider />
-        <MenuItem label="Help & Support" onPress={() => {}} />
+        <MenuItem label="Help & Support" onPress={() => Alert.alert('Help & Support', 'Email us at support@rentivo.app\n\nResponse time: within 24 hours', [{ text: 'OK' }])} />
       </Card>
 
       <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>

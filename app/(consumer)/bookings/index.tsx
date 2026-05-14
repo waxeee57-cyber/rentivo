@@ -160,7 +160,7 @@ export default function BookingsScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.activeActionBtn}
-                    onPress={() => router.push(`/(consumer)/bookings/chat/${item.id}` as any)}
+                    onPress={() => router.push(`/(consumer)/bookings/chat/${item.id}` as Parameters<typeof router.push>[0])}
                   >
                     <Text style={styles.activeActionText}>💬 Message</Text>
                   </TouchableOpacity>
