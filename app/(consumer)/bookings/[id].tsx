@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking, Alert, Modal,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -9,9 +9,12 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
+import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { Divider } from '@/components/ui/Divider'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/ErrorState'
+import { useToastStore } from '@/lib/store/useToastStore'
+import { getError } from '@/lib/errors'
 import { formatDate, formatDateRange, isDateToday } from '@/lib/utils/formatDate'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { calculateCancellationRefund, getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
@@ -61,6 +64,8 @@ export default function BookingDetailScreen() {
     ? MOCK_REVIEWS.some(r => r.booking_id === booking.id)
     : false
 
+  const { showToast } = useToastStore()
+
   const handleCancel = async () => {
     setCancelling(true)
     try {
@@ -68,10 +73,10 @@ export default function BookingDetailScreen() {
         await updateBookingStatus(booking.id, 'cancelled')
       }
       setShowCancelSheet(false)
-      Alert.alert('Cancelled', 'Your booking has been cancelled.')
+      showToast({ message: 'Booking cancelled.', type: 'info' })
       router.back()
     } catch {
-      Alert.alert('Error', 'Failed to cancel booking. Please try again.')
+      showToast({ message: getError('booking_failed'), type: 'error' })
     } finally {
       setCancelling(false)
     }
@@ -217,34 +222,19 @@ export default function BookingDetailScreen() {
         <View style={{ height: Spacing.xxxl }} />
       </ScrollView>
 
-      {/* Cancel confirmation modal */}
-      <Modal transparent visible={showCancelSheet} animationType="slide" onRequestClose={() => setShowCancelSheet(false)}>
-        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setShowCancelSheet(false)} />
-        <View style={styles.cancelSheet}>
-          <View style={styles.sheetHandle} />
-          <Text style={styles.cancelSheetTitle}>Cancel this booking?</Text>
-          {refundCalc && (
-            <View style={styles.refundBox}>
-              <Text style={styles.refundBoxTitle}>
-                {getCancellationPolicyEmoji(policy)} {getCancellationPolicyLabel(policy)}
-              </Text>
-              <Text style={styles.refundBoxAmount}>
-                You will receive <Text style={{ fontWeight: '800', color: Colors.success }}>{formatEURDecimal(refundCalc.refundAmount)}</Text> back
-              </Text>
-              <Text style={styles.refundBoxNote}>{refundCalc.message}</Text>
-            </View>
-          )}
-          <Button
-            title={cancelling ? 'Cancelling...' : 'Yes, Cancel Booking'}
-            onPress={handleCancel}
-            style={{ marginBottom: Spacing.md }}
-            fullWidth
-          />
-          <TouchableOpacity onPress={() => setShowCancelSheet(false)} style={styles.keepBtn}>
-            <Text style={styles.keepBtnText}>Keep Booking</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
+      <ConfirmSheet
+        visible={showCancelSheet}
+        title="Cancel this booking?"
+        message="This action cannot be undone."
+        confirmLabel={cancelling ? 'Cancelling...' : 'Yes, cancel'}
+        confirmVariant="danger"
+        onConfirm={handleCancel}
+        onCancel={() => setShowCancelSheet(false)}
+        details={refundCalc ? [
+          { label: 'Refund amount', value: formatEURDecimal(refundCalc.refundAmount) },
+          { label: 'Policy', value: `${getCancellationPolicyEmoji(policy)} ${getCancellationPolicyLabel(policy)}` },
+        ] : undefined}
+      />
     </SafeAreaView>
   )
 }
@@ -289,40 +279,4 @@ const styles = StyleSheet.create({
   actionBtnGold: { borderColor: Colors.primary, backgroundColor: Colors.primarySurface },
   actionBtnDanger: { borderColor: Colors.error + '44', backgroundColor: Colors.errorSurface },
   actionBtnText: { fontSize: 15, color: Colors.text, fontWeight: '600' },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.overlay,
-  },
-  cancelSheet: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: Radius.xxl,
-    borderTopRightRadius: Radius.xxl,
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.xxxl,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.border,
-    alignSelf: 'center',
-    marginBottom: Spacing.xl,
-  },
-  cancelSheetTitle: { fontSize: 20, fontWeight: '800', color: Colors.text, marginBottom: Spacing.xl, textAlign: 'center' },
-  refundBox: {
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.lg,
-    padding: Spacing.base,
-    marginBottom: Spacing.xl,
-  },
-  refundBoxTitle: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: Spacing.sm },
-  refundBoxAmount: { fontSize: 16, color: Colors.textSecondary, marginBottom: Spacing.xs },
-  refundBoxNote: { fontSize: 12, color: Colors.textTertiary, lineHeight: 18 },
-  keepBtn: { alignItems: 'center', padding: Spacing.md },
-  keepBtnText: { fontSize: 15, color: Colors.textSecondary, fontWeight: '600' },
 })

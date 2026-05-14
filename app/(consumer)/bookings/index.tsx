@@ -35,10 +35,30 @@ function filterBookings(bookings: Booking[], tab: TabKey): Booking[] {
   }
 }
 
-const EMPTY_MESSAGES: Record<TabKey, { emoji: string; title: string; subtitle: string }> = {
-  upcoming: { emoji: '🌴', title: 'No upcoming trips', subtitle: 'Book your next adventure' },
-  active:   { emoji: '🚗', title: 'No active rentals', subtitle: 'Your active rental will appear here' },
-  past:     { emoji: '📅', title: 'No past trips', subtitle: 'Your completed rentals will appear here' },
+const EMPTY_MESSAGES: Record<TabKey, {
+  emoji: string
+  title: string
+  subtitle: string
+  action?: { label: string; tab?: TabKey; route?: string }
+}> = {
+  upcoming: {
+    emoji: '🌴',
+    title: 'No upcoming trips',
+    subtitle: 'Ready for your next adventure?',
+    action: { label: 'Explore vehicles →', route: '/(consumer)/explore' },
+  },
+  active: {
+    emoji: '🚗',
+    title: 'No active rentals',
+    subtitle: 'Your current rentals will appear here',
+    action: { label: 'View upcoming →', tab: 'upcoming' },
+  },
+  past: {
+    emoji: '📚',
+    title: 'No past trips yet',
+    subtitle: 'Your completed rentals will appear here',
+    action: { label: 'Start exploring →', route: '/(consumer)/explore' },
+  },
 }
 
 export default function BookingsScreen() {
@@ -74,6 +94,16 @@ export default function BookingsScreen() {
 
   const filtered = filterBookings(bookings, selectedTab)
   const emptyInfo = EMPTY_MESSAGES[selectedTab]
+
+  const handleEmptyAction = (info: typeof emptyInfo) => {
+    if (!info.action) return
+    if (info.action.route) {
+      router.push(info.action.route as Parameters<typeof router.push>[0])
+    } else if (info.action.tab) {
+      const tabIndex = TABS.findIndex(t => t.key === info.action!.tab)
+      handleTabPress(info.action.tab!, tabIndex)
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -121,8 +151,8 @@ export default function BookingsScreen() {
           emoji={emptyInfo.emoji}
           title={emptyInfo.title}
           subtitle={emptyInfo.subtitle}
-          action={selectedTab === 'upcoming'
-            ? { label: 'Explore now', onPress: () => router.push('/(consumer)/explore') }
+          action={emptyInfo.action
+            ? { label: emptyInfo.action.label, onPress: () => handleEmptyAction(emptyInfo) }
             : undefined
           }
         />

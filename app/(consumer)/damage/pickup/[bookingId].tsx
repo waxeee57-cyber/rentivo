@@ -1,10 +1,14 @@
 import React, { useState } from 'react'
 import {
-  View, Text, ScrollView, Switch, TextInput, StyleSheet, Alert, TouchableOpacity,
+  View, Text, ScrollView, Switch, TextInput, StyleSheet, TouchableOpacity,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
+import * as Haptics from 'expo-haptics'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
+import { HelpTooltip } from '@/components/ui/HelpTooltip'
+import { StepIndicator } from '@/components/ui/StepIndicator'
+import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { DamagePhotoGrid } from '@/components/damage/DamagePhotoGrid'
@@ -12,6 +16,8 @@ import { SignatureCanvas } from '@/components/booking/SignatureCanvas'
 import { Card } from '@/components/ui/Card'
 import { createDamageReport } from '@/lib/api/damage'
 import { uploadDamagePhoto } from '@/lib/storage'
+import { useToastStore } from '@/lib/store/useToastStore'
+import { getError } from '@/lib/errors'
 import { Config } from '@/constants/config'
 import type { PhotoSlot } from '@/components/damage/DamagePhotoGrid'
 import type { FuelLevel } from '@/types'
@@ -24,10 +30,14 @@ const FUEL_LEVELS: { key: FuelLevel; label: string }[] = [
   { key: 'full', label: 'Full' },
 ]
 
+const STEP_LABELS = ['Photos', 'Details', 'Signatures']
+
 export default function PickupDamageScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const bkId = Config.useMock ? 'bk-003' : (bookingId ?? '')
+  const { showToast } = useToastStore()
 
+  const [step, setStep] = useState(1) // 1 = photos, 2 = details, 3 = signatures
   const [photos, setPhotos] = useState<Partial<Record<PhotoSlot, string | null>>>({})
   const [mileage, setMileage] = useState('')
   const [fuelLevel, setFuelLevel] = useState<FuelLevel>('full')
@@ -37,23 +47,30 @@ export default function PickupDamageScreen() {
   const [operatorSig, setOperatorSig] = useState('')
   const [consumerSig, setConsumerSig] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   const handlePhoto = (slot: PhotoSlot, uri: string) => {
     setPhotos(prev => ({ ...prev, [slot]: uri }))
   }
 
+  const handleNext = () => {
+    if (step < 3) setStep(s => s + 1)
+    else setShowConfirm(true)
+  }
+
   const handleSubmit = async () => {
+    setShowConfirm(false)
     if (!consumerSig) {
-      Alert.alert('Signature required', 'Please add your signature to confirm.')
+      showToast({ message: getError('signature_required'), type: 'error' })
       return
     }
     setSubmitting(true)
     try {
       if (Config.useMock) {
         await new Promise(r => setTimeout(r, 1000))
-        Alert.alert('Success', 'Pickup inspection completed!', [
-          { text: 'OK', onPress: () => router.back() },
-        ])
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        showToast({ message: 'Inspection complete! Both parties have signed.', type: 'success' })
+        router.back()
         return
       }
 
@@ -88,114 +105,158 @@ export default function PickupDamageScreen() {
         signed_at: consumerSig ? new Date().toISOString() : null,
       })
 
-      Alert.alert('Success', 'Pickup inspection completed!', [
-        { text: 'OK', onPress: () => router.back() },
-      ])
-    } catch (e) {
-      Alert.alert('Error', String(e))
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      showToast({ message: 'Pickup inspection completed! ✓', type: 'success' })
+      router.back()
+    } catch {
+      showToast({ message: getError('server_error'), type: 'error' })
     } finally {
       setSubmitting(false)
     }
   }
 
+  const nextLabel =
+    step === 1 ? 'Next: Details →' :
+    step === 2 ? 'Next: Signatures →' :
+    'Submit inspection'
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Pickup Inspection" />
+      <ScreenHeader
+        title="Pickup Inspection"
+        onBack={() => step > 1 ? setStep(s => s - 1) : router.back()}
+        rightAction={
+          <HelpTooltip
+            title="Vehicle inspection"
+            description={'Take photos of the vehicle before you drive away.\nThis protects both you and the operator if any damage is found later.'}
+            faqs={[
+              { q: 'Do I have to take all 6 photos?', a: 'Yes — front, back, both sides, interior, and one extra.' },
+              { q: 'What if I find damage?', a: 'Toggle "Damage found" and describe it. Both parties sign.' },
+            ]}
+          />
+        }
+      />
+
+      <StepIndicator
+        totalSteps={3}
+        currentStep={step}
+        labels={STEP_LABELS}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.subtitle}>Document the vehicle condition before handover.</Text>
+        {step === 1 && (
+          <>
+            <Text style={styles.stepHint}>Take 6 photos of the vehicle from all angles</Text>
+            <DamagePhotoGrid photos={photos} onPhoto={handlePhoto} />
+          </>
+        )}
 
-        <Text style={styles.sectionTitle}>Photos (6 required)</Text>
-        <DamagePhotoGrid photos={photos} onPhoto={handlePhoto} />
+        {step === 2 && (
+          <>
+            <Text style={styles.stepHint}>Record the vehicle condition details</Text>
+            <Card style={styles.card}>
+              <Text style={styles.sectionTitle}>Mileage & Fuel</Text>
+              <TextInput
+                style={styles.mileageInput}
+                placeholder="Enter current mileage (km)"
+                value={mileage}
+                onChangeText={setMileage}
+                keyboardType="numeric"
+                placeholderTextColor={Colors.textTertiary}
+              />
+              <View style={styles.fuelRow}>
+                {FUEL_LEVELS.map(f => (
+                  <TouchableOpacity
+                    key={f.key}
+                    style={[styles.fuelBtn, fuelLevel === f.key && styles.fuelBtnActive]}
+                    onPress={() => setFuelLevel(f.key)}
+                  >
+                    <Text style={[styles.fuelText, fuelLevel === f.key && styles.fuelTextActive]}>
+                      {f.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Card>
 
-        <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Mileage & Fuel</Text>
-          <TextInput
-            style={styles.mileageInput}
-            placeholder="Enter current mileage (km)"
-            value={mileage}
-            onChangeText={setMileage}
-            keyboardType="numeric"
-            placeholderTextColor={Colors.textTertiary}
-          />
-          <View style={styles.fuelRow}>
-            {FUEL_LEVELS.map(f => (
-              <TouchableOpacity
-                key={f.key}
-                style={[styles.fuelBtn, fuelLevel === f.key && styles.fuelBtnActive]}
-                onPress={() => setFuelLevel(f.key)}
-              >
-                <Text style={[styles.fuelText, fuelLevel === f.key && styles.fuelTextActive]}>
-                  {f.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Card>
+            <Card style={styles.card}>
+              <View style={styles.damageRow}>
+                <Text style={styles.damageLabel}>Any damage found?</Text>
+                <Switch
+                  value={damageFound}
+                  onValueChange={setDamageFound}
+                  trackColor={{ true: Colors.error, false: Colors.border }}
+                />
+              </View>
+              {damageFound && (
+                <TextInput
+                  style={styles.textArea}
+                  placeholder="Describe the damage..."
+                  value={damageNotes}
+                  onChangeText={setDamageNotes}
+                  multiline
+                  numberOfLines={4}
+                  placeholderTextColor={Colors.textTertiary}
+                />
+              )}
+            </Card>
 
-        <Card style={styles.card}>
-          <View style={styles.damageRow}>
-            <Text style={styles.damageLabel}>Any damage found?</Text>
-            <Switch
-              value={damageFound}
-              onValueChange={setDamageFound}
-              trackColor={{ true: Colors.error, false: Colors.border }}
-            />
-          </View>
-          {damageFound && (
-            <TextInput
-              style={styles.textArea}
-              placeholder="Describe the damage..."
-              value={damageNotes}
-              onChangeText={setDamageNotes}
-              multiline
-              numberOfLines={4}
-              placeholderTextColor={Colors.textTertiary}
-            />
-          )}
-        </Card>
+            <Card style={styles.card}>
+              <Text style={styles.sectionTitle}>General Notes</Text>
+              <TextInput
+                style={styles.textArea}
+                placeholder="Any other notes..."
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                numberOfLines={3}
+                placeholderTextColor={Colors.textTertiary}
+              />
+            </Card>
+          </>
+        )}
 
-        <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>General Notes</Text>
-          <TextInput
-            style={styles.textArea}
-            placeholder="Any other notes..."
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={3}
-            placeholderTextColor={Colors.textTertiary}
-          />
-        </Card>
-
-        <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Signatures</Text>
-          <Text style={styles.sigSubtitle}>Both parties must sign to confirm the vehicle condition.</Text>
-          <SignatureCanvas
-            label="Operator Signature"
-            onSave={setOperatorSig}
-            saved={!!operatorSig}
-          />
-          <SignatureCanvas
-            label="Renter Signature"
-            onSave={setConsumerSig}
-            saved={!!consumerSig}
-          />
-          <Text style={styles.sigConfirm}>
-            I confirm this accurately reflects the vehicle condition at pickup.
-          </Text>
-        </Card>
+        {step === 3 && (
+          <>
+            <Text style={styles.stepHint}>Both parties sign to confirm the vehicle condition</Text>
+            <Card style={styles.card}>
+              <Text style={styles.sectionTitle}>Signatures</Text>
+              <Text style={styles.sigSubtitle}>Both parties must sign to confirm the vehicle condition.</Text>
+              <SignatureCanvas
+                label="Operator Signature"
+                onSave={setOperatorSig}
+                saved={!!operatorSig}
+              />
+              <SignatureCanvas
+                label="Renter Signature"
+                onSave={setConsumerSig}
+                saved={!!consumerSig}
+              />
+              <Text style={styles.sigConfirm}>
+                I confirm this accurately reflects the vehicle condition at pickup.
+              </Text>
+            </Card>
+          </>
+        )}
 
         <Button
-          title="Complete Pickup Inspection"
-          onPress={handleSubmit}
+          title={nextLabel}
+          onPress={handleNext}
           loading={submitting}
           fullWidth
-          style={{ marginTop: Spacing.md }}
+          style={{ marginTop: Spacing.md, marginHorizontal: Spacing.base }}
         />
-
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      <ConfirmSheet
+        visible={showConfirm}
+        title="Submit inspection report?"
+        message="Both parties have signed. This cannot be changed after submission."
+        confirmLabel="Submit report"
+        onConfirm={handleSubmit}
+        onCancel={() => setShowConfirm(false)}
+      />
     </SafeAreaView>
   )
 }
@@ -203,8 +264,17 @@ export default function PickupDamageScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { paddingBottom: Spacing.xxxl },
-  subtitle: { fontSize: 14, color: Colors.textSecondary, paddingHorizontal: Spacing.base, marginBottom: Spacing.base },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: Colors.text, marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
+  stepHint: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    paddingHorizontal: Spacing.base,
+    marginBottom: Spacing.base,
+    lineHeight: 20,
+  },
+  sectionTitle: {
+    fontSize: 13, fontWeight: '700', color: Colors.text,
+    marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 0.5,
+  },
   card: { marginHorizontal: Spacing.base, marginBottom: Spacing.base },
   mileageInput: {
     borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg,

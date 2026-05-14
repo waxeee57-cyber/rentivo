@@ -1,18 +1,23 @@
 import React, { useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { differenceInDays, addDays, format } from 'date-fns'
+import * as Haptics from 'expo-haptics'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
+import { HelpTooltip } from '@/components/ui/HelpTooltip'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 import { PriceBreakdown } from '@/components/booking/PriceBreakdown'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { useListing } from '@/lib/hooks/useListing'
+import { useToastStore } from '@/lib/store/useToastStore'
 import { calculatePrice } from '@/lib/utils/calculatePrice'
+import { getError } from '@/lib/errors'
 import { Config } from '@/constants/config'
 
 export default function BookingFlowScreen() {
@@ -24,6 +29,7 @@ export default function BookingFlowScreen() {
   const [guestEmail, setGuestEmail] = useState(Config.useMock ? 'test@example.com' : '')
   const [notes, setNotes] = useState('')
   const [processing, setProcessing] = useState(false)
+  const { showToast } = useToastStore()
 
   const startDate = addDays(new Date(), 1)
   const endDate = addDays(new Date(), 4)
@@ -39,14 +45,24 @@ export default function BookingFlowScreen() {
   )
 
   const handlePayment = async () => {
-    if (!guestName.trim() || !guestPhone.trim()) {
-      Alert.alert('Missing info', 'Please fill in your name and phone number.')
+    if (!guestName.trim()) {
+      showToast({ message: getError('name_required'), type: 'error' })
+      return
+    }
+    if (!guestPhone.trim()) {
+      showToast({ message: getError('phone_required'), type: 'error' })
       return
     }
     setProcessing(true)
-    await new Promise(r => setTimeout(r, 1500))
-    setProcessing(false)
-    router.replace(`/(consumer)/booking/confirmation/mock-booking-001`)
+    try {
+      await new Promise(r => setTimeout(r, 1500))
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      router.replace('/(consumer)/booking/confirmation/mock-booking-001')
+    } catch {
+      showToast({ message: getError('payment_failed'), type: 'error' })
+    } finally {
+      setProcessing(false)
+    }
   }
 
   const steps = ['Trip details', 'Review & Pay', 'Confirmed']
@@ -55,30 +71,26 @@ export default function BookingFlowScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader
         title="Book Vehicle"
-        subtitle={`Step ${step} of 2`}
         onBack={() => step > 1 ? setStep(s => s - 1) : router.back()}
+        rightAction={
+          step === 2 ? (
+            <HelpTooltip
+              title="Secure payment"
+              description={'Your payment is processed by Stripe — the same technology used by Amazon and Airbnb.'}
+              faqs={[
+                { q: 'When am I charged?', a: 'Immediately when you confirm the booking.' },
+                { q: 'What if I need to cancel?', a: 'Check the cancellation policy shown on this page.' },
+              ]}
+            />
+          ) : undefined
+        }
       />
 
-      {/* Step progress bar */}
-      <View style={styles.progressRow}>
-        {(['Trip details', 'Review & Pay'] as const).map((label, idx) => {
-          const s = idx + 1
-          return (
-            <React.Fragment key={s}>
-              <View style={styles.stepItem}>
-                <View style={[styles.stepCircle, s <= step && styles.stepCircleActive, s < step && styles.stepCircleDone]}>
-                  {s < step
-                    ? <Text style={styles.stepCheckmark}>✓</Text>
-                    : <Text style={[styles.stepNum, s <= step && styles.stepNumActive]}>{s}</Text>
-                  }
-                </View>
-                <Text style={[styles.stepItemLabel, s <= step && styles.stepItemLabelActive]}>{label}</Text>
-              </View>
-              {idx < 1 && <View style={[styles.stepConnector, step > 1 && styles.stepConnectorDone]} />}
-            </React.Fragment>
-          )
-        })}
-      </View>
+      <StepIndicator
+        totalSteps={2}
+        currentStep={step}
+        labels={['Trip details', 'Review & Pay']}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Trip summary card — shown on both steps */}
@@ -166,30 +178,7 @@ export default function BookingFlowScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  progressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.xl,
-    marginBottom: Spacing.base,
-  },
-  stepItem: { alignItems: 'center', gap: 4 },
-  stepCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepCircleActive: { backgroundColor: Colors.primaryLight },
-  stepCircleDone: { backgroundColor: Colors.primary },
-  stepNum: { fontSize: 13, fontWeight: '700', color: Colors.textTertiary },
-  stepNumActive: { color: Colors.primaryDark },
-  stepCheckmark: { fontSize: 13, fontWeight: '700', color: Colors.textInverse },
-  stepItemLabel: { fontSize: 11, color: Colors.textTertiary, fontWeight: '500' },
-  stepItemLabelActive: { color: Colors.primaryDark, fontWeight: '700' },
-  stepConnector: { flex: 1, height: 2, backgroundColor: Colors.border, marginBottom: 14, marginHorizontal: 4 },
-  stepConnectorDone: { backgroundColor: Colors.primary },
+
 
   content: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
 

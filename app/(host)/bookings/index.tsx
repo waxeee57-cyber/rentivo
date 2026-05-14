@@ -1,8 +1,12 @@
 import React, { useState } from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import * as Haptics from 'expo-haptics'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
+import { useToastStore } from '@/lib/store/useToastStore'
 import { MOCK_BOOKINGS } from '@/lib/mockData'
 import { Config } from '@/constants/config'
 import { formatDateRange } from '@/lib/utils/formatDate'
@@ -71,11 +75,19 @@ function BookingCard({
   )
 }
 
+const EMPTY_MESSAGES: Record<Tab, { emoji: string; title: string; subtitle: string }> = {
+  pending: { emoji: '📅', title: 'No pending requests', subtitle: 'New booking requests will appear here' },
+  confirmed: { emoji: '💰', title: 'No confirmed bookings', subtitle: 'Once travelers book your vehicle, they\'ll appear here' },
+  past: { emoji: '📚', title: 'No past bookings', subtitle: 'Your completed rentals will appear here' },
+}
+
 export default function HostBookingsScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('pending')
   const [bookings, setBookings] = useState<Booking[]>(
     Config.useMock ? MOCK_BOOKINGS : []
   )
+  const [decliningId, setDecliningId] = useState<string | null>(null)
+  const { showToast } = useToastStore()
 
   const filtered = bookings.filter(b => {
     if (activeTab === 'pending') return b.status === 'pending'
@@ -85,19 +97,17 @@ export default function HostBookingsScreen() {
 
   const handleConfirm = (bookingId: string) => {
     setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'confirmed' as BookingStatus } : b))
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    showToast({ message: 'Booking confirmed ✓', type: 'success' })
   }
 
-  const handleDecline = (bookingId: string) => {
-    Alert.alert('Decline booking?', 'The guest will be notified and refunded.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Decline',
-        style: 'destructive',
-        onPress: () => setBookings(prev =>
-          prev.map(b => b.id === bookingId ? { ...b, status: 'cancelled' as BookingStatus } : b)
-        ),
-      },
-    ])
+  const handleDecline = () => {
+    if (!decliningId) return
+    const id = decliningId
+    setDecliningId(null)
+    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' as BookingStatus } : b))
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+    showToast({ message: 'Booking declined.', type: 'info' })
   }
 
   return (
@@ -119,10 +129,15 @@ export default function HostBookingsScreen() {
       </View>
 
       {filtered.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyEmoji}>📅</Text>
-          <Text style={styles.emptyText}>No {activeTab} bookings</Text>
-        </View>
+        <EmptyState
+          emoji={EMPTY_MESSAGES[activeTab].emoji}
+          title={EMPTY_MESSAGES[activeTab].title}
+          subtitle={EMPTY_MESSAGES[activeTab].subtitle}
+          action={activeTab === 'pending' ? {
+            label: 'View my listings →',
+            onPress: () => router.push('/(host)/listings' as Parameters<typeof router.push>[0]),
+          } : undefined}
+        />
       ) : (
         <FlatList
           data={filtered}
@@ -133,11 +148,21 @@ export default function HostBookingsScreen() {
             <BookingCard
               booking={item}
               onConfirm={item.status === 'pending' ? () => handleConfirm(item.id) : undefined}
-              onDecline={item.status === 'pending' ? () => handleDecline(item.id) : undefined}
+              onDecline={item.status === 'pending' ? () => setDecliningId(item.id) : undefined}
             />
           )}
         />
       )}
+
+      <ConfirmSheet
+        visible={!!decliningId}
+        title="Decline this booking?"
+        message="The guest will be notified and refunded."
+        confirmLabel="Decline"
+        confirmVariant="danger"
+        onConfirm={handleDecline}
+        onCancel={() => setDecliningId(null)}
+      />
     </SafeAreaView>
   )
 }
@@ -233,11 +258,4 @@ const styles = StyleSheet.create({
   },
   confirmBtnText: { fontSize: 14, fontWeight: '700', color: Colors.textInverse },
 
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyEmoji: { fontSize: 48, marginBottom: Spacing.md },
-  emptyText: { fontSize: 16, color: Colors.textSecondary },
 })

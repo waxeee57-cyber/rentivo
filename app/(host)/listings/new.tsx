@@ -7,8 +7,11 @@ import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import * as Haptics from 'expo-haptics'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 import { useCamera } from '@/lib/hooks/useCamera'
+import { useToastStore } from '@/lib/store/useToastStore'
 
 const CATEGORIES = [
   { key: 'car', emoji: '🚗', label: 'Car' },
@@ -31,6 +34,7 @@ type Step = 1 | 2 | 3 | 4 | 5
 
 export default function NewHostListingScreen() {
   const { showPhotoOptions } = useCamera()
+  const { showToast } = useToastStore()
   const [step, setStep] = useState<Step>(1)
   const [category, setCategory] = useState('')
   const [make, setMake] = useState('')
@@ -71,6 +75,8 @@ export default function NewHostListingScreen() {
   }
 
   const handlePublish = () => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    showToast({ message: 'Your vehicle is now live! 🎉', type: 'success' })
     router.replace('/(host)/listings')
   }
 
@@ -85,14 +91,15 @@ export default function NewHostListingScreen() {
           <TouchableOpacity onPress={() => step > 1 ? setStep((step - 1) as Step) : router.back()}>
             <Ionicons name="arrow-back" size={22} color={Colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Step {step} of 5</Text>
+          <Text style={styles.headerTitle}>List your vehicle</Text>
           <View style={{ width: 22 }} />
         </View>
 
-        {/* Progress */}
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${(step / 5) * 100}%` }]} />
-        </View>
+        <StepIndicator
+          totalSteps={5}
+          currentStep={step}
+          labels={['Type', 'Details', 'Photos', 'Price', 'Location']}
+        />
 
         <ScrollView
           contentContainerStyle={styles.content}
@@ -344,19 +351,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
   },
   headerTitle: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
-
-  progressTrack: {
-    height: 3,
-    backgroundColor: Colors.border,
-    marginHorizontal: Spacing.base,
-    borderRadius: 2,
-    marginBottom: Spacing.base,
-  },
-  progressFill: {
-    height: 3,
-    backgroundColor: Colors.primary,
-    borderRadius: 2,
-  },
 
   content: {
     paddingHorizontal: Spacing.xl,

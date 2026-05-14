@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { subDays, format, parseISO } from 'date-fns'
+import { subDays, format } from 'date-fns'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { QuickStats } from '@/components/operator/QuickStats'
 import { BookingRow } from '@/components/operator/BookingRow'
@@ -11,15 +11,10 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useOperatorBookings } from '@/lib/hooks/useOperatorBookings'
 import { useFleet } from '@/lib/hooks/useFleet'
+import { useNotificationStore } from '@/lib/store/useNotificationStore'
 import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
 import { formatEUR } from '@/lib/utils/formatCurrency'
-
-const QUICK_ACTIONS: { icon: string; label: string; route: string }[] = [
-  { icon: '＋', label: 'Add vehicle', route: '/(operator)/fleet/new' },
-  { icon: '📋', label: 'Bookings', route: '/(operator)/bookings' },
-  { icon: '💬', label: 'Messages', route: '/(operator)/messages' },
-]
 
 function RevenueSparkline({ bookings }: { bookings: { total_amount: number; start_date: string }[] }) {
   const bars = useMemo(() => {
@@ -30,7 +25,7 @@ function RevenueSparkline({ bookings }: { bookings: { total_amount: number; star
       const dayRevenue = bookings
         .filter(b => b.start_date === dateStr)
         .reduce((sum, b) => sum + b.total_amount, 0)
-      return { label: format(d, 'EEE'), revenue: dayRevenue, dateStr }
+      return { label: format(d, 'EEE'), revenue: dayRevenue }
     })
   }, [bookings])
 
@@ -72,14 +67,69 @@ const sparkStyles = StyleSheet.create({
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
-  barFill: {
-    width: '100%',
-    backgroundColor: Colors.primary,
-    borderRadius: 4,
-    minHeight: 0,
-  },
+  barFill: { width: '100%', backgroundColor: Colors.primary, borderRadius: 4, minHeight: 0 },
   barValue: { fontSize: 8, color: Colors.textTertiary, marginTop: 2 },
   barLabel: { fontSize: 9, color: Colors.textTertiary, fontWeight: '600', marginTop: 1 },
+})
+
+interface QuickActionCardProps {
+  icon: string
+  label: string
+  route: string
+  badge?: number
+}
+
+function QuickActionCard({ icon, label, route, badge }: QuickActionCardProps) {
+  return (
+    <TouchableOpacity
+      style={qaStyles.card}
+      onPress={() => router.push(route as Parameters<typeof router.push>[0])}
+      activeOpacity={0.8}
+    >
+      <View style={qaStyles.iconWrap}>
+        <Text style={qaStyles.icon}>{icon}</Text>
+        {badge != null && badge > 0 && (
+          <View style={qaStyles.badge}>
+            <Text style={qaStyles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
+          </View>
+        )}
+      </View>
+      <Text style={qaStyles.label} numberOfLines={1}>{label}</Text>
+    </TouchableOpacity>
+  )
+}
+
+const qaStyles = StyleSheet.create({
+  card: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    minHeight: 84,
+    justifyContent: 'center',
+    gap: Spacing.xs,
+  },
+  iconWrap: {
+    position: 'relative',
+  },
+  icon: { fontSize: 28 },
+  badge: {
+    position: 'absolute',
+    top: -6,
+    right: -8,
+    backgroundColor: Colors.error,
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  label: { fontSize: 12, fontWeight: '600', color: Colors.text, textAlign: 'center' },
 })
 
 export default function DashboardScreen() {
@@ -87,11 +137,13 @@ export default function DashboardScreen() {
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? null)
   const { bookings, loading, error } = useOperatorBookings(opId)
   const { fleet } = useFleet(opId)
+  const { unreadCount } = useNotificationStore()
 
   const opName = Config.useMock ? MOCK_OPERATOR.name : (operator?.name ?? 'Operator')
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening'
   const today = new Date().toISOString().split('T')[0]
 
+  const pendingCount = bookings.filter(b => b.status === 'pending').length
   const todayPickups = bookings.filter(b => b.start_date === today && b.status !== 'cancelled')
   const todayReturns = bookings.filter(b => b.end_date === today && b.status === 'active')
 
@@ -102,20 +154,25 @@ export default function DashboardScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.greeting}>{greeting}, {opName.split(' ')[0]} 👋</Text>
 
-        {/* Quick actions */}
+        {/* Quick action cards */}
         <View style={styles.quickActions}>
-          {QUICK_ACTIONS.map(action => (
-            <TouchableOpacity
-              key={action.label}
-              style={styles.quickAction}
-              onPress={() => router.push(action.route as Parameters<typeof router.push>[0])}
-            >
-              <View style={styles.quickActionIcon}>
-                <Text style={styles.quickActionIconText}>{action.icon}</Text>
-              </View>
-              <Text style={styles.quickActionLabel}>{action.label}</Text>
-            </TouchableOpacity>
-          ))}
+          <QuickActionCard
+            icon="＋"
+            label="Add vehicle"
+            route="/(operator)/fleet/new"
+          />
+          <QuickActionCard
+            icon="📋"
+            label="Bookings"
+            route="/(operator)/bookings"
+            badge={pendingCount}
+          />
+          <QuickActionCard
+            icon="💬"
+            label="Messages"
+            route="/(operator)/messages"
+            badge={unreadCount > 0 ? unreadCount : undefined}
+          />
         </View>
 
         {loading ? (
@@ -179,7 +236,18 @@ export default function DashboardScreen() {
           <Text style={styles.sectionTitle}>Recent Bookings</Text>
           {loading
             ? Array(3).fill(null).map((_, i) => <SkeletonCard key={i} />)
-            : bookings.slice(0, 5).map(b => (
+            : bookings.length === 0 ? (
+              <View style={[styles.card, styles.emptySchedule]}>
+                <Text style={styles.emptyScheduleEmoji}>📅</Text>
+                <Text style={styles.emptyScheduleText}>No bookings yet</Text>
+                <TouchableOpacity
+                  onPress={() => router.push('/(operator)/fleet/new' as Parameters<typeof router.push>[0])}
+                  style={styles.emptyAction}
+                >
+                  <Text style={styles.emptyActionText}>+ Add your first vehicle</Text>
+                </TouchableOpacity>
+              </View>
+            ) : bookings.slice(0, 5).map(b => (
               <BookingRow
                 key={b.id}
                 booking={b}
@@ -197,30 +265,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
   greeting: { fontSize: 24, fontWeight: '800', color: Colors.text, marginBottom: Spacing.xl },
-
   quickActions: {
     flexDirection: 'row',
     gap: Spacing.sm,
     marginBottom: Spacing.xl,
   },
-  quickAction: {
-    flex: 1,
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  quickActionIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: Radius.xl,
-    backgroundColor: Colors.primarySurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.primaryLight,
-  },
-  quickActionIconText: { fontSize: 20 },
-  quickActionLabel: { fontSize: 11, fontWeight: '600', color: Colors.textSecondary, textAlign: 'center' },
-
   section: { marginTop: Spacing.xl },
   sectionTitle: {
     fontSize: 13, fontWeight: '700', textTransform: 'uppercase',
@@ -236,11 +285,19 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 1,
   },
-  scheduleLabel: {
-    marginBottom: Spacing.sm,
-  },
+  scheduleLabel: { marginBottom: Spacing.sm },
   scheduleLabelText: { fontSize: 13, fontWeight: '700', color: Colors.text },
   emptySchedule: { alignItems: 'center', paddingVertical: Spacing.xl },
   emptyScheduleEmoji: { fontSize: 32, marginBottom: Spacing.sm },
   emptyScheduleText: { fontSize: 14, color: Colors.textTertiary },
+  emptyAction: {
+    marginTop: Spacing.md,
+    backgroundColor: Colors.primarySurface,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+  },
+  emptyActionText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
 })

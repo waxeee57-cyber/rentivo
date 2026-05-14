@@ -111,7 +111,8 @@ export default function OperatorMessagesScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>💬</Text>
-            <Text style={styles.emptyText}>No messages yet</Text>
+            <Text style={styles.emptyTitle}>No messages yet</Text>
+            <Text style={styles.emptySubtitle}>Messages from guests will appear here</Text>
           </View>
         }
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -124,9 +125,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   listContent: { paddingVertical: Spacing.sm },
   emptyContainer: { flex: 1 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 120 },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 120, paddingHorizontal: Spacing.xl },
   emptyIcon: { fontSize: 48, marginBottom: Spacing.base },
-  emptyText: { fontSize: 16, color: Colors.textSecondary },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: Spacing.xs },
+  emptySubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
   separator: { height: 1, backgroundColor: Colors.border, marginLeft: 72 },
   row: {
     flexDirection: 'row',

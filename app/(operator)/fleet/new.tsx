@@ -1,12 +1,14 @@
 import React, { useState } from 'react'
 import {
-  View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import * as Haptics from 'expo-haptics'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
+import { StepIndicator } from '@/components/ui/StepIndicator'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -15,6 +17,8 @@ import { CATEGORIES } from '@/constants/categories'
 import { createListing } from '@/lib/api/listings'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useCamera } from '@/lib/hooks/useCamera'
+import { useToastStore } from '@/lib/store/useToastStore'
+import { getError } from '@/lib/errors'
 import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
 import type { RentalCategory } from '@/types'
@@ -24,6 +28,7 @@ const FEATURE_OPTIONS = ['AC', 'GPS', 'Bluetooth', 'USB', 'Leather seats', 'Sunr
 export default function NewListingScreen() {
   const { operator } = useAuthStore()
   const { showPhotoOptions } = useCamera()
+  const { showToast } = useToastStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? '')
 
   const [step, setStep] = useState(1)
@@ -55,13 +60,21 @@ export default function NewListingScreen() {
   }
 
   const handlePublish = async () => {
-    if (!title.trim()) { Alert.alert('Missing', 'Please enter a title'); return }
-    if (!pricePerDay) { Alert.alert('Missing', 'Please enter a daily price'); return }
+    if (!title.trim()) {
+      showToast({ message: getError('name_required'), type: 'error' })
+      return
+    }
+    if (!pricePerDay) {
+      showToast({ message: getError('required_field'), type: 'error' })
+      return
+    }
     setSaving(true)
     try {
       if (Config.useMock) {
         await new Promise(r => setTimeout(r, 800))
-        Alert.alert('Success', 'Listing created (mock)', [{ text: 'OK', onPress: () => router.back() }])
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        showToast({ message: 'Your vehicle is now live! 🎉', type: 'success' })
+        router.back()
         return
       }
       await createListing({
@@ -91,9 +104,11 @@ export default function NewListingScreen() {
         latitude: null,
         longitude: null,
       })
-      Alert.alert('Success', 'Listing published!', [{ text: 'OK', onPress: () => router.back() }])
-    } catch (e) {
-      Alert.alert('Error', String(e))
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      showToast({ message: 'Your vehicle is now live! 🎉', type: 'success' })
+      router.back()
+    } catch {
+      showToast({ message: getError('server_error'), type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -103,8 +118,12 @@ export default function NewListingScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader
         title="Add Vehicle"
-        subtitle={`Step ${step} of 4`}
         onBack={() => step > 1 ? setStep(s => s - 1) : router.back()}
+      />
+      <StepIndicator
+        totalSteps={4}
+        currentStep={step}
+        labels={['Info', 'Price', 'Photos', 'Details']}
       />
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -131,7 +150,7 @@ export default function NewListingScreen() {
             <Button
               title="Continue →"
               onPress={() => {
-                if (!title.trim()) { Alert.alert('Required', 'Please enter a title'); return }
+                if (!title.trim()) { showToast({ message: 'Please enter a title for your vehicle.', type: 'error' }); return }
                 setStep(2)
               }}
               fullWidth
@@ -148,7 +167,7 @@ export default function NewListingScreen() {
             <Button
               title="Continue →"
               onPress={() => {
-                if (!pricePerDay) { Alert.alert('Required', 'Please enter a daily price'); return }
+                if (!pricePerDay) { showToast({ message: 'Please enter a price per day.', type: 'error' }); return }
                 setStep(3)
               }}
               fullWidth

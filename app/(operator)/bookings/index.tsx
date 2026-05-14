@@ -1,13 +1,16 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, RefreshControl } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import * as Haptics from 'expo-haptics'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { BookingRow } from '@/components/operator/BookingRow'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
+import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useOperatorBookings } from '@/lib/hooks/useOperatorBookings'
+import { useToastStore } from '@/lib/store/useToastStore'
 import { updateBookingStatus } from '@/lib/api/bookings'
 import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
@@ -21,14 +24,41 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'completed', label: 'Completed' },
 ]
 
+const EMPTY_MESSAGES: Record<Tab, { emoji: string; title: string; subtitle: string }> = {
+  pending: {
+    emoji: '📅',
+    title: 'No new requests',
+    subtitle: 'New booking requests will appear here',
+  },
+  confirmed: {
+    emoji: '✅',
+    title: 'No confirmed bookings',
+    subtitle: 'Confirmed bookings will appear here',
+  },
+  active: {
+    emoji: '🚗',
+    title: 'No active rentals',
+    subtitle: 'Rentals in progress will appear here',
+  },
+  completed: {
+    emoji: '📚',
+    title: 'No completed bookings',
+    subtitle: 'Past completed bookings will appear here',
+  },
+}
+
 export default function OperatorBookingsScreen() {
   const { operator } = useAuthStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? null)
   const { bookings, loading, refetch } = useOperatorBookings(opId)
+  const { showToast } = useToastStore()
   const [activeTab, setActiveTab] = useState<Tab>('pending')
   const [refreshing, setRefreshing] = useState(false)
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [decliningId, setDecliningId] = useState<string | null>(null)
 
   const filtered = bookings.filter(b => b.status === activeTab)
+  const pendingCount = bookings.filter(b => b.status === 'pending').length
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -37,58 +67,75 @@ export default function OperatorBookingsScreen() {
     setRefreshing(false)
   }, [refetch])
 
-  const handleConfirm = async (bookingId: string) => {
+  const handleConfirm = async () => {
+    if (!confirmingId) return
+    const id = confirmingId
+    setConfirmingId(null)
     try {
-      await updateBookingStatus(bookingId, 'confirmed')
+      await updateBookingStatus(id, 'confirmed')
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      showToast({ message: 'Booking confirmed ✓', type: 'success' })
       refetch()
     } catch {
-      Alert.alert('Error', 'Failed to confirm booking')
+      showToast({ message: 'Failed to confirm booking. Try again.', type: 'error' })
     }
   }
 
-  const handleDecline = (bookingId: string) => {
-    Alert.alert('Decline booking?', 'Please provide a reason.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Decline',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await updateBookingStatus(bookingId, 'cancelled')
-            refetch()
-          } catch {
-            Alert.alert('Error', 'Failed to decline booking')
-          }
-        },
-      },
-    ])
+  const handleDecline = async () => {
+    if (!decliningId) return
+    const id = decliningId
+    setDecliningId(null)
+    try {
+      await updateBookingStatus(id, 'cancelled')
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      showToast({ message: 'Booking declined.', type: 'info' })
+      refetch()
+    } catch {
+      showToast({ message: 'Failed to decline booking. Try again.', type: 'error' })
+    }
   }
+
+  const emptyInfo = EMPTY_MESSAGES[activeTab]
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Text style={styles.title}>Bookings</Text>
 
       <View style={styles.tabs}>
-        {TABS.map(tab => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() => setActiveTab(tab.key)}
-          >
-            <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {TABS.map(tab => {
+          const count = tab.key === 'pending' ? pendingCount : 0
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+              onPress={() => setActiveTab(tab.key)}
+            >
+              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+                {tab.label}
+              </Text>
+              {tab.key === 'pending' && count > 0 && (
+                <View style={[styles.tabBadge, activeTab === tab.key && styles.tabBadgeActive]}>
+                  <Text style={[styles.tabBadgeText, activeTab === tab.key && styles.tabBadgeTextActive]}>
+                    {count}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )
+        })}
       </View>
 
       {loading ? (
         <View style={styles.list}>{Array(3).fill(null).map((_, i) => <SkeletonCard key={i} />)}</View>
       ) : filtered.length === 0 ? (
         <EmptyState
-          emoji="📅"
-          title={`No ${activeTab} bookings`}
-          subtitle={activeTab === 'pending' ? 'New booking requests will appear here' : 'All bookings will appear here when they change status'}
+          emoji={emptyInfo.emoji}
+          title={emptyInfo.title}
+          subtitle={emptyInfo.subtitle}
+          action={activeTab === 'pending' ? {
+            label: 'Share my listing',
+            onPress: () => router.push('/(operator)/fleet' as Parameters<typeof router.push>[0]),
+          } : undefined}
         />
       ) : (
         <FlatList
@@ -111,12 +158,32 @@ export default function OperatorBookingsScreen() {
             <BookingRow
               booking={item}
               onPress={() => router.push(`/(operator)/bookings/${item.id}`)}
-              onConfirm={item.status === 'pending' ? () => handleConfirm(item.id) : undefined}
-              onDecline={item.status === 'pending' ? () => handleDecline(item.id) : undefined}
+              onConfirm={item.status === 'pending' ? () => setConfirmingId(item.id) : undefined}
+              onDecline={item.status === 'pending' ? () => setDecliningId(item.id) : undefined}
             />
           )}
         />
       )}
+
+      <ConfirmSheet
+        visible={!!confirmingId}
+        title="Confirm this booking?"
+        message="The guest will be notified and can complete their pickup."
+        confirmLabel="✓ Confirm booking"
+        confirmVariant="primary"
+        onConfirm={handleConfirm}
+        onCancel={() => setConfirmingId(null)}
+      />
+
+      <ConfirmSheet
+        visible={!!decliningId}
+        title="Decline this booking?"
+        message="The guest will be notified and refunded according to the cancellation policy."
+        confirmLabel="Decline"
+        confirmVariant="danger"
+        onConfirm={handleDecline}
+        onCancel={() => setDecliningId(null)}
+      />
     </SafeAreaView>
   )
 }
@@ -128,19 +195,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: Spacing.base,
     marginBottom: Spacing.md,
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   tab: {
     flex: 1,
+    flexDirection: 'row',
     paddingVertical: Spacing.sm,
     borderRadius: Radius.lg,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
+    gap: 4,
   },
   tabActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   tabText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
   tabTextActive: { color: Colors.textInverse },
+  tabBadge: {
+    backgroundColor: Colors.error,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  tabBadgeActive: { backgroundColor: Colors.textInverse },
+  tabBadgeText: { fontSize: 9, fontWeight: '800', color: Colors.text },
+  tabBadgeTextActive: { color: Colors.error },
   list: { paddingHorizontal: Spacing.base },
 })

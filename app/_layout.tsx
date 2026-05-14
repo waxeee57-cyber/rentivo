@@ -18,6 +18,7 @@ import { STRIPE_PUBLISHABLE_KEY } from '@/lib/stripe'
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { t } from '@/constants/i18n'
+import { Toast } from '@/components/ui/Toast'
 
 function GdprModal({ visible, onAccept, onManage, language }: {
   visible: boolean
@@ -174,6 +175,7 @@ export default function RootLayout() {
                 language={language}
               />
             ) : null}
+            <Toast />
           </Fragment>
         </StripeProvider>
       </SafeAreaProvider>
