@@ -254,3 +254,47 @@ export interface SearchFilters {
   minCapacity?: number | null
   sortBy?: 'price_asc' | 'price_desc' | 'rating' | 'newest'
 }
+
+export type PlatformType = 'airbnb' | 'booking' | 'vrbo' | 'turo' | 'holidu' | 'other'
+
+export interface PlatformConnection {
+  id: string
+  owner_id: string
+  platform: PlatformType
+  ical_url: string | null
+  external_url: string | null
+  active: boolean
+  created_at: string
+}
+
+export interface ExternalListing {
+  id: string
+  connection_id: string
+  owner_id: string
+  owner_type: OwnerType
+  platform: PlatformType
+  external_id: string
+  title: string
+  description: string | null
+  category: string
+  price_per_day: number | null
+  currency: string
+  images: string[]
+  cover_image_url: string | null
+  city: string | null
+  country: string | null
+  latitude: number | null
+  longitude: number | null
+  external_url: string
+  affiliate_url: string
+  available: boolean
+  rating: number | null
+  review_count: number
+  ical_url: string | null
+  last_synced_at: string
+  created_at: string
+}
+
+export type AnyListing =
+  | (Listing & { sourceType: 'native' })
+  | (ExternalListing & { sourceType: 'external' })

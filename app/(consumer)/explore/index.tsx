@@ -9,6 +9,8 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { useListings } from '@/lib/hooks/useListings'
 import { useLocation } from '@/lib/hooks/useLocation'
 import { ListingCard } from '@/components/listing/ListingCard'
+import { ExternalListingCard } from '@/components/integrations/ExternalListingCard'
+import { AffiliateSearchDisclosure } from '@/components/integrations/AffiliateDisclosure'
 import { ListingPreviewSheet } from '@/components/map/ListingPreviewSheet'
 import { CityPickerSheet, CITIES } from '@/components/map/CityPickerSheet'
 import type { City } from '@/components/map/CityPickerSheet'
@@ -16,7 +18,8 @@ import { DatePickerSheet } from '@/components/booking/DatePickerSheet'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { CATEGORIES } from '@/constants/categories'
-import type { Listing, RentalCategory, SearchFilters } from '@/types'
+import { searchAllSources } from '@/lib/api/unifiedSearch'
+import type { Listing, RentalCategory, SearchFilters, AnyListing, ExternalListing } from '@/types'
 import { format } from 'date-fns'
 
 const MapView = Platform.OS !== 'web'
@@ -64,6 +67,9 @@ export default function ExploreScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [sortBy, setSortBy] = useState<'default' | 'price_asc' | 'price_desc' | 'rating'>('default')
   const [minCapacity, setMinCapacity] = useState<number | null>(null)
+  const [source, setSource] = useState<'rentivo' | 'all'>('rentivo')
+  const [allSourceListings, setAllSourceListings] = useState<AnyListing[]>([])
+  const [allSourceLoading, setAllSourceLoading] = useState(false)
   const mapRef = useRef<typeof MapView extends null ? never : InstanceType<NonNullable<typeof MapView>>>(null)
 
   const { latitude, longitude } = useLocation()
@@ -78,6 +84,32 @@ export default function ExploreScreen() {
     else if (sortBy === 'rating') arr.sort((a, b) => b.rating - a.rating)
     return arr
   }, [rawListings, sortBy, minCapacity])
+
+  // Fetch all-source listings when source=all
+  useEffect(() => {
+    if (source !== 'all') {
+      setAllSourceListings([])
+      return
+    }
+    setAllSourceLoading(true)
+    searchAllSources({
+      category: selectedCategory ?? undefined,
+      city: cityName,
+      checkIn: startDate ? format(startDate, 'yyyy-MM-dd') : undefined,
+      checkOut: endDate ? format(endDate, 'yyyy-MM-dd') : undefined,
+    }).then(results => {
+      setAllSourceListings(results)
+      setAllSourceLoading(false)
+    }).catch(() => setAllSourceLoading(false))
+  }, [source, selectedCategory, cityName, startDate, endDate])
+
+  // Listings shown in list mode
+  const displayListings: AnyListing[] = source === 'all'
+    ? allSourceListings
+    : listings.map(l => ({ ...l, sourceType: 'native' as const }))
+
+  const hasExternalResults = source === 'all' &&
+    allSourceListings.some(l => l.sourceType === 'external')
 
   const listOverlayY = useRef(new Animated.Value(screenHeight)).current
   const mapOpacity = useRef(new Animated.Value(1)).current
@@ -113,6 +145,7 @@ export default function ExploreScreen() {
     : 'Dates'
 
   const searchBarTop = insets.top + 8
+  const isLoading = source === 'all' ? allSourceLoading : loading
 
   return (
     <View style={styles.container}>
@@ -219,6 +252,29 @@ export default function ExploreScreen() {
       <Animated.View style={[styles.listOverlay, { transform: [{ translateY: listOverlayY }] }]}>
         <View style={styles.listHandle} />
 
+        {/* Source toggle — Rentivo only vs All platforms */}
+        <View style={styles.sourceToggleRow}>
+          <TouchableOpacity
+            style={[styles.sourceBtn, source === 'rentivo' && styles.sourceBtnActive]}
+            onPress={() => setSource('rentivo')}
+          >
+            <Text style={[styles.sourceBtnText, source === 'rentivo' && styles.sourceBtnTextActive]}>
+              Rentivo only
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.sourceBtn, source === 'all' && styles.sourceBtnActive]}
+            onPress={() => setSource('all')}
+          >
+            <Text style={[styles.sourceBtnText, source === 'all' && styles.sourceBtnTextActive]}>
+              🌐 All platforms
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Affiliate disclosure banner */}
+        {hasExternalResults && <AffiliateSearchDisclosure />}
+
         {/* Sort bar */}
         <ScrollView
           horizontal
@@ -261,13 +317,13 @@ export default function ExploreScreen() {
         </ScrollView>
 
         {error && <ErrorState message={error} />}
-        {loading ? (
+        {isLoading ? (
           <View style={{ padding: Spacing.base }}>
             {Array(4).fill(null).map((_, i) => <SkeletonCard key={i} />)}
           </View>
         ) : (
           <FlatList
-            data={listings}
+            data={displayListings}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
@@ -275,9 +331,11 @@ export default function ExploreScreen() {
             maxToRenderPerBatch={4}
             windowSize={5}
             removeClippedSubviews
-            renderItem={({ item }) => (
-              <ListingCard listing={item} variant="full" showAvailableBadge />
-            )}
+            renderItem={({ item }) =>
+              item.sourceType === 'native'
+                ? <ListingCard listing={item as Listing} variant="full" showAvailableBadge />
+                : <ExternalListingCard listing={item as ExternalListing} />
+            }
           />
         )}
       </Animated.View>
@@ -437,6 +495,27 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     marginBottom: Spacing.sm,
   },
+
+  sourceToggleRow: {
+    flexDirection: 'row',
+    marginHorizontal: Spacing.base,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.surfaceWarm,
+    borderRadius: Radius.pill,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  sourceBtn: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+    borderRadius: Radius.pill,
+  },
+  sourceBtnActive: { backgroundColor: Colors.primary },
+  sourceBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  sourceBtnTextActive: { color: Colors.textInverse },
+
   listContent: {
     padding: Spacing.base,
     paddingTop: Spacing.sm,

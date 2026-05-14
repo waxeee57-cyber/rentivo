@@ -203,6 +203,16 @@ export default function HostListingsScreen() {
       >
         <Text style={styles.fabText}>+ List something new</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.importBtn}
+        onPress={() => {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+          router.push('/(host)/listings/add-external' as Parameters<typeof router.push>[0])
+        }}
+      >
+        <Text style={styles.importBtnText}>↗ Import from Airbnb / Booking.com</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   )
 }
@@ -264,7 +274,7 @@ const styles = StyleSheet.create({
 
   fab: {
     position: 'absolute',
-    bottom: Spacing.xl,
+    bottom: Spacing.xxxl + Spacing.xl,
     left: Spacing.xl,
     right: Spacing.xl,
     backgroundColor: Colors.primary,
@@ -278,4 +288,17 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   fabText: { fontSize: 15, fontWeight: '800', color: Colors.textInverse },
+  importBtn: {
+    position: 'absolute',
+    bottom: Spacing.xl,
+    left: Spacing.xl,
+    right: Spacing.xl,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.pill,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  importBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
 })

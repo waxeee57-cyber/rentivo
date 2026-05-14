@@ -1,4 +1,5 @@
-import type { Operator, Host, Listing, Booking, DamageReport, Review, Conversation, Message } from '@/types'
+import type { Operator, Host, Listing, Booking, DamageReport, Review, Conversation, Message, ExternalListing, AnyListing } from '@/types'
+import { MOCK_BOOKING_RESULTS, MOCK_BOOKING_CAR_RESULTS } from '@/lib/api/booking-affiliate'
 
 export const MOCK_OPERATOR: Operator = {
   id: 'op-001',
@@ -499,6 +500,70 @@ export const MOCK_CONVERSATIONS: Conversation[] = [
     listing: MOCK_LISTINGS[0],
     operator: MOCK_OPERATOR,
   },
+]
+
+export const MOCK_EXTERNAL_LISTINGS: ExternalListing[] = [
+  {
+    id: 'ext-host-001',
+    connection_id: 'host-airbnb-conn',
+    owner_id: 'host-001',
+    owner_type: 'host',
+    platform: 'airbnb',
+    external_id: 'airbnb-99001',
+    title: 'Beach Apartment Marbella Old Town',
+    description: 'Charming apartment steps from the beach. Fully equipped kitchen, fast WiFi, private terrace.',
+    category: 'villa',
+    price_per_day: 12000,
+    currency: 'EUR',
+    images: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800'],
+    cover_image_url: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
+    city: 'Marbella',
+    country: 'ES',
+    latitude: 36.5110,
+    longitude: -4.8800,
+    external_url: 'https://www.airbnb.com',
+    affiliate_url: 'https://www.airbnb.com',
+    available: true,
+    rating: 4.9,
+    review_count: 47,
+    ical_url: null,
+    last_synced_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: 'ext-host-002',
+    connection_id: 'host-turo-conn',
+    owner_id: 'host-001',
+    owner_type: 'host',
+    platform: 'turo',
+    external_id: 'turo-55002',
+    title: 'Porsche 718 Boxster — Weekend Special',
+    description: 'Sport convertible. Perfect for the coastal roads of Andalucia.',
+    category: 'car',
+    price_per_day: 18000,
+    currency: 'EUR',
+    images: ['https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800'],
+    cover_image_url: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=800',
+    city: 'Marbella',
+    country: 'ES',
+    latitude: 36.5090,
+    longitude: -4.8850,
+    external_url: 'https://turo.com',
+    affiliate_url: 'https://turo.com',
+    available: true,
+    rating: 4.8,
+    review_count: 22,
+    ical_url: null,
+    last_synced_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+  },
+]
+
+export const MOCK_UNIFIED_LISTINGS: AnyListing[] = [
+  ...MOCK_LISTINGS.map(l => ({ ...l, sourceType: 'native' as const })),
+  ...MOCK_BOOKING_RESULTS.map(l => ({ ...l, sourceType: 'external' as const })),
+  ...MOCK_BOOKING_CAR_RESULTS.map(l => ({ ...l, sourceType: 'external' as const })),
+  ...MOCK_EXTERNAL_LISTINGS.map(l => ({ ...l, sourceType: 'external' as const })),
 ]
 
 export const MOCK_MESSAGES: Message[] = [
