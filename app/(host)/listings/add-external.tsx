@@ -113,7 +113,12 @@ export default function AddExternalListingScreen() {
                   onPress={() => setSelectedPlatform(p.key)}
                 >
                   <Text style={styles.platformEmoji}>{p.emoji}</Text>
-                  <Text style={[styles.platformLabel, selectedPlatform === p.key && styles.platformLabelActive]}>
+                  <Text
+                    style={[styles.platformLabel, selectedPlatform === p.key && styles.platformLabelActive]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                  >
                     {p.label}
                   </Text>
                 </TouchableOpacity>

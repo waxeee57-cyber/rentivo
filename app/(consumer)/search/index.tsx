@@ -144,7 +144,7 @@ export default function SearchScreen() {
           <CategoryPill
             key={c.key}
             label={c.label}
-            emoji={c.emoji}
+            icon={c.icon as any}
             active={selectedCategory === c.key}
             onPress={() => setSelectedCategory(selectedCategory === c.key ? null : c.key)}
           />
@@ -202,6 +202,7 @@ export default function SearchScreen() {
           data={filtered}
           keyExtractor={item => item.id}
           numColumns={2}
+          style={styles.list}
           contentContainerStyle={styles.grid}
           columnWrapperStyle={styles.columnWrapper}
           initialNumToRender={6}
@@ -289,6 +290,7 @@ const styles = StyleSheet.create({
     width: 1, height: 24, backgroundColor: Colors.border,
     marginHorizontal: Spacing.xs, alignSelf: 'center',
   },
-  grid: { padding: Spacing.base },
+  list: { flex: 1 },
+  grid: { padding: Spacing.base, paddingBottom: 100 },
   columnWrapper: { justifyContent: 'space-between' },
 })

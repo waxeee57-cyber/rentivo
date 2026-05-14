@@ -272,8 +272,14 @@ export default function ExploreScreen() {
               style={[styles.categoryPill, selectedCategory === c.key && styles.categoryPillActive]}
               onPress={() => setSelectedCategory(prev => prev === c.key ? null : c.key)}
             >
+              <Ionicons
+                name={c.icon as any}
+                size={14}
+                color={selectedCategory === c.key ? Colors.textInverse : Colors.textSecondary}
+                style={{ marginRight: 4 }}
+              />
               <Text style={[styles.categoryPillText, selectedCategory === c.key && styles.categoryPillTextActive]}>
-                {c.emoji} {c.label}
+                {c.label}
               </Text>
             </TouchableOpacity>
           ))}
@@ -583,6 +589,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: Radius.full,
     height: 40, paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
