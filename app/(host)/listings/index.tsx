@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Switch } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Switch, Share } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -77,6 +77,10 @@ const wizardStyles = StyleSheet.create({
 function HostListingCard({ listing }: { listing: Listing }) {
   const [available, setAvailable] = React.useState(listing.available)
 
+  const handleShare = async () => {
+    await Share.share({ message: `Check out my listing on Rentivo! rentivo.domrol.com/listing/${listing.id}` })
+  }
+
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
@@ -111,6 +115,9 @@ function HostListingCard({ listing }: { listing: Listing }) {
         </TouchableOpacity>
         <TouchableOpacity style={styles.editBtn}>
           <Text style={styles.editBtnText}>Edit →</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.editBtn} onPress={() => { void handleShare() }}>
+          <Text style={styles.editBtnText}>↗ Share</Text>
         </TouchableOpacity>
       </View>
     </View>

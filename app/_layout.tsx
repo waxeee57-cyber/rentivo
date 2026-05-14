@@ -19,6 +19,7 @@ import { registerForPushNotifications, savePushToken } from '@/lib/notifications
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { Toast } from '@/components/ui/Toast'
+import { OfflineBanner } from '@/components/ui/OfflineBanner'
 
 function GdprModal({ visible, onAccept, onManage, language }: {
   visible: boolean
@@ -163,6 +164,7 @@ export default function RootLayout() {
         <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder'}>
           <Fragment>
             <StatusBar style="light" />
+            <OfflineBanner />
             <Stack
               initialRouteName="index"
               screenOptions={{ headerShown: false }}

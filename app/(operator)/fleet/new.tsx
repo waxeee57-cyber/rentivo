@@ -75,6 +75,8 @@ export default function NewListingScreen() {
       if (Config.useMock) {
         await new Promise(r => setTimeout(r, 800))
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        // Mock welcome email
+        console.log(`[Rentivo] Welcome email sent to operator: "Welcome to Rentivo! Your first listing is live. Here's what happens next: 1. Travelers can now find your vehicle. 2. You'll get a push notification for each booking. 3. Confirm within 24h to avoid cancellation."`)
         setPublished(true)
         return
       }

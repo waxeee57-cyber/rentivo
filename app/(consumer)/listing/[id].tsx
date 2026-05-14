@@ -25,6 +25,8 @@ import { getCategoryEmoji, getCategoryLabel } from '@/constants/categories'
 import { getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
 import { Config } from '@/constants/config'
 import { MOCK_REVIEWS, MOCK_LISTINGS } from '@/lib/mockData'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 import type { CancellationPolicy } from '@/types'
 
 const { height: screenHeight } = Dimensions.get('window')
@@ -33,6 +35,7 @@ const HERO_HEIGHT = Math.round(screenHeight * 0.52)
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { listing, loading, error } = useListing(id ?? '')
+  const { language } = useAuthStore()
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -439,11 +442,11 @@ export default function ListingDetailScreen() {
       {/* Sticky booking bar */}
       <View style={[styles.bookingBar, { paddingBottom: insets.bottom + Spacing.sm }]}>
         <View style={styles.bookingBarLeft}>
-          <Text style={styles.bookingBarPrice}>{formatEUR(listing.price_per_day)}<Text style={styles.bookingBarUnit}>/day</Text></Text>
+          <Text style={styles.bookingBarPrice}>{formatEUR(listing.price_per_day)}<Text style={styles.bookingBarUnit}>{t('perDay', language)}</Text></Text>
           {priceCalc && totalDays ? (
-            <Text style={styles.bookingBarSub}>{totalDays} days · {formatEURDecimal(priceCalc.total)}</Text>
+            <Text style={styles.bookingBarSub}>{totalDays} {t('days', language)} · {formatEURDecimal(priceCalc.total)}</Text>
           ) : (
-            <Text style={styles.bookingBarTrust}>🔒 Secure · ✓ Verified</Text>
+            <Text style={styles.bookingBarTrust}>🔒 {t('securePayment', language)} · ✓ {t('noHiddenFees', language)}</Text>
           )}
         </View>
         <TouchableOpacity
@@ -458,7 +461,7 @@ export default function ListingDetailScreen() {
           }}
         >
           <Text style={styles.bookNowBtnText}>
-            {startDate ? 'Book now' : 'Select dates'}
+            {startDate ? t('bookNow', language) : t('selectDates', language)}
           </Text>
         </TouchableOpacity>
       </View>

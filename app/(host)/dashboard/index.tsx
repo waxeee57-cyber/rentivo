@@ -46,6 +46,27 @@ export default function HostDashboardScreen() {
           </View>
         </View>
 
+        {/* Earnings overview */}
+        <View style={styles.earningsCard}>
+          <Text style={styles.earningsTitle}>Earnings overview</Text>
+          <View style={styles.earningsRow}>
+            <View style={styles.earningsItem}>
+              <Text style={styles.earningsAmount}>{formatEURDecimal(monthlyEarnings)}</Text>
+              <Text style={styles.earningsLabel}>This month</Text>
+            </View>
+            <View style={styles.earningsDivider} />
+            <View style={styles.earningsItem}>
+              <Text style={styles.earningsAmount}>{formatEURDecimal(Config.useMock ? 38500 : 0)}</Text>
+              <Text style={styles.earningsLabel}>Last month</Text>
+            </View>
+            <View style={styles.earningsDivider} />
+            <View style={styles.earningsItem}>
+              <Text style={styles.earningsAmount}>{formatEURDecimal(Config.useMock ? 420000 : 0)}</Text>
+              <Text style={styles.earningsLabel}>All time</Text>
+            </View>
+          </View>
+        </View>
+
         {/* Your listings */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -306,4 +327,12 @@ const styles = StyleSheet.create({
   tipRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   tipEmoji: { fontSize: 20, width: 28 },
   tipText: { flex: 1, fontSize: 13, color: Colors.textSecondary, lineHeight: 20 },
+
+  earningsCard: { backgroundColor: Colors.surface, borderRadius: Radius.xl, padding: Spacing.base, marginBottom: Spacing.xl, borderWidth: 1, borderColor: Colors.border },
+  earningsTitle: { fontSize: 12, fontWeight: '700', color: Colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
+  earningsRow: { flexDirection: 'row', alignItems: 'center' },
+  earningsItem: { flex: 1, alignItems: 'center' },
+  earningsAmount: { fontSize: 16, fontWeight: '800', color: Colors.text, marginBottom: 2 },
+  earningsLabel: { fontSize: 11, color: Colors.textTertiary, fontWeight: '600' },
+  earningsDivider: { width: 1, height: 36, backgroundColor: Colors.border },
 })

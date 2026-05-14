@@ -22,6 +22,7 @@ export function OperatorCard({ operator, onViewListings }: OperatorCardProps) {
           </View>
           <Text style={styles.city}>{operator.city}, {operator.country}</Text>
           <StarRating rating={operator.rating} reviewCount={operator.review_count} size={12} />
+          <Text style={styles.responseTime}>⚡ Usually responds within 1 hour</Text>
         </View>
       </View>
       {operator.description && (
@@ -52,4 +53,5 @@ const styles = StyleSheet.create({
   desc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18, marginBottom: Spacing.sm },
   link: { alignSelf: 'flex-start' },
   linkText: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
+  responseTime: { fontSize: 12, color: Colors.success, marginTop: 2 },
 })

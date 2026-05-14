@@ -70,6 +70,8 @@ export default function OperatorProfileScreen() {
       <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
         <Text style={styles.signOutText}>Sign out</Text>
       </TouchableOpacity>
+
+      <Text style={styles.appVersion}>Rentivo v1.0.0</Text>
     </SafeAreaView>
   )
 }
@@ -103,4 +105,5 @@ const styles = StyleSheet.create({
   menuChevron: { fontSize: 20, color: Colors.textTertiary },
   signOutBtn: { marginHorizontal: Spacing.base, marginTop: Spacing.base, padding: Spacing.base, alignItems: 'center' },
   signOutText: { fontSize: 16, color: Colors.error, fontWeight: '600' },
+  appVersion: { textAlign: 'center', fontSize: 12, color: Colors.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
 })

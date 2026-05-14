@@ -7,6 +7,7 @@ import { Colors, Radius, Spacing } from '@/constants/colors'
 import { StarRating } from '@/components/ui/StarRating'
 import { formatEUR } from '@/lib/utils/formatCurrency'
 import { getCategoryEmoji, getCategoryLabel } from '@/constants/categories'
+import { getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
 import type { Listing } from '@/types'
 
 const { width } = Dimensions.get('window')
@@ -91,6 +92,17 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
               </View>
             )}
           </View>
+
+          {listing.booking_count != null && listing.booking_count > 0 && (
+            <Text style={styles.bookingCount}>{listing.booking_count} rentals</Text>
+          )}
+          {listing.cancellation_policy != null && (
+            <View style={styles.cancelBadge}>
+              <Text style={styles.cancelBadgeText}>
+                {getCancellationPolicyEmoji(listing.cancellation_policy)} {getCancellationPolicyLabel(listing.cancellation_policy)}
+              </Text>
+            </View>
+          )}
 
           {isFull && (listing.make || listing.model) && (
             <View style={styles.detailChips}>
@@ -202,6 +214,9 @@ const styles = StyleSheet.create({
   priceFull: { fontSize: 18, fontWeight: '700', color: Colors.primary },
   priceGrid: { fontSize: 15, fontWeight: '700', color: Colors.text },
   priceUnit: { fontSize: 12, color: Colors.textSecondary, marginLeft: 2 },
+  bookingCount: { fontSize: 11, color: Colors.textTertiary, marginBottom: 4 },
+  cancelBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 },
+  cancelBadgeText: { fontSize: 10, color: Colors.textSecondary },
   availableBadge: {
     position: 'absolute',
     bottom: Spacing.sm,
