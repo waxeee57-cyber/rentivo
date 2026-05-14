@@ -11,6 +11,8 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { ICalHelpSheet } from '@/components/integrations/ICalHelpSheet'
 import { performICalSync } from '@/lib/ical'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 import type { PlatformType } from '@/types'
 
 type Step = 1 | 2 | 3 | 4
@@ -40,6 +42,7 @@ const CATEGORIES = [
 ]
 
 export default function AddExternalListingScreen() {
+  const { language } = useAuthStore()
   const [step, setStep] = useState<Step>(1)
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformType | null>(null)
   const [listingUrl, setListingUrl] = useState('')
@@ -85,7 +88,7 @@ export default function AddExternalListingScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScreenHeader
-        title="Import Listing"
+        title={t('importListing', language)}
         subtitle={`Step ${step} of 4`}
         onBack={step === 1 ? () => router.back() : () => setStep(s => (s - 1) as Step)}
       />
@@ -101,10 +104,8 @@ export default function AddExternalListingScreen() {
         {/* STEP 1 — Platform választás */}
         {step === 1 && (
           <View>
-            <Text style={styles.stepTitle}>Which platform is your listing on?</Text>
-            <Text style={styles.stepSubtitle}>
-              You're adding your own listing — bookings happen on the original platform.
-            </Text>
+            <Text style={styles.stepTitle}>{t('whichPlatform', language)}</Text>
+            <Text style={styles.stepSubtitle}>{t('addingOwnListing', language)}</Text>
             <View style={styles.platformGrid}>
               {PLATFORMS.map(p => (
                 <TouchableOpacity
@@ -306,7 +307,7 @@ export default function AddExternalListingScreen() {
               disabled={!canProceedStep1}
               onPress={next}
             >
-              <Text style={styles.nextBtnText}>Next →</Text>
+              <Text style={styles.nextBtnText}>{t('nextStep', language)}</Text>
             </TouchableOpacity>
           )}
           {step === 2 && (
@@ -315,7 +316,7 @@ export default function AddExternalListingScreen() {
               disabled={!canProceedStep2}
               onPress={next}
             >
-              <Text style={styles.nextBtnText}>Next →</Text>
+              <Text style={styles.nextBtnText}>{t('nextStep', language)}</Text>
             </TouchableOpacity>
           )}
           {step === 3 && (
@@ -360,7 +361,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginTop: Spacing.sm,
   },
   platformCard: {
-    width: '30%',
+    flex: 1,
+    minWidth: 95,
+    maxWidth: 120,
     height: 100,
     backgroundColor: Colors.surface,
     borderRadius: Radius.lg,

@@ -10,14 +10,15 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useBookings } from '@/lib/hooks/useBookings'
 import { Config } from '@/constants/config'
+import { t, type TranslationKey } from '@/constants/i18n'
 import type { Booking, BookingStatus } from '@/types'
 
 type TabKey = 'upcoming' | 'active' | 'past'
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'upcoming', label: 'Upcoming' },
-  { key: 'active', label: 'Active' },
-  { key: 'past', label: 'Past' },
+const TABS: { key: TabKey; labelKey: TranslationKey }[] = [
+  { key: 'upcoming', labelKey: 'upcoming' },
+  { key: 'active', labelKey: 'active' },
+  { key: 'past', labelKey: 'tabPast' },
 ]
 
 const UPCOMING_STATUSES: BookingStatus[] = ['confirmed', 'pending']
@@ -62,7 +63,7 @@ const EMPTY_MESSAGES: Record<TabKey, {
 }
 
 export default function BookingsScreen() {
-  const { user } = useAuthStore()
+  const { user, language } = useAuthStore()
   const userId = Config.useMock ? 'usr-001' : (user?.id ?? null)
   const { bookings, loading, error, refetch } = useBookings(userId)
   const [selectedTab, setSelectedTab] = useState<TabKey>('upcoming')
@@ -107,7 +108,7 @@ export default function BookingsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.title}>My Trips</Text>
+      <Text style={styles.title}>{t('myTrips', language)}</Text>
 
       {/* Tab bar with counts */}
       <View style={styles.tabBar}>
@@ -121,7 +122,7 @@ export default function BookingsScreen() {
             >
               <View style={styles.tabInner}>
                 <Text style={[styles.tabLabel, selectedTab === tab.key && styles.tabLabelActive]}>
-                  {tab.label}
+                  {t(tab.labelKey, language)}
                 </Text>
                 {count > 0 && (
                   <View style={[styles.tabBadge, selectedTab === tab.key && styles.tabBadgeActive]}>

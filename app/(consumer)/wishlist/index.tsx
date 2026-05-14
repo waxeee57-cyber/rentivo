@@ -7,21 +7,24 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { ListingCard } from '@/components/listing/ListingCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useWishlistStore } from '@/lib/store/useWishlistStore'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 
 export default function WishlistScreen() {
   const { items } = useWishlistStore()
+  const { language } = useAuthStore()
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScreenHeader title="❤️ Saved listings" />
+      <ScreenHeader title={`❤️ ${t('savedListings', language)}`} />
 
       {items.length === 0 ? (
         <EmptyState
           emoji="❤️"
-          title="No saved listings yet"
-          subtitle="Browse vehicles and tap the heart to save them here"
+          title={t('noSavedListings', language)}
+          subtitle={t('wishlistEmptySub', language)}
           action={{
-            label: 'Browse vehicles →',
+            label: t('browseVehicles', language),
             onPress: () => router.push('/(consumer)/explore'),
           }}
         />

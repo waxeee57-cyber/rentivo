@@ -53,7 +53,7 @@ export default function HostProfileScreen() {
           <Text style={styles.memberSince}>Member since {memberSince}</Text>
           {hostData?.verified && (
             <View style={styles.verifiedBadge}>
-              <Text style={styles.verifiedText}>✓ Verified host</Text>
+              <Text style={styles.verifiedText}>✓ {t('verifiedHost', language)}</Text>
             </View>
           )}
         </View>
@@ -62,35 +62,35 @@ export default function HostProfileScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statNum}>{totalRentals}</Text>
-            <Text style={styles.statLabel}>Rentals</Text>
+            <Text style={styles.statLabel}>{t('statRentals', language)}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statNum}>{formatEURDecimal(totalEarned)}</Text>
-            <Text style={styles.statLabel}>Earned</Text>
+            <Text style={styles.statLabel}>{t('statEarned', language)}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statNum}>{responseRate}%</Text>
-            <Text style={styles.statLabel}>Response</Text>
+            <Text style={styles.statLabel}>{t('statResponse', language)}</Text>
           </View>
         </View>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Listings</Text>
-          <MenuItem label="🚗 My vehicles" onPress={() => router.push('/(host)/listings')} />
+          <Text style={styles.sectionTitle}>{t('listings', language)}</Text>
+          <MenuItem label={`🚗 ${t('myVehicles', language)}`} onPress={() => router.push('/(host)/listings')} />
           <Divider />
-          <MenuItem label="➕ List something new" onPress={() => router.push('/(host)/listings/new')} />
+          <MenuItem label={`➕ ${t('listSomethingNew', language)}`} onPress={() => router.push('/(host)/listings/new')} />
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <MenuItem label="🔗 Connected Platforms" onPress={() => router.push('/(consumer)/profile/connected-platforms' as Parameters<typeof router.push>[0])} />
+          <Text style={styles.sectionTitle}>{t('sectionAccount', language)}</Text>
+          <MenuItem label={`🔗 ${t('connectedPlatforms', language)}`} onPress={() => router.push('/(consumer)/profile/connected-platforms' as Parameters<typeof router.push>[0])} />
           <Divider />
           <MenuItem label="🪪 Identity verification" onPress={() => router.push('/(consumer)/profile/verify' as Parameters<typeof router.push>[0])} />
           <Divider />
           <MenuItem
-            label={hostData?.stripe_onboarded ? '💳 Payout settings' : '💳 Set up payouts'}
+            label={`💳 ${t('payoutSettings', language)}`}
             onPress={() => Alert.alert('Payout Setup', 'Configure your bank account for payouts at dashboard.rentivo.app → Payouts', [{ text: 'OK' }])}
           />
           <Divider />
@@ -124,7 +124,7 @@ export default function HostProfileScreen() {
         )}
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Language</Text>
+          <Text style={styles.sectionTitle}>{t('sectionLanguage', language)}</Text>
           <View style={styles.langRow}>
             {(['en', 'es', 'hu'] as const).map(lang => (
               <TouchableOpacity
@@ -141,16 +141,16 @@ export default function HostProfileScreen() {
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Legal</Text>
-          <MenuItem label="📄 Terms of Service" onPress={() => {}} />
+          <Text style={styles.sectionTitle}>{t('sectionLegal', language)}</Text>
+          <MenuItem label={`📄 ${t('termsOfService', language)}`} onPress={() => {}} />
           <Divider />
-          <MenuItem label="🔒 Privacy Policy" onPress={() => {}} />
+          <MenuItem label={`🔒 ${t('privacyPolicy', language)}`} onPress={() => {}} />
           <Divider />
-          <MenuItem label="❓ Help & Support" onPress={() => {}} />
+          <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={() => {}} />
         </Card>
 
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Sign out</Text>
+          <Text style={styles.signOutText}>{t('signOut', language)}</Text>
         </TouchableOpacity>
 
         <Text style={styles.appVersion}>Rentivo v1.0.0</Text>

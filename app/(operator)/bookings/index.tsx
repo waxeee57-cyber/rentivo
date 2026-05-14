@@ -14,14 +14,15 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { updateBookingStatus } from '@/lib/api/bookings'
 import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
+import { t, type TranslationKey } from '@/constants/i18n'
 import type { BookingStatus } from '@/types'
 
 type Tab = 'pending' | 'confirmed' | 'active' | 'completed'
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'pending', label: 'New' },
-  { key: 'confirmed', label: 'Confirmed' },
-  { key: 'active', label: 'Active' },
-  { key: 'completed', label: 'Completed' },
+const TABS: { key: Tab; labelKey: TranslationKey }[] = [
+  { key: 'pending', labelKey: 'tabNew' },
+  { key: 'confirmed', labelKey: 'confirmed' },
+  { key: 'active', labelKey: 'active' },
+  { key: 'completed', labelKey: 'tabCompleted' },
 ]
 
 const EMPTY_MESSAGES: Record<Tab, { emoji: string; title: string; subtitle: string }> = {
@@ -48,7 +49,7 @@ const EMPTY_MESSAGES: Record<Tab, { emoji: string; title: string; subtitle: stri
 }
 
 export default function OperatorBookingsScreen() {
-  const { operator } = useAuthStore()
+  const { operator, language } = useAuthStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? null)
   const { bookings, loading, refetch } = useOperatorBookings(opId)
   const { showToast } = useToastStore()
@@ -99,7 +100,7 @@ export default function OperatorBookingsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.title}>Bookings</Text>
+      <Text style={styles.title}>{t('bookings', language)}</Text>
 
       <View style={styles.tabs}>
         {TABS.map(tab => {
@@ -111,7 +112,7 @@ export default function OperatorBookingsScreen() {
               onPress={() => setActiveTab(tab.key)}
             >
               <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-                {tab.label}
+                {t(tab.labelKey, language)}
               </Text>
               {tab.key === 'pending' && count > 0 && (
                 <View style={[styles.tabBadge, activeTab === tab.key && styles.tabBadgeActive]}>

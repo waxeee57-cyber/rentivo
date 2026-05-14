@@ -3,6 +3,8 @@ import { View, StyleSheet } from 'react-native'
 import { Spacing } from '@/constants/colors'
 import { RevenueCard } from '@/components/operator/RevenueCard'
 import { formatEUR } from '@/lib/utils/formatCurrency'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 import type { Booking } from '@/types'
 
 interface QuickStatsProps {
@@ -11,6 +13,7 @@ interface QuickStatsProps {
 }
 
 export function QuickStats({ bookings, totalVehicles }: QuickStatsProps) {
+  const { language } = useAuthStore()
   const today = new Date().toISOString().split('T')[0]
   const todayBookings = bookings.filter(b =>
     b.start_date === today && b.status !== 'cancelled',
@@ -30,12 +33,12 @@ export function QuickStats({ bookings, totalVehicles }: QuickStatsProps) {
     <View style={styles.row}>
       <RevenueCard
         emoji="📅"
-        label="Today's pickups"
+        label={t('todaysPickups', language)}
         value={todayBookings === 0 ? '☀️ Free' : String(todayBookings)}
       />
-      <RevenueCard emoji="💰" label="Month revenue" value={formatEUR(monthRevenue)} />
-      <RevenueCard emoji="🚗" label="Active rentals" value={String(activeRentals)} />
-      <RevenueCard emoji="📊" label="Utilization" value={`${utilization}%`} />
+      <RevenueCard emoji="💰" label={t('monthRevenue', language)} value={formatEUR(monthRevenue)} />
+      <RevenueCard emoji="🚗" label={t('activeRentals', language)} value={String(activeRentals)} />
+      <RevenueCard emoji="📊" label={t('utilizationStat', language)} value={`${utilization}%`} />
     </View>
   )
 }

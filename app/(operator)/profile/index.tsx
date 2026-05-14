@@ -61,13 +61,13 @@ export default function OperatorProfileScreen() {
       )}
 
       <Card style={styles.card}>
-        <MenuItem label="🔗 Connected Platforms" onPress={() => router.push('/(consumer)/profile/connected-platforms' as Parameters<typeof router.push>[0])} />
+        <MenuItem label={`🔗 ${t('connectedPlatforms', language)}`} onPress={() => router.push('/(consumer)/profile/connected-platforms' as Parameters<typeof router.push>[0])} />
         <Divider />
-        <MenuItem label="Business settings" onPress={() => Alert.alert('Business Settings', 'Manage your business profile, VAT number, and documents in the web dashboard at dashboard.rentivo.app', [{ text: 'OK' }])} />
+        <MenuItem label={t('businessSettings', language)} onPress={() => Alert.alert('Business Settings', 'Manage your business profile, VAT number, and documents in the web dashboard at dashboard.rentivo.app', [{ text: 'OK' }])} />
         <Divider />
-        <MenuItem label="Payout settings" onPress={() => Alert.alert('Payout Settings', 'Configure your bank account and payout schedule at dashboard.rentivo.app → Payouts', [{ text: 'OK' }])} />
+        <MenuItem label={t('payoutSettings', language)} onPress={() => Alert.alert('Payout Settings', 'Configure your bank account and payout schedule at dashboard.rentivo.app → Payouts', [{ text: 'OK' }])} />
         <Divider />
-        <MenuItem label="Help & Support" onPress={() => Alert.alert('Help & Support', 'Email us at support@rentivo.app\n\nResponse time: within 24 hours', [{ text: 'OK' }])} />
+        <MenuItem label={t('helpSupport', language)} onPress={() => Alert.alert('Help & Support', 'Email us at support@rentivo.app\n\nResponse time: within 24 hours', [{ text: 'OK' }])} />
       </Card>
 
       <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>

@@ -14,7 +14,7 @@ export function RevenueCard({ label, value, sub, emoji }: RevenueCardProps) {
     <View style={styles.card}>
       {emoji && <Text style={styles.emoji}>{emoji}</Text>}
       <Text style={styles.value}>{value}</Text>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{label}</Text>
       {sub && <Text style={styles.sub}>{sub}</Text>}
     </View>
   )

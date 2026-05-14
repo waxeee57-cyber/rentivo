@@ -15,6 +15,7 @@ import { useNotificationStore } from '@/lib/store/useNotificationStore'
 import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
 import { formatEUR } from '@/lib/utils/formatCurrency'
+import { t } from '@/constants/i18n'
 
 const MOCK_REVENUE_BARS = [
   { label: 'Fri', revenue: 85 },
@@ -165,14 +166,15 @@ const qaStyles = StyleSheet.create({
 })
 
 export default function DashboardScreen() {
-  const { operator } = useAuthStore()
+  const { operator, language } = useAuthStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? null)
   const { bookings, loading, error } = useOperatorBookings(opId)
   const { fleet } = useFleet(opId)
   const { unreadCount } = useNotificationStore()
 
   const opName = Config.useMock ? MOCK_OPERATOR.name : (operator?.name ?? 'Operator')
-  const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 18 ? 'Good afternoon' : 'Good evening'
+  const hour = new Date().getHours()
+  const greeting = t(hour < 12 ? 'goodMorning' : hour < 18 ? 'goodAfternoon' : 'goodEvening', language)
   const today = new Date().toISOString().split('T')[0]
 
   const pendingCount = bookings.filter(b => b.status === 'pending').length
@@ -190,18 +192,18 @@ export default function DashboardScreen() {
         <View style={styles.quickActions}>
           <QuickActionCard
             icon="＋"
-            label="Add vehicle"
+            label={t('addVehicle', language)}
             route="/(operator)/fleet/new"
           />
           <QuickActionCard
             icon="📋"
-            label="Bookings"
+            label={t('bookings', language)}
             route="/(operator)/bookings"
             badge={pendingCount}
           />
           <QuickActionCard
             icon="💬"
-            label="Messages"
+            label={t('messages', language)}
             route="/(operator)/messages"
             badge={unreadCount > 0 ? unreadCount : undefined}
           />
@@ -215,7 +217,7 @@ export default function DashboardScreen() {
 
         {/* 7-day revenue sparkline */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Revenue — last 7 days</Text>
+          <Text style={styles.sectionTitle}>{t('revenueLast7', language)}</Text>
           <View style={styles.card}>
             <RevenueSparkline bookings={bookings.map(b => ({ total_amount: b.total_amount, start_date: b.start_date }))} />
           </View>
@@ -224,7 +226,7 @@ export default function DashboardScreen() {
         {/* Today's schedule */}
         {(todayPickups.length > 0 || todayReturns.length > 0) ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Today's Schedule</Text>
+            <Text style={styles.sectionTitle}>{t('todaysSchedule', language)}</Text>
             {todayPickups.length > 0 && (
               <>
                 <View style={styles.scheduleLabel}>
@@ -256,27 +258,27 @@ export default function DashboardScreen() {
           </View>
         ) : (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Today's Schedule</Text>
+            <Text style={styles.sectionTitle}>{t('todaysSchedule', language)}</Text>
             <View style={[styles.card, styles.emptySchedule]}>
               <Text style={styles.emptyScheduleEmoji}>☀️</Text>
-              <Text style={styles.emptyScheduleText}>No pickups or returns today</Text>
+              <Text style={styles.emptyScheduleText}>{t('noPickupsToday', language)}</Text>
             </View>
           </View>
         )}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Bookings</Text>
+          <Text style={styles.sectionTitle}>{t('recentBookings', language)}</Text>
           {loading
             ? Array(3).fill(null).map((_, i) => <SkeletonCard key={i} />)
             : bookings.length === 0 ? (
               <View style={[styles.card, styles.emptySchedule]}>
                 <Text style={styles.emptyScheduleEmoji}>📅</Text>
-                <Text style={styles.emptyScheduleText}>No bookings yet</Text>
+                <Text style={styles.emptyScheduleText}>{t('noBookingsYet', language)}</Text>
                 <TouchableOpacity
                   onPress={() => router.push('/(operator)/fleet/new' as Parameters<typeof router.push>[0])}
                   style={styles.emptyAction}
                 >
-                  <Text style={styles.emptyActionText}>+ Add your first vehicle</Text>
+                  <Text style={styles.emptyActionText}>{t('addFirstVehicle', language)}</Text>
                 </TouchableOpacity>
               </View>
             ) : bookings.slice(0, 5).map(b => (
