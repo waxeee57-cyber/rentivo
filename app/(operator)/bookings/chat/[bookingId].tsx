@@ -13,6 +13,7 @@ import { useBooking } from '@/lib/hooks/useBookings'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
 import { MOCK_CONVERSATIONS, MOCK_MESSAGES } from '@/lib/mockData'
+import { sendChatNotification } from '@/lib/notifications'
 import type { Message, Conversation } from '@/types'
 import { format } from 'date-fns'
 
@@ -114,6 +115,7 @@ export default function OperatorChatScreen() {
         created_at: new Date().toISOString(),
       }
       setMessages(prev => [newMsg, ...prev])
+      sendChatNotification('consumer', booking?.operator?.name ?? 'CostaSol Car Rent', text, true)
       setSending(false)
       return
     }
@@ -147,6 +149,7 @@ export default function OperatorChatScreen() {
         .from('rentivo_conversations')
         .update({ last_message: text, last_message_at: new Date().toISOString(), unread_consumer: (conversation?.unread_consumer ?? 0) + 1 })
         .eq('id', convId)
+      sendChatNotification('consumer', booking?.operator?.name ?? 'CostaSol Car Rent', text, false)
     } finally {
       setSending(false)
     }

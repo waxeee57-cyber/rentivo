@@ -1,11 +1,13 @@
 import { Tabs } from 'expo-router'
 import { Colors } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useNotificationStore } from '@/lib/store/useNotificationStore'
 import { t } from '@/constants/i18n'
 import { Ionicons } from '@expo/vector-icons'
 
 export default function OperatorLayout() {
   const { language } = useAuthStore()
+  const { operatorUnreadCount } = useNotificationStore()
   return (
     <Tabs
       screenOptions={{
@@ -44,6 +46,17 @@ export default function OperatorLayout() {
         options={{
           title: t('fleet', language),
           tabBarIcon: ({ color }) => <Ionicons name="car-outline" size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="messages/index"
+        options={{
+          title: 'Messages',
+          tabBarBadge: operatorUnreadCount > 0 ? operatorUnreadCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: Colors.error, fontSize: 10 },
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'chatbubble' : 'chatbubble-outline'} size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen

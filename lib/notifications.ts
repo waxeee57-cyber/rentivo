@@ -67,6 +67,21 @@ export type NotificationType =
   | 'new_booking'
   | 'rental_completed'
 
+export function sendChatNotification(
+  to: 'operator' | 'consumer',
+  senderName: string,
+  preview: string,
+  isMock: boolean,
+): void {
+  const body = preview.length > 80 ? preview.slice(0, 80) + '…' : preview
+  if (isMock) {
+    console.log(`[Push → ${to}] 💬 ${senderName}: ${body}`)
+    return
+  }
+  // Production: deliver via Expo Push API through backend
+  // getNotificationContent('new_message', { sender: senderName, message: preview })
+}
+
 export function getNotificationContent(
   type: NotificationType,
   data: Record<string, string>,

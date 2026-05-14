@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics'
 import { Colors } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
+import { MOCK_CONVERSATIONS } from '@/lib/mockData'
 import { t } from '@/constants/i18n'
 
 function TabIcon({ name, focused, size = 24 }: {
@@ -35,6 +36,8 @@ const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Ligh
 export default function ConsumerLayout() {
   const { language } = useAuthStore()
   const { unreadCount } = useNotificationStore()
+  const consumerChatUnread = MOCK_CONVERSATIONS.reduce((sum, c) => sum + (c.unread_consumer ?? 0), 0)
+  const bookingsBadge = unreadCount + consumerChatUnread
 
   return (
     <Tabs
@@ -83,7 +86,7 @@ export default function ConsumerLayout() {
         name="bookings/index"
         options={{
           title: t('bookings', language),
-          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+          tabBarBadge: bookingsBadge > 0 ? bookingsBadge : undefined,
           tabBarBadgeStyle: { backgroundColor: Colors.error, fontSize: 10 },
           tabBarIcon: ({ focused }) => (
             <TabIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} />
