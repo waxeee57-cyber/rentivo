@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
+import React, { useMemo, useEffect, useRef } from 'react'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { subDays, format } from 'date-fns'
@@ -16,8 +16,19 @@ import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
 import { formatEUR } from '@/lib/utils/formatCurrency'
 
+const MOCK_REVENUE_BARS = [
+  { label: 'Fri', revenue: 85 },
+  { label: 'Sat', revenue: 130 },
+  { label: 'Sun', revenue: 170 },
+  { label: 'Mon', revenue: 45 },
+  { label: 'Tue', revenue: 95 },
+  { label: 'Wed', revenue: 154 },
+  { label: 'Thu', revenue: 60 },
+]
+
 function RevenueSparkline({ bookings }: { bookings: { total_amount: number; start_date: string }[] }) {
   const bars = useMemo(() => {
+    if (Config.useMock) return MOCK_REVENUE_BARS
     const today = new Date()
     return Array.from({ length: 7 }, (_, i) => {
       const d = subDays(today, 6 - i)
@@ -80,18 +91,34 @@ interface QuickActionCardProps {
 }
 
 function QuickActionCard({ icon, label, route, badge }: QuickActionCardProps) {
+  const pulseAnim = useRef(new Animated.Value(1)).current
+
+  useEffect(() => {
+    if (badge != null && badge > 0) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.15, duration: 300, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 300, useNativeDriver: true }),
+        ]),
+        { iterations: 3 },
+      ).start()
+    }
+  }, [badge])
+
   return (
     <TouchableOpacity
       style={qaStyles.card}
       onPress={() => router.push(route as Parameters<typeof router.push>[0])}
       activeOpacity={0.8}
+      accessibilityLabel={label}
+      accessibilityRole="button"
     >
       <View style={qaStyles.iconWrap}>
         <Text style={qaStyles.icon}>{icon}</Text>
         {badge != null && badge > 0 && (
-          <View style={qaStyles.badge}>
+          <Animated.View style={[qaStyles.badge, { transform: [{ scale: pulseAnim }] }]}>
             <Text style={qaStyles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
-          </View>
+          </Animated.View>
         )}
       </View>
       <Text style={qaStyles.label} numberOfLines={1}>{label}</Text>
@@ -125,7 +152,7 @@ const qaStyles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -8,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.error,
     borderRadius: 9,
     minWidth: 18,
     height: 18,
@@ -278,7 +305,7 @@ const styles = StyleSheet.create({
   section: { marginTop: Spacing.xl },
   sectionTitle: {
     fontSize: 13, fontWeight: '700', textTransform: 'uppercase',
-    letterSpacing: 0.5, color: Colors.textTertiary, marginBottom: Spacing.md,
+    letterSpacing: 0.5, color: Colors.textSecondary, marginBottom: Spacing.md,
   },
   card: {
     backgroundColor: Colors.surface,

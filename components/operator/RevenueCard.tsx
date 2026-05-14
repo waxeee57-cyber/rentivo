@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   emoji: { fontSize: 20, marginBottom: Spacing.xs },
-  value: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: 2 },
-  label: { fontSize: 11, color: Colors.textTertiary, textAlign: 'center' },
-  sub: { fontSize: 10, color: Colors.textTertiary, textAlign: 'center', marginTop: 2 },
+  value: { fontSize: 20, fontWeight: '800', color: Colors.text, marginBottom: 2 },
+  label: { fontSize: 13, color: Colors.textTertiary, textAlign: 'center' },
+  sub: { fontSize: 11, color: Colors.textTertiary, textAlign: 'center', marginTop: 2 },
 })

@@ -28,7 +28,11 @@ export function QuickStats({ bookings, totalVehicles }: QuickStatsProps) {
 
   return (
     <View style={styles.row}>
-      <RevenueCard emoji="📅" label="Today's pickups" value={String(todayBookings)} />
+      <RevenueCard
+        emoji="📅"
+        label="Today's pickups"
+        value={todayBookings === 0 ? '☀️ Free' : String(todayBookings)}
+      />
       <RevenueCard emoji="💰" label="Month revenue" value={formatEUR(monthRevenue)} />
       <RevenueCard emoji="🚗" label="Active rentals" value={String(activeRentals)} />
       <RevenueCard emoji="📊" label="Utilization" value={`${utilization}%`} />

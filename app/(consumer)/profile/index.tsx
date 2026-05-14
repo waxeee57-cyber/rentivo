@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Animated } from 'react-native'
+import React from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import type { Href } from 'expo-router'
@@ -9,39 +9,12 @@ import { Card } from '@/components/ui/Card'
 import { Divider } from '@/components/ui/Divider'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useBookings } from '@/lib/hooks/useBookings'
+import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
-
-function AnimatedStat({ value, label }: { value: number; label: string }) {
-  const displayValue = useRef(0)
-  const anim = useRef(new Animated.Value(0)).current
-  const [display, setDisplay] = React.useState(0)
-
-  useEffect(() => {
-    Animated.timing(anim, {
-      toValue: value,
-      duration: 800,
-      useNativeDriver: false,
-    }).start()
-    const id = anim.addListener(({ value: v }) => {
-      const rounded = Math.round(v)
-      if (rounded !== displayValue.current) {
-        displayValue.current = rounded
-        setDisplay(rounded)
-      }
-    })
-    return () => anim.removeListener(id)
-  }, [value])
-
-  return (
-    <View style={styles.statItem}>
-      <Text style={styles.statNum}>{display}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  )
-}
 
 export default function ProfileScreen() {
   const { user, operator, role, signOut, language, setLanguage } = useAuthStore()
+  const { showToast } = useToastStore()
   const name = Config.useMock ? 'Test User' : (user?.name ?? operator?.name ?? 'User')
   const email = Config.useMock ? 'test@example.com' : (user?.email ?? operator?.email ?? '')
   const userId = Config.useMock ? 'usr-001' : (user?.id ?? null)
@@ -69,9 +42,25 @@ export default function ProfileScreen() {
 
           {/* Stats row with animated counters */}
           <View style={styles.statsRow}>
-            <AnimatedStat value={tripCount} label="Trips" />
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => router.push('/(consumer)/bookings' as Href)}
+              accessibilityLabel={`${tripCount} trips — tap to view bookings`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.statNum}>{tripCount}</Text>
+              <Text style={styles.statLabel}>Trips</Text>
+            </TouchableOpacity>
             <View style={styles.statDivider} />
-            <AnimatedStat value={reviewCount} label="Reviews" />
+            <TouchableOpacity
+              style={styles.statItem}
+              onPress={() => showToast({ message: 'Your reviews coming soon', type: 'info' })}
+              accessibilityLabel={`${reviewCount} reviews`}
+              accessibilityRole="button"
+            >
+              <Text style={styles.statNum}>{reviewCount}</Text>
+              <Text style={styles.statLabel}>Reviews</Text>
+            </TouchableOpacity>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statNum}>★{avgRating}</Text>

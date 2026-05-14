@@ -5,6 +5,9 @@ import * as Haptics from 'expo-haptics'
 import { Colors } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
+import { useOperatorBookings } from '@/lib/hooks/useOperatorBookings'
+import { Config } from '@/constants/config'
+import { MOCK_OPERATOR } from '@/lib/mockData'
 import { t } from '@/constants/i18n'
 
 function TabIcon({ name, focused, size = 24 }: {
@@ -33,8 +36,11 @@ const tabIconStyles = StyleSheet.create({
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
 
 export default function OperatorLayout() {
-  const { language } = useAuthStore()
+  const { language, operator } = useAuthStore()
   const { operatorUnreadCount } = useNotificationStore()
+  const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? null)
+  const { bookings } = useOperatorBookings(opId)
+  const pendingCount = bookings.filter(b => b.status === 'pending').length
   return (
     <Tabs
       screenOptions={{
@@ -72,6 +78,8 @@ export default function OperatorLayout() {
         name="bookings"
         options={{
           title: t('bookings', language),
+          tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
+          tabBarBadgeStyle: { backgroundColor: Colors.error, fontSize: 10 },
           tabBarIcon: ({ focused }) => (
             <TabIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} />
           ),
@@ -113,9 +121,11 @@ export default function OperatorLayout() {
       {/* Hidden screens */}
       <Tabs.Screen name="bookings/[id]" options={{ href: null }} />
       <Tabs.Screen name="bookings/chat/[bookingId]" options={{ href: null }} />
+      <Tabs.Screen name="bookings/calendar" options={{ href: null }} />
       <Tabs.Screen name="fleet/new" options={{ href: null }} />
       <Tabs.Screen name="fleet/[id]" options={{ href: null }} />
       <Tabs.Screen name="damage/[bookingId]" options={{ href: null }} />
+      <Tabs.Screen name="profile/team" options={{ href: null }} />
     </Tabs>
   )
 }

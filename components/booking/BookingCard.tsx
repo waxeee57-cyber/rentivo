@@ -165,17 +165,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.success,
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
   },
   operatorText: {
-    fontSize: 12,
-    color: Colors.textTertiary,
+    fontSize: 14,
+    color: Colors.text,
     marginBottom: 2,
   },
   dates: {
-    ...Typography.bodyS,
-    color: Colors.textSecondary,
+    fontSize: 15,
+    color: Colors.text,
+    lineHeight: 20,
     marginBottom: 6,
   },
   bottomRow: {

@@ -83,6 +83,20 @@ export default function ConsumerLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
+        name="wishlist"
+        options={{
+          title: 'Wishlist',
+          tabBarIcon: ({ focused }) => (
+            <Ionicons
+              name={focused ? 'heart' : 'heart-outline'}
+              size={24}
+              color={focused ? Colors.primary : Colors.textTertiary}
+            />
+          ),
+        }}
+        listeners={{ tabPress: triggerHaptic }}
+      />
+      <Tabs.Screen
         name="bookings"
         options={{
           title: t('bookings', language),

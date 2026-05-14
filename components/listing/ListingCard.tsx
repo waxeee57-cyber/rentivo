@@ -68,13 +68,7 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
 
   const isFull = variant === 'full'
 
-  // Urgency signals (Task 27)
-  const urgencySignal = (() => {
-    if (listing.booking_count != null && listing.booking_count >= 3) {
-      return `⚡ Booked ${listing.booking_count}x today`
-    }
-    return null
-  })()
+  // Urgency signals shown on detail page only
 
   return (
     <>
@@ -86,7 +80,7 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
           onLongPress={handleLongPress}
           delayLongPress={400}
           activeOpacity={1}
-          accessibilityLabel={`${listing.title}, ${formatEUR(listing.price_per_day)} per day`}
+          accessibilityLabel={`${listing.title}, ${formatEUR(listing.price_per_day)} per day, ${listing.operator?.city ?? listing.host?.city ?? ''}`}
           accessibilityRole="button"
           accessibilityHint="Double tap to view details, long press for options"
         >
@@ -112,7 +106,7 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
             )}
             {!showAvailableBadge && listing.instant_book && (
               <View style={styles.availableBadge}>
-                <Text style={styles.availableBadgeText}>⚡ Instant book</Text>
+                <Text style={styles.availableBadgeText}>⚡ Available now</Text>
               </View>
             )}
             {/* Heart button — connected to wishlist store */}
@@ -151,10 +145,6 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
                   {getCancellationPolicyEmoji(listing.cancellation_policy)} {getCancellationPolicyLabel(listing.cancellation_policy)}
                 </Text>
               </View>
-            )}
-            {/* Urgency signal */}
-            {urgencySignal && (
-              <Text style={styles.urgency}>{urgencySignal}</Text>
             )}
             <View style={styles.priceRow}>
               <Text style={styles.price}>{formatEUR(listing.price_per_day)}</Text>
@@ -245,16 +235,15 @@ const styles = StyleSheet.create({
   heart: { fontSize: 16 },
   info: { padding: Spacing.base, paddingBottom: Spacing.base },
   title: { ...Typography.h4, color: Colors.text, marginBottom: 4 },
-  operator: { ...Typography.bodyS, color: Colors.textSecondary, marginBottom: 6 },
+  operator: { fontSize: 14, color: Colors.text, marginBottom: 6 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  rentalCount: { fontSize: 12, color: Colors.textTertiary },
+  rentalCount: { fontSize: 14, color: Colors.textSecondary },
   policyRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   policyDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.success },
-  policyText: { fontSize: 12, color: Colors.textSecondary },
-  urgency: { fontSize: 11, color: Colors.warning, fontWeight: '600', marginBottom: 6 },
+  policyText: { fontSize: 13, color: Colors.textSecondary },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
   price: { ...Typography.priceS, color: Colors.primary },
-  priceUnit: { fontSize: 13, color: Colors.textSecondary },
+  priceUnit: { fontSize: 15, color: Colors.textSecondary },
 })
 
 const contextStyles = StyleSheet.create({

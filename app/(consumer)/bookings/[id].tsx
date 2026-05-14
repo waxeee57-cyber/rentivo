@@ -191,10 +191,28 @@ export default function BookingDetailScreen() {
           />
         )}
 
+        {/* View contract */}
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => {
+            if (booking.status === 'confirmed' || booking.status === 'active' || booking.status === 'completed') {
+              showToast({ message: 'Contract download coming soon', type: 'info' })
+            } else {
+              showToast({ message: 'Contract available after confirmation', type: 'info' })
+            }
+          }}
+          accessibilityLabel="View rental contract"
+          accessibilityRole="button"
+        >
+          <Text style={styles.actionBtnText}>📄 View Contract</Text>
+        </TouchableOpacity>
+
         {/* Message operator */}
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => router.push(`/(consumer)/bookings/chat/${booking.id}`)}
+          accessibilityLabel="Message operator"
+          accessibilityRole="button"
         >
           <Text style={styles.actionBtnText}>💬 Message Operator</Text>
         </TouchableOpacity>
@@ -250,8 +268,8 @@ const styles = StyleSheet.create({
   },
   statusText: { fontSize: 15, fontWeight: '700' },
   vehicleTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  operatorName: { fontSize: 13, color: Colors.textSecondary, marginBottom: 4 },
-  dates: { fontSize: 13, color: Colors.textTertiary },
+  operatorName: { fontSize: 15, color: Colors.text, fontWeight: '500', marginBottom: 4 },
+  dates: { fontSize: 15, color: Colors.text },
   sectionTitle: { fontSize: 12, fontWeight: '700', color: Colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
   priceLabel: { fontSize: 14, color: Colors.textSecondary },
