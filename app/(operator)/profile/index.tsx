@@ -60,6 +60,8 @@ export default function OperatorProfileScreen() {
       )}
 
       <Card style={styles.card}>
+        <MenuItem label="🔗 Connected Platforms" onPress={() => router.push('/(consumer)/profile/connected-platforms' as Parameters<typeof router.push>[0])} />
+        <Divider />
         <MenuItem label="Business settings" onPress={() => Alert.alert('Business Settings', 'Manage your business profile, VAT number, and documents in the web dashboard at dashboard.rentivo.app', [{ text: 'OK' }])} />
         <Divider />
         <MenuItem label="Payout settings" onPress={() => Alert.alert('Payout Settings', 'Configure your bank account and payout schedule at dashboard.rentivo.app → Payouts', [{ text: 'OK' }])} />

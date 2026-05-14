@@ -84,6 +84,8 @@ export default function HostProfileScreen() {
 
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>Account</Text>
+          <MenuItem label="🔗 Connected Platforms" onPress={() => router.push('/(consumer)/profile/connected-platforms' as Parameters<typeof router.push>[0])} />
+          <Divider />
           <MenuItem label="🪪 Identity verification" onPress={() => router.push('/(consumer)/profile/verify' as Parameters<typeof router.push>[0])} />
           <Divider />
           <MenuItem

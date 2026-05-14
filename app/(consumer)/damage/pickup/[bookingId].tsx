@@ -53,9 +53,25 @@ export default function PickupDamageScreen() {
     setPhotos(prev => ({ ...prev, [slot]: uri }))
   }
 
+  const REQUIRED_SLOTS: PhotoSlot[] = ['front', 'back', 'left', 'right', 'interior', 'extra']
+
   const handleNext = () => {
+    if (step === 1) {
+      const missing = REQUIRED_SLOTS.filter(s => !photos[s])
+      if (missing.length > 0) {
+        showToast({ message: `Please take all 6 photos (${missing.length} remaining)`, type: 'error' })
+        return
+      }
+    }
+    if (step === 3) {
+      if (!operatorSig || !consumerSig) {
+        showToast({ message: 'Both signatures required before submitting.', type: 'error' })
+        return
+      }
+      setShowConfirm(true)
+      return
+    }
     if (step < 3) setStep(s => s + 1)
-    else setShowConfirm(true)
   }
 
   const handleSubmit = async () => {

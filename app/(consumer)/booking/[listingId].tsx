@@ -21,11 +21,18 @@ import { Config } from '@/constants/config'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
 
+const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
+  const hour = 8 + Math.floor(i / 2)
+  const min = i % 2 === 0 ? '00' : '30'
+  return `${String(hour).padStart(2, '0')}:${min}`
+})
+
 export default function BookingFlowScreen() {
   const { listingId } = useLocalSearchParams<{ listingId: string }>()
   const { listing, loading } = useListing(listingId ?? '')
   const { language } = useAuthStore()
   const [step, setStep] = useState(1)
+  const [pickupTime, setPickupTime] = useState('10:00')
   const [guestName, setGuestName] = useState(Config.useMock ? 'Test User' : '')
   const [guestPhone, setGuestPhone] = useState(Config.useMock ? '+36701234567' : '')
   const [guestEmail, setGuestEmail] = useState(Config.useMock ? 'test@example.com' : '')
@@ -155,9 +162,33 @@ export default function BookingFlowScreen() {
               multiline numberOfLines={3}
             />
 
+            {/* Pickup time selector */}
+            <Text style={styles.formTitle}>
+              {language === 'es' ? 'Hora de recogida' : language === 'hu' ? 'Átvétel időpontja' : 'Pickup time'}
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.timeSlots}
+              style={{ marginBottom: Spacing.md }}
+            >
+              {TIME_SLOTS.map(slot => (
+                <TouchableOpacity
+                  key={slot}
+                  style={[styles.timeSlot, pickupTime === slot && styles.timeSlotActive]}
+                  onPress={() => setPickupTime(slot)}
+                >
+                  <Text style={[styles.timeSlotText, pickupTime === slot && styles.timeSlotTextActive]}>
+                    {slot}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
             <Button
               title={t('continueToPayment', language) + ' →'}
               onPress={() => setStep(2)}
+              disabled={!guestName.trim() || !guestPhone.trim()}
               fullWidth
               style={{ marginTop: Spacing.md }}
             />
@@ -261,6 +292,18 @@ const styles = StyleSheet.create({
   guestRecapTitle: { fontSize: 11, fontWeight: '700', color: Colors.textTertiary, textTransform: 'uppercase', marginBottom: 4 },
   guestRecapName: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 2 },
   guestRecapContact: { fontSize: 13, color: Colors.textSecondary },
+  timeSlots: { gap: Spacing.sm, paddingVertical: Spacing.xs },
+  timeSlot: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  timeSlotActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  timeSlotText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
+  timeSlotTextActive: { color: Colors.textInverse },
   stripeNote: { fontSize: 16, fontWeight: '600', color: Colors.text, textAlign: 'center' },
   stripeNote2: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginTop: 4 },
   secureNote: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginTop: Spacing.sm },

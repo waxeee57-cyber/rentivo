@@ -27,16 +27,16 @@ const PLATFORMS: Platform[] = [
   { key: 'vrbo', label: 'VRBO', emoji: '🏖️' },
   { key: 'turo', label: 'Turo', emoji: '🚗' },
   { key: 'holidu', label: 'Holidu', emoji: '🌴' },
-  { key: 'other', label: 'Egyéb', emoji: '🔗' },
+  { key: 'other', label: 'Other', emoji: '🔗' },
 ]
 
 const CATEGORIES = [
-  { key: 'car', label: 'Autó', emoji: '🚗' },
-  { key: 'motorcycle', label: 'Motor', emoji: '🏍️' },
-  { key: 'yacht', label: 'Csónak', emoji: '⛵' },
+  { key: 'car', label: 'Car', emoji: '🚗' },
+  { key: 'motorcycle', label: 'Motorcycle', emoji: '🏍️' },
+  { key: 'yacht', label: 'Boat', emoji: '⛵' },
   { key: 'villa', label: 'Villa', emoji: '🏡' },
-  { key: 'bike', label: 'Bringa', emoji: '🚲' },
-  { key: 'other', label: 'Egyéb', emoji: '📦' },
+  { key: 'bike', label: 'Bike', emoji: '🚲' },
+  { key: 'other', label: 'Other', emoji: '📦' },
 ]
 
 export default function AddExternalListingScreen() {
@@ -85,8 +85,8 @@ export default function AddExternalListingScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScreenHeader
-        title="Listing importálása"
-        subtitle={`${step}. lépés / 4`}
+        title="Import Listing"
+        subtitle={`Step ${step} of 4`}
         onBack={step === 1 ? () => router.back() : () => setStep(s => (s - 1) as Step)}
       />
 
@@ -101,9 +101,9 @@ export default function AddExternalListingScreen() {
         {/* STEP 1 — Platform választás */}
         {step === 1 && (
           <View>
-            <Text style={styles.stepTitle}>Melyik platformon van a listinged?</Text>
+            <Text style={styles.stepTitle}>Which platform is your listing on?</Text>
             <Text style={styles.stepSubtitle}>
-              Saját listingedet adod hozzá — a foglalás az eredeti platformon történik.
+              You're adding your own listing — bookings happen on the original platform.
             </Text>
             <View style={styles.platformGrid}>
               {PLATFORMS.map(p => (
@@ -125,12 +125,12 @@ export default function AddExternalListingScreen() {
         {/* STEP 2 — Alap adatok */}
         {step === 2 && (
           <View>
-            <Text style={styles.stepTitle}>Listing adatai</Text>
+            <Text style={styles.stepTitle}>Listing details</Text>
             <Text style={styles.stepSubtitle}>
-              Ezeket te töltöd ki — Rentivo nem gyűjt adatot a {platformLabel} oldaláról.
+              You fill these in — Rentivo does not scrape data from {platformLabel}.
             </Text>
 
-            <Text style={styles.fieldLabel}>Listing URL ({platformLabel})*</Text>
+            <Text style={styles.fieldLabel}>Listing URL ({platformLabel}) *</Text>
             <TextInput
               style={styles.input}
               value={listingUrl}
@@ -141,7 +141,7 @@ export default function AddExternalListingScreen() {
               keyboardType="url"
             />
 
-            <Text style={styles.fieldLabel}>Listing neve*</Text>
+            <Text style={styles.fieldLabel}>Listing name *</Text>
             <TextInput
               style={styles.input}
               value={title}
@@ -150,7 +150,7 @@ export default function AddExternalListingScreen() {
               placeholderTextColor={Colors.textTertiary}
             />
 
-            <Text style={styles.fieldLabel}>Kategória</Text>
+            <Text style={styles.fieldLabel}>Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
               <View style={styles.categoryRow}>
                 {CATEGORIES.map(c => (
@@ -167,22 +167,22 @@ export default function AddExternalListingScreen() {
               </View>
             </ScrollView>
 
-            <Text style={styles.fieldLabel}>Ár/nap (EUR, opcionális)</Text>
+            <Text style={styles.fieldLabel}>Price / day (EUR, optional)</Text>
             <TextInput
               style={styles.input}
               value={price}
               onChangeText={setPrice}
-              placeholder="pl. 85"
+              placeholder="e.g. 85"
               placeholderTextColor={Colors.textTertiary}
               keyboardType="numeric"
             />
 
-            <Text style={styles.fieldLabel}>Város*</Text>
+            <Text style={styles.fieldLabel}>City *</Text>
             <TextInput
               style={styles.input}
               value={city}
               onChangeText={setCity}
-              placeholder="pl. Marbella"
+              placeholder="e.g. Marbella"
               placeholderTextColor={Colors.textTertiary}
             />
           </View>
@@ -191,10 +191,10 @@ export default function AddExternalListingScreen() {
         {/* STEP 3 — iCal szinkronizáció */}
         {step === 3 && (
           <View>
-            <Text style={styles.stepTitle}>Elérhetőség szinkronizálás</Text>
+            <Text style={styles.stepTitle}>Availability sync</Text>
             <Text style={styles.stepSubtitle}>
-              Opcionális: ha megadod az iCal URL-t, a Rentivo automatikusan szinkronizálja
-              a foglalt napokat a {platformLabel} naptáradból.
+              Optional: provide your iCal URL and Rentivo will automatically sync
+              blocked dates from your {platformLabel} calendar.
             </Text>
 
             <TouchableOpacity
@@ -203,9 +203,9 @@ export default function AddExternalListingScreen() {
             >
               <Text style={styles.optionEmoji}>🔄</Text>
               <View style={styles.optionText}>
-                <Text style={styles.optionTitle}>Igen, szinkronizálom</Text>
+                <Text style={styles.optionTitle}>Yes, sync availability</Text>
                 <Text style={styles.optionDesc}>
-                  Automatikus frissítés 4 óránként — 0 dupla foglalás
+                  Auto-updates every 4 hours — 0 double bookings
                 </Text>
               </View>
             </TouchableOpacity>
@@ -216,8 +216,8 @@ export default function AddExternalListingScreen() {
             >
               <Text style={styles.optionEmoji}>⏭️</Text>
               <View style={styles.optionText}>
-                <Text style={styles.optionTitle}>Kihagyom most</Text>
-                <Text style={styles.optionDesc}>Később beállíthatod a listing szerkesztésekor</Text>
+                <Text style={styles.optionTitle}>Skip for now</Text>
+                <Text style={styles.optionDesc}>You can set this up later when editing the listing</Text>
               </View>
             </TouchableOpacity>
 
@@ -226,7 +226,7 @@ export default function AddExternalListingScreen() {
                 <View style={styles.icalLabelRow}>
                   <Text style={styles.fieldLabel}>iCal URL</Text>
                   <TouchableOpacity onPress={() => setShowIcalHelp(true)}>
-                    <Text style={styles.helpLink}>Hogyan találom meg? →</Text>
+                    <Text style={styles.helpLink}>How do I find it? →</Text>
                   </TouchableOpacity>
                 </View>
                 <TextInput
@@ -245,15 +245,15 @@ export default function AddExternalListingScreen() {
                 >
                   {icalTesting
                     ? <ActivityIndicator size="small" color={Colors.textInverse} />
-                    : <Text style={styles.testBtnText}>Tesztelés</Text>}
+                    : <Text style={styles.testBtnText}>Test connection</Text>}
                 </TouchableOpacity>
 
                 {icalResult !== null && (
                   <View style={[styles.icalResult, icalResult.error ? styles.icalResultError : styles.icalResultSuccess]}>
                     <Text style={[styles.icalResultText, icalResult.error ? styles.icalResultTextError : styles.icalResultTextSuccess]}>
                       {icalResult.error
-                        ? `Hiba: ${icalResult.error}`
-                        : `Sikeres! ${icalResult.synced} foglalt időszak szinkronizálva.`}
+                        ? `Error: ${icalResult.error}`
+                        : `Success! ${icalResult.synced} blocked dates synced.`}
                     </Text>
                   </View>
                 )}
@@ -266,19 +266,19 @@ export default function AddExternalListingScreen() {
         {step === 4 && (
           <View style={styles.successContainer}>
             <Text style={styles.successEmoji}>🎉</Text>
-            <Text style={styles.successTitle}>Listing közzétéve!</Text>
+            <Text style={styles.successTitle}>Listing published!</Text>
             <Text style={styles.successSubtitle}>
-              A listinged megjelenik a Rentivo explore oldalán.
-              Foglaláskor a vendéget a {platformLabel}-ra küldjük.
+              Your listing is now visible on Rentivo's explore page.
+              When guests book, they'll be directed to {platformLabel}.
             </Text>
 
             <View style={styles.infoBox}>
-              <Text style={styles.infoTitle}>Fontos tudnivalók</Text>
-              <Text style={styles.infoItem}>✅ A listing "{platformLabel} via Rentivo" badge-et kap</Text>
-              <Text style={styles.infoItem}>✅ A "Book" gomb a {platformLabel} oldalra vezet</Text>
-              <Text style={styles.infoItem}>✅ Rentivo nem kezeli a foglalást — te és a {platformLabel}</Text>
+              <Text style={styles.infoTitle}>What to expect</Text>
+              <Text style={styles.infoItem}>✅ Listing shows a "{platformLabel} via Rentivo" badge</Text>
+              <Text style={styles.infoItem}>✅ The "Book" button links to your {platformLabel} listing</Text>
+              <Text style={styles.infoItem}>✅ Rentivo does not handle the booking — {platformLabel} does</Text>
               {wantsIcal && icalResult?.error === null && (
-                <Text style={styles.infoItem}>✅ iCal szinkronizáció aktív (4 óránként)</Text>
+                <Text style={styles.infoItem}>✅ iCal sync active (updates every 4 hours)</Text>
               )}
             </View>
 
@@ -286,7 +286,7 @@ export default function AddExternalListingScreen() {
               style={styles.doneBtn}
               onPress={() => router.replace('/(host)/listings' as Parameters<typeof router.replace>[0])}
             >
-              <Text style={styles.doneBtnText}>Visszatérés a listingjeihez →</Text>
+              <Text style={styles.doneBtnText}>Back to my listings →</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -301,7 +301,7 @@ export default function AddExternalListingScreen() {
               disabled={!canProceedStep1}
               onPress={next}
             >
-              <Text style={styles.nextBtnText}>Tovább →</Text>
+              <Text style={styles.nextBtnText}>Next →</Text>
             </TouchableOpacity>
           )}
           {step === 2 && (
@@ -310,13 +310,13 @@ export default function AddExternalListingScreen() {
               disabled={!canProceedStep2}
               onPress={next}
             >
-              <Text style={styles.nextBtnText}>Tovább →</Text>
+              <Text style={styles.nextBtnText}>Next →</Text>
             </TouchableOpacity>
           )}
           {step === 3 && (
             <View>
               <Text style={styles.gdprText}>
-                Megerősítem, hogy saját listingemet adom hozzá, amelyhez jogom van.
+                I confirm this is my own listing and I have the right to add it.
               </Text>
               <TouchableOpacity
                 style={[styles.nextBtn, saving && styles.nextBtnDisabled]}
@@ -325,7 +325,7 @@ export default function AddExternalListingScreen() {
               >
                 {saving
                   ? <ActivityIndicator size="small" color={Colors.textInverse} />
-                  : <Text style={styles.nextBtnText}>Mentés és közzétevés</Text>}
+                  : <Text style={styles.nextBtnText}>Save and publish</Text>}
               </TouchableOpacity>
             </View>
           )}

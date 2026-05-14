@@ -302,6 +302,11 @@ export default function ListingDetailScreen() {
                 {Config.useMock && MOCK_REVIEWS.map(r => (
                   <ReviewCard key={r.id} review={r} userName="Test User" />
                 ))}
+                {listing.review_count > 2 && (
+                  <TouchableOpacity style={styles.seeAllReviews}>
+                    <Text style={styles.seeAllReviewsText}>See all {listing.review_count} reviews →</Text>
+                  </TouchableOpacity>
+                )}
               </View>
               <Divider />
             </>
@@ -607,6 +612,8 @@ const styles = StyleSheet.create({
 
   section: { marginVertical: Spacing.base },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md },
+  seeAllReviews: { marginTop: Spacing.sm, alignSelf: 'flex-start' },
+  seeAllReviewsText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
   sectionTitle: {
     fontSize: 12, fontWeight: '700',
     textTransform: 'uppercase', letterSpacing: 0.8,

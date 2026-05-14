@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import {
   View, Text, FlatList, TouchableOpacity, ScrollView,
-  StyleSheet, Dimensions, Platform, Animated,
+  StyleSheet, Dimensions, Platform, Animated, Modal, RefreshControl,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -70,6 +70,8 @@ export default function ExploreScreen() {
   const [source, setSource] = useState<'rentivo' | 'all'>('rentivo')
   const [allSourceListings, setAllSourceListings] = useState<AnyListing[]>([])
   const [allSourceLoading, setAllSourceLoading] = useState(false)
+  const [showFilterSheet, setShowFilterSheet] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const mapRef = useRef<typeof MapView extends null ? never : InstanceType<NonNullable<typeof MapView>>>(null)
 
   const { latitude, longitude } = useLocation()
@@ -140,6 +142,12 @@ export default function ExploreScreen() {
     }
   }
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await new Promise(r => setTimeout(r, 700))
+    setRefreshing(false)
+  }, [])
+
   const dateLabel = startDate && endDate
     ? `${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d')}`
     : 'Dates'
@@ -193,7 +201,7 @@ export default function ExploreScreen() {
           <Ionicons name="calendar-outline" size={16} color={Colors.textSecondary} />
           <Text style={[styles.searchDates, startDate && styles.searchDatesActive]}>{dateLabel}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.filterBtn}>
+        <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilterSheet(true)}>
           <Ionicons name="options-outline" size={16} color={Colors.primary} />
         </TouchableOpacity>
       </View>
@@ -331,6 +339,14 @@ export default function ExploreScreen() {
             maxToRenderPerBatch={4}
             windowSize={5}
             removeClippedSubviews
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={Colors.primary}
+                colors={[Colors.primary]}
+              />
+            }
             renderItem={({ item }) =>
               item.sourceType === 'native'
                 ? <ListingCard listing={item as Listing} variant="full" showAvailableBadge />
@@ -354,6 +370,69 @@ export default function ExploreScreen() {
         onApply={(s, e) => { setStartDate(s); setEndDate(e) }}
         onClose={() => setShowDatePicker(false)}
       />
+
+      {/* Filter Sheet */}
+      <Modal
+        visible={showFilterSheet}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowFilterSheet(false)}
+      >
+        <TouchableOpacity style={filterStyles.backdrop} activeOpacity={1} onPress={() => setShowFilterSheet(false)} />
+        <View style={filterStyles.sheet}>
+          <View style={filterStyles.handle} />
+          <Text style={filterStyles.title}>Sort & Filter</Text>
+
+          <Text style={filterStyles.sectionLabel}>Sort by</Text>
+          <View style={filterStyles.pillRow}>
+            {([
+              { key: 'default', label: 'Relevance' },
+              { key: 'price_asc', label: '↑ Price' },
+              { key: 'price_desc', label: '↓ Price' },
+              { key: 'rating', label: '★ Rating' },
+            ] as { key: typeof sortBy; label: string }[]).map(opt => (
+              <TouchableOpacity
+                key={opt.key}
+                style={[filterStyles.pill, sortBy === opt.key && filterStyles.pillActive]}
+                onPress={() => setSortBy(opt.key)}
+              >
+                <Text style={[filterStyles.pillText, sortBy === opt.key && filterStyles.pillTextActive]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={filterStyles.sectionLabel}>Capacity</Text>
+          <View style={filterStyles.pillRow}>
+            {([
+              { cap: null, label: 'Any size' },
+              { cap: 4, label: '4+ seats' },
+              { cap: 8, label: '8+ seats' },
+            ] as { cap: number | null; label: string }[]).map(opt => (
+              <TouchableOpacity
+                key={opt.label}
+                style={[filterStyles.pill, minCapacity === opt.cap && filterStyles.pillActive]}
+                onPress={() => setMinCapacity(opt.cap)}
+              >
+                <Text style={[filterStyles.pillText, minCapacity === opt.cap && filterStyles.pillTextActive]}>
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={filterStyles.applyBtn}
+            onPress={() => {
+              setViewMode('list')
+              setShowFilterSheet(false)
+            }}
+          >
+            <Text style={filterStyles.applyBtnText}>Apply filters</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -547,4 +626,47 @@ const styles = StyleSheet.create({
   },
   sortPillText: { fontSize: 13, fontWeight: '600', color: Colors.text },
   sortPillTextActive: { color: Colors.textInverse },
+})
+
+const filterStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: Colors.overlay,
+  },
+  sheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: Spacing.xl,
+    paddingBottom: Spacing.xxxl,
+  },
+  handle: {
+    width: 40, height: 4, borderRadius: 2,
+    backgroundColor: Colors.border,
+    alignSelf: 'center',
+    marginBottom: Spacing.xl,
+  },
+  title: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: Spacing.xl },
+  sectionLabel: {
+    fontSize: 12, fontWeight: '700', color: Colors.textTertiary,
+    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md,
+  },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl },
+  pill: {
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: Radius.pill,
+    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surfaceWarm,
+  },
+  pillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  pillText: { fontSize: 13, fontWeight: '600', color: Colors.text },
+  pillTextActive: { color: Colors.textInverse },
+  applyBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.pill,
+    paddingVertical: Spacing.base,
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+  },
+  applyBtnText: { fontSize: 16, fontWeight: '800', color: Colors.textInverse },
 })

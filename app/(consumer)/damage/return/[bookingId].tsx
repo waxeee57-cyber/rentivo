@@ -1,20 +1,25 @@
 import React, { useState } from 'react'
 import {
-  View, Text, ScrollView, Switch, TextInput, StyleSheet, Alert, TouchableOpacity,
+  View, Text, ScrollView, Switch, TextInput, StyleSheet, TouchableOpacity,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
+import * as Haptics from 'expo-haptics'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { DamagePhotoGrid } from '@/components/damage/DamagePhotoGrid'
 import { SignatureCanvas } from '@/components/booking/SignatureCanvas'
+import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { Card } from '@/components/ui/Card'
 import { createDamageReport } from '@/lib/api/damage'
 import { uploadDamagePhoto } from '@/lib/storage'
+import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import type { PhotoSlot } from '@/components/damage/DamagePhotoGrid'
 import type { FuelLevel } from '@/types'
+
+const REQUIRED_SLOTS: PhotoSlot[] = ['front', 'back', 'left', 'right', 'interior', 'extra']
 
 const FUEL_LEVELS: { key: FuelLevel; label: string }[] = [
   { key: 'empty', label: 'Empty' },
@@ -37,23 +42,35 @@ export default function ReturnDamageScreen() {
   const [operatorSig, setOperatorSig] = useState('')
   const [consumerSig, setConsumerSig] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const { showToast } = useToastStore()
 
   const handlePhoto = (slot: PhotoSlot, uri: string) => {
     setPhotos(prev => ({ ...prev, [slot]: uri }))
   }
 
-  const handleSubmit = async () => {
-    if (!consumerSig) {
-      Alert.alert('Signature required', 'Please add your signature to confirm.')
+  const handleSubmitPress = () => {
+    const missing = REQUIRED_SLOTS.filter(s => !photos[s])
+    if (missing.length > 0) {
+      showToast({ message: `Please take all 6 photos (${missing.length} remaining)`, type: 'error' })
       return
     }
+    if (!operatorSig || !consumerSig) {
+      showToast({ message: 'Both signatures required before submitting.', type: 'error' })
+      return
+    }
+    setShowConfirm(true)
+  }
+
+  const handleSubmit = async () => {
+    setShowConfirm(false)
     setSubmitting(true)
     try {
       if (Config.useMock) {
         await new Promise(r => setTimeout(r, 1000))
-        Alert.alert('Success', 'Return inspection completed!', [
-          { text: 'OK', onPress: () => router.back() },
-        ])
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        showToast({ message: 'Return inspection complete! ✓', type: 'success' })
+        router.back()
         return
       }
 
@@ -88,11 +105,11 @@ export default function ReturnDamageScreen() {
         signed_at: consumerSig ? new Date().toISOString() : null,
       })
 
-      Alert.alert('Success', 'Return inspection completed!', [
-        { text: 'OK', onPress: () => router.back() },
-      ])
-    } catch (e) {
-      Alert.alert('Error', String(e))
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      showToast({ message: 'Return inspection complete! ✓', type: 'success' })
+      router.back()
+    } catch {
+      showToast({ message: 'Something went wrong. Please try again.', type: 'error' })
     } finally {
       setSubmitting(false)
     }
@@ -188,13 +205,22 @@ export default function ReturnDamageScreen() {
 
         <Button
           title="Complete Return Inspection"
-          onPress={handleSubmit}
+          onPress={handleSubmitPress}
           loading={submitting}
           fullWidth
           style={{ marginTop: Spacing.md }}
         />
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      <ConfirmSheet
+        visible={showConfirm}
+        title="Submit return inspection?"
+        message="Both parties have signed. This cannot be changed after submission."
+        confirmLabel="Submit report"
+        onConfirm={handleSubmit}
+        onCancel={() => setShowConfirm(false)}
+      />
     </SafeAreaView>
   )
 }

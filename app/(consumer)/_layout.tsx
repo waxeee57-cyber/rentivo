@@ -118,6 +118,7 @@ export default function ConsumerLayout() {
       <Tabs.Screen name="legal/cookies" options={{ href: null }} />
       <Tabs.Screen name="damage/pickup/[bookingId]" options={{ href: null }} />
       <Tabs.Screen name="damage/return/[bookingId]" options={{ href: null }} />
+      <Tabs.Screen name="profile/connected-platforms" options={{ href: null }} />
     </Tabs>
   )
 }

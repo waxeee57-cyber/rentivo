@@ -45,6 +45,11 @@ function BookingCard({
           <Text style={styles.price}>
             {booking.total_days} days · €{(booking.total_amount / 100).toFixed(2)}
           </Text>
+          {(booking.status === 'confirmed' || booking.status === 'completed' || booking.status === 'active') && (
+            <Text style={styles.payout}>
+              You receive: €{((booking.total_amount * 0.85) / 100).toFixed(2)} · 2 business days
+            </Text>
+          )}
         </View>
         <View style={[
           styles.statusBadge,
@@ -219,6 +224,7 @@ const styles = StyleSheet.create({
   guestName: { fontSize: 15, fontWeight: '700', color: Colors.text },
   dates: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
   price: { fontSize: 12, color: Colors.primary, fontWeight: '600', marginTop: 2 },
+  payout: { fontSize: 11, color: Colors.success, fontWeight: '600', marginTop: 1 },
   statusBadge: {
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.sm,
