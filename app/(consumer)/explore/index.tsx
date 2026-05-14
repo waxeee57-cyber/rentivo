@@ -19,8 +19,10 @@ import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { CATEGORIES } from '@/constants/categories'
 import { searchAllSources } from '@/lib/api/unifiedSearch'
+import { openAffiliateLink } from '@/lib/utils/affiliateLinks'
 import type { Listing, RentalCategory, SearchFilters, AnyListing, ExternalListing } from '@/types'
 import { format } from 'date-fns'
+import { router } from 'expo-router'
 
 const MapView = Platform.OS !== 'web'
   ? require('react-native-maps').default
@@ -55,6 +57,20 @@ const INITIAL_REGION = {
   longitudeDelta: 0.0421,
 }
 
+const INSPIRE_THEMES = [
+  { emoji: '🏖️', title: 'Weekend in Marbella', subtitle: '3 cars · 5 villas from €35/day', category: 'car' as RentalCategory, city: 'Marbella' },
+  { emoji: '🌅', title: 'Mediterranean road trip', subtitle: 'Convertibles in Nice, Barcelona', category: 'car' as RentalCategory, city: null },
+  { emoji: '⛵', title: 'Yacht week in the islands', subtitle: '8+ person boats from €200/day', category: 'yacht' as RentalCategory, city: null },
+  { emoji: '🛵', title: 'Vespa adventures', subtitle: 'Scooters in Dubrovnik · Lisbon', category: 'scooter' as RentalCategory, city: null },
+]
+
+const MOODS = [
+  { emoji: '🌴', label: 'Beach & sun', category: 'yacht' as RentalCategory },
+  { emoji: '🏔️', label: 'Mountain escape', category: 'bike' as RentalCategory },
+  { emoji: '🍷', label: 'City & culture', category: 'car' as RentalCategory },
+  { emoji: '⚓', label: 'Sea adventure', category: 'kayak' as RentalCategory },
+]
+
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets()
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
@@ -87,6 +103,22 @@ export default function ExploreScreen() {
     return arr
   }, [rawListings, sortBy, minCapacity])
 
+  // Fit map to filtered listings when they change
+  useEffect(() => {
+    if (listings.length > 0 && mapRef.current && viewMode === 'map') {
+      const coords = listings
+        .filter(l => l.latitude != null && l.longitude != null)
+        .map(l => ({ latitude: l.latitude!, longitude: l.longitude! }))
+      if (coords.length > 0) {
+        mapRef.current.fitToCoordinates(coords, {
+          edgePadding: { top: 100, right: 50, bottom: 220, left: 50 },
+          animated: true,
+        })
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listings.length, viewMode])
+
   // Fetch all-source listings when source=all
   useEffect(() => {
     if (source !== 'all') {
@@ -105,7 +137,6 @@ export default function ExploreScreen() {
     }).catch(() => setAllSourceLoading(false))
   }, [source, selectedCategory, cityName, startDate, endDate])
 
-  // Listings shown in list mode
   const displayListings: AnyListing[] = source === 'all'
     ? allSourceListings
     : listings.map(l => ({ ...l, sourceType: 'native' as const }))
@@ -144,8 +175,21 @@ export default function ExploreScreen() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
-    await new Promise(r => setTimeout(r, 700))
+    await new Promise<void>(r => setTimeout(r, 700))
     setRefreshing(false)
+  }, [])
+
+  // Navigate from map preview to listing detail
+  const handleViewListing = useCallback((listing: AnyListing) => {
+    if (listing.sourceType === 'external') {
+      openAffiliateLink(
+        (listing as ExternalListing).external_url,
+        (listing as ExternalListing).platform,
+        listing.id,
+      )
+    } else {
+      router.push(`/(consumer)/listing/${listing.id}`)
+    }
   }, [])
 
   const dateLabel = startDate && endDate
@@ -154,6 +198,7 @@ export default function ExploreScreen() {
 
   const searchBarTop = insets.top + 8
   const isLoading = source === 'all' ? allSourceLoading : loading
+  const showDiscovery = displayListings.length === 0 && !isLoading && !error
 
   return (
     <View style={styles.container}>
@@ -199,7 +244,7 @@ export default function ExploreScreen() {
         <View style={styles.searchDivider} />
         <TouchableOpacity style={styles.searchSection} onPress={() => setShowDatePicker(true)}>
           <Ionicons name="calendar-outline" size={16} color={Colors.textSecondary} />
-          <Text style={[styles.searchDates, startDate && styles.searchDatesActive]}>{dateLabel}</Text>
+          <Text style={[styles.searchDates, startDate != null && styles.searchDatesActive]}>{dateLabel}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilterSheet(true)}>
           <Ionicons name="options-outline" size={16} color={Colors.primary} />
@@ -260,7 +305,7 @@ export default function ExploreScreen() {
       <Animated.View style={[styles.listOverlay, { transform: [{ translateY: listOverlayY }] }]}>
         <View style={styles.listHandle} />
 
-        {/* Source toggle — Rentivo only vs All platforms */}
+        {/* Source toggle */}
         <View style={styles.sourceToggleRow}>
           <TouchableOpacity
             style={[styles.sourceBtn, source === 'rentivo' && styles.sourceBtnActive]}
@@ -280,7 +325,6 @@ export default function ExploreScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Affiliate disclosure banner */}
         {hasExternalResults && <AffiliateSearchDisclosure />}
 
         {/* Sort bar */}
@@ -329,6 +373,46 @@ export default function ExploreScreen() {
           <View style={{ padding: Spacing.base }}>
             {Array(4).fill(null).map((_, i) => <SkeletonCard key={i} />)}
           </View>
+        ) : showDiscovery ? (
+          <ScrollView contentContainerStyle={styles.discoveryContainer}>
+            {/* Inspire me */}
+            <Text style={styles.discoverySectionTitle}>💡 Need ideas?</Text>
+            {INSPIRE_THEMES.map(theme => (
+              <TouchableOpacity
+                key={theme.title}
+                style={styles.inspireCard}
+                onPress={() => {
+                  setSelectedCategory(theme.category)
+                  if (theme.city) setCityName(theme.city)
+                  setViewMode('list')
+                }}
+              >
+                <Text style={styles.inspireEmoji}>{theme.emoji}</Text>
+                <View style={styles.inspireInfo}>
+                  <Text style={styles.inspireTitle}>{theme.title}</Text>
+                  <Text style={styles.inspireSubtitle}>{theme.subtitle}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} />
+              </TouchableOpacity>
+            ))}
+
+            {/* Browse by mood */}
+            <Text style={[styles.discoverySectionTitle, { marginTop: Spacing.xl }]}>
+              🎭 What's your vibe?
+            </Text>
+            <View style={styles.moodGrid}>
+              {MOODS.map(mood => (
+                <TouchableOpacity
+                  key={mood.label}
+                  style={styles.moodCard}
+                  onPress={() => setSelectedCategory(mood.category)}
+                >
+                  <Text style={styles.moodEmoji}>{mood.emoji}</Text>
+                  <Text style={styles.moodLabel}>{mood.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
         ) : (
           <FlatList
             data={displayListings}
@@ -473,188 +557,145 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.xs,
   },
-  searchCity: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.text,
-  },
+  searchCity: { fontSize: 14, fontWeight: '700', color: Colors.text },
   searchDivider: {
-    width: 1,
-    height: 20,
+    width: 1, height: 20,
     backgroundColor: Colors.border,
     marginHorizontal: Spacing.sm,
   },
-  searchDates: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  searchDatesActive: {
-    color: Colors.primaryDark,
-    fontWeight: '700',
-  },
+  searchDates: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
+  searchDatesActive: { color: Colors.primaryDark, fontWeight: '700' },
   filterBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 32, height: 32, borderRadius: 16,
     backgroundColor: Colors.primarySurface,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     marginLeft: Spacing.sm,
   },
 
   categoryBar: {
     position: 'absolute',
     bottom: 120,
-    left: 0,
-    right: 0,
+    left: 0, right: 0,
     zIndex: 5,
   },
-  categoryContent: {
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.sm,
-  },
+  categoryContent: { paddingHorizontal: Spacing.base, gap: Spacing.sm },
   categoryPill: {
     backgroundColor: Colors.surface,
     borderRadius: Radius.full,
-    height: 40,
-    paddingHorizontal: 16,
+    height: 40, paddingHorizontal: 16,
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    shadowOpacity: 0.12, shadowRadius: 6,
     elevation: 3,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderWidth: 1, borderColor: Colors.border,
   },
   categoryPillActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-    shadowColor: Colors.primary,
-    shadowOpacity: 0.3,
+    backgroundColor: Colors.primary, borderColor: Colors.primary,
+    shadowColor: Colors.primary, shadowOpacity: 0.3,
   },
-  categoryPillText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  categoryPillTextActive: {
-    color: Colors.textInverse,
-  },
+  categoryPillText: { fontSize: 14, fontWeight: '600', color: Colors.text },
+  categoryPillTextActive: { color: Colors.textInverse },
 
   toggleBtn: {
     position: 'absolute',
-    bottom: 170,
-    right: 16,
+    bottom: 170, right: 16,
     backgroundColor: Colors.background,
     borderRadius: Radius.full,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 16, paddingVertical: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 6,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    shadowOpacity: 0.3, shadowRadius: 8,
+    elevation: 8, zIndex: 6,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  toggleText: {
-    color: Colors.text,
-    fontWeight: '700',
-    fontSize: 14,
-  },
+  toggleText: { color: Colors.text, fontWeight: '700', fontSize: 14 },
 
   listOverlay: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: Colors.background,
     zIndex: 8,
   },
   listHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: Colors.border,
+    width: 40, height: 4, backgroundColor: Colors.border,
     borderRadius: Radius.pill,
-    alignSelf: 'center',
-    marginTop: Spacing.md,
-    marginBottom: Spacing.sm,
+    alignSelf: 'center', marginTop: Spacing.md, marginBottom: Spacing.sm,
   },
 
   sourceToggleRow: {
     flexDirection: 'row',
-    marginHorizontal: Spacing.base,
-    marginBottom: Spacing.sm,
+    marginHorizontal: Spacing.base, marginBottom: Spacing.sm,
     backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.pill,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderRadius: Radius.pill, padding: 3,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  sourceBtn: {
-    flex: 1,
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-    borderRadius: Radius.pill,
-  },
+  sourceBtn: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: Radius.pill },
   sourceBtnActive: { backgroundColor: Colors.primary },
   sourceBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
   sourceBtnTextActive: { color: Colors.textInverse },
 
-  listContent: {
-    padding: Spacing.base,
-    paddingTop: Spacing.sm,
-  },
+  listContent: { padding: Spacing.base, paddingTop: Spacing.sm },
   sortBar: { flexGrow: 0 },
-  sortContent: {
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.sm,
-    gap: Spacing.sm,
-  },
+  sortContent: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm, gap: Spacing.sm },
   sortDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: Colors.border,
-    marginHorizontal: Spacing.sm,
-    alignSelf: 'center',
+    width: 1, height: 24, backgroundColor: Colors.border,
+    marginHorizontal: Spacing.sm, alignSelf: 'center',
   },
   sortPill: {
-    borderRadius: Radius.pill,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    borderRadius: Radius.pill, paddingHorizontal: 14, paddingVertical: 6,
     backgroundColor: Colors.surfaceWarm,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  sortPillActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
+  sortPillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   sortPillText: { fontSize: 13, fontWeight: '600', color: Colors.text },
   sortPillTextActive: { color: Colors.textInverse },
+
+  // Discovery styles
+  discoveryContainer: { padding: Spacing.base },
+  discoverySectionTitle: {
+    fontSize: 18, fontWeight: '800', color: Colors.text,
+    marginBottom: Spacing.md,
+  },
+  inspireCard: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg, padding: Spacing.base,
+    marginBottom: Spacing.sm,
+    borderWidth: 1, borderColor: Colors.border,
+    gap: Spacing.md,
+  },
+  inspireEmoji: { fontSize: 32 },
+  inspireInfo: { flex: 1 },
+  inspireTitle: { fontSize: 15, fontWeight: '700', color: Colors.text },
+  inspireSubtitle: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  moodGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
+  },
+  moodCard: {
+    width: '48%',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.base,
+    alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  moodEmoji: { fontSize: 28 },
+  moodLabel: { fontSize: 13, fontWeight: '600', color: Colors.text, textAlign: 'center' },
 })
 
 const filterStyles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: Colors.overlay,
-  },
+  backdrop: { flex: 1, backgroundColor: Colors.overlay },
   sheet: {
     backgroundColor: Colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: Spacing.xl,
-    paddingBottom: Spacing.xxxl,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: Spacing.xl, paddingBottom: Spacing.xxxl,
   },
   handle: {
     width: 40, height: 4, borderRadius: 2,
     backgroundColor: Colors.border,
-    alignSelf: 'center',
-    marginBottom: Spacing.xl,
+    alignSelf: 'center', marginBottom: Spacing.xl,
   },
   title: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: Spacing.xl },
   sectionLabel: {
@@ -673,10 +714,8 @@ const filterStyles = StyleSheet.create({
   pillTextActive: { color: Colors.textInverse },
   applyBtn: {
     backgroundColor: Colors.primary,
-    borderRadius: Radius.pill,
-    paddingVertical: Spacing.base,
-    alignItems: 'center',
-    marginTop: Spacing.sm,
+    borderRadius: Radius.pill, paddingVertical: Spacing.base,
+    alignItems: 'center', marginTop: Spacing.sm,
   },
   applyBtnText: { fontSize: 16, fontWeight: '800', color: Colors.textInverse },
 })

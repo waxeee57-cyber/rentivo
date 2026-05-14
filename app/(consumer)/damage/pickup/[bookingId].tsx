@@ -30,14 +30,32 @@ const FUEL_LEVELS: { key: FuelLevel; label: string }[] = [
   { key: 'full', label: 'Full' },
 ]
 
+const REQUIRED_SLOTS: PhotoSlot[] = ['front', 'back', 'left', 'right', 'interior', 'extra']
 const STEP_LABELS = ['Photos', 'Details', 'Signatures']
+
+interface ValidationErrors {
+  photos?: string
+  mileage?: string
+  damageDescription?: string
+  operatorSignature?: string
+  consumerSignature?: string
+}
+
+function FieldError({ message }: { message: string | undefined }) {
+  if (!message) return null
+  return <Text style={fieldErrorStyles.text}>⚠ {message}</Text>
+}
+
+const fieldErrorStyles = StyleSheet.create({
+  text: { fontSize: 12, color: Colors.error, fontWeight: '600', marginTop: 4, marginBottom: 4 },
+})
 
 export default function PickupDamageScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const bkId = Config.useMock ? 'bk-003' : (bookingId ?? '')
   const { showToast } = useToastStore()
 
-  const [step, setStep] = useState(1) // 1 = photos, 2 = details, 3 = signatures
+  const [step, setStep] = useState(1)
   const [photos, setPhotos] = useState<Partial<Record<PhotoSlot, string | null>>>({})
   const [mileage, setMileage] = useState('')
   const [fuelLevel, setFuelLevel] = useState<FuelLevel>('full')
@@ -48,26 +66,44 @@ export default function PickupDamageScreen() {
   const [consumerSig, setConsumerSig] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [errors, setErrors] = useState<ValidationErrors>({})
 
   const handlePhoto = (slot: PhotoSlot, uri: string) => {
     setPhotos(prev => ({ ...prev, [slot]: uri }))
+    if (errors.photos) setErrors(prev => ({ ...prev, photos: undefined }))
   }
 
-  const REQUIRED_SLOTS: PhotoSlot[] = ['front', 'back', 'left', 'right', 'interior', 'extra']
-
-  const handleNext = () => {
-    if (step === 1) {
-      const missing = REQUIRED_SLOTS.filter(s => !photos[s])
-      if (missing.length > 0) {
-        showToast({ message: `Please take all 6 photos (${missing.length} remaining)`, type: 'error' })
-        return
+  const validateStep = (s: number): ValidationErrors => {
+    const errs: ValidationErrors = {}
+    if (s === 1) {
+      const filledPhotos = REQUIRED_SLOTS.filter(slot => photos[slot]).length
+      if (filledPhotos < 6) {
+        errs.photos = `${6 - filledPhotos} more photo${6 - filledPhotos > 1 ? 's' : ''} needed`
       }
     }
-    if (step === 3) {
-      if (!operatorSig || !consumerSig) {
-        showToast({ message: 'Both signatures required before submitting.', type: 'error' })
-        return
+    if (s === 2) {
+      if (!mileage || isNaN(Number(mileage))) {
+        errs.mileage = 'Enter current mileage'
       }
+      if (damageFound && damageNotes.trim().length < 10) {
+        errs.damageDescription = 'Describe the damage (min 10 characters)'
+      }
+    }
+    if (s === 3) {
+      if (!operatorSig) errs.operatorSignature = 'Operator signature required'
+      if (!consumerSig) errs.consumerSignature = 'Your signature required'
+    }
+    return errs
+  }
+
+  const handleNext = () => {
+    const errs = validateStep(step)
+    setErrors(errs)
+    if (Object.keys(errs).length > 0) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      return
+    }
+    if (step === 3) {
       setShowConfirm(true)
       return
     }
@@ -76,14 +112,15 @@ export default function PickupDamageScreen() {
 
   const handleSubmit = async () => {
     setShowConfirm(false)
-    if (!consumerSig) {
-      showToast({ message: getError('signature_required'), type: 'error' })
+    const finalErrors = validateStep(3)
+    if (Object.keys(finalErrors).length > 0) {
+      setErrors(finalErrors)
       return
     }
     setSubmitting(true)
     try {
       if (Config.useMock) {
-        await new Promise(r => setTimeout(r, 1000))
+        await new Promise<void>(r => setTimeout(r, 1000))
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
         showToast({ message: 'Inspection complete! Both parties have signed.', type: 'success' })
         router.back()
@@ -131,10 +168,18 @@ export default function PickupDamageScreen() {
     }
   }
 
-  const nextLabel =
-    step === 1 ? 'Next: Details →' :
-    step === 2 ? 'Next: Signatures →' :
-    'Submit inspection'
+  const filledPhotoCount = REQUIRED_SLOTS.filter(s => photos[s]).length
+
+  const nextLabel = (() => {
+    if (step === 1) {
+      return filledPhotoCount < 6
+        ? `${filledPhotoCount}/6 photos · Need ${6 - filledPhotoCount} more`
+        : 'Next: Details →'
+    }
+    if (step === 2) return 'Next: Signatures →'
+    if (!operatorSig || !consumerSig) return 'Sign first'
+    return 'Submit inspection'
+  })()
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -144,7 +189,7 @@ export default function PickupDamageScreen() {
         rightAction={
           <HelpTooltip
             title="Vehicle inspection"
-            description={'Take photos of the vehicle before you drive away.\nThis protects both you and the operator if any damage is found later.'}
+            description={'Take photos before you drive away. This protects both you and the operator.'}
             faqs={[
               { q: 'Do I have to take all 6 photos?', a: 'Yes — front, back, both sides, interior, and one extra.' },
               { q: 'What if I find damage?', a: 'Toggle "Damage found" and describe it. Both parties sign.' },
@@ -153,17 +198,14 @@ export default function PickupDamageScreen() {
         }
       />
 
-      <StepIndicator
-        totalSteps={3}
-        currentStep={step}
-        labels={STEP_LABELS}
-      />
+      <StepIndicator totalSteps={3} currentStep={step} labels={STEP_LABELS} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {step === 1 && (
           <>
             <Text style={styles.stepHint}>Take 6 photos of the vehicle from all angles</Text>
             <DamagePhotoGrid photos={photos} onPhoto={handlePhoto} />
+            <FieldError message={errors.photos} />
           </>
         )}
 
@@ -173,19 +215,24 @@ export default function PickupDamageScreen() {
             <Card style={styles.card}>
               <Text style={styles.sectionTitle}>Mileage & Fuel</Text>
               <TextInput
-                style={styles.mileageInput}
+                style={[styles.mileageInput, errors.mileage && styles.inputError]}
                 placeholder="Enter current mileage (km)"
                 value={mileage}
-                onChangeText={setMileage}
+                onChangeText={v => { setMileage(v); setErrors(prev => ({ ...prev, mileage: undefined })) }}
                 keyboardType="numeric"
                 placeholderTextColor={Colors.textTertiary}
+                accessibilityLabel="Current mileage"
               />
+              <FieldError message={errors.mileage} />
               <View style={styles.fuelRow}>
                 {FUEL_LEVELS.map(f => (
                   <TouchableOpacity
                     key={f.key}
                     style={[styles.fuelBtn, fuelLevel === f.key && styles.fuelBtnActive]}
                     onPress={() => setFuelLevel(f.key)}
+                    accessibilityLabel={`Fuel level: ${f.label}`}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: fuelLevel === f.key }}
                   >
                     <Text style={[styles.fuelText, fuelLevel === f.key && styles.fuelTextActive]}>
                       {f.label}
@@ -200,20 +247,25 @@ export default function PickupDamageScreen() {
                 <Text style={styles.damageLabel}>Any damage found?</Text>
                 <Switch
                   value={damageFound}
-                  onValueChange={setDamageFound}
+                  onValueChange={v => { setDamageFound(v); setErrors(prev => ({ ...prev, damageDescription: undefined })) }}
                   trackColor={{ true: Colors.error, false: Colors.border }}
+                  accessibilityLabel="Damage found toggle"
                 />
               </View>
               {damageFound && (
-                <TextInput
-                  style={styles.textArea}
-                  placeholder="Describe the damage..."
-                  value={damageNotes}
-                  onChangeText={setDamageNotes}
-                  multiline
-                  numberOfLines={4}
-                  placeholderTextColor={Colors.textTertiary}
-                />
+                <>
+                  <TextInput
+                    style={[styles.textArea, errors.damageDescription && styles.inputError]}
+                    placeholder="Describe the damage in detail..."
+                    value={damageNotes}
+                    onChangeText={v => { setDamageNotes(v); setErrors(prev => ({ ...prev, damageDescription: undefined })) }}
+                    multiline
+                    numberOfLines={4}
+                    placeholderTextColor={Colors.textTertiary}
+                    accessibilityLabel="Damage description"
+                  />
+                  <FieldError message={errors.damageDescription} />
+                </>
               )}
             </Card>
 
@@ -240,14 +292,16 @@ export default function PickupDamageScreen() {
               <Text style={styles.sigSubtitle}>Both parties must sign to confirm the vehicle condition.</Text>
               <SignatureCanvas
                 label="Operator Signature"
-                onSave={setOperatorSig}
+                onSave={v => { setOperatorSig(v); setErrors(prev => ({ ...prev, operatorSignature: undefined })) }}
                 saved={!!operatorSig}
               />
+              <FieldError message={errors.operatorSignature} />
               <SignatureCanvas
                 label="Renter Signature"
-                onSave={setConsumerSig}
+                onSave={v => { setConsumerSig(v); setErrors(prev => ({ ...prev, consumerSignature: undefined })) }}
                 saved={!!consumerSig}
               />
+              <FieldError message={errors.consumerSignature} />
               <Text style={styles.sigConfirm}>
                 I confirm this accurately reflects the vehicle condition at pickup.
               </Text>
@@ -260,6 +314,7 @@ export default function PickupDamageScreen() {
           onPress={handleNext}
           loading={submitting}
           fullWidth
+          disabled={step === 1 && filledPhotoCount < 6}
           style={{ marginTop: Spacing.md, marginHorizontal: Spacing.base }}
         />
         <View style={{ height: 40 }} />
@@ -270,7 +325,7 @@ export default function PickupDamageScreen() {
         title="Submit inspection report?"
         message="Both parties have signed. This cannot be changed after submission."
         confirmLabel="Submit report"
-        onConfirm={handleSubmit}
+        onConfirm={() => void handleSubmit()}
         onCancel={() => setShowConfirm(false)}
       />
     </SafeAreaView>
@@ -281,11 +336,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { paddingBottom: Spacing.xxxl },
   stepHint: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    paddingHorizontal: Spacing.base,
-    marginBottom: Spacing.base,
-    lineHeight: 20,
+    fontSize: 14, color: Colors.textSecondary,
+    paddingHorizontal: Spacing.base, marginBottom: Spacing.base, lineHeight: 20,
   },
   sectionTitle: {
     fontSize: 13, fontWeight: '700', color: Colors.text,
@@ -294,8 +346,9 @@ const styles = StyleSheet.create({
   card: { marginHorizontal: Spacing.base, marginBottom: Spacing.base },
   mileageInput: {
     borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg,
-    padding: Spacing.md, fontSize: 15, color: Colors.text, marginBottom: Spacing.md,
+    padding: Spacing.md, fontSize: 15, color: Colors.text, marginBottom: Spacing.sm,
   },
+  inputError: { borderColor: Colors.error },
   fuelRow: { flexDirection: 'row', gap: Spacing.xs },
   fuelBtn: {
     flex: 1, padding: Spacing.sm, borderRadius: Radius.lg,

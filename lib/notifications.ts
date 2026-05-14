@@ -67,6 +67,89 @@ export type NotificationType =
   | 'new_booking'
   | 'rental_completed'
 
+// Typed notification content factory
+export const NOTIFICATIONS = {
+  // Consumer
+  BOOKING_CONFIRMED: (listingTitle: string) => ({
+    title: '🎉 Booking confirmed!',
+    body: `Your ${listingTitle} rental is confirmed. See you soon!`,
+  }),
+  PICKUP_REMINDER: (time: string, listingTitle: string) => ({
+    title: '🚗 Pickup reminder',
+    body: `${listingTitle} pickup at ${time}. Don't forget your ID!`,
+  }),
+  RETURN_REMINDER: (listingTitle: string) => ({
+    title: '⏰ Return reminder',
+    body: `Time to return your ${listingTitle}. Have a safe trip!`,
+  }),
+
+  // Operator
+  NEW_BOOKING: (guestName: string, listingTitle: string, amount: string) => ({
+    title: '📅 New booking request!',
+    body: `${guestName} wants to rent ${listingTitle} for ${amount}`,
+  }),
+  PICKUP_TODAY: (guestName: string, time: string) => ({
+    title: '🔑 Pickup today',
+    body: `${guestName} picks up at ${time}. Vehicle ready?`,
+  }),
+  PAYMENT_RECEIVED: (amount: string) => ({
+    title: '💰 Payment received',
+    body: `${amount} deposited to your account`,
+  }),
+
+  // Price/availability alerts
+  PRICE_DROP: (listingTitle: string, newPrice: string) => ({
+    title: '📉 Price drop alert!',
+    body: `${listingTitle} is now ${newPrice}/day — check your wishlist`,
+  }),
+  AVAILABILITY: (listingTitle: string) => ({
+    title: '📅 Now available!',
+    body: `${listingTitle} is now available for your dates`,
+  }),
+}
+
+export async function schedulePickupReminder(
+  bookingId: string,
+  pickupDate: string,
+  listingTitle: string,
+): Promise<void> {
+  try {
+    const pickupTime = new Date(pickupDate)
+    const reminderTime = new Date(pickupTime.getTime() - 24 * 60 * 60 * 1000)
+
+    if (reminderTime > new Date()) {
+      await Notifications.scheduleNotificationAsync({
+        identifier: `pickup-reminder-${bookingId}`,
+        content: NOTIFICATIONS.PICKUP_REMINDER('10:00', listingTitle),
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: reminderTime },
+      })
+    }
+  } catch {
+    // Notifications not available in all environments
+  }
+}
+
+export async function scheduleReturnReminder(
+  bookingId: string,
+  returnDate: string,
+  listingTitle: string,
+): Promise<void> {
+  try {
+    const returnTime = new Date(returnDate)
+    returnTime.setHours(9, 0, 0, 0)
+
+    if (returnTime > new Date()) {
+      await Notifications.scheduleNotificationAsync({
+        identifier: `return-reminder-${bookingId}`,
+        content: NOTIFICATIONS.RETURN_REMINDER(listingTitle),
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: returnTime },
+      })
+    }
+  } catch {
+    // Notifications not available in all environments
+  }
+}
+
 export function sendChatNotification(
   to: 'operator' | 'consumer',
   senderName: string,
@@ -78,8 +161,6 @@ export function sendChatNotification(
     console.log(`[Push → ${to}] 💬 ${senderName}: ${body}`)
     return
   }
-  // Production: deliver via Expo Push API through backend
-  // getNotificationContent('new_message', { sender: senderName, message: preview })
 }
 
 export function getNotificationContent(

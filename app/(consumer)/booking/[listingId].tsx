@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -20,6 +20,7 @@ import { getError } from '@/lib/errors'
 import { Config } from '@/constants/config'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
+import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 
 const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
   const hour = 8 + Math.floor(i / 2)
@@ -37,7 +38,8 @@ export default function BookingFlowScreen() {
   const [guestPhone, setGuestPhone] = useState(Config.useMock ? '+36701234567' : '')
   const [guestEmail, setGuestEmail] = useState(Config.useMock ? 'test@example.com' : '')
   const [notes, setNotes] = useState('')
-  const [processing, setProcessing] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
   const { showToast } = useToastStore()
 
   const startDate = addDays(new Date(), 1)
@@ -54,6 +56,9 @@ export default function BookingFlowScreen() {
   )
 
   const handlePayment = async () => {
+    // Hard guard — no double submit
+    if (submitting || submitted) return
+
     if (!guestName.trim()) {
       showToast({ message: getError('name_required'), type: 'error' })
       return
@@ -62,19 +67,26 @@ export default function BookingFlowScreen() {
       showToast({ message: getError('phone_required'), type: 'error' })
       return
     }
-    setProcessing(true)
+
+    setSubmitting(true)
     try {
-      await new Promise(r => setTimeout(r, 1500))
+      await new Promise<void>(r => setTimeout(r, 1500))
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      router.replace('/(consumer)/booking/confirmation/mock-booking-001')
+      const bookingRef = `#${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+      setSubmitted(true)
+      router.replace(`/(consumer)/booking/confirmation/${bookingRef}`)
     } catch {
       showToast({ message: getError('payment_failed'), type: 'error' })
     } finally {
-      setProcessing(false)
+      setSubmitting(false)
     }
   }
 
   const steps = [t('tripDetails', language), t('reviewAndPay', language)]
+
+  // Platform fee breakdown
+  const platformFeeLabel = `Service fee (${(Config.platformCut * 100).toFixed(1)}%)`
+  const refundableDeposit = listing.deposit_amount
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -95,14 +107,10 @@ export default function BookingFlowScreen() {
         }
       />
 
-      <StepIndicator
-        totalSteps={2}
-        currentStep={step}
-        labels={steps}
-      />
+      <StepIndicator totalSteps={2} currentStep={step} labels={steps} />
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Trip summary card — shown on both steps */}
+        {/* Trip summary */}
         <View style={styles.summaryCard}>
           <Image
             source={{ uri: listing.cover_image_url ?? undefined }}
@@ -127,11 +135,6 @@ export default function BookingFlowScreen() {
                 <Text style={styles.summaryDaysLabel}>days</Text>
               </View>
             </View>
-            {step === 1 && (
-              <TouchableOpacity onPress={() => {}}>
-                <Text style={styles.editDates}>Edit dates</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
 
@@ -162,13 +165,11 @@ export default function BookingFlowScreen() {
               multiline numberOfLines={3}
             />
 
-            {/* Pickup time selector */}
             <Text style={styles.formTitle}>
               {language === 'es' ? 'Hora de recogida' : language === 'hu' ? 'Átvétel időpontja' : 'Pickup time'}
             </Text>
             <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
+              horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.timeSlots}
               style={{ marginBottom: Spacing.md }}
             >
@@ -197,7 +198,30 @@ export default function BookingFlowScreen() {
 
         {step === 2 && (
           <>
-            <PriceBreakdown calculation={priceCalc} />
+            {/* Transparent price breakdown */}
+            <View style={styles.priceCard}>
+              <Text style={styles.priceCardTitle}>Your total</Text>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>{priceCalc.breakdown}</Text>
+                <Text style={styles.priceValue}>{formatEURDecimal(priceCalc.subtotal)}</Text>
+              </View>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>{platformFeeLabel}</Text>
+                <Text style={styles.priceValue}>{formatEURDecimal(priceCalc.platformFee)}</Text>
+              </View>
+              <View style={[styles.priceRow, styles.priceTotal]}>
+                <Text style={styles.priceTotalLabel}>Total now</Text>
+                <Text style={styles.priceTotalValue}>{formatEURDecimal(priceCalc.total)}</Text>
+              </View>
+              <View style={styles.depositRow}>
+                <Text style={styles.depositLabel}>🔒 Refundable deposit</Text>
+                <Text style={styles.depositValue}>{formatEURDecimal(refundableDeposit)}</Text>
+              </View>
+              <View style={styles.trustRow}>
+                <Text style={styles.trustItem}>✓ Free cancel until 48h before</Text>
+                <Text style={styles.trustItem}>✓ No hidden fees</Text>
+              </View>
+            </View>
 
             {/* Guest recap */}
             <View style={styles.guestRecap}>
@@ -206,7 +230,7 @@ export default function BookingFlowScreen() {
               <Text style={styles.guestRecapContact}>{guestPhone}{guestEmail ? ` · ${guestEmail}` : ''}</Text>
             </View>
 
-            {/* Trust signals — 2×2 grid */}
+            {/* Trust signals */}
             <View style={styles.trustGrid}>
               {[
                 { icon: '🔒', text: 'Stripe secure' },
@@ -214,20 +238,32 @@ export default function BookingFlowScreen() {
                 { icon: '✓', text: 'Cancel anytime' },
                 { icon: '↩', text: 'Money back' },
               ].map(item => (
-                <View key={item.text} style={styles.trustItem}>
-                  <Text style={styles.trustIcon}>{item.icon}</Text>
-                  <Text style={styles.trustText}>{item.text}</Text>
+                <View key={item.text} style={styles.trustGridItem}>
+                  <Text style={styles.trustGridIcon}>{item.icon}</Text>
+                  <Text style={styles.trustGridText}>{item.text}</Text>
                 </View>
               ))}
             </View>
 
-            <Button
-              title={`Pay €${(priceCalc.total / 100).toFixed(2)}`}
-              onPress={handlePayment}
-              loading={processing}
-              fullWidth
-              style={{ marginTop: Spacing.xl }}
-            />
+            {/* Pay button with anti-double-submit */}
+            <TouchableOpacity
+              style={[
+                styles.payBtn,
+                (submitting || submitted || !guestName.trim()) && styles.payBtnDisabled,
+              ]}
+              onPress={() => void handlePayment()}
+              disabled={submitting || submitted || !guestName.trim()}
+              accessibilityLabel={`Pay ${formatEURDecimal(priceCalc.total)}`}
+              accessibilityRole="button"
+            >
+              {submitting ? (
+                <ActivityIndicator color={Colors.textInverse} size="small" />
+              ) : (
+                <Text style={styles.payBtnText}>
+                  Pay {formatEURDecimal(priceCalc.total)} →
+                </Text>
+              )}
+            </TouchableOpacity>
             <Text style={styles.secureNote}>🔒 Secure payment · SSL encrypted</Text>
           </>
         )}
@@ -238,32 +274,21 @@ export default function BookingFlowScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-
-
   content: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
 
   summaryCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.xl,
-    overflow: 'hidden',
-    marginBottom: Spacing.xl,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 2,
+    backgroundColor: Colors.surface, borderRadius: Radius.xl,
+    overflow: 'hidden', marginBottom: Spacing.xl,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
   },
   summaryImage: { width: '100%', height: 140 },
   summaryBody: { padding: Spacing.base },
   summaryTitle: { fontSize: 17, fontWeight: '800', color: Colors.text, marginBottom: 2 },
   summaryOp: { fontSize: 12, color: Colors.textSecondary, marginBottom: Spacing.md },
   summaryDatesRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.lg,
-    padding: Spacing.sm,
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+    backgroundColor: Colors.surfaceWarm, borderRadius: Radius.lg, padding: Spacing.sm,
   },
   summaryDateBlock: { flex: 1 },
   summaryDateLabel: { fontSize: 10, color: Colors.textTertiary, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
@@ -273,52 +298,72 @@ const styles = StyleSheet.create({
   summaryDaysBlock: { alignItems: 'center', paddingLeft: Spacing.sm, borderLeftWidth: 1, borderLeftColor: Colors.border },
   summaryDaysNum: { fontSize: 20, fontWeight: '800', color: Colors.primary },
   summaryDaysLabel: { fontSize: 10, color: Colors.textTertiary, fontWeight: '600' },
-  editDates: { fontSize: 13, color: Colors.primary, fontWeight: '600', marginTop: Spacing.sm },
 
   formTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: Spacing.base, marginTop: Spacing.xl },
-  guestRecap: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    padding: Spacing.base,
-    marginTop: Spacing.base,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.primary,
-  },
-  guestRecapTitle: { fontSize: 11, fontWeight: '700', color: Colors.textTertiary, textTransform: 'uppercase', marginBottom: 4 },
-  guestRecapName: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  guestRecapContact: { fontSize: 13, color: Colors.textSecondary },
   timeSlots: { gap: Spacing.sm, paddingVertical: Spacing.xs },
   timeSlot: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.pill,
+    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface,
   },
   timeSlotActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   timeSlotText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
   timeSlotTextActive: { color: Colors.textInverse },
-  stripeNote: { fontSize: 16, fontWeight: '600', color: Colors.text, textAlign: 'center' },
-  stripeNote2: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginTop: 4 },
-  secureNote: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginTop: Spacing.sm },
+
+  // Transparent price card
+  priceCard: {
+    backgroundColor: Colors.surface, borderRadius: Radius.xl,
+    padding: Spacing.base, marginBottom: Spacing.base,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  priceCardTitle: { fontSize: 13, fontWeight: '700', color: Colors.textTertiary, textTransform: 'uppercase', marginBottom: Spacing.md },
+  priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
+  priceLabel: { fontSize: 14, color: Colors.textSecondary },
+  priceValue: { fontSize: 14, color: Colors.text, fontWeight: '600' },
+  priceTotal: {
+    borderTopWidth: 1, borderTopColor: Colors.border,
+    paddingTop: Spacing.sm, marginTop: Spacing.xs,
+  },
+  priceTotalLabel: { fontSize: 15, fontWeight: '700', color: Colors.text },
+  priceTotalValue: { fontSize: 18, fontWeight: '800', color: Colors.primary },
+  depositRow: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    marginTop: Spacing.sm, paddingTop: Spacing.sm,
+    borderTopWidth: 1, borderTopColor: Colors.border,
+  },
+  depositLabel: { fontSize: 13, color: Colors.textSecondary },
+  depositValue: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600' },
+  trustRow: { marginTop: Spacing.md, gap: 4 },
+  trustItem: { fontSize: 12, color: Colors.success, fontWeight: '500' },
+
+  guestRecap: {
+    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    padding: Spacing.base, marginBottom: Spacing.base,
+    borderLeftWidth: 3, borderLeftColor: Colors.primary,
+  },
+  guestRecapTitle: { fontSize: 11, fontWeight: '700', color: Colors.textTertiary, textTransform: 'uppercase', marginBottom: 4 },
+  guestRecapName: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 2 },
+  guestRecapContact: { fontSize: 13, color: Colors.textSecondary },
+
   trustGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    marginTop: Spacing.base,
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.lg,
-    padding: Spacing.base,
-    borderWidth: 1,
-    borderColor: Colors.borderWarm,
+    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
+    marginBottom: Spacing.xl,
+    backgroundColor: Colors.surfaceWarm, borderRadius: Radius.lg,
+    padding: Spacing.base, borderWidth: 1, borderColor: Colors.borderWarm,
   },
-  trustItem: {
-    width: '47%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
+  trustGridItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  trustGridIcon: { fontSize: 14, width: 20, textAlign: 'center' },
+  trustGridText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500' },
+
+  payBtn: {
+    backgroundColor: Colors.primary, borderRadius: Radius.pill,
+    paddingVertical: Spacing.base, alignItems: 'center',
+    marginBottom: Spacing.sm,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35, shadowRadius: 8, elevation: 4,
+    minHeight: 52, justifyContent: 'center',
   },
-  trustIcon: { fontSize: 14, width: 20, textAlign: 'center' },
-  trustText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500' },
+  payBtnDisabled: { opacity: 0.5, shadowOpacity: 0 },
+  payBtnText: { color: Colors.textInverse, fontWeight: '800', fontSize: 17 },
+  secureNote: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginTop: Spacing.sm },
 })

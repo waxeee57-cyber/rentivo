@@ -17,13 +17,22 @@ import { sendChatNotification } from '@/lib/notifications'
 import type { Message, Conversation } from '@/types'
 import { format } from 'date-fns'
 
+const MOCK_OPERATOR_REPLIES = [
+  'Hi! The vehicle will be ready at 10:00.',
+  "Sure, I'll have it ready for you!",
+  'No problem, see you then!',
+  'The address is: Calle Principal 12, Marbella.',
+  'Feel free to contact me if you need anything.',
+  'Great! Looking forward to meeting you.',
+]
+
 function formatMsgTime(iso: string): string {
   try { return format(new Date(iso), 'HH:mm') } catch { return '' }
 }
 
-function shouldShowTimestamp(msg: Message, prev: Message | null): boolean {
-  if (!prev) return true
-  const diff = new Date(msg.created_at).getTime() - new Date(prev.created_at).getTime()
+function shouldShowTimestamp(msg: Message, prevMsg: Message | null): boolean {
+  if (!prevMsg) return true
+  const diff = new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime()
   return diff > 30 * 60 * 1000
 }
 
@@ -57,7 +66,7 @@ export default function ConsumerChatScreen() {
 
   const [messages, setMessages] = useState<Message[]>([])
   const [conversation, setConversation] = useState<Conversation | null>(null)
-  const [input, setInput] = useState('')
+  const [inputText, setInputText] = useState('')
   const [sending, setSending] = useState(false)
   const listRef = useRef<FlatList<Message>>(null)
 
@@ -104,26 +113,45 @@ export default function ConsumerChatScreen() {
     return () => { void supabase.removeChannel(channel) }
   }, [conversation])
 
-  const sendMessage = async () => {
-    const text = input.trim()
+  const sendMessage = useCallback(async () => {
+    const text = inputText.trim()
     if (!text || sending) return
-    setInput('')
+
+    // Optimistic update — message appears instantly
+    const optimisticMsg: Message = {
+      id: `msg-${Date.now()}`,
+      conversation_id: conversation?.id ?? 'conv-001',
+      sender_role: 'consumer',
+      sender_id: 'usr-001',
+      content: text,
+      read: false,
+      created_at: new Date().toISOString(),
+    }
+
+    setMessages(prev => [optimisticMsg, ...prev])
+    setInputText('')
     setSending(true)
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
 
     if (Config.useMock) {
-      const newMsg: Message = {
-        id: 'msg-' + Date.now(),
-        conversation_id: 'conv-001',
-        sender_role: 'consumer',
-        sender_id: 'usr-001',
-        content: text,
-        read: false,
-        created_at: new Date().toISOString(),
-      }
-      setMessages(prev => [newMsg, ...prev])
       sendChatNotification('operator', booking?.guest_name ?? 'Guest', text, true)
       setSending(false)
+
+      // Simulate operator typing + reply after 2-3 seconds
+      const delay = 2000 + Math.random() * 1000
+      setTimeout(() => {
+        const reply: Message = {
+          id: `msg-${Date.now() + 1}`,
+          conversation_id: 'conv-001',
+          sender_role: 'operator',
+          sender_id: 'op-001',
+          content: MOCK_OPERATOR_REPLIES[Math.floor(Math.random() * MOCK_OPERATOR_REPLIES.length)],
+          read: false,
+          created_at: new Date().toISOString(),
+        }
+        setMessages(prev => [reply, ...prev])
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      }, delay)
       return
     }
 
@@ -154,15 +182,17 @@ export default function ConsumerChatScreen() {
       })
       await supabase
         .from('rentivo_conversations')
-        .update({ last_message: text, last_message_at: new Date().toISOString(), unread_operator: (conversation?.unread_operator ?? 0) + 1 })
+        .update({
+          last_message: text,
+          last_message_at: new Date().toISOString(),
+          unread_operator: (conversation?.unread_operator ?? 0) + 1,
+        })
         .eq('id', convId)
       sendChatNotification('operator', booking?.guest_name ?? 'Guest', text, false)
     } finally {
       setSending(false)
     }
-  }
-
-  const reversedMessages = messages
+  }, [inputText, sending, bookingId, conversation, booking, id])
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -178,17 +208,17 @@ export default function ConsumerChatScreen() {
       >
         <FlatList
           ref={listRef}
-          data={reversedMessages}
+          data={messages}
           keyExtractor={m => m.id}
           inverted
           contentContainerStyle={styles.messageList}
           renderItem={({ item, index }) => {
-            const prev = reversedMessages[index - 1] ?? null
-            const showTs = shouldShowTimestamp(item, prev ? reversedMessages[index + 1] ?? null : null)
+            const nextMsg = messages[index + 1] ?? null
+            const showTs = shouldShowTimestamp(item, nextMsg)
             return (
               <>
                 <MessageBubble msg={item} isConsumer />
-                {showTs && index < reversedMessages.length - 1 && (
+                {showTs && index < messages.length - 1 && (
                   <Text style={styles.tsLabel}>{formatMsgTime(item.created_at)}</Text>
                 )}
               </>
@@ -205,19 +235,22 @@ export default function ConsumerChatScreen() {
         <View style={styles.inputBar}>
           <TextInput
             style={styles.textInput}
-            value={input}
-            onChangeText={setInput}
+            value={inputText}
+            onChangeText={setInputText}
             placeholder="Type a message..."
             placeholderTextColor={Colors.textTertiary}
             multiline
             maxLength={500}
             returnKeyType="send"
-            onSubmitEditing={sendMessage}
+            onSubmitEditing={() => void sendMessage()}
+            accessibilityLabel="Message input"
           />
           <TouchableOpacity
-            style={[styles.sendBtn, !input.trim() && styles.sendBtnDisabled]}
-            onPress={sendMessage}
-            disabled={!input.trim() || sending}
+            style={[styles.sendBtn, (!inputText.trim() || sending) && styles.sendBtnDisabled]}
+            onPress={() => void sendMessage()}
+            disabled={!inputText.trim() || sending}
+            accessibilityLabel="Send message"
+            accessibilityRole="button"
           >
             <Ionicons name="send" size={18} color={Colors.textInverse} />
           </TouchableOpacity>
@@ -237,19 +270,14 @@ const styles = StyleSheet.create({
   bubbleWrapperLeft: { alignSelf: 'flex-start', alignItems: 'flex-start' },
   consumerBubble: {
     backgroundColor: Colors.primary,
-    borderRadius: 18,
-    borderBottomRightRadius: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: 18, borderBottomRightRadius: 4,
+    paddingHorizontal: 14, paddingVertical: 10,
   },
   operatorBubble: {
     backgroundColor: Colors.surfaceWarm,
-    borderRadius: 18,
-    borderBottomLeftRadius: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderRadius: 18, borderBottomLeftRadius: 4,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderWidth: 1, borderColor: Colors.border,
   },
   bubbleText: { fontSize: 14, color: Colors.text, lineHeight: 20 },
   bubbleTextConsumer: { color: Colors.textInverse },
@@ -257,47 +285,29 @@ const styles = StyleSheet.create({
   bubbleTimeRight: { textAlign: 'right' },
   systemMsg: { alignSelf: 'center', marginVertical: Spacing.sm, maxWidth: '70%' },
   systemMsgText: {
-    fontSize: 12,
-    color: Colors.textTertiary,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    lineHeight: 18,
+    fontSize: 12, color: Colors.textTertiary,
+    fontStyle: 'italic', textAlign: 'center', lineHeight: 18,
   },
   tsLabel: {
-    fontSize: 11,
-    color: Colors.textTertiary,
-    textAlign: 'center',
-    marginVertical: Spacing.sm,
+    fontSize: 11, color: Colors.textTertiary,
+    textAlign: 'center', marginVertical: Spacing.sm,
   },
   inputBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
+    flexDirection: 'row', alignItems: 'flex-end',
+    paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
     backgroundColor: Colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    gap: Spacing.sm,
+    borderTopWidth: 1, borderTopColor: Colors.border, gap: Spacing.sm,
   },
   textInput: {
-    flex: 1,
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.xxl,
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm,
-    fontSize: 14,
-    color: Colors.text,
-    maxHeight: 100,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    flex: 1, backgroundColor: Colors.surfaceWarm,
+    borderRadius: Radius.xxl, paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm, fontSize: 14, color: Colors.text,
+    maxHeight: 100, borderWidth: 1, borderColor: Colors.border,
   },
   sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 40, height: 40, borderRadius: 20,
     backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   sendBtnDisabled: { backgroundColor: Colors.textTertiary },
 })
