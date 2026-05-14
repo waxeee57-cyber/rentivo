@@ -15,8 +15,8 @@ import { Config } from '@/constants/config'
 export default function ProfileScreen() {
   const { user, operator, role, signOut, language, setLanguage } = useAuthStore()
   const { showToast } = useToastStore()
-  const name = Config.useMock ? 'Test User' : (user?.name ?? operator?.name ?? 'User')
-  const email = Config.useMock ? 'test@example.com' : (user?.email ?? operator?.email ?? '')
+  const name = Config.useMock ? 'Marco Ferreira' : (user?.name ?? operator?.name ?? 'User')
+  const email = Config.useMock ? 'marco.ferreira@gmail.com' : (user?.email ?? operator?.email ?? '')
   const userId = Config.useMock ? 'usr-001' : (user?.id ?? null)
   const { bookings } = useBookings(userId)
   const tripCount = Config.useMock ? 4 : bookings.filter(b => b.status === 'completed').length
@@ -97,7 +97,7 @@ export default function ProfileScreen() {
 
         {Config.useMock && (
           <Card style={styles.card}>
-            <Text style={styles.sectionTitle}>Switch Role (Mock)</Text>
+            <Text style={styles.sectionTitle}>Switch Role</Text>
             <View style={styles.langRow}>
               <TouchableOpacity
                 style={[styles.langBtn, role === 'consumer' && styles.langBtnActive]}

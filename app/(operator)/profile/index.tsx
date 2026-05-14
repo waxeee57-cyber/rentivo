@@ -54,7 +54,7 @@ export default function OperatorProfileScreen() {
           <TouchableOpacity
             onPress={() => { useAuthStore.getState().setRole('consumer'); router.replace('/(consumer)/explore') }}
           >
-            <Text style={styles.switchText}>Switch to Consumer view (Mock)</Text>
+            <Text style={styles.switchText}>Switch to Consumer view</Text>
           </TouchableOpacity>
         </Card>
       )}

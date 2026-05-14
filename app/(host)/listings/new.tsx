@@ -13,13 +13,13 @@ import { StepIndicator } from '@/components/ui/StepIndicator'
 import { WhatNextScreen } from '@/components/ui/WhatNextScreen'
 import { useCamera } from '@/lib/hooks/useCamera'
 
-const CATEGORIES = [
-  { key: 'car', emoji: '🚗', label: 'Car' },
-  { key: 'motorcycle', emoji: '🏍️', label: 'Motorcycle' },
-  { key: 'boat', emoji: '⛵', label: 'Boat' },
-  { key: 'villa', emoji: '🏠', label: 'Villa' },
-  { key: 'bike', emoji: '🚲', label: 'Bike' },
-  { key: 'other', emoji: '📦', label: 'Other' },
+const CATEGORIES: { key: string; icon: React.ComponentProps<typeof Ionicons>['name']; label: string }[] = [
+  { key: 'car', icon: 'car-outline', label: 'Car' },
+  { key: 'motorcycle', icon: 'speedometer-outline', label: 'Motorcycle' },
+  { key: 'boat', icon: 'boat-outline', label: 'Boat' },
+  { key: 'villa', icon: 'home-outline', label: 'Villa' },
+  { key: 'bike', icon: 'bicycle-outline', label: 'Bike' },
+  { key: 'other', icon: 'cube-outline', label: 'Other' },
 ]
 
 const FEATURE_CHIPS = ['AC', 'GPS', 'Bluetooth', 'USB', 'Leather seats', 'Sunroof', 'Baby seat', '4WD', 'Convertible', 'Automatic']
@@ -145,7 +145,11 @@ export default function NewHostListingScreen() {
                     style={[styles.catCard, category === cat.key && styles.catCardActive]}
                     onPress={() => setCategory(cat.key)}
                   >
-                    <Text style={styles.catEmoji}>{cat.emoji}</Text>
+                    <Ionicons
+                      name={cat.icon}
+                      size={32}
+                      color={category === cat.key ? Colors.primaryDark : Colors.textSecondary}
+                    />
                     <Text style={[styles.catLabel, category === cat.key && styles.catLabelActive]}>
                       {cat.label}
                     </Text>

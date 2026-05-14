@@ -98,7 +98,7 @@ export default function HostProfileScreen() {
 
         {Config.useMock && (
           <Card style={styles.card}>
-            <Text style={styles.sectionTitle}>Switch Role (Mock)</Text>
+            <Text style={styles.sectionTitle}>Switch Role</Text>
             <View style={styles.roleRow}>
               <TouchableOpacity
                 style={[styles.roleBtn, role === 'consumer' && styles.roleBtnActive]}

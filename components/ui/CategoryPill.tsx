@@ -1,23 +1,33 @@
 import React from 'react'
 import { TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 
 interface CategoryPillProps {
   label: string
   emoji?: string
+  icon?: React.ComponentProps<typeof Ionicons>['name']
   active?: boolean
   onPress?: () => void
   style?: ViewStyle
 }
 
-export function CategoryPill({ label, emoji, active = false, onPress, style }: CategoryPillProps) {
+export function CategoryPill({ label, emoji, icon, active = false, onPress, style }: CategoryPillProps) {
   return (
     <TouchableOpacity
       onPress={onPress}
       style={[styles.pill, active && styles.pillActive, style]}
       activeOpacity={0.7}
     >
-      {emoji && <Text style={styles.emoji}>{emoji}</Text>}
+      {icon && (
+        <Ionicons
+          name={icon}
+          size={14}
+          color={active ? Colors.textInverse : Colors.textSecondary}
+          style={styles.icon}
+        />
+      )}
+      {emoji && !icon && <Text style={styles.emoji}>{emoji}</Text>}
       <Text style={[styles.label, active && styles.labelActive]}>{label}</Text>
     </TouchableOpacity>
   )
@@ -46,6 +56,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     elevation: 3,
   },
+  icon: { marginRight: 4 },
   emoji: { fontSize: 14, marginRight: 4 },
   label: { fontSize: 13, fontWeight: '500', color: Colors.textSecondary },
   labelActive: { color: Colors.textInverse },
