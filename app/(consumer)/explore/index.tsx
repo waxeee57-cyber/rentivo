@@ -122,6 +122,7 @@ export default function ExploreScreen() {
             style={StyleSheet.absoluteFill}
             initialRegion={INITIAL_REGION}
             customMapStyle={MAP_STYLE}
+            userInterfaceStyle="dark"
             showsUserLocation
             showsCompass={false}
             showsMyLocationButton={false}
@@ -395,7 +396,7 @@ const styles = StyleSheet.create({
     zIndex: 6,
   },
   toggleText: {
-    color: Colors.textInverse,
+    color: Colors.text,
     fontWeight: '700',
     fontSize: 14,
   },

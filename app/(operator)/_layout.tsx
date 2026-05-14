@@ -26,28 +26,28 @@ export default function OperatorLayout() {
       }}
     >
       <Tabs.Screen
-        name="dashboard"
+        name="dashboard/index"
         options={{
           title: t('dashboard', language),
           tabBarIcon: ({ color }) => <Ionicons name="bar-chart-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="bookings"
+        name="bookings/index"
         options={{
           title: t('bookings', language),
           tabBarIcon: ({ color }) => <Ionicons name="calendar-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="fleet"
+        name="fleet/index"
         options={{
           title: t('fleet', language),
           tabBarIcon: ({ color }) => <Ionicons name="car-outline" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="profile/index"
         options={{
           title: t('profile', language),
           tabBarIcon: ({ color }) => <Ionicons name="person-outline" size={24} color={color} />,
