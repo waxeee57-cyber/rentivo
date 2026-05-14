@@ -29,7 +29,7 @@ export default function HostDashboardScreen() {
         {/* Quick stats */}
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, styles.statCardPrimary]}>
-            <Text style={styles.statValue}>{formatEURDecimal(monthlyEarnings)}</Text>
+            <Text style={styles.statValuePrimary}>{formatEURDecimal(monthlyEarnings)}</Text>
             <Text style={styles.statLabelLight}>Earned this month</Text>
           </View>
           <View style={styles.statCard}>
@@ -203,12 +203,14 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   statCardPrimary: {
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: Colors.primarySubtle,
+    borderWidth: 1.5,
     borderColor: Colors.primary,
   },
   statValue: { fontSize: 20, fontWeight: '800', color: Colors.text, marginBottom: 4 },
+  statValuePrimary: { fontSize: 24, fontWeight: '800', color: Colors.primary, marginBottom: 4 },
   statLabel: { fontSize: 12, color: Colors.textSecondary },
-  statLabelLight: { fontSize: 12, color: Colors.primaryDark, fontWeight: '600' },
+  statLabelLight: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
 
   section: { marginBottom: Spacing.xl },
   sectionHeader: {

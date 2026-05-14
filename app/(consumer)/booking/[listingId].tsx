@@ -206,24 +206,19 @@ export default function BookingFlowScreen() {
               <Text style={styles.guestRecapContact}>{guestPhone}{guestEmail ? ` · ${guestEmail}` : ''}</Text>
             </View>
 
-            {/* Trust signals */}
-            <View style={styles.trustBlock}>
-              <View style={styles.trustRow}>
-                <Text style={styles.trustIcon}>🔒</Text>
-                <Text style={styles.trustText}>Secure payment via Stripe</Text>
-              </View>
-              <View style={styles.trustRow}>
-                <Text style={styles.trustIcon}>✓</Text>
-                <Text style={styles.trustText}>Same security as Amazon & Airbnb</Text>
-              </View>
-              <View style={styles.trustRow}>
-                <Text style={styles.trustIcon}>✓</Text>
-                <Text style={styles.trustText}>Your card is never stored on our servers</Text>
-              </View>
-              <View style={styles.trustRow}>
-                <Text style={styles.trustIcon}>↩</Text>
-                <Text style={styles.trustText}>Money back if operator cancels</Text>
-              </View>
+            {/* Trust signals — 2×2 grid */}
+            <View style={styles.trustGrid}>
+              {[
+                { icon: '🔒', text: 'Stripe secure' },
+                { icon: '✓', text: 'No hidden fees' },
+                { icon: '✓', text: 'Cancel anytime' },
+                { icon: '↩', text: 'Money back' },
+              ].map(item => (
+                <View key={item.text} style={styles.trustItem}>
+                  <Text style={styles.trustIcon}>{item.icon}</Text>
+                  <Text style={styles.trustText}>{item.text}</Text>
+                </View>
+              ))}
             </View>
 
             <Button
@@ -307,16 +302,23 @@ const styles = StyleSheet.create({
   stripeNote: { fontSize: 16, fontWeight: '600', color: Colors.text, textAlign: 'center' },
   stripeNote2: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginTop: 4 },
   secureNote: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginTop: Spacing.sm },
-  trustBlock: {
-    backgroundColor: Colors.successSurface,
+  trustGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.base,
+    backgroundColor: Colors.surfaceWarm,
     borderRadius: Radius.lg,
     padding: Spacing.base,
-    marginTop: Spacing.base,
-    gap: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.success,
+    borderColor: Colors.borderWarm,
   },
-  trustRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  trustIcon: { fontSize: 14, color: Colors.success, width: 20, textAlign: 'center' },
-  trustText: { fontSize: 13, color: Colors.textSecondary, flex: 1, lineHeight: 18 },
+  trustItem: {
+    width: '47%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  trustIcon: { fontSize: 14, width: 20, textAlign: 'center' },
+  trustText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500' },
 })

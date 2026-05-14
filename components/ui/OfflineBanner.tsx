@@ -37,13 +37,15 @@ export function OfflineBanner() {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: Colors.warningSurface,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.warning,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
   },
-  text: { fontSize: 13, fontWeight: '600', color: '#1F1F1F', flex: 1 },
-  dismiss: { fontSize: 16, color: '#1F1F1F', fontWeight: '700', paddingLeft: Spacing.sm },
+  text: { fontSize: 13, fontWeight: '600', color: Colors.text, flex: 1 },
+  dismiss: { fontSize: 16, color: Colors.textSecondary, fontWeight: '700', paddingLeft: Spacing.sm },
 })

@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Colors, Spacing, Radius, Typography } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 
 interface EmptyStateProps {
@@ -23,7 +23,7 @@ export function EmptyState({ emoji = '📭', title, subtitle, action, secondaryA
         <Button
           title={action.label}
           onPress={action.onPress}
-          style={{ marginTop: Spacing.xl }}
+          style={styles.actionBtn}
         />
       )}
       {secondaryAction && (
@@ -44,32 +44,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.xxxl,
-    minHeight: 280,
+    minHeight: 300,
+    maxWidth: '100%',
+    alignSelf: 'center',
+    width: '100%',
   },
   emojiWrap: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     backgroundColor: Colors.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderWarm,
   },
-  emoji: { fontSize: 40 },
+  emoji: { fontSize: 56 },
   title: {
-    fontSize: 18,
-    fontWeight: '800',
+    ...Typography.h3,
     color: Colors.text,
     textAlign: 'center',
     marginBottom: Spacing.sm,
+    marginTop: Spacing.base,
   },
   subtitle: {
-    fontSize: 14,
+    ...Typography.body,
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
-    maxWidth: 240,
+    maxWidth: 280,
+    marginTop: Spacing.sm,
+  },
+  actionBtn: {
+    marginTop: Spacing.xl,
+    minWidth: 200,
   },
 })

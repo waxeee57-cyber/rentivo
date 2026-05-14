@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react'
 import { View, Text, StyleSheet, Animated } from 'react-native'
 import { Marker } from 'react-native-maps'
-import { Colors } from '@/constants/colors'
+import { Colors, Radius, Shadow } from '@/constants/colors'
 import type { Listing } from '@/types'
 
 interface ListingMarkerProps {
@@ -19,12 +19,14 @@ export function ListingMarker({ listing, selected, onPress }: ListingMarkerProps
     if (selected) {
       Animated.sequence([
         Animated.spring(scale, { toValue: 1.25, damping: 10, useNativeDriver: true }),
-        Animated.spring(scale, { toValue: 1.1, damping: 12, useNativeDriver: true }),
+        Animated.spring(scale, { toValue: 1.15, damping: 14, useNativeDriver: true }),
       ]).start()
     } else {
-      Animated.spring(scale, { toValue: 1, damping: 12, useNativeDriver: true }).start()
+      Animated.spring(scale, { toValue: 1, damping: 14, useNativeDriver: true }).start()
     }
   }, [selected, scale])
+
+  const price = `€${Math.round(listing.price_per_day / 100)}`
 
   return (
     <Marker
@@ -33,10 +35,8 @@ export function ListingMarker({ listing, selected, onPress }: ListingMarkerProps
       tracksViewChanges={false}
     >
       <Animated.View style={{ transform: [{ scale }] }}>
-        <View style={[styles.marker, selected && styles.markerSelected]}>
-          <Text style={[styles.markerText, selected && styles.markerTextSelected]}>
-            €{Math.round(listing.price_per_day / 100)}
-          </Text>
+        <View style={[styles.bubble, selected && styles.bubbleSelected]}>
+          <Text style={[styles.label, selected && styles.labelSelected]}>{price}</Text>
         </View>
       </Animated.View>
     </Marker>
@@ -44,33 +44,26 @@ export function ListingMarker({ listing, selected, onPress }: ListingMarkerProps
 }
 
 const styles = StyleSheet.create({
-  marker: {
+  bubble: {
     backgroundColor: Colors.surface,
-    borderRadius: 20,
+    borderRadius: Radius.full,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderWidth: 1.5,
-    borderColor: Colors.primary,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    borderColor: Colors.border,
+    ...Shadow.sm,
   },
-  markerSelected: {
+  bubbleSelected: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
-    shadowColor: Colors.primary,
-    shadowOpacity: 0.45,
-    shadowRadius: 10,
-    elevation: 10,
+    ...Shadow.gold,
   },
-  markerText: {
+  label: {
     fontSize: 13,
     fontWeight: '700',
     color: Colors.text,
   },
-  markerTextSelected: {
-    color: '#FFFFFF',
+  labelSelected: {
+    color: Colors.textInverse,
   },
 })

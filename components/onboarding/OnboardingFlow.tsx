@@ -37,7 +37,7 @@ function WaveEmoji() {
 function Screen1({ onNext, onSkip }: { onNext: () => void; onSkip: () => void }) {
   return (
     <LinearGradient
-      colors={['#0A1628', '#1A2942', '#0d2438']}
+      colors={[Colors.background, Colors.surfaceWarm, Colors.background]}
       style={styles.screen}
     >
       <SafeAreaView style={styles.safeArea}>

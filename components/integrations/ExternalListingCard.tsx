@@ -10,12 +10,12 @@ import { AffiliateDisclosure } from './AffiliateDisclosure'
 import type { ExternalListing } from '@/types'
 
 const PLATFORM_INFO: Record<string, { label: string; color: string }> = {
-  airbnb: { label: 'Airbnb', color: '#FF5A5F' },
-  booking: { label: 'Booking.com', color: '#4A8FE8' },
-  vrbo: { label: 'VRBO', color: '#2D7DD2' },
-  turo: { label: 'Turo', color: '#2D9B6F' },
-  holidu: { label: 'Holidu', color: '#E8A44A' },
-  other: { label: 'External', color: '#8A9BB5' },
+  airbnb: { label: 'Airbnb', color: Colors.airbnb },
+  booking: { label: 'Booking.com', color: Colors.info },
+  vrbo: { label: 'VRBO', color: Colors.vrbo },
+  turo: { label: 'Turo', color: Colors.turo },
+  holidu: { label: 'Holidu', color: Colors.primary },
+  other: { label: 'External', color: Colors.textSecondary },
 }
 
 interface ExternalListingCardProps {
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  platformBadgeText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
+  platformBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.white },
   externalBadge: {
     position: 'absolute',
     top: Spacing.sm,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  externalBadgeText: { fontSize: 10, fontWeight: '600', color: '#FFFFFF' },
+  externalBadgeText: { fontSize: 10, fontWeight: '600', color: Colors.white },
   info: { padding: Spacing.base },
   titleRow: {
     flexDirection: 'row',
@@ -155,5 +155,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  bookBtnText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+  bookBtnText: { fontSize: 12, fontWeight: '700', color: Colors.white },
 })

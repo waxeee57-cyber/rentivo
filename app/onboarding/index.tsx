@@ -6,7 +6,7 @@ import {
 import { router } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Colors, Spacing, Radius, Typography, Shadow } from '@/constants/colors'
 import { Config } from '@/constants/config'
 
 const { width, height } = Dimensions.get('window')
@@ -17,21 +17,21 @@ const SLIDES = [
     emoji: '🌊',
     title: 'Rent anything in\nthe Mediterranean',
     subtitle: 'Cars, bikes, yachts — from verified local operators',
-    gradient: ['#1a6b8a', '#0d3d5c'] as [string, string],
+    gradient: ['#0A1628', '#0D1F38'] as [string, string],
   },
   {
     id: '2',
     emoji: '📋',
     title: 'Digital contracts &\ndamage protection',
     subtitle: 'Every rental is covered. Photos, signatures, zero disputes.',
-    gradient: ['#2d6a4f', '#1b4332'] as [string, string],
+    gradient: ['#0A1628', '#091520'] as [string, string],
   },
   {
     id: '3',
     emoji: '⚡',
     title: 'Live in 48 hours if\nyou\'re an operator',
     subtitle: 'List your fleet and start accepting bookings today',
-    gradient: ['#c4832a', '#8b5e1a'] as [string, string],
+    gradient: ['#0A1628', '#12150A'] as [string, string],
   },
 ]
 
@@ -95,27 +95,44 @@ export default function OnboardingScreen() {
               end={{ x: 1, y: 1 }}
             />
             <View style={styles.slideContent}>
-              <Text style={styles.emoji}>{item.emoji}</Text>
+              <View style={styles.emojiCircle}>
+                <Text style={styles.emoji}>{item.emoji}</Text>
+              </View>
               <Text style={styles.title}>{item.title}</Text>
               <Text style={styles.subtitle}>{item.subtitle}</Text>
+
+              {/* Trust badges on slide 1 */}
+              {item.id === '1' && (
+                <View style={styles.trustBadges}>
+                  <View style={styles.trustBadge}>
+                    <Text style={styles.trustBadgeText}>🔒 Insured</Text>
+                  </View>
+                  <View style={styles.trustBadge}>
+                    <Text style={styles.trustBadgeText}>⚡ Instant</Text>
+                  </View>
+                  <View style={styles.trustBadge}>
+                    <Text style={styles.trustBadgeText}>⭐ Verified</Text>
+                  </View>
+                </View>
+              )}
             </View>
           </View>
         )}
       />
 
-      {/* Bottom controls */}
+      {/* Controls */}
       <View style={styles.controls}>
-        {/* Dots */}
+        {/* Dot indicators */}
         <View style={styles.dots}>
           {SLIDES.map((_, i) => {
             const dotWidth = scrollX.interpolate({
               inputRange: [(i - 1) * width, i * width, (i + 1) * width],
-              outputRange: [8, 24, 8],
+              outputRange: [8, 28, 8],
               extrapolate: 'clamp',
             })
             const dotOpacity = scrollX.interpolate({
               inputRange: [(i - 1) * width, i * width, (i + 1) * width],
-              outputRange: [0.4, 1, 0.4],
+              outputRange: [0.35, 1, 0.35],
               extrapolate: 'clamp',
             })
             return (
@@ -127,16 +144,16 @@ export default function OnboardingScreen() {
           })}
         </View>
 
-        {/* Buttons */}
+        {/* Primary button */}
         <TouchableOpacity style={styles.primaryBtn} onPress={handleNext}>
           <Text style={styles.primaryBtnText}>
-            {isLast ? 'Get started →' : 'Next'}
+            {isLast ? 'Get started →' : 'Next →'}
           </Text>
         </TouchableOpacity>
 
         {!isLast && (
           <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
-            <Text style={styles.skipBtnText}>Skip</Text>
+            <Text style={styles.skipBtnText}>Sign in</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -145,7 +162,7 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.dark },
+  container: { flex: 1, backgroundColor: Colors.background },
 
   slide: {
     width,
@@ -156,21 +173,51 @@ const styles = StyleSheet.create({
   slideContent: {
     paddingHorizontal: Spacing.xxxl,
     alignItems: 'center',
+    paddingBottom: 220,
   },
-  emoji: { fontSize: 80, marginBottom: Spacing.xl },
-  title: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    lineHeight: 40,
+  emojiCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(232,164,74,0.12)',
+    borderWidth: 1,
+    borderColor: Colors.borderGold,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: Spacing.xl,
   },
+  emoji: { fontSize: 64 },
+  title: {
+    ...Typography.h1,
+    color: Colors.white,
+    textAlign: 'center',
+    marginBottom: Spacing.base,
+  },
   subtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
+    ...Typography.body,
+    color: 'rgba(245,240,232,0.7)',
     textAlign: 'center',
     lineHeight: 24,
+    marginBottom: Spacing.xl,
+  },
+  trustBadges: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  trustBadge: {
+    backgroundColor: 'rgba(232,164,74,0.12)',
+    borderRadius: Radius.full,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: Colors.borderGold,
+  },
+  trustBadgeText: {
+    fontSize: 13,
+    color: Colors.primary,
+    fontWeight: '600',
   },
 
   controls: {
@@ -185,23 +232,26 @@ const styles = StyleSheet.create({
   },
   dots: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
   dot: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FFFFFF',
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.primary,
   },
   primaryBtn: {
     width: '100%',
     backgroundColor: Colors.primary,
-    borderRadius: Radius.pill,
+    borderRadius: Radius.full,
     paddingVertical: Spacing.md,
     alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 6,
+    ...Shadow.gold,
   },
-  primaryBtnText: { fontSize: 17, fontWeight: '800', color: Colors.textInverse },
+  primaryBtnText: {
+    ...Typography.h4,
+    color: Colors.textInverse,
+  },
   skipBtn: { paddingVertical: Spacing.sm },
-  skipBtnText: { fontSize: 14, color: 'rgba(255,255,255,0.6)', fontWeight: '500' },
+  skipBtnText: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
 })

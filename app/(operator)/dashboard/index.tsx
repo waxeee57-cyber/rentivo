@@ -108,9 +108,14 @@ const qaStyles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
-    minHeight: 84,
+    minHeight: 80,
     justifyContent: 'center',
     gap: Spacing.xs,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   iconWrap: {
     position: 'relative',
@@ -120,7 +125,7 @@ const qaStyles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -8,
-    backgroundColor: Colors.error,
+    backgroundColor: Colors.primary,
     borderRadius: 9,
     minWidth: 18,
     height: 18,
@@ -128,8 +133,8 @@ const qaStyles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
-  badgeText: { fontSize: 10, fontWeight: '800', color: '#fff' },
-  label: { fontSize: 12, fontWeight: '600', color: Colors.text, textAlign: 'center' },
+  badgeText: { fontSize: 10, fontWeight: '800', color: Colors.textInverse },
+  label: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary, textAlign: 'center' },
 })
 
 export default function DashboardScreen() {

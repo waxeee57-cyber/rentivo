@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     alignItems: 'center',
   },
-  confirmBigBtnText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  confirmBigBtnText: { fontSize: 16, fontWeight: '800', color: Colors.white },
   declineBtn: {
     paddingHorizontal: Spacing.xl,
     borderRadius: Radius.lg,

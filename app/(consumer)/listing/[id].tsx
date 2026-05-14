@@ -507,8 +507,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
   },
-  catBadgeText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
-  heroTitle: { fontSize: 24, fontWeight: '800', color: '#FFFFFF', marginBottom: 6 },
+  catBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.white },
+  heroTitle: { fontSize: 24, fontWeight: '800', color: Colors.white, marginBottom: 6 },
   heroLocation: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   heroLocationText: { fontSize: 13, color: 'rgba(255,255,255,0.85)' },
 

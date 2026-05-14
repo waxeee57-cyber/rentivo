@@ -26,18 +26,28 @@ export function PhotoCapture({ label, uri, onCapture }: PhotoCaptureProps) {
   }
 
   return (
-    <TouchableOpacity style={styles.slot} onPress={handlePress} activeOpacity={0.8} disabled={loading}>
+    <TouchableOpacity
+      style={[styles.slot, uri && styles.slotFilled]}
+      onPress={handlePress}
+      activeOpacity={0.8}
+      disabled={loading}
+    >
       {uri ? (
-        <Image source={{ uri }} style={styles.image} contentFit="cover" />
+        <>
+          <Image source={{ uri }} style={styles.image} contentFit="cover" />
+          {/* Green checkmark overlay */}
+          <View style={styles.checkOverlay}>
+            <Text style={styles.checkIcon}>✓</Text>
+          </View>
+          {/* Retake hint */}
+          <View style={styles.retakeOverlay}>
+            <Text style={styles.retakeText}>Retake</Text>
+          </View>
+        </>
       ) : (
         <View style={styles.placeholder}>
-          <Text style={styles.icon}>📷</Text>
+          <Text style={styles.cameraIcon}>📷</Text>
           <Text style={styles.label}>{label}</Text>
-        </View>
-      )}
-      {uri && (
-        <View style={styles.retakeOverlay}>
-          <Text style={styles.retakeText}>Retake</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -46,26 +56,48 @@ export function PhotoCapture({ label, uri, onCapture }: PhotoCaptureProps) {
 
 const styles = StyleSheet.create({
   slot: {
-    width: '31%',
+    width: '47%',
     aspectRatio: 1,
     borderRadius: Radius.lg,
     overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: Colors.border,
     borderStyle: 'dashed',
+    borderColor: Colors.borderWarm,
     backgroundColor: Colors.surfaceWarm,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  slotFilled: {
+    borderStyle: 'solid',
+    borderColor: Colors.success,
   },
   image: { width: '100%', height: '100%' },
-  placeholder: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 4 },
-  icon: { fontSize: 22, marginBottom: 4 },
-  label: { fontSize: 10, color: Colors.textSecondary, textAlign: 'center', fontWeight: '600' },
+  placeholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+  },
+  cameraIcon: { fontSize: 28, marginBottom: 6 },
+  label: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', fontWeight: '600' },
+  checkOverlay: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkIcon: { fontSize: 12, color: Colors.white, fontWeight: '800' },
   retakeOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: Colors.overlayLight,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: 4,
+    paddingBottom: 6,
+    opacity: 0,
   },
-  retakeText: { fontSize: 10, color: Colors.textInverse, fontWeight: '700' },
+  retakeText: { fontSize: 11, color: Colors.white, fontWeight: '700' },
 })

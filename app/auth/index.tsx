@@ -1,8 +1,9 @@
 import React, { useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Colors, Spacing, Radius, Typography, Shadow } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 
@@ -10,26 +11,32 @@ function RoleCard({
   emoji,
   title,
   desc,
-  variant = 'light',
+  variant = 'traveler',
   onPress,
 }: {
   emoji: string
   title: string
   desc: string
-  variant?: 'light' | 'warm' | 'dark'
+  variant?: 'traveler' | 'host' | 'operator'
   onPress: () => void
 }) {
   const scale = useRef(new Animated.Value(1)).current
 
+  const cardStyle = [
+    styles.card,
+    variant === 'traveler' && styles.cardTraveler,
+    variant === 'host'     && styles.cardHost,
+    variant === 'operator' && styles.cardOperator,
+  ]
+
+  const titleStyle = [styles.cardTitle, variant === 'operator' && styles.cardTitleDark]
+  const descStyle  = [styles.cardDesc,  variant === 'operator' && styles.cardDescDark]
+  const arrowStyle = [styles.cardArrow, variant === 'operator' && styles.cardArrowDark]
+
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
       <TouchableOpacity
-        style={[
-          styles.card,
-          variant === 'light' && styles.cardLight,
-          variant === 'warm' && styles.cardWarm,
-          variant === 'dark' && styles.cardDark,
-        ]}
+        style={cardStyle}
         onPress={onPress}
         onPressIn={() => Animated.spring(scale, { toValue: 0.97, damping: 15, useNativeDriver: true }).start()}
         onPressOut={() => Animated.spring(scale, { toValue: 1, damping: 15, useNativeDriver: true }).start()}
@@ -37,10 +44,10 @@ function RoleCard({
       >
         <Text style={styles.cardEmoji}>{emoji}</Text>
         <View style={styles.cardBody}>
-          <Text style={[styles.cardTitle, variant === 'dark' && styles.cardTitleDark]}>{title}</Text>
-          <Text style={[styles.cardDesc, variant === 'dark' && styles.cardDescDark]}>{desc}</Text>
+          <Text style={titleStyle}>{title}</Text>
+          <Text style={descStyle}>{desc}</Text>
         </View>
-        <Text style={[styles.cardArrow, variant === 'dark' && styles.cardArrowDark]}>→</Text>
+        <Text style={arrowStyle}>›</Text>
       </TouchableOpacity>
     </Animated.View>
   )
@@ -61,116 +68,163 @@ export default function RoleSelectionScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.hero}>
-        <Text style={styles.logo}>Rentivo</Text>
-        <Text style={styles.tagline}>Rent anything. Anywhere.</Text>
-        <Text style={styles.subTagline}>Mediterranean & Beyond</Text>
-      </View>
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#0A1628', '#0D1F38']}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      />
+      <SafeAreaView style={styles.safeArea}>
+        {/* Hero */}
+        <View style={styles.hero}>
+          <Text style={styles.wave}>🌊</Text>
+          <Text style={styles.logo}>Rentivo</Text>
+          <Text style={styles.tagline}>Premium rentals across the Mediterranean</Text>
+          <View style={styles.trustRow}>
+            <Text style={styles.trustBadge}>🔒 Insured</Text>
+            <Text style={styles.trustDot}>·</Text>
+            <Text style={styles.trustBadge}>⚡ Instant</Text>
+            <Text style={styles.trustDot}>·</Text>
+            <Text style={styles.trustBadge}>⭐ Verified</Text>
+          </View>
+        </View>
 
-      <View style={styles.cards}>
-        <RoleCard
-          emoji="🌴"
-          title="I want to rent"
-          desc="Find cars, boats & more"
-          variant="light"
-          onPress={() => handleSelect('consumer')}
-        />
-        <RoleCard
-          emoji="🏠"
-          title="I have something to rent"
-          desc="List your car, boat or villa"
-          variant="warm"
-          onPress={() => handleSelect('host')}
-        />
-        <RoleCard
-          emoji="🏢"
-          title="I run a rental business"
-          desc="Manage fleet & bookings"
-          variant="dark"
-          onPress={() => handleSelect('operator')}
-        />
-      </View>
+        {/* Role cards */}
+        <View style={styles.cards}>
+          <RoleCard
+            emoji="🌴"
+            title="I want to rent something"
+            desc="Cars, boats, bikes and more"
+            variant="traveler"
+            onPress={() => handleSelect('consumer')}
+          />
+          <RoleCard
+            emoji="🏠"
+            title="I own something to rent"
+            desc="List your vehicle, earn money"
+            variant="host"
+            onPress={() => handleSelect('host')}
+          />
+          <RoleCard
+            emoji="🏢"
+            title="I run a rental business"
+            desc="Fleet management, bookings"
+            variant="operator"
+            onPress={() => handleSelect('operator')}
+          />
+        </View>
 
-      <Text style={styles.footer}>By continuing you agree to our Terms of Service</Text>
-    </SafeAreaView>
+        {/* Footer */}
+        <Text style={styles.footer}>
+          By continuing you agree to our Terms · Privacy
+        </Text>
+      </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+  safeArea: {
     flex: 1,
-    backgroundColor: Colors.background,
     paddingHorizontal: Spacing.xl,
     justifyContent: 'space-between',
     paddingBottom: Spacing.xl,
   },
+
   hero: {
     alignItems: 'center',
     paddingTop: Spacing.xxxl,
+  },
+  wave: {
+    fontSize: 40,
+    marginBottom: Spacing.md,
   },
   logo: {
     fontSize: 48,
     fontWeight: '900',
     color: Colors.primary,
-    marginBottom: Spacing.sm,
     letterSpacing: -1,
+    marginBottom: Spacing.sm,
   },
   tagline: {
-    fontSize: 20,
-    fontWeight: '600',
+    ...Typography.h3,
     color: Colors.text,
-    marginBottom: Spacing.xs,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
   },
-  subTagline: {
-    fontSize: 14,
-    fontStyle: 'italic',
+  trustRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  trustBadge: {
+    fontSize: 13,
     color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  trustDot: {
+    color: Colors.textTertiary,
   },
 
   cards: {
-    gap: Spacing.base,
+    gap: Spacing.md,
   },
 
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: Radius.xxl,
-    padding: Spacing.xl,
-    gap: Spacing.base,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 6,
+    height: 76,
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.base,
+    gap: Spacing.md,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadow.sm,
   },
-  cardLight: {
-    backgroundColor: Colors.surfaceCard,
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    shadowColor: Colors.primary,
+  cardTraveler: {
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.primary,
+    borderTopColor: Colors.border,
+    borderRightColor: Colors.border,
+    borderBottomColor: Colors.border,
   },
-  cardWarm: {
-    backgroundColor: Colors.surfaceWarm,
-    borderWidth: 1.5,
-    borderColor: Colors.text,
-    shadowColor: '#000',
+  cardHost: {
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.white,
+    borderTopColor: Colors.border,
+    borderRightColor: Colors.border,
+    borderBottomColor: Colors.border,
   },
-  cardDark: {
+  cardOperator: {
     backgroundColor: Colors.primary,
-    borderWidth: 0,
-    shadowColor: '#000',
+    borderColor: Colors.primary,
   },
-  cardEmoji: { fontSize: 40 },
+
+  cardEmoji: { fontSize: 32 },
   cardBody: { flex: 1 },
-  cardTitle: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: 2 },
-  cardTitleDark: { color: Colors.dark },
-  cardDesc: { fontSize: 14, color: Colors.textSecondary },
-  cardDescDark: { color: 'rgba(10,22,40,0.7)' },
-  cardArrow: { fontSize: 20, color: Colors.textTertiary, fontWeight: '700' },
-  cardArrowDark: { color: Colors.dark },
+  cardTitle: {
+    ...Typography.h4,
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  cardTitleDark: { color: Colors.textInverse },
+  cardDesc: {
+    ...Typography.bodyS,
+    color: Colors.textSecondary,
+  },
+  cardDescDark: { color: 'rgba(10,22,40,0.65)' },
+  cardArrow: {
+    fontSize: 22,
+    color: Colors.textTertiary,
+    fontWeight: '300',
+  },
+  cardArrowDark: { color: Colors.textInverse },
 
   footer: {
-    fontSize: 11,
+    fontSize: 13,
     color: Colors.textTertiary,
     textAlign: 'center',
   },
