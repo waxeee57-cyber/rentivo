@@ -9,6 +9,7 @@ import { router } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { StepIndicator } from '@/components/ui/StepIndicator'
+import { WhatNextScreen } from '@/components/ui/WhatNextScreen'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -43,6 +44,7 @@ export default function NewListingScreen() {
   const [features, setFeatures] = useState<string[]>([])
   const [photos, setPhotos] = useState<(string | null)[]>(Array(6).fill(null))
   const [saving, setSaving] = useState(false)
+  const [published, setPublished] = useState(false)
 
   const toggleFeature = (f: string) => {
     setFeatures(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f])
@@ -73,8 +75,7 @@ export default function NewListingScreen() {
       if (Config.useMock) {
         await new Promise(r => setTimeout(r, 800))
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        showToast({ message: 'Your vehicle is now live! 🎉', type: 'success' })
-        router.back()
+        setPublished(true)
         return
       }
       await createListing({
@@ -112,6 +113,36 @@ export default function NewListingScreen() {
     } finally {
       setSaving(false)
     }
+  }
+
+  if (published) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center' }]} edges={['bottom']}>
+        <ScrollView contentContainerStyle={{ padding: Spacing.xl }}>
+          <View style={styles.publishedCircle}>
+            <Text style={styles.publishedCheck}>✓</Text>
+          </View>
+          <Text style={styles.publishedTitle}>Vehicle is live! 🎉</Text>
+          <Text style={styles.publishedSub}>Travellers can now discover and book your vehicle.</Text>
+          <WhatNextScreen
+            steps={[
+              { icon: '🔔', text: 'You receive instant push notifications for new bookings' },
+              { icon: '✓', text: 'Confirm bookings in 1 tap — no double bookings possible' },
+              { icon: '💰', text: `Payout: 2 business days after pickup` },
+              { icon: '🔄', text: 'RentalOS sync available soon — zero manual work' },
+            ]}
+            primaryAction={{
+              label: 'Go to Fleet',
+              onPress: () => router.replace('/(operator)/fleet'),
+            }}
+            secondaryAction={{
+              label: 'View bookings',
+              onPress: () => router.replace('/(operator)/bookings'),
+            }}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    )
   }
 
   return (
@@ -245,4 +276,31 @@ const styles = StyleSheet.create({
   },
   photoSlotImage: { width: '100%', height: '100%' },
   photoSlotLabel: { fontSize: 10, color: Colors.textTertiary, fontWeight: '600' },
+  publishedCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: Colors.successSurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: Spacing.xl,
+    borderWidth: 3,
+    borderColor: Colors.success,
+  },
+  publishedCheck: { fontSize: 48, color: Colors.success },
+  publishedTitle: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  publishedSub: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+    lineHeight: 22,
+  },
 })

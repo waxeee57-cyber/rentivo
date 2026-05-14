@@ -52,6 +52,11 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
               <Text style={styles.availableBadgeText}>Available now</Text>
             </View>
           )}
+          {listing.instant_book && (
+            <View style={styles.instantBadge}>
+              <Text style={styles.instantBadgeText}>⚡ Instant</Text>
+            </View>
+          )}
           <TouchableOpacity
             style={styles.heartBtn}
             onPress={() => {
@@ -207,4 +212,14 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   availableBadgeText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
+  instantBadge: {
+    position: 'absolute',
+    bottom: Spacing.sm,
+    right: Spacing.sm,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  instantBadgeText: { fontSize: 10, fontWeight: '700', color: '#FFFFFF' },
 })

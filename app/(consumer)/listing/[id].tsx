@@ -351,13 +351,24 @@ export default function ListingDetailScreen() {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>About the operator</Text>
                 <OperatorCard operator={listing.operator} />
-                <TouchableOpacity
-                  style={styles.askQuestionBtn}
-                  onPress={() => router.push(`/(consumer)/bookings/chat/bk-001`)}
-                >
-                  <Ionicons name="chatbubble-outline" size={16} color={Colors.primary} />
-                  <Text style={styles.askQuestionText}>Ask a question</Text>
-                </TouchableOpacity>
+                <View style={styles.operatorActions}>
+                  <TouchableOpacity
+                    style={styles.askQuestionBtn}
+                    onPress={() => router.push(`/(consumer)/bookings/chat/bk-001`)}
+                  >
+                    <Ionicons name="chatbubble-outline" size={16} color={Colors.primary} />
+                    <Text style={styles.askQuestionText}>Ask a question</Text>
+                  </TouchableOpacity>
+                  {listing.operator.phone ? (
+                    <TouchableOpacity
+                      style={styles.callBtn}
+                      onPress={() => Linking.openURL(`tel:${listing.operator!.phone}`)}
+                    >
+                      <Ionicons name="call-outline" size={16} color={Colors.success} />
+                      <Text style={styles.callBtnText}>Call</Text>
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
               </View>
               <Divider />
             </>
@@ -429,8 +440,10 @@ export default function ListingDetailScreen() {
       <View style={[styles.bookingBar, { paddingBottom: insets.bottom + Spacing.sm }]}>
         <View style={styles.bookingBarLeft}>
           <Text style={styles.bookingBarPrice}>{formatEUR(listing.price_per_day)}<Text style={styles.bookingBarUnit}>/day</Text></Text>
-          {priceCalc && totalDays && (
+          {priceCalc && totalDays ? (
             <Text style={styles.bookingBarSub}>{totalDays} days · {formatEURDecimal(priceCalc.total)}</Text>
+          ) : (
+            <Text style={styles.bookingBarTrust}>🔒 Secure · ✓ Verified</Text>
           )}
         </View>
         <TouchableOpacity
@@ -645,19 +658,34 @@ const styles = StyleSheet.create({
   rulesBox: { backgroundColor: Colors.warningSurface, borderRadius: Radius.lg, padding: Spacing.md },
   rulesText: { fontSize: 13, color: Colors.textSecondary, lineHeight: 20 },
 
+  operatorActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+    flexWrap: 'wrap',
+  },
   askQuestionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    marginTop: Spacing.md,
     padding: Spacing.md,
     backgroundColor: Colors.primarySurface,
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: Colors.primary,
-    alignSelf: 'flex-start',
   },
   askQuestionText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
+  callBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    backgroundColor: Colors.successSurface,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.success,
+  },
+  callBtnText: { fontSize: 14, color: Colors.success, fontWeight: '600' },
 
   locationCard: {
     flexDirection: 'row',
@@ -717,6 +745,7 @@ const styles = StyleSheet.create({
   bookingBarPrice: { fontSize: 18, fontWeight: '700', color: Colors.text },
   bookingBarUnit: { fontSize: 13, fontWeight: '400', color: Colors.textSecondary },
   bookingBarSub: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
+  bookingBarTrust: { fontSize: 11, color: Colors.success, marginTop: 2, fontWeight: '600' },
   bookNowBtn: {
     backgroundColor: Colors.primary,
     borderRadius: Radius.pill,

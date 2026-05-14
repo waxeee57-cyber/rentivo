@@ -10,8 +10,8 @@ import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { StepIndicator } from '@/components/ui/StepIndicator'
+import { WhatNextScreen } from '@/components/ui/WhatNextScreen'
 import { useCamera } from '@/lib/hooks/useCamera'
-import { useToastStore } from '@/lib/store/useToastStore'
 
 const CATEGORIES = [
   { key: 'car', emoji: '🚗', label: 'Car' },
@@ -34,7 +34,6 @@ type Step = 1 | 2 | 3 | 4 | 5
 
 export default function NewHostListingScreen() {
   const { showPhotoOptions } = useCamera()
-  const { showToast } = useToastStore()
   const [step, setStep] = useState<Step>(1)
   const [category, setCategory] = useState('')
   const [make, setMake] = useState('')
@@ -74,10 +73,37 @@ export default function NewHostListingScreen() {
     else handlePublish()
   }
 
+  const [published, setPublished] = useState(false)
+
   const handlePublish = () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    showToast({ message: 'Your vehicle is now live! 🎉', type: 'success' })
-    router.replace('/(host)/listings')
+    setPublished(true)
+  }
+
+  if (published) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center' }]}>
+        <View style={{ paddingHorizontal: Spacing.xl }}>
+          <View style={styles.publishedCircle}>
+            <Text style={styles.publishedCheck}>✓</Text>
+          </View>
+          <Text style={styles.publishedTitle}>You're live! 🎉</Text>
+          <Text style={styles.publishedSubtitle}>Your listing is now visible to travellers.</Text>
+          <WhatNextScreen
+            steps={[
+              { icon: '🔔', text: "You'll get a notification when someone books" },
+              { icon: '✓', text: 'Confirm or decline each booking in your inbox' },
+              { icon: '💰', text: 'Your payout arrives 24 hours after pickup' },
+              { icon: '🛡️', text: 'Insurance is automatically included' },
+            ]}
+            primaryAction={{
+              label: 'View my listings',
+              onPress: () => router.replace('/(host)/listings'),
+            }}
+          />
+        </View>
+      </SafeAreaView>
+    )
   }
 
   return (
@@ -253,6 +279,16 @@ export default function NewHostListingScreen() {
               <Text style={styles.priceSuggestion}>
                 💡 Suggested: €35–€65/day based on similar listings in your area
               </Text>
+
+              {pricePerDay !== '' && parseFloat(pricePerDay) > 0 && (
+                <View style={styles.earningsCard}>
+                  <Text style={styles.earningsTitle}>💰 Estimated earnings</Text>
+                  <Text style={styles.earningsValue}>
+                    ~€{Math.round(parseFloat(pricePerDay) * 8 * 0.975)}/month
+                  </Text>
+                  <Text style={styles.earningsNote}>8 days/month · after 2.5% platform fee</Text>
+                </View>
+              )}
 
               <Text style={styles.label}>Cancellation policy</Text>
               {POLICIES.map(p => (
@@ -582,4 +618,43 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   nextBtnText: { fontSize: 16, fontWeight: '800', color: Colors.textInverse },
+  publishedCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: Colors.successSurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: Spacing.xl,
+    borderWidth: 3,
+    borderColor: Colors.success,
+  },
+  publishedCheck: { fontSize: 48, color: Colors.success },
+  publishedTitle: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  publishedSubtitle: {
+    fontSize: 15,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+    lineHeight: 22,
+  },
+  earningsCard: {
+    backgroundColor: Colors.successSurface,
+    borderRadius: Radius.xl,
+    padding: Spacing.base,
+    marginBottom: Spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.success,
+    alignItems: 'center',
+  },
+  earningsTitle: { fontSize: 13, fontWeight: '700', color: Colors.success, marginBottom: Spacing.xs },
+  earningsValue: { fontSize: 32, fontWeight: '900', color: Colors.success },
+  earningsNote: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
 })

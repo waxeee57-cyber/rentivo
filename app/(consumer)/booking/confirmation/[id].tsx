@@ -7,84 +7,100 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useToastStore } from '@/lib/store/useToastStore'
-
-function NextStep({ icon, text }: { icon: string; text: string }) {
-  return (
-    <View style={styles.nextStep}>
-      <Text style={styles.nextStepIcon}>{icon}</Text>
-      <Text style={styles.nextStepText}>{text}</Text>
-    </View>
-  )
-}
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 
 export default function BookingConfirmationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const ref = (id ?? 'XXXXX').slice(0, 8).toUpperCase()
   const { showToast } = useToastStore()
+  const { language } = useAuthStore()
 
   useEffect(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     setTimeout(() => {
-      showToast({ message: 'Booking confirmed! ✓', type: 'success' })
+      showToast({ message: `${t('bookingConfirmed', language)} ✓`, type: 'success' })
     }, 800)
   }, [])
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Booking Confirmed" onBack={() => router.replace('/(consumer)/bookings')} />
+      <ScreenHeader title={t('bookingConfirmed', language)} onBack={() => router.replace('/(consumer)/bookings')} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.successSection}>
           <View style={styles.checkCircle}>
             <Text style={styles.checkMark}>✓</Text>
           </View>
-          <Text style={styles.title}>Booking Confirmed!</Text>
-          <Text style={styles.ref}>Reference: #{ref}</Text>
+          <Text style={styles.title}>{t('bookingConfirmed', language)}</Text>
+          <Text style={styles.ref}>#{ref}</Text>
           <Text style={styles.subtitle}>
-            Your booking has been placed. The operator will confirm shortly.
+            {language === 'es'
+              ? 'Tu reserva ha sido enviada. El operador confirmará en breve.'
+              : language === 'hu'
+              ? 'A foglalásod megérkezett. Az operátor hamarosan visszaigazolja.'
+              : 'Your booking has been placed. The operator will confirm shortly.'}
           </Text>
         </View>
 
         {/* What happens next */}
         <View style={styles.nextCard}>
-          <Text style={styles.nextCardTitle}>What happens next</Text>
-          <NextStep
-            icon="→"
-            text="The operator will contact you about pickup details"
-          />
-          <NextStep
-            icon="→"
-            text="You'll receive a digital contract to sign"
-          />
-          <NextStep
-            icon="→"
-            text="On pickup day: inspect the vehicle together"
-          />
+          <Text style={styles.nextCardTitle}>{t('whatHappensNext', language)}</Text>
+          <View style={styles.nextStep}>
+            <Text style={styles.nextStepNum}>1</Text>
+            <Text style={styles.nextStepText}>
+              {language === 'es'
+                ? 'El operador te contactará con los detalles de recogida'
+                : language === 'hu'
+                ? 'Az operátor kapcsolatba lép veled az átvétel részleteiről'
+                : 'The operator will contact you about pickup details'}
+            </Text>
+          </View>
+          <View style={styles.nextStep}>
+            <Text style={styles.nextStepNum}>2</Text>
+            <Text style={styles.nextStepText}>
+              {language === 'es'
+                ? 'Recibirás un contrato digital para firmar'
+                : language === 'hu'
+                ? 'Digitális szerződést kapsz aláírásra'
+                : "You'll receive a digital contract to sign"}
+            </Text>
+          </View>
+          <View style={styles.nextStep}>
+            <Text style={styles.nextStepNum}>3</Text>
+            <Text style={styles.nextStepText}>
+              {language === 'es'
+                ? 'En el día de recogida: inspección conjunta del vehículo'
+                : language === 'hu'
+                ? 'Az átvétel napján: közös állapotfelmérés a járművel'
+                : 'On pickup day: inspect the vehicle together'}
+            </Text>
+          </View>
         </View>
 
-        {/* Checklist */}
+        {/* Trust checklist */}
         <View style={styles.checklist}>
-          <View style={styles.checkRow}>
-            <Text style={styles.checkRowIcon}>✅</Text>
-            <Text style={styles.checkRowLabel}>Booking Confirmed</Text>
-          </View>
-          <View style={styles.checkRow}>
-            <Text style={styles.checkRowIcon}>✅</Text>
-            <Text style={styles.checkRowLabel}>Payment Processed</Text>
-          </View>
-          <View style={styles.checkRow}>
-            <Text style={styles.checkRowIcon}>✅</Text>
-            <Text style={styles.checkRowLabel}>Contract Generated</Text>
-          </View>
-          <View style={styles.checkRow}>
-            <Text style={[styles.checkRowIcon, { color: Colors.info }]}>🛡️</Text>
-            <Text style={styles.checkRowLabel}>Insurance Active</Text>
-          </View>
+          {[
+            language === 'es' ? 'Reserva confirmada' : language === 'hu' ? 'Foglalás visszaigazolva' : 'Booking Confirmed',
+            language === 'es' ? 'Pago procesado' : language === 'hu' ? 'Fizetés feldolgozva' : 'Payment Processed',
+            language === 'es' ? 'Contrato generado' : language === 'hu' ? 'Szerződés elkészítve' : 'Contract Generated',
+            language === 'es' ? 'Seguro activo 🛡️' : language === 'hu' ? 'Biztosítás aktív 🛡️' : 'Insurance Active 🛡️',
+          ].map((label, i) => (
+            <View key={i} style={styles.checkRow}>
+              <Text style={styles.checkRowIcon}>✅</Text>
+              <Text style={styles.checkRowLabel}>{label}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* No hidden fees */}
+        <View style={styles.noFeesNote}>
+          <Text style={styles.noFeesText}>✓ {t('noHiddenFees', language)}</Text>
         </View>
       </ScrollView>
 
       <View style={styles.actions}>
         <Button
-          title="View booking details"
+          title={language === 'es' ? 'Ver detalles de reserva' : language === 'hu' ? 'Foglalás részletei' : 'View booking details'}
           onPress={() => router.push(`/(consumer)/bookings/${id ?? 'bk-001'}`)}
           fullWidth
           style={{ marginBottom: Spacing.sm }}
@@ -93,7 +109,7 @@ export default function BookingConfirmationScreen() {
           style={styles.msgBtn}
           onPress={() => router.push(`/(consumer)/bookings/chat/${id ?? 'bk-001'}` as Parameters<typeof router.push>[0])}
         >
-          <Text style={styles.msgBtnText}>💬 Message operator</Text>
+          <Text style={styles.msgBtnText}>💬 {t('messageOperator', language)}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -145,8 +161,19 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     marginBottom: Spacing.sm,
   },
-  nextStepIcon: { fontSize: 14, color: Colors.primary, fontWeight: '700', marginTop: 2 },
-  nextStepText: { flex: 1, fontSize: 14, color: Colors.textSecondary, lineHeight: 20 },
+  nextStepNum: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.primary,
+    textAlign: 'center',
+    lineHeight: 24,
+    fontSize: 12,
+    fontWeight: '800',
+    color: Colors.textInverse,
+    flexShrink: 0,
+  },
+  nextStepText: { flex: 1, fontSize: 14, color: Colors.textSecondary, lineHeight: 20, paddingTop: 4 },
 
   checklist: {
     backgroundColor: Colors.surface,
@@ -158,6 +185,14 @@ const styles = StyleSheet.create({
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   checkRowIcon: { fontSize: 16, color: Colors.success },
   checkRowLabel: { fontSize: 14, color: Colors.textSecondary, fontWeight: '500' },
+  noFeesNote: {
+    backgroundColor: Colors.successSurface,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    alignItems: 'center',
+    marginBottom: Spacing.base,
+  },
+  noFeesText: { fontSize: 13, fontWeight: '700', color: Colors.success },
 
   actions: {
     paddingHorizontal: Spacing.base,

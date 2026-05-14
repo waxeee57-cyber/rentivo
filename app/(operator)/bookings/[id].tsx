@@ -49,12 +49,38 @@ export default function OperatorBookingDetailScreen() {
     )
   }
 
+  const operatorPayout = Math.round(booking.total_amount * 0.975)
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader
         title={`#${booking.id.slice(0, 8).toUpperCase()}`}
         subtitle={booking.listing?.title}
       />
+
+      {/* Prominent confirm banner — always visible for pending bookings */}
+      {booking.status === 'pending' && (
+        <View style={styles.confirmBanner}>
+          <Text style={styles.confirmBannerText}>⏳ Waiting for your confirmation</Text>
+          <View style={styles.confirmBannerActions}>
+            <TouchableOpacity
+              style={styles.confirmBigBtn}
+              onPress={() => handleStatusChange('confirmed')}
+            >
+              <Text style={styles.confirmBigBtnText}>✓ Confirm booking</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.declineBtn}
+              onPress={() => handleStatusChange('cancelled')}
+            >
+              <Text style={styles.declineBtnText}>Decline</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.payoutPreview}>
+            You receive: {formatEURDecimal(operatorPayout)} · 2 business days after pickup
+          </Text>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.statusRow}>
@@ -112,13 +138,18 @@ export default function OperatorBookingDetailScreen() {
           <Text style={styles.messageBtnText}>💬 Message Guest</Text>
         </TouchableOpacity>
 
+        {/* Payout card */}
+        <Card style={{ marginBottom: Spacing.base }}>
+          <Text style={styles.sectionTitle}>Payout</Text>
+          <View style={styles.priceRow}>
+            <Text style={styles.priceLabel}>You receive</Text>
+            <Text style={styles.priceVal}>{formatEURDecimal(operatorPayout)}</Text>
+          </View>
+          <Text style={styles.detail}>Rentivo fee (2.5%): {formatEURDecimal(booking.total_amount - operatorPayout)}</Text>
+          <Text style={styles.detail}>Transfer: 2 business days after pickup</Text>
+        </Card>
+
         <View style={styles.actions}>
-          {booking.status === 'pending' && (
-            <>
-              <Button title="Confirm booking" onPress={() => handleStatusChange('confirmed')} fullWidth style={{ marginBottom: Spacing.sm }} />
-              <Button title="Decline" onPress={() => handleStatusChange('cancelled')} variant="danger" fullWidth />
-            </>
-          )}
           {booking.status === 'confirmed' && (
             <Button title="Mark as active (guest picked up)" onPress={() => handleStatusChange('active')} fullWidth />
           )}
@@ -145,6 +176,33 @@ const styles = StyleSheet.create({
   priceVal: { fontSize: 18, fontWeight: '700', color: Colors.text },
   inspRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   actions: { marginTop: Spacing.md },
+  confirmBanner: {
+    backgroundColor: Colors.successSurface,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.success,
+    padding: Spacing.base,
+    gap: Spacing.sm,
+  },
+  confirmBannerText: { fontSize: 14, fontWeight: '700', color: Colors.success },
+  confirmBannerActions: { flexDirection: 'row', gap: Spacing.sm },
+  confirmBigBtn: {
+    flex: 1,
+    backgroundColor: Colors.success,
+    borderRadius: Radius.lg,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  confirmBigBtnText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  declineBtn: {
+    paddingHorizontal: Spacing.xl,
+    borderRadius: Radius.lg,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.error,
+  },
+  declineBtnText: { fontSize: 14, fontWeight: '700', color: Colors.error },
+  payoutPreview: { fontSize: 12, color: Colors.textSecondary, textAlign: 'center' },
   messageBtn: {
     flexDirection: 'row',
     alignItems: 'center',

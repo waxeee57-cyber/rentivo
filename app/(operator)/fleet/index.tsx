@@ -199,9 +199,20 @@ export default function FleetScreen() {
             />
           }
           ListHeaderComponent={
-            <TouchableOpacity style={styles.shareRow} onPress={handleShare}>
-              <Text style={styles.shareText}>🔗 Share my listing</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity style={styles.shareRow} onPress={handleShare}>
+                <Text style={styles.shareText}>🔗 Share my listing</Text>
+              </TouchableOpacity>
+              <View style={styles.rentalOsCard}>
+                <View style={styles.rentalOsLeft}>
+                  <Text style={styles.rentalOsTitle}>🔄 Import from RentalOS</Text>
+                  <Text style={styles.rentalOsSubtitle}>Sync your fleet in 1 tap — no double bookings</Text>
+                </View>
+                <View style={styles.soonBadge}>
+                  <Text style={styles.soonText}>Soon</Text>
+                </View>
+              </View>
+            </>
           }
           renderItem={({ item }) => (
             <FleetCard
@@ -244,12 +255,35 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primarySurface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
     borderWidth: 1,
     borderColor: Colors.primary,
     alignItems: 'center',
   },
   shareText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
+  rentalOsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  rentalOsLeft: { flex: 1 },
+  rentalOsTitle: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: 2 },
+  rentalOsSubtitle: { fontSize: 12, color: Colors.textSecondary },
+  soonBadge: {
+    backgroundColor: Colors.warningSurface,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: Colors.warning,
+  },
+  soonText: { fontSize: 11, fontWeight: '700', color: Colors.warning },
   fab: {
     position: 'absolute',
     bottom: 90,

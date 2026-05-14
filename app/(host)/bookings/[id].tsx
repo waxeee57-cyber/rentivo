@@ -24,9 +24,9 @@ export default function HostBookingDetailScreen() {
     )
   }
 
-  const earnings = Math.round(booking.total_amount * 0.9)
+  const earnings = Math.round(booking.total_amount * 0.975)
   const payoutDate = new Date(booking.end_date)
-  payoutDate.setDate(payoutDate.getDate() + 7)
+  payoutDate.setDate(payoutDate.getDate() + 1)
 
   const handleConfirm = () => {
     Alert.alert('Booking confirmed', 'The guest has been notified.')
@@ -49,6 +49,24 @@ export default function HostBookingDetailScreen() {
         <Text style={styles.headerTitle}>Booking details</Text>
         <View style={{ width: 22 }} />
       </View>
+
+      {/* Prominent confirm banner for pending bookings */}
+      {booking.status === 'pending' && (
+        <View style={styles.confirmBanner}>
+          <Text style={styles.confirmBannerLabel}>⏳ New booking — confirm to accept</Text>
+          <View style={styles.confirmBannerRow}>
+            <TouchableOpacity style={styles.confirmBigBtn} onPress={handleConfirm}>
+              <Text style={styles.confirmBigBtnText}>✓ Confirm booking</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.declineSmallBtn} onPress={handleDecline}>
+              <Text style={styles.declineSmallBtnText}>Decline</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.confirmBannerPayout}>
+            You receive: {formatEURDecimal(earnings)} · 24h after pickup
+          </Text>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Guest card */}
@@ -88,7 +106,7 @@ export default function HostBookingDetailScreen() {
           <Text style={styles.sectionTitle}>Payment</Text>
           <View style={styles.detailCard}>
             <Row label="Total charge" value={formatEURDecimal(booking.total_amount)} />
-            <Row label="Rentivo fee (10%)" value={`-${formatEURDecimal(booking.total_amount - earnings)}`} />
+            <Row label="Rentivo fee (2.5%)" value={`-${formatEURDecimal(booking.total_amount - earnings)}`} />
             <View style={styles.earningsRow}>
               <Text style={styles.earningsLabel}>Your earnings</Text>
               <Text style={styles.earningsValue}>{formatEURDecimal(earnings)}</Text>
@@ -295,4 +313,31 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   inspectionBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textInverse },
+  confirmBanner: {
+    backgroundColor: Colors.successSurface,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.success,
+    padding: Spacing.base,
+    gap: Spacing.sm,
+  },
+  confirmBannerLabel: { fontSize: 14, fontWeight: '700', color: Colors.success },
+  confirmBannerRow: { flexDirection: 'row', gap: Spacing.sm },
+  confirmBigBtn: {
+    flex: 1,
+    backgroundColor: Colors.success,
+    borderRadius: Radius.lg,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  confirmBigBtnText: { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
+  declineSmallBtn: {
+    paddingHorizontal: Spacing.xl,
+    borderRadius: Radius.lg,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.error,
+  },
+  declineSmallBtnText: { fontSize: 14, fontWeight: '700', color: Colors.error },
+  confirmBannerPayout: { fontSize: 12, color: Colors.textSecondary, textAlign: 'center' },
 })

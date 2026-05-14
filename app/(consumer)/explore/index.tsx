@@ -63,6 +63,7 @@ export default function ExploreScreen() {
   const [showCityPicker, setShowCityPicker] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [sortBy, setSortBy] = useState<'default' | 'price_asc' | 'price_desc' | 'rating'>('default')
+  const [minCapacity, setMinCapacity] = useState<number | null>(null)
   const mapRef = useRef<typeof MapView extends null ? never : InstanceType<NonNullable<typeof MapView>>>(null)
 
   const { latitude, longitude } = useLocation()
@@ -70,12 +71,13 @@ export default function ExploreScreen() {
   const { listings: rawListings, loading, error } = useListings(filters)
 
   const listings = React.useMemo(() => {
-    const arr = [...rawListings]
+    let arr = [...rawListings]
+    if (minCapacity !== null) arr = arr.filter(l => (l.capacity ?? 0) >= minCapacity)
     if (sortBy === 'price_asc') arr.sort((a, b) => a.price_per_day - b.price_per_day)
     else if (sortBy === 'price_desc') arr.sort((a, b) => b.price_per_day - a.price_per_day)
     else if (sortBy === 'rating') arr.sort((a, b) => b.rating - a.rating)
     return arr
-  }, [rawListings, sortBy])
+  }, [rawListings, sortBy, minCapacity])
 
   const listOverlayY = useRef(new Animated.Value(screenHeight)).current
   const mapOpacity = useRef(new Animated.Value(1)).current
@@ -237,6 +239,22 @@ export default function ExploreScreen() {
             >
               <Text style={[styles.sortPillText, sortBy === opt.key && styles.sortPillTextActive]}>
                 {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          <View style={styles.sortDivider} />
+          {([
+            { cap: null, label: 'Any size' },
+            { cap: 4, label: '4+ seats' },
+            { cap: 8, label: '8+ seats' },
+          ] as { cap: number | null; label: string }[]).map(opt => (
+            <TouchableOpacity
+              key={opt.label}
+              style={[styles.sortPill, minCapacity === opt.cap && styles.sortPillActive]}
+              onPress={() => setMinCapacity(opt.cap)}
+            >
+              <Text style={[styles.sortPillText, minCapacity === opt.cap && styles.sortPillTextActive]}>
+                👥 {opt.label}
               </Text>
             </TouchableOpacity>
           ))}
@@ -428,6 +446,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingBottom: Spacing.sm,
     gap: Spacing.sm,
+  },
+  sortDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: Colors.border,
+    marginHorizontal: Spacing.sm,
+    alignSelf: 'center',
   },
   sortPill: {
     borderRadius: Radius.pill,

@@ -8,7 +8,6 @@ import * as Haptics from 'expo-haptics'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Card } from '@/components/ui/Card'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { HelpTooltip } from '@/components/ui/HelpTooltip'
 import { StepIndicator } from '@/components/ui/StepIndicator'
@@ -19,10 +18,13 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { calculatePrice } from '@/lib/utils/calculatePrice'
 import { getError } from '@/lib/errors'
 import { Config } from '@/constants/config'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 
 export default function BookingFlowScreen() {
   const { listingId } = useLocalSearchParams<{ listingId: string }>()
   const { listing, loading } = useListing(listingId ?? '')
+  const { language } = useAuthStore()
   const [step, setStep] = useState(1)
   const [guestName, setGuestName] = useState(Config.useMock ? 'Test User' : '')
   const [guestPhone, setGuestPhone] = useState(Config.useMock ? '+36701234567' : '')
@@ -65,12 +67,12 @@ export default function BookingFlowScreen() {
     }
   }
 
-  const steps = ['Trip details', 'Review & Pay', 'Confirmed']
+  const steps = [t('tripDetails', language), t('reviewAndPay', language)]
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader
-        title="Book Vehicle"
+        title={language === 'es' ? 'Reservar vehículo' : language === 'hu' ? 'Jármű foglalása' : 'Book Vehicle'}
         onBack={() => step > 1 ? setStep(s => s - 1) : router.back()}
         rightAction={
           step === 2 ? (
@@ -89,7 +91,7 @@ export default function BookingFlowScreen() {
       <StepIndicator
         totalSteps={2}
         currentStep={step}
-        labels={['Trip details', 'Review & Pay']}
+        labels={steps}
       />
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -130,14 +132,31 @@ export default function BookingFlowScreen() {
           <>
             <PriceBreakdown calculation={priceCalc} />
 
-            <Text style={styles.formTitle}>Guest Information</Text>
-            <Input label="Full name *" value={guestName} onChangeText={setGuestName} placeholder="John Smith" />
-            <Input label="Phone number *" value={guestPhone} onChangeText={setGuestPhone} placeholder="+34 600 000 000" keyboardType="phone-pad" />
-            <Input label="Email" value={guestEmail} onChangeText={setGuestEmail} placeholder="john@example.com" keyboardType="email-address" />
-            <Input label="Notes" value={notes} onChangeText={setNotes} placeholder="Special requests..." multiline numberOfLines={3} />
+            <Text style={styles.formTitle}>{t('guestInfo', language)}</Text>
+            <Input
+              label={language === 'es' ? 'Nombre completo *' : language === 'hu' ? 'Teljes név *' : 'Full name *'}
+              value={guestName} onChangeText={setGuestName}
+              placeholder={language === 'es' ? 'María García' : language === 'hu' ? 'Kovács János' : 'John Smith'}
+            />
+            <Input
+              label={language === 'es' ? 'Número de teléfono *' : language === 'hu' ? 'Telefonszám *' : 'Phone number *'}
+              value={guestPhone} onChangeText={setGuestPhone}
+              placeholder="+34 600 000 000" keyboardType="phone-pad"
+            />
+            <Input
+              label={language === 'es' ? 'Email (opcional)' : language === 'hu' ? 'Email (opcionális)' : 'Email (optional)'}
+              value={guestEmail} onChangeText={setGuestEmail}
+              placeholder="email@example.com" keyboardType="email-address"
+            />
+            <Input
+              label={language === 'es' ? 'Notas' : language === 'hu' ? 'Megjegyzés' : 'Notes'}
+              value={notes} onChangeText={setNotes}
+              placeholder={language === 'es' ? 'Peticiones especiales...' : language === 'hu' ? 'Különleges kérések...' : 'Special requests...'}
+              multiline numberOfLines={3}
+            />
 
             <Button
-              title="Continue to payment →"
+              title={t('continueToPayment', language) + ' →'}
               onPress={() => setStep(2)}
               fullWidth
               style={{ marginTop: Spacing.md }}
@@ -156,13 +175,28 @@ export default function BookingFlowScreen() {
               <Text style={styles.guestRecapContact}>{guestPhone}{guestEmail ? ` · ${guestEmail}` : ''}</Text>
             </View>
 
-            <Card style={{ marginTop: Spacing.base, alignItems: 'center' }}>
-              <Text style={styles.stripeNote}>💳 Payment powered by Stripe</Text>
-              <Text style={styles.stripeNote2}>Card processing will happen at checkout</Text>
-            </Card>
+            {/* Trust signals */}
+            <View style={styles.trustBlock}>
+              <View style={styles.trustRow}>
+                <Text style={styles.trustIcon}>🔒</Text>
+                <Text style={styles.trustText}>Secure payment via Stripe</Text>
+              </View>
+              <View style={styles.trustRow}>
+                <Text style={styles.trustIcon}>✓</Text>
+                <Text style={styles.trustText}>Same security as Amazon & Airbnb</Text>
+              </View>
+              <View style={styles.trustRow}>
+                <Text style={styles.trustIcon}>✓</Text>
+                <Text style={styles.trustText}>Your card is never stored on our servers</Text>
+              </View>
+              <View style={styles.trustRow}>
+                <Text style={styles.trustIcon}>↩</Text>
+                <Text style={styles.trustText}>Money back if operator cancels</Text>
+              </View>
+            </View>
 
             <Button
-              title={`Pay ${(priceCalc.total / 100).toFixed(2)} EUR`}
+              title={`Pay €${(priceCalc.total / 100).toFixed(2)}`}
               onPress={handlePayment}
               loading={processing}
               fullWidth
@@ -230,4 +264,16 @@ const styles = StyleSheet.create({
   stripeNote: { fontSize: 16, fontWeight: '600', color: Colors.text, textAlign: 'center' },
   stripeNote2: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginTop: 4 },
   secureNote: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginTop: Spacing.sm },
+  trustBlock: {
+    backgroundColor: Colors.successSurface,
+    borderRadius: Radius.lg,
+    padding: Spacing.base,
+    marginTop: Spacing.base,
+    gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.success,
+  },
+  trustRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  trustIcon: { fontSize: 14, color: Colors.success, width: 20, textAlign: 'center' },
+  trustText: { fontSize: 13, color: Colors.textSecondary, flex: 1, lineHeight: 18 },
 })
