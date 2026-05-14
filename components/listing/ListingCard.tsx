@@ -1,8 +1,7 @@
-import React, { useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
+import React, { useState, useRef } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
-import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 import { StarRating } from '@/components/ui/StarRating'
 import { formatEUR } from '@/lib/utils/formatCurrency'
@@ -20,19 +19,15 @@ interface ListingCardProps {
 
 export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: ListingCardProps) {
   const [wishlisted, setWishlisted] = useState(false)
-  const scale = useSharedValue(1)
+  const scale = useRef(new Animated.Value(1)).current
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }))
-
-  const onPressIn = () => { scale.value = withSpring(0.97, { damping: 15 }) }
-  const onPressOut = () => { scale.value = withSpring(1, { damping: 15 }) }
+  const onPressIn = () => Animated.spring(scale, { toValue: 0.97, damping: 15, useNativeDriver: true }).start()
+  const onPressOut = () => Animated.spring(scale, { toValue: 1, damping: 15, useNativeDriver: true }).start()
 
   const isFull = variant === 'full'
 
   return (
-    <Reanimated.View style={[isFull ? styles.cardFull : styles.cardGrid, animatedStyle]}>
+    <Animated.View style={[isFull ? styles.cardFull : styles.cardGrid, { transform: [{ scale }] }]}>
       <TouchableOpacity
         onPress={() => router.push(`/(consumer)/listing/${listing.id}`)}
         onPressIn={onPressIn}
@@ -94,7 +89,7 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
           </View>
         </View>
       </TouchableOpacity>
-    </Reanimated.View>
+    </Animated.View>
   )
 }
 

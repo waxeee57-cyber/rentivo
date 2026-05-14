@@ -1,8 +1,7 @@
-import React from 'react'
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import React, { useRef } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 
@@ -19,16 +18,15 @@ function RoleCard({
   dark?: boolean
   onPress: () => void
 }) {
-  const scale = useSharedValue(1)
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+  const scale = useRef(new Animated.Value(1)).current
 
   return (
-    <Reanimated.View style={animStyle}>
+    <Animated.View style={{ transform: [{ scale }] }}>
       <TouchableOpacity
         style={[styles.card, dark ? styles.cardDark : styles.cardLight]}
         onPress={onPress}
-        onPressIn={() => { scale.value = withSpring(0.97, { damping: 15 }) }}
-        onPressOut={() => { scale.value = withSpring(1, { damping: 15 }) }}
+        onPressIn={() => Animated.spring(scale, { toValue: 0.97, damping: 15, useNativeDriver: true }).start()}
+        onPressOut={() => Animated.spring(scale, { toValue: 1, damping: 15, useNativeDriver: true }).start()}
         activeOpacity={1}
       >
         <Text style={styles.cardEmoji}>{emoji}</Text>
@@ -38,7 +36,7 @@ function RoleCard({
         </View>
         <Text style={[styles.cardArrow, dark && styles.cardArrowDark]}>→</Text>
       </TouchableOpacity>
-    </Reanimated.View>
+    </Animated.View>
   )
 }
 

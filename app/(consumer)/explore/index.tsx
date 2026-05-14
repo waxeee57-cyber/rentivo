@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react'
 import {
   View, Text, FlatList, TouchableOpacity, ScrollView,
-  StyleSheet, Dimensions, Platform,
+  StyleSheet, Dimensions, Platform, Animated,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { useListings } from '@/lib/hooks/useListings'
@@ -78,26 +77,22 @@ export default function ExploreScreen() {
     return arr
   }, [rawListings, sortBy])
 
-  const listOverlayY = useSharedValue(screenHeight)
-  const mapOpacity = useSharedValue(1)
-
-  const listOverlayStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: listOverlayY.value }],
-  }))
-
-  const mapStyle = useAnimatedStyle(() => ({
-    opacity: mapOpacity.value,
-  }))
+  const listOverlayY = useRef(new Animated.Value(screenHeight)).current
+  const mapOpacity = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
     if (viewMode === 'list') {
-      listOverlayY.value = withSpring(0, { damping: 15, stiffness: 200 })
-      mapOpacity.value = withSpring(0.3)
+      Animated.parallel([
+        Animated.spring(listOverlayY, { toValue: 0, damping: 15, stiffness: 200, useNativeDriver: true }),
+        Animated.spring(mapOpacity, { toValue: 0.3, useNativeDriver: true }),
+      ]).start()
     } else {
-      listOverlayY.value = withSpring(screenHeight, { damping: 15, stiffness: 200 })
-      mapOpacity.value = withSpring(1)
+      Animated.parallel([
+        Animated.spring(listOverlayY, { toValue: screenHeight, damping: 15, stiffness: 200, useNativeDriver: true }),
+        Animated.spring(mapOpacity, { toValue: 1, useNativeDriver: true }),
+      ]).start()
     }
-  }, [viewMode, listOverlayY, mapOpacity])
+  }, [viewMode])
 
   const handleCitySelect = (city: City) => {
     setCityName(city.name)
@@ -120,7 +115,7 @@ export default function ExploreScreen() {
   return (
     <View style={styles.container}>
       {/* Map layer */}
-      <Reanimated.View style={[StyleSheet.absoluteFill, mapStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, { opacity: mapOpacity }]}>
         {Platform.OS !== 'web' && MapView ? (
           <MapView
             ref={mapRef}
@@ -149,7 +144,7 @@ export default function ExploreScreen() {
             <Text style={styles.webMapLabel}>Map view (native only)</Text>
           </View>
         )}
-      </Reanimated.View>
+      </Animated.View>
 
       {/* Floating search bar */}
       <View style={[styles.searchBar, { top: searchBarTop }]}>
@@ -218,7 +213,7 @@ export default function ExploreScreen() {
       )}
 
       {/* List mode overlay */}
-      <Reanimated.View style={[styles.listOverlay, listOverlayStyle]}>
+      <Animated.View style={[styles.listOverlay, { transform: [{ translateY: listOverlayY }] }]}>
         <View style={styles.listHandle} />
 
         {/* Sort bar */}
@@ -266,7 +261,7 @@ export default function ExploreScreen() {
             )}
           />
         )}
-      </Reanimated.View>
+      </Animated.View>
 
       {/* Sheets */}
       <CityPickerSheet
