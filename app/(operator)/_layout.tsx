@@ -8,7 +8,6 @@ export default function OperatorLayout() {
   const { language } = useAuthStore()
   return (
     <Tabs
-      initialRouteName="dashboard"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.primary,

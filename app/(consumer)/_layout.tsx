@@ -38,7 +38,6 @@ export default function ConsumerLayout() {
 
   return (
     <Tabs
-      initialRouteName="explore"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.primary,
