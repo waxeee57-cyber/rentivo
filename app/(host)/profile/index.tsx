@@ -10,6 +10,7 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { MOCK_HOST } from '@/lib/mockData'
 import { Config } from '@/constants/config'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
+import { t } from '@/constants/i18n'
 
 export default function HostProfileScreen() {
   const { host, signOut, role, setRole, language, setLanguage } = useAuthStore()
@@ -98,25 +99,25 @@ export default function HostProfileScreen() {
 
         {Config.useMock && (
           <Card style={styles.card}>
-            <Text style={styles.sectionTitle}>Switch Role</Text>
+            <Text style={styles.sectionTitle}>{t('sectionSwitchRole', language)}</Text>
             <View style={styles.roleRow}>
               <TouchableOpacity
                 style={[styles.roleBtn, role === 'consumer' && styles.roleBtnActive]}
                 onPress={() => { setRole('consumer'); router.replace('/(consumer)/explore') }}
               >
-                <Text style={styles.roleText}>🌴 Consumer</Text>
+                <Text style={styles.roleText}>🌴 {t('roleConsumer', language)}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.roleBtn, role === 'host' && styles.roleBtnActive]}
                 onPress={() => { setRole('host'); router.replace('/(host)/dashboard') }}
               >
-                <Text style={styles.roleText}>🏠 Host</Text>
+                <Text style={styles.roleText}>🏠 {t('roleHost', language)}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.roleBtn, role === 'operator' && styles.roleBtnActive]}
                 onPress={() => { setRole('operator'); router.replace('/(operator)/dashboard') }}
               >
-                <Text style={styles.roleText}>🏢 Operator</Text>
+                <Text style={styles.roleText}>🏢 {t('roleOperator', language)}</Text>
               </TouchableOpacity>
             </View>
           </Card>

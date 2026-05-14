@@ -57,8 +57,8 @@ export default function ListingDetailScreen() {
     : 0
 
   const dateLabel = startDate && endDate
-    ? `${formatDateRange(startDate, endDate)} · ${totalDays} days`
-    : '📅  Check in  →  Check out'
+    ? `${formatDateRange(startDate, endDate)} · ${totalDays} ${t('days', language)}`
+    : t('checkInOut', language)
 
   const policy = (listing.cancellation_policy ?? 'moderate') as CancellationPolicy
 
@@ -183,7 +183,7 @@ export default function ListingDetailScreen() {
           {listing.features.length > 0 && (
             <>
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>What's included</Text>
+                <Text style={styles.sectionTitle}>{t('whatsIncluded', language)}</Text>
                 <ListingFeatures features={listing.features} />
               </View>
               <Divider />
@@ -192,11 +192,11 @@ export default function ListingDetailScreen() {
 
           {/* Insurance */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Insurance</Text>
+            <Text style={styles.sectionTitle}>{t('insurance', language)}</Text>
             <View style={styles.insuranceBox}>
               <Text style={styles.insuranceIcon}>🛡️</Text>
               <View style={styles.insuranceInfo}>
-                <Text style={styles.insuranceTitle}>Insurance included</Text>
+                <Text style={styles.insuranceTitle}>{t('insuranceIncluded', language)}</Text>
                 <Text style={styles.insuranceText}>
                   Third-party liability up to €500,000. Vehicle damage excess €500 (reducible with deposit waiver).
                 </Text>
@@ -208,7 +208,7 @@ export default function ListingDetailScreen() {
 
           {/* Cancellation policy */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Cancellation Policy</Text>
+            <Text style={styles.sectionTitle}>{t('cancellationPolicy', language)}</Text>
             <View style={styles.policyBadge}>
               <Text style={styles.policyBadgeText}>
                 {getCancellationPolicyEmoji(policy)} {getCancellationPolicyLabel(policy)}
@@ -221,7 +221,7 @@ export default function ListingDetailScreen() {
           {/* Date selection */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Select your dates</Text>
+              <Text style={styles.sectionTitle}>{t('selectYourDates', language)}</Text>
               <Ionicons name="calendar-outline" size={16} color={Colors.textTertiary} />
             </View>
             <TouchableOpacity
@@ -269,12 +269,12 @@ export default function ListingDetailScreen() {
           {listing.description && (
             <>
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>About this rental</Text>
+                <Text style={styles.sectionTitle}>{t('aboutThisRental', language)}</Text>
                 <Text style={styles.desc} numberOfLines={showFullDesc ? undefined : 4}>
                   {listing.description}
                 </Text>
                 <TouchableOpacity onPress={() => setShowFullDesc(v => !v)}>
-                  <Text style={styles.showMore}>{showFullDesc ? 'Show less' : 'Show more'}</Text>
+                  <Text style={styles.showMore}>{showFullDesc ? t('showLess', language) : t('showMore', language)}</Text>
                 </TouchableOpacity>
               </View>
               <Divider />
@@ -296,7 +296,7 @@ export default function ListingDetailScreen() {
             <>
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Reviews</Text>
+                  <Text style={styles.sectionTitle}>{t('reviews', language)}</Text>
                   <StarRating rating={listing.rating} reviewCount={listing.review_count} size={14} />
                 </View>
                 {Config.useMock && MOCK_REVIEWS.map((r, i) => (
@@ -319,7 +319,7 @@ export default function ListingDetailScreen() {
           {isHostListing && listing.host && (
             <>
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>About the host</Text>
+                <Text style={styles.sectionTitle}>{t('aboutTheHost', language)}</Text>
                 <View style={styles.hostCard}>
                   <View style={styles.hostCardTop}>
                     <View style={styles.hostAvatar}>
@@ -336,10 +336,10 @@ export default function ListingDetailScreen() {
                         ★ {listing.host.rating} · {listing.host.review_count} rentals
                       </Text>
                       <Text style={styles.hostMeta}>
-                        Responds in ~{listing.host.response_time}
+                        {t('respondsIn', language)}{listing.host.response_time}
                       </Text>
                       <Text style={styles.hostMeta}>
-                        Member since {new Date(listing.host.member_since).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
+                        {t('memberSinceLabel', language)} {new Date(listing.host.member_since).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
                       </Text>
                     </View>
                   </View>
@@ -352,7 +352,7 @@ export default function ListingDetailScreen() {
                   onPress={() => router.push(`/(consumer)/bookings/chat/bk-001`)}
                 >
                   <Ionicons name="chatbubble-outline" size={16} color={Colors.primary} />
-                  <Text style={styles.askQuestionText}>Message host</Text>
+                  <Text style={styles.askQuestionText}>{t('messageHost', language)}</Text>
                 </TouchableOpacity>
               </View>
               <Divider />
@@ -361,7 +361,7 @@ export default function ListingDetailScreen() {
           {!isHostListing && listing.operator && (
             <>
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>About the operator</Text>
+                <Text style={styles.sectionTitle}>{t('aboutTheOperator', language)}</Text>
                 <OperatorCard operator={listing.operator} />
                 <View style={styles.operatorActions}>
                   <TouchableOpacity
@@ -390,7 +390,7 @@ export default function ListingDetailScreen() {
           {(listing.pickup_address || (listing.latitude && listing.longitude)) && (
             <>
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Pickup location</Text>
+                <Text style={styles.sectionTitle}>{t('pickupLocation', language)}</Text>
                 <View style={styles.locationCard}>
                   <View style={styles.locationMapPreview}>
                     <Text style={styles.locationMapIcon}>📍</Text>
@@ -411,7 +411,7 @@ export default function ListingDetailScreen() {
                         }
                       }}
                     >
-                      <Text style={styles.locationDirections}>Get directions →</Text>
+                      <Text style={styles.locationDirections}>{t('getDirections', language)}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

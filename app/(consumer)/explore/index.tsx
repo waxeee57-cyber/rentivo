@@ -19,10 +19,19 @@ import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { CATEGORIES } from '@/constants/categories'
 import { searchAllSources } from '@/lib/api/unifiedSearch'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t, type TranslationKey } from '@/constants/i18n'
 import { openAffiliateLink } from '@/lib/utils/affiliateLinks'
 import type { Listing, RentalCategory, SearchFilters, AnyListing, ExternalListing } from '@/types'
 import { format } from 'date-fns'
 import { router } from 'expo-router'
+
+const CAT_I18N_KEYS: Record<RentalCategory, TranslationKey> = {
+  car: 'catCars', motorcycle: 'catMotorcycles', yacht: 'catYachts',
+  villa: 'catVillas', bike: 'catBikes', scooter: 'catScooters',
+  kayak: 'catKayaks', surfboard: 'catSurfboards', equipment: 'catEquipment',
+  other: 'catOther',
+}
 
 const MapView = Platform.OS !== 'web'
   ? require('react-native-maps').default
@@ -73,6 +82,7 @@ const MOODS = [
 
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets()
+  const { language } = useAuthStore()
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
   const [selectedCategory, setSelectedCategory] = useState<RentalCategory | null>(null)
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
@@ -263,7 +273,7 @@ export default function ExploreScreen() {
             onPress={() => setSelectedCategory(null)}
           >
             <Text style={[styles.categoryPillText, selectedCategory === null && styles.categoryPillTextActive]}>
-              All
+              {t('catAll', language)}
             </Text>
           </TouchableOpacity>
           {CATEGORIES.map(c => (
@@ -279,7 +289,7 @@ export default function ExploreScreen() {
                 style={{ marginRight: 4 }}
               />
               <Text style={[styles.categoryPillText, selectedCategory === c.key && styles.categoryPillTextActive]}>
-                {c.label}
+                {t(CAT_I18N_KEYS[c.key], language)}
               </Text>
             </TouchableOpacity>
           ))}
@@ -341,11 +351,11 @@ export default function ExploreScreen() {
           style={styles.sortBar}
         >
           {([
-            { key: 'default', label: 'Relevance' },
-            { key: 'price_asc', label: '↑ Price' },
-            { key: 'price_desc', label: '↓ Price' },
-            { key: 'rating', label: '★ Rating' },
-          ] as { key: typeof sortBy; label: string }[]).map(opt => (
+            { key: 'default' as typeof sortBy, label: t('sortRelevance', language) },
+            { key: 'price_asc' as typeof sortBy, label: t('sortPriceAsc', language) },
+            { key: 'price_desc' as typeof sortBy, label: t('sortPriceDesc', language) },
+            { key: 'rating' as typeof sortBy, label: t('sortRating', language) },
+          ]).map(opt => (
             <TouchableOpacity
               key={opt.key}
               style={[styles.sortPill, sortBy === opt.key && styles.sortPillActive]}
@@ -358,12 +368,12 @@ export default function ExploreScreen() {
           ))}
           <View style={styles.sortDivider} />
           {([
-            { cap: null, label: 'Any size' },
-            { cap: 4, label: '4+ seats' },
-            { cap: 8, label: '8+ seats' },
-          ] as { cap: number | null; label: string }[]).map(opt => (
+            { cap: null as number | null, label: t('filterAnySize', language) },
+            { cap: 4 as number | null, label: t('seats4Plus', language) },
+            { cap: 8 as number | null, label: t('seats8Plus', language) },
+          ]).map(opt => (
             <TouchableOpacity
-              key={opt.label}
+              key={String(opt.cap)}
               style={[styles.sortPill, minCapacity === opt.cap && styles.sortPillActive]}
               onPress={() => setMinCapacity(opt.cap)}
             >
@@ -471,16 +481,16 @@ export default function ExploreScreen() {
         <TouchableOpacity style={filterStyles.backdrop} activeOpacity={1} onPress={() => setShowFilterSheet(false)} />
         <View style={filterStyles.sheet}>
           <View style={filterStyles.handle} />
-          <Text style={filterStyles.title}>Sort & Filter</Text>
+          <Text style={filterStyles.title}>{t('sortAndFilter', language)}</Text>
 
-          <Text style={filterStyles.sectionLabel}>Sort by</Text>
+          <Text style={filterStyles.sectionLabel}>{t('sortByLabel', language)}</Text>
           <View style={filterStyles.pillRow}>
             {([
-              { key: 'default', label: 'Relevance' },
-              { key: 'price_asc', label: '↑ Price' },
-              { key: 'price_desc', label: '↓ Price' },
-              { key: 'rating', label: '★ Rating' },
-            ] as { key: typeof sortBy; label: string }[]).map(opt => (
+              { key: 'default' as typeof sortBy, label: t('sortRelevance', language) },
+              { key: 'price_asc' as typeof sortBy, label: t('sortPriceAsc', language) },
+              { key: 'price_desc' as typeof sortBy, label: t('sortPriceDesc', language) },
+              { key: 'rating' as typeof sortBy, label: t('sortRating', language) },
+            ]).map(opt => (
               <TouchableOpacity
                 key={opt.key}
                 style={[filterStyles.pill, sortBy === opt.key && filterStyles.pillActive]}
@@ -493,13 +503,13 @@ export default function ExploreScreen() {
             ))}
           </View>
 
-          <Text style={filterStyles.sectionLabel}>Capacity</Text>
+          <Text style={filterStyles.sectionLabel}>{t('capacityLabel', language)}</Text>
           <View style={filterStyles.pillRow}>
             {([
-              { cap: null, label: 'Any size' },
-              { cap: 4, label: '4+ seats' },
-              { cap: 8, label: '8+ seats' },
-            ] as { cap: number | null; label: string }[]).map(opt => (
+              { cap: null as number | null, label: t('filterAnySize', language) },
+              { cap: 4 as number | null, label: t('seats4Plus', language) },
+              { cap: 8 as number | null, label: t('seats8Plus', language) },
+            ]).map(opt => (
               <TouchableOpacity
                 key={opt.label}
                 style={[filterStyles.pill, minCapacity === opt.cap && filterStyles.pillActive]}
@@ -519,7 +529,7 @@ export default function ExploreScreen() {
               setShowFilterSheet(false)
             }}
           >
-            <Text style={filterStyles.applyBtnText}>Apply filters</Text>
+            <Text style={filterStyles.applyBtnText}>{t('applyFilters', language)}</Text>
           </TouchableOpacity>
         </View>
       </Modal>

@@ -52,7 +52,14 @@ export function ExternalListingCard({ listing }: ExternalListingCardProps) {
             placeholder="https://via.placeholder.com/400x200/1A2942/8A9BB5?text=..."
           />
           <View style={[styles.platformBadge, { backgroundColor: platform.color }]}>
-            <Text style={styles.platformBadgeText}>via {platform.label}</Text>
+            <Text
+              style={styles.platformBadgeText}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            >
+              via {platform.label}
+            </Text>
           </View>
           <View style={styles.externalBadge}>
             <Text style={styles.externalBadgeText}>↗ External</Text>

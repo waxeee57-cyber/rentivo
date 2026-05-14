@@ -14,19 +14,32 @@ import { useSearchHistory } from '@/lib/hooks/useSearchHistory'
 import { filterListings } from '@/lib/hooks/useSearch'
 import { CATEGORIES } from '@/constants/categories'
 import { useAuthStore } from '@/lib/store/useAuthStore'
-import { t } from '@/constants/i18n'
+import { t, type TranslationKey } from '@/constants/i18n'
 import type { RentalCategory, SearchFilters } from '@/types'
 import type { SearchState } from '@/lib/hooks/useSearch'
 
 type SortKey = SearchState['sort']
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'relevance', label: 'Relevance' },
-  { key: 'price_asc', label: '↑ Price' },
-  { key: 'price_desc', label: '↓ Price' },
-  { key: 'rating', label: '★ Rating' },
-  { key: 'newest', label: 'Newest' },
+const SORT_OPTION_KEYS: { key: SortKey; labelKey: TranslationKey }[] = [
+  { key: 'relevance', labelKey: 'sortRelevance' },
+  { key: 'price_asc', labelKey: 'sortPriceAsc' },
+  { key: 'price_desc', labelKey: 'sortPriceDesc' },
+  { key: 'rating', labelKey: 'sortRating' },
+  { key: 'newest', labelKey: 'sortNewest' },
 ]
+
+const CAPACITY_OPTIONS: { cap: number | null; labelKey: TranslationKey }[] = [
+  { cap: null, labelKey: 'filterAnySize' },
+  { cap: 4, labelKey: 'seats4Plus' },
+  { cap: 8, labelKey: 'seats8Plus' },
+]
+
+const CAT_I18N_KEYS: Record<RentalCategory, TranslationKey> = {
+  car: 'catCars', motorcycle: 'catMotorcycles', yacht: 'catYachts',
+  villa: 'catVillas', bike: 'catBikes', scooter: 'catScooters',
+  kayak: 'catKayaks', surfboard: 'catSurfboards', equipment: 'catEquipment',
+  other: 'catOther',
+}
 
 const POPULAR_SUGGESTIONS = ['BMW', 'Vespa', 'Marbella', 'Yacht', 'Villa', 'Convertible']
 
@@ -79,7 +92,7 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.title}>Search</Text>
+      <Text style={styles.title}>{t('search', language)}</Text>
 
       {/* Search bar */}
       <View style={styles.searchRow}>
@@ -146,7 +159,7 @@ export default function SearchScreen() {
         {CATEGORIES.map(c => (
           <CategoryPill
             key={c.key}
-            label={c.label}
+            label={t(CAT_I18N_KEYS[c.key], language)}
             icon={c.icon as any}
             active={selectedCategory === c.key}
             onPress={() => setSelectedCategory(selectedCategory === c.key ? null : c.key)}
@@ -156,28 +169,24 @@ export default function SearchScreen() {
 
       {/* Sort + Filters bar */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortBar}>
-        {SORT_OPTIONS.map(opt => (
+        {SORT_OPTION_KEYS.map(opt => (
           <CategoryPill
             key={opt.key}
-            label={opt.label}
+            label={t(opt.labelKey, language)}
             active={sortBy === opt.key}
             onPress={() => setSortBy(opt.key)}
           />
         ))}
         <View style={styles.sortDivider} />
         <CategoryPill
-          label="⚡ Instant"
+          label={`⚡ ${t('filterInstant', language)}`}
           active={instantBook}
           onPress={() => setInstantBook(v => !v)}
         />
-        {[
-          { cap: null, label: 'Any' },
-          { cap: 4, label: '4+' },
-          { cap: 8, label: '8+' },
-        ].map(opt => (
+        {CAPACITY_OPTIONS.map(opt => (
           <CategoryPill
             key={String(opt.cap)}
-            label={`👥 ${opt.label}`}
+            label={`👥 ${t(opt.labelKey, language)}`}
             active={minCapacity === opt.cap}
             onPress={() => setMinCapacity(opt.cap)}
           />

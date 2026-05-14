@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { t } from '@/constants/i18n'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
 import { Divider } from '@/components/ui/Divider'
@@ -54,7 +55,7 @@ export default function OperatorProfileScreen() {
           <TouchableOpacity
             onPress={() => { useAuthStore.getState().setRole('consumer'); router.replace('/(consumer)/explore') }}
           >
-            <Text style={styles.switchText}>Switch to Consumer view</Text>
+            <Text style={styles.switchText}>{t('switchRole', language)}: {t('roleConsumer', language)}</Text>
           </TouchableOpacity>
         </Card>
       )}
