@@ -1,0 +1,104 @@
+import React, { useState, useRef } from 'react'
+import {
+  View, Text, TextInput, StyleSheet, TouchableOpacity, Alert,
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { router } from 'expo-router'
+import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Button } from '@/components/ui/Button'
+import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+
+export default function VerifyScreen() {
+  const [code, setCode] = useState(['', '', '', '', '', ''])
+  const [loading, setLoading] = useState(false)
+  const inputs = useRef<(TextInput | null)[]>([])
+  const { role, setSession, setUser } = useAuthStore()
+
+  const handleDigit = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, '').slice(-1)
+    const newCode = [...code]
+    newCode[index] = digit
+    setCode(newCode)
+    if (digit && index < 5) inputs.current[index + 1]?.focus()
+    if (!digit && index > 0) inputs.current[index - 1]?.focus()
+  }
+
+  const handleVerify = async () => {
+    const otp = code.join('')
+    if (otp.length < 6) { Alert.alert('Please enter the full 6-digit code'); return }
+    setLoading(true)
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        phone: '',
+        token: otp,
+        type: 'sms',
+      })
+      if (error) throw error
+      setSession(data.session as unknown as Record<string, unknown>)
+      if (role === 'operator') {
+        router.replace('/(operator)/dashboard')
+      } else {
+        router.replace('/(consumer)/explore')
+      }
+    } catch (e) {
+      Alert.alert('Invalid code', 'Please check the code and try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <TouchableOpacity style={styles.back} onPress={() => router.back()}>
+        <Text style={styles.backText}>← Back</Text>
+      </TouchableOpacity>
+
+      <View style={styles.content}>
+        <Text style={styles.title}>Enter verification code</Text>
+        <Text style={styles.subtitle}>We sent a 6-digit code to your phone</Text>
+
+        <View style={styles.codeRow}>
+          {code.map((digit, i) => (
+            <TextInput
+              key={i}
+              ref={r => { inputs.current[i] = r }}
+              style={[styles.codeBox, digit && styles.codeBoxFilled]}
+              value={digit}
+              onChangeText={v => handleDigit(i, v)}
+              keyboardType="number-pad"
+              maxLength={1}
+              selectTextOnFocus
+              autoFocus={i === 0}
+            />
+          ))}
+        </View>
+
+        <Button
+          title="Verify"
+          onPress={handleVerify}
+          loading={loading}
+          fullWidth
+          style={{ marginTop: Spacing.xl }}
+        />
+      </View>
+    </SafeAreaView>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  back: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
+  backText: { fontSize: 16, color: Colors.primary, fontWeight: '600' },
+  content: { flex: 1, padding: Spacing.xl, justifyContent: 'center' },
+  title: { fontSize: 26, fontWeight: '800', color: Colors.text, marginBottom: Spacing.sm },
+  subtitle: { fontSize: 15, color: Colors.textSecondary, marginBottom: Spacing.xl },
+  codeRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  codeBox: {
+    width: 46, height: 56, borderRadius: Radius.lg,
+    borderWidth: 1.5, borderColor: Colors.border,
+    textAlign: 'center', fontSize: 22, fontWeight: '700',
+    color: Colors.text, backgroundColor: Colors.surface,
+  },
+  codeBoxFilled: { borderColor: Colors.primary, backgroundColor: Colors.primarySurface },
+})
