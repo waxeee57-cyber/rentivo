@@ -3,27 +3,35 @@
     "name": "Rentivo",
     "slug": "rentivo",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "rentivo",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "splash": {
-      "backgroundColor": "#FAFAF8"
+      "image": "./assets/splash-icon.png",
+      "backgroundColor": "#0A1628"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.domrol.rentivo",
+      "buildNumber": "1",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Rentivo uses your location to show nearby rentals.",
         "NSCameraUsageDescription": "Rentivo needs camera access for vehicle inspection photos.",
-        "NSPhotoLibraryUsageDescription": "Rentivo needs photo library access for vehicle inspection."
+        "NSPhotoLibraryUsageDescription": "Rentivo needs photo library access for vehicle inspection.",
+        "NSPhotoLibraryAddUsageDescription": "Rentivo needs access to save photos."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#FAFAF8"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A1628"
       },
       "package": "com.domrol.rentivo",
+      "versionCode": 1,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -53,6 +61,11 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      }
     }
   }
 }
