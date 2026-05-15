@@ -57,7 +57,6 @@ export default function BookingFlowScreen() {
   const [guestPhone, setGuestPhone] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
   const [notes, setNotes] = useState('')
-  const [flightNumber, setFlightNumber] = useState('')
   const [insurancePackage, setInsurancePackage] = useState<InsuranceId>('basic')
   const [cardComplete, setCardComplete] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -67,6 +66,10 @@ export default function BookingFlowScreen() {
   )
   const [startHour, setStartHour] = useState('10:00')
   const [totalHours, setTotalHours] = useState(2)
+  const [promoCode, setPromoCode] = useState('')
+  const [promoDiscount, setPromoDiscount] = useState(0)
+  const [promoApplied, setPromoApplied] = useState(false)
+  const [promoLoading, setPromoLoading] = useState(false)
   const { showToast } = useToastStore()
 
   const startDate = startDateParam
@@ -91,9 +94,26 @@ export default function BookingFlowScreen() {
   const hourlySubtotal = rentalType === 'hourly' && listing.price_per_hour != null
     ? listing.price_per_hour * totalHours
     : 0
-  const grandTotal = rentalType === 'hourly'
+  const baseTotal = rentalType === 'hourly'
     ? hourlySubtotal + insuranceTotalCost
     : priceCalc.total + insuranceTotalCost
+  const grandTotal = Math.max(0, baseTotal - promoDiscount)
+
+  const applyPromo = async () => {
+    if (!promoCode.trim()) return
+    setPromoLoading(true)
+    const result = await validatePromoCode(promoCode, baseTotal)
+    if (result.valid) {
+      setPromoDiscount(result.discount)
+      setPromoApplied(true)
+      showToast({ message: `Promo applied: -€${result.discount.toFixed(2)}`, type: 'success' })
+    } else {
+      showToast({ message: result.error ?? 'Invalid promo code', type: 'error' })
+      setPromoDiscount(0)
+      setPromoApplied(false)
+    }
+    setPromoLoading(false)
+  }
 
   const handlePayment = async () => {
     if (submitting || submitted) return
@@ -152,7 +172,8 @@ export default function BookingFlowScreen() {
           consumer_signature: null,
           operator_signature: null,
           notes: notes.trim() || null,
-          flight_number: flightNumber.trim() || null,
+          promo_code: promoApplied ? promoCode : null,
+          promo_discount: promoDiscount,
         })
         bookingId = booking.id
 
@@ -350,25 +371,6 @@ export default function BookingFlowScreen() {
               multiline numberOfLines={3}
             />
 
-            <View style={styles.flightSection}>
-              <Text style={styles.flightLabel}>✈️ Airport pickup? (optional)</Text>
-              <TextInput
-                style={styles.flightInput}
-                value={flightNumber}
-                onChangeText={setFlightNumber}
-                placeholder="Flight number (e.g. FR1234)"
-                placeholderTextColor={Colors.textSecondary}
-                autoCapitalize="characters"
-                maxLength={10}
-                accessibilityLabel="Flight number input"
-              />
-              {flightNumber.length > 0 && (
-                <Text style={styles.flightHint}>
-                  We'll track your flight and adjust pickup if delayed.
-                </Text>
-              )}
-            </View>
-
             <Text style={styles.formTitle}>
               {language === 'es' ? 'Hora de recogida' : language === 'hu' ? 'Átvétel időpontja' : 'Pickup time'}
             </Text>
@@ -424,6 +426,16 @@ export default function BookingFlowScreen() {
                   <Text style={styles.priceValue}>{formatEURDecimal(insuranceTotalCost)}</Text>
                 </View>
               )}
+              {promoApplied && promoDiscount > 0 && (
+                <View style={styles.priceRow}>
+                  <Text style={[styles.priceLabel, { color: Colors.success }]}>
+                    Promo ({promoCode})
+                  </Text>
+                  <Text style={[styles.priceValue, { color: Colors.success }]}>
+                    -{formatEURDecimal(promoDiscount)}
+                  </Text>
+                </View>
+              )}
               <View style={[styles.priceRow, styles.priceTotal]}>
                 <Text style={styles.priceTotalLabel}>Total now</Text>
                 <Text style={styles.priceTotalValue}>{formatEURDecimal(grandTotal)}</Text>
@@ -444,6 +456,53 @@ export default function BookingFlowScreen() {
                 <Text style={styles.trustItem}>✓ No hidden fees</Text>
               </View>
             </View>
+
+            {/* Promo code input */}
+            <View style={styles.promoRow}>
+              <TextInput
+                style={styles.promoInput}
+                value={promoCode}
+                onChangeText={v => {
+                  setPromoCode(v)
+                  if (promoApplied) {
+                    setPromoApplied(false)
+                    setPromoDiscount(0)
+                  }
+                }}
+                placeholder={
+                  language === 'hu'
+                    ? 'Promo kód (pl. WELCOME10)'
+                    : language === 'es'
+                      ? 'Código promo (ej. WELCOME10)'
+                      : 'Promo code (e.g. WELCOME10)'
+                }
+                placeholderTextColor={Colors.textTertiary}
+                autoCapitalize="characters"
+                accessibilityLabel="Promo code input"
+              />
+              <TouchableOpacity
+                style={[styles.promoBtn, promoApplied && styles.promoBtnApplied]}
+                onPress={() => void applyPromo()}
+                disabled={promoLoading || !promoCode.trim()}
+                accessibilityLabel="Apply promo code"
+                accessibilityRole="button"
+              >
+                {promoLoading ? (
+                  <ActivityIndicator color={Colors.background} size="small" />
+                ) : (
+                  <Text style={styles.promoBtnText}>{promoApplied ? '✓' : 'Apply'}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+            {promoApplied && promoDiscount > 0 && (
+              <Text style={styles.promoSaved}>
+                {language === 'hu'
+                  ? `Megtakarítás: -€${promoDiscount.toFixed(2)}`
+                  : language === 'es'
+                    ? `Ahorro: -€${promoDiscount.toFixed(2)}`
+                    : `You save -€${promoDiscount.toFixed(2)}`}
+              </Text>
+            )}
 
             {/* Guest recap */}
             <View style={styles.guestRecap}>
@@ -585,6 +644,31 @@ const styles = StyleSheet.create({
   trustRow: { marginTop: Spacing.md, gap: 4 },
   trustItem: { fontSize: 12, color: Colors.success, fontWeight: '500' },
 
+  // Promo code
+  promoRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm },
+  promoInput: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.sm,
+    color: Colors.text,
+    paddingHorizontal: Spacing.md,
+    fontSize: 14,
+    minHeight: 44,
+  },
+  promoBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.base,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  promoBtnApplied: { backgroundColor: Colors.success },
+  promoBtnText: { color: Colors.background, fontWeight: '700', fontSize: 14 },
+  promoSaved: { color: Colors.success, fontSize: 13, marginBottom: Spacing.sm, fontWeight: '600' },
+
   guestRecap: {
     backgroundColor: Colors.surface, borderRadius: Radius.lg,
     padding: Spacing.base, marginBottom: Spacing.base,
@@ -642,20 +726,4 @@ const styles = StyleSheet.create({
   slotTextActive: { color: Colors.background },
   hoursRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   hourlyTotal: { color: Colors.primary, fontSize: 18, fontWeight: '700', marginTop: Spacing.md },
-
-  // Flight tracking
-  flightSection: { marginBottom: 16 },
-  flightLabel: { color: Colors.textSecondary, fontSize: 14, marginBottom: 8 },
-  flightInput: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 8,
-    color: Colors.text,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    minHeight: 44,
-  },
-  flightHint: { color: Colors.primary, fontSize: 12, marginTop: 4 },
 })

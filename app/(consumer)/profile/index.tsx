@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Linking, Animated } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Linking, Animated, Share } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import type { Href } from 'expo-router'
@@ -17,6 +17,9 @@ import { useLoyalty } from '@/lib/hooks/useLoyalty'
 export default function ProfileScreen() {
   const { user, operator, signOut, language, setLanguage, hasOperatorAccount, hasHostAccount, setRole } = useAuthStore()
   const { showToast } = useToastStore()
+  const [referralCode] = useState(
+    Config.useMock ? 'ROLI2026' : `REF${(user?.id ?? 'GUEST').slice(0, 6).toUpperCase()}`,
+  )
 
   const name = Config.useMock ? 'Marco Ferreira' : (user?.name ?? operator?.name ?? 'User')
   const email = Config.useMock ? 'marco.ferreira@gmail.com' : (user?.email ?? operator?.email ?? '')
@@ -313,6 +316,41 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
+        {/* Refer a Friend */}
+        <Card style={styles.card}>
+          <Text style={styles.sectionTitle}>
+            {language === 'hu' ? 'BARÁT MEGHÍVÁSA' : language === 'es' ? 'INVITAR AMIGOS' : 'REFER A FRIEND'}
+          </Text>
+          <View style={styles.referralCard}>
+            <Text style={styles.referralDesc}>
+              {language === 'hu'
+                ? 'Oszd meg a kódodat és keress 500 hűségpontot minden barátért, aki bérel!'
+                : language === 'es'
+                  ? '¡Comparte tu código y gana 500 puntos de fidelidad por cada amigo que reserve!'
+                  : 'Share your code and earn 500 loyalty points for each friend who books!'}
+            </Text>
+            <View style={styles.referralCodeRow}>
+              <Text style={styles.referralCode}>{referralCode}</Text>
+              <TouchableOpacity
+                style={styles.shareBtn}
+                onPress={() => void Share.share({
+                  message: language === 'hu'
+                    ? `Használd az én Rentivo ajánlói kódomat: ${referralCode} — és kapsz 10% kedvezményt az első bérlésedre!`
+                    : language === 'es'
+                      ? `Usa mi código de referido de Rentivo ${referralCode} y obtén 10% de descuento en tu primer alquiler!`
+                      : `Use my Rentivo referral code ${referralCode} and get 10% off your first rental!`,
+                })}
+                accessibilityLabel="Share referral code"
+                accessibilityRole="button"
+              >
+                <Text style={styles.shareBtnText}>
+                  {language === 'hu' ? 'Megosztás' : language === 'es' ? 'Compartir' : 'Share'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Card>
+
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>{t('sectionAccount', language)}</Text>
           <MenuItem
@@ -493,6 +531,27 @@ const styles = StyleSheet.create({
   switchRoleTextAccent: { color: Colors.primary },
   switchRoleBtnAccent: { borderColor: Colors.primary, borderStyle: 'dashed' },
   switchRoleChevron: { fontSize: 20, color: Colors.textTertiary },
+  // Referral
+  referralCard: {
+    backgroundColor: Colors.background,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.borderGold,
+  },
+  referralDesc: { color: Colors.textSecondary, fontSize: 13, marginBottom: Spacing.md, lineHeight: 20 },
+  referralCodeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  referralCode: { color: Colors.primary, fontSize: 20, fontWeight: '800', letterSpacing: 2, flex: 1 },
+  shareBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.sm,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shareBtnText: { color: Colors.background, fontWeight: '700', fontSize: 14 },
   // Loyalty
   loyaltyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
   tierBadge: {
