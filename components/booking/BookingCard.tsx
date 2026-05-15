@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
@@ -62,13 +62,17 @@ function PulsingDot() {
   return <Animated.View style={[styles.pulseDot, { opacity: anim }]} />
 }
 
-export function BookingCard({ booking, onPress }: BookingCardProps) {
+function BookingCardComponent({ booking, onPress }: BookingCardProps) {
   const statusKey = (booking.status in STATUS_CONFIG ? booking.status : 'pending') as StatusKey
   const config = STATUS_CONFIG[statusKey]
 
   const daysUntil = booking.status === 'confirmed' || booking.status === 'pending'
     ? differenceInDays(parseISO(booking.start_date), new Date())
     : null
+
+  const handleInspectPress = useCallback(() => {
+    router.push(`/(consumer)/damage/pickup/${booking.id}`)
+  }, [booking.id])
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.88}>
@@ -99,7 +103,7 @@ export function BookingCard({ booking, onPress }: BookingCardProps) {
           {booking.status === 'active' && (
             <TouchableOpacity
               style={styles.inspectBtn}
-              onPress={() => router.push(`/(consumer)/damage/pickup/${booking.id}`)}
+              onPress={handleInspectPress}
             >
               <Text style={styles.inspectBtnText}>Start inspection →</Text>
             </TouchableOpacity>
@@ -115,6 +119,9 @@ export function BookingCard({ booking, onPress }: BookingCardProps) {
     </TouchableOpacity>
   )
 }
+
+export const BookingCard = React.memo(BookingCardComponent)
+export default BookingCard
 
 const styles = StyleSheet.create({
   card: {

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import {
   View, Text, TouchableOpacity, StyleSheet, FlatList,
   TextInput, Modal, Animated,
@@ -31,6 +31,9 @@ interface CityPickerSheetProps {
   onClose: () => void
 }
 
+// Fixed row height: paddingVertical Spacing.md (16) * 2 + text lineHeight ~24 + marginBottom 2 ≈ 58
+const CITY_ROW_HEIGHT = 58
+
 export function CityPickerSheet({ visible, selectedCity, onSelect, onClose }: CityPickerSheetProps) {
   const [search, setSearch] = useState('')
   const slideAnim = useRef(new Animated.Value(500)).current
@@ -56,6 +59,12 @@ export function CityPickerSheet({ visible, selectedCity, onSelect, onClose }: Ci
     c.name.toLowerCase().includes(search.toLowerCase())
   )
 
+  const getCityItemLayout = useCallback((_data: ArrayLike<City> | null | undefined, index: number) => ({
+    length: CITY_ROW_HEIGHT,
+    offset: CITY_ROW_HEIGHT * index,
+    index,
+  }), [])
+
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
@@ -73,6 +82,9 @@ export function CityPickerSheet({ visible, selectedCity, onSelect, onClose }: Ci
           data={filtered}
           keyExtractor={c => c.name}
           showsVerticalScrollIndicator={false}
+          windowSize={10}
+          maxToRenderPerBatch={10}
+          getItemLayout={getCityItemLayout}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={[styles.cityRow, selectedCity === item.name && styles.cityRowActive]}

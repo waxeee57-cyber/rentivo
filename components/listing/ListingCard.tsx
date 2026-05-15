@@ -1,8 +1,8 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Modal } from 'react-native'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
-import * as Haptics from 'expo-haptics'
+import { impactAsync, notificationAsync, ImpactFeedbackStyle, NotificationFeedbackType } from 'expo-haptics'
 import { Colors, Radius, Spacing, Shadow, Typography } from '@/constants/colors'
 import { StarRating } from '@/components/ui/StarRating'
 import { formatEUR } from '@/lib/utils/formatCurrency'
@@ -28,7 +28,7 @@ const CONTEXT_ACTIONS = [
   { key: 'hide', label: '✕ Hide this listing' },
 ]
 
-export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: ListingCardProps) {
+function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }: ListingCardProps) {
   const { isWishlisted, toggle } = useWishlistStore()
   const wishlisted = isWishlisted(listing.id)
   const scale = useRef(new Animated.Value(1)).current
@@ -37,26 +37,37 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
 
   if (hidden) return null
 
-  const onPressIn = () => Animated.spring(scale, { toValue: 0.97, damping: 15, useNativeDriver: true }).start()
-  const onPressOut = () => Animated.spring(scale, { toValue: 1, damping: 15, useNativeDriver: true }).start()
+  const onPressIn = useCallback(() => Animated.spring(scale, { toValue: 0.97, damping: 15, useNativeDriver: true }).start(), [scale])
+  const onPressOut = useCallback(() => Animated.spring(scale, { toValue: 1, damping: 15, useNativeDriver: true }).start(), [scale])
 
-  const handleLongPress = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+  const handlePress = useCallback(() => {
+    router.push(`/(consumer)/listing/${listing.id}`)
+  }, [listing.id])
+
+  const handleLongPress = useCallback(() => {
+    void impactAsync(ImpactFeedbackStyle.Medium)
     setShowContext(true)
-  }
+  }, [])
 
-  const handleContextAction = (key: string) => {
+  const handleHeartPress = useCallback(() => {
+    void impactAsync(ImpactFeedbackStyle.Medium)
+    toggle(listing)
+  }, [listing, toggle])
+
+  const handleContextClose = useCallback(() => setShowContext(false), [])
+
+  const handleContextAction = useCallback((key: string) => {
     setShowContext(false)
     switch (key) {
       case 'wishlist':
         toggle(listing)
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+        void impactAsync(ImpactFeedbackStyle.Medium)
         break
       case 'share':
         // Share would use expo-sharing
         break
       case 'notify':
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        void notificationAsync(NotificationFeedbackType.Success)
         break
       case 'hide':
         setHidden(true)
@@ -64,7 +75,7 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
       default:
         break
     }
-  }
+  }, [listing, toggle])
 
   const isFull = variant === 'full'
 
@@ -74,7 +85,7 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
     <>
       <Animated.View style={[isFull ? styles.cardFull : styles.cardGrid, { transform: [{ scale }] }]}>
         <TouchableOpacity
-          onPress={() => router.push(`/(consumer)/listing/${listing.id}`)}
+          onPress={handlePress}
           onPressIn={onPressIn}
           onPressOut={onPressOut}
           onLongPress={handleLongPress}
@@ -112,10 +123,7 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
             {/* Heart button — connected to wishlist store */}
             <TouchableOpacity
               style={styles.heartBtn}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-                toggle(listing)
-              }}
+              onPress={handleHeartPress}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityLabel={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
               accessibilityRole="button"
@@ -159,12 +167,12 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
         visible={showContext}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowContext(false)}
+        onRequestClose={handleContextClose}
       >
         <TouchableOpacity
           style={contextStyles.backdrop}
           activeOpacity={1}
-          onPress={() => setShowContext(false)}
+          onPress={handleContextClose}
         />
         <View style={contextStyles.menu}>
           <View style={contextStyles.handle} />
@@ -189,7 +197,7 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
               </TouchableOpacity>
             )
           })}
-          <TouchableOpacity style={contextStyles.cancelBtn} onPress={() => setShowContext(false)}>
+          <TouchableOpacity style={contextStyles.cancelBtn} onPress={handleContextClose}>
             <Text style={contextStyles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         </View>
@@ -197,6 +205,9 @@ export function ListingCard({ listing, variant = 'grid', showAvailableBadge }: L
     </>
   )
 }
+
+export const ListingCard = React.memo(ListingCardComponent)
+export default ListingCard
 
 const styles = StyleSheet.create({
   cardFull: {
