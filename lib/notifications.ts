@@ -157,10 +157,7 @@ export function sendChatNotification(
   isMock: boolean,
 ): void {
   const body = preview.length > 80 ? preview.slice(0, 80) + '…' : preview
-  if (isMock) {
-    console.log(`[Push → ${to}] 💬 ${senderName}: ${body}`)
-    return
-  }
+  if (isMock) return
 }
 
 export function getNotificationContent(

@@ -6,7 +6,7 @@ import {
 } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import {
-  Modal, View, Text, TouchableOpacity, StyleSheet,
+  Modal, View, Text, TouchableOpacity, StyleSheet, Linking,
 } from 'react-native'
 import { StripeProvider } from '@stripe/stripe-react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -36,11 +36,11 @@ function GdprModal({ visible, onAccept, onManage, language }: {
           <Text style={gdprStyles.title}>{t('gdprTitle', language)}</Text>
           <Text style={gdprStyles.body}>{t('gdprBody', language)}</Text>
           <View style={gdprStyles.links}>
-            <TouchableOpacity onPress={() => {}}>
+            <TouchableOpacity onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/privacy')}>
               <Text style={gdprStyles.link}>{t('privacyPolicy', language)}</Text>
             </TouchableOpacity>
             <Text style={gdprStyles.linkSep}> · </Text>
-            <TouchableOpacity onPress={() => {}}>
+            <TouchableOpacity onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/terms')}>
               <Text style={gdprStyles.link}>{t('termsOfService', language)}</Text>
             </TouchableOpacity>
           </View>

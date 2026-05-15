@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
@@ -142,11 +142,11 @@ export default function HostProfileScreen() {
 
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>{t('sectionLegal', language)}</Text>
-          <MenuItem label={`📄 ${t('termsOfService', language)}`} onPress={() => {}} />
+          <MenuItem label={`📄 ${t('termsOfService', language)}`} onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/terms')} />
           <Divider />
-          <MenuItem label={`🔒 ${t('privacyPolicy', language)}`} onPress={() => {}} />
+          <MenuItem label={`🔒 ${t('privacyPolicy', language)}`} onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/privacy')} />
           <Divider />
-          <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={() => {}} />
+          <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={() => Alert.alert(t('helpSupport', language), 'Email us at support@rentivo.app\n\nResponse time: within 24 hours', [{ text: 'OK' }])} />
         </Card>
 
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>

@@ -8,8 +8,9 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { MOCK_HOST_LISTING } from '@/lib/mockData'
-import { formatEURDecimal } from '@/lib/utils/formatCurrency'
+import { formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { Config } from '@/constants/config'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 import type { Listing } from '@/types'
 
 function HostSetupWizard({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
@@ -74,7 +75,7 @@ const wizardStyles = StyleSheet.create({
   skipBtnText: { fontSize: 14, color: Colors.textTertiary },
 })
 
-function HostListingCard({ listing }: { listing: Listing }) {
+function HostListingCard({ listing, language }: { listing: Listing; language: 'en' | 'es' | 'hu' }) {
   const [available, setAvailable] = React.useState(listing.available)
 
   const handleShare = async () => {
@@ -89,7 +90,7 @@ function HostListingCard({ listing }: { listing: Listing }) {
         </View>
         <View style={styles.cardInfo}>
           <Text style={styles.cardTitle} numberOfLines={1}>{listing.title}</Text>
-          <Text style={styles.cardPrice}>{formatEURDecimal(listing.price_per_day)}/day</Text>
+          <Text style={styles.cardPrice}>{formatPricePerDay(listing.price_per_day, language)}</Text>
           <View style={styles.cardStats}>
             <Text style={styles.cardStat}>📅 {listing.booking_count} bookings/month</Text>
             <Text style={styles.cardStat}>★ {listing.rating}</Text>
@@ -125,6 +126,7 @@ function HostListingCard({ listing }: { listing: Listing }) {
 }
 
 export default function HostListingsScreen() {
+  const { language } = useAuthStore()
   const listings: Listing[] = Config.useMock ? [MOCK_HOST_LISTING] : []
   const [showWizard, setShowWizard] = useState(false)
   const [wizardChecked, setWizardChecked] = useState(false)
@@ -191,7 +193,7 @@ export default function HostListingsScreen() {
         keyExtractor={l => l.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => <HostListingCard listing={item} />}
+        renderItem={({ item }) => <HostListingCard listing={item} language={language} />}
       />
 
       <TouchableOpacity

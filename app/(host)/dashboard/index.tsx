@@ -6,12 +6,12 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { MOCK_HOST, MOCK_HOST_LISTING, MOCK_BOOKINGS } from '@/lib/mockData'
 import { useHostBookings } from '@/lib/hooks/useBookings'
-import { formatEURDecimal } from '@/lib/utils/formatCurrency'
+import { formatEURDecimal, formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { Config } from '@/constants/config'
 
 export default function HostDashboardScreen() {
-  const { host } = useAuthStore()
+  const { host, language } = useAuthStore()
   const hostId = Config.useMock ? MOCK_HOST.id : (host?.id ?? null)
   const { bookings, loading } = useHostBookings(hostId)
   const hostData = Config.useMock ? MOCK_HOST : host
@@ -115,7 +115,7 @@ export default function HostDashboardScreen() {
               <View style={styles.listingInfo}>
                 <Text style={styles.listingTitle} numberOfLines={1}>{MOCK_HOST_LISTING.title}</Text>
                 <Text style={styles.listingPrice}>
-                  {formatEURDecimal(MOCK_HOST_LISTING.price_per_day)}/day
+                  {formatPricePerDay(MOCK_HOST_LISTING.price_per_day, language)}
                 </Text>
                 <View style={styles.listingStats}>
                   <Text style={styles.listingStatText}>📅 {MOCK_HOST_LISTING.booking_count} bookings</Text>

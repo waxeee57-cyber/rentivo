@@ -20,7 +20,7 @@ import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { useListing } from '@/lib/hooks/useListing'
 import { calculatePrice } from '@/lib/utils/calculatePrice'
-import { formatEUR, formatEURDecimal } from '@/lib/utils/formatCurrency'
+import { formatEUR, formatEURDecimal, formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { getCategoryEmoji, getCategoryLabel } from '@/constants/categories'
 import { getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
 import { Config } from '@/constants/config'
@@ -156,7 +156,7 @@ export default function ListingDetailScreen() {
               onPress={() => {
                 void Share.share({
                   title: listing.title,
-                  message: `Check out ${listing.title} on Rentivo — ${formatEUR(listing.price_per_day)}/day`,
+                  message: `Check out ${listing.title} on Rentivo — ${formatPricePerDay(listing.price_per_day, language)}`,
                 })
               }}
               accessibilityLabel="Share this listing"
@@ -219,12 +219,11 @@ export default function ListingDetailScreen() {
 
           <View style={styles.priceSection}>
             <View style={styles.priceRow}>
-              <Text style={styles.priceMain}>{formatEUR(listing.price_per_day)}</Text>
-              <Text style={styles.priceUnit}>/day</Text>
+              <Text style={styles.priceMain}>{formatPricePerDay(listing.price_per_day, language)}</Text>
             </View>
             {weeklyPrice && weeklySavings > 5 && (
               <Text style={styles.weeklyPrice}>
-                {formatEURDecimal(weeklyPrice)}/week · save {weeklySavings}%
+                {formatEURDecimal(weeklyPrice)}{t('perWeek', language)} · save {weeklySavings}%
               </Text>
             )}
           </View>
@@ -494,7 +493,7 @@ export default function ListingDetailScreen() {
                       <Text style={styles.similarEmoji}>{getCategoryEmoji(sim.category)}</Text>
                     </View>
                     <Text style={styles.similarTitle} numberOfLines={1}>{sim.title}</Text>
-                    <Text style={styles.similarPrice}>{formatEUR(sim.price_per_day)}/day</Text>
+                    <Text style={styles.similarPrice}>{formatPricePerDay(sim.price_per_day, language)}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>

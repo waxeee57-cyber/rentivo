@@ -48,6 +48,7 @@ export default function NewHostListingScreen() {
   const [instantBook, setInstantBook] = useState(true)
   const [city, setCity] = useState('')
   const [address, setAddress] = useState('')
+  const [strRegistration, setStrRegistration] = useState('')
 
   const handlePickPhoto = async (index: number) => {
     const uri = await showPhotoOptions()
@@ -209,6 +210,21 @@ export default function NewHostListingScreen() {
                     </View>
                   </View>
                 </>
+              )}
+              {(category === 'villa') && (
+                <View>
+                  <Text style={styles.label}>STR Registration Number</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. VUT/MAD/2024/12345 (required by local law)"
+                    placeholderTextColor={Colors.textTertiary}
+                    value={strRegistration}
+                    onChangeText={setStrRegistration}
+                  />
+                  <Text style={{ color: Colors.textTertiary, fontSize: 11, marginBottom: Spacing.md }}>
+                    Many EU cities require a short-term rental licence number on all listings.
+                  </Text>
+                </View>
               )}
               <Text style={styles.label}>Short description</Text>
               <TextInput
