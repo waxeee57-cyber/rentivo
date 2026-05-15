@@ -1,10 +1,12 @@
+import type { ComponentProps } from 'react'
+import { Ionicons } from '@expo/vector-icons'
 import type { RentalCategory } from '@/types'
 
 export interface CategoryConfig {
   key: RentalCategory
   label: string
   emoji: string
-  icon: string
+  icon: ComponentProps<typeof Ionicons>['name']
 }
 
 export const CATEGORIES: CategoryConfig[] = [

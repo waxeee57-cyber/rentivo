@@ -16,18 +16,25 @@ interface ListingPreviewSheetProps {
 export function ListingPreviewSheet({ listing, onClose }: ListingPreviewSheetProps) {
   if (!listing) return null
 
+  const imageUri = listing.images?.[0] ?? listing.cover_image_url ?? null
+
   return (
     <View style={styles.sheet}>
       <TouchableOpacity style={styles.closeBtn} onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
         <Text style={styles.closeText}>✕</Text>
       </TouchableOpacity>
       <View style={styles.row}>
-        <Image
-          source={{ uri: listing.cover_image_url ?? undefined }}
-          style={styles.image}
-          contentFit="cover"
-          placeholder="https://via.placeholder.com/100x80/F5F3EF"
-        />
+        {imageUri ? (
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.image}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={[styles.image, styles.imagePlaceholder]}>
+            <Text style={styles.imagePlaceholderText}>🚗</Text>
+          </View>
+        )}
         <View style={styles.info}>
           <View style={styles.catPill}>
             <Text style={styles.catText}>{getCategoryLabel(listing.category)}</Text>
@@ -85,6 +92,12 @@ const styles = StyleSheet.create({
   closeText: { color: Colors.textSecondary, fontSize: 13, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
   image: { width: 100, height: 120, borderRadius: 12 },
+  imagePlaceholder: {
+    backgroundColor: Colors.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imagePlaceholderText: { fontSize: 32 },
   info: { flex: 1, paddingTop: 2 },
   catPill: {
     backgroundColor: Colors.surfaceWarm,

@@ -146,14 +146,24 @@ export default function OnboardingScreen() {
         </View>
 
         {/* Primary button */}
-        <TouchableOpacity style={styles.primaryBtn} onPress={handleNext}>
+        <TouchableOpacity
+          style={styles.primaryBtn}
+          onPress={handleNext}
+          accessibilityLabel={isLast ? 'Get started' : 'Next slide'}
+          accessibilityRole="button"
+        >
           <Text style={styles.primaryBtnText}>
             {isLast ? 'Get started →' : 'Next →'}
           </Text>
         </TouchableOpacity>
 
         {!isLast && (
-          <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
+          <TouchableOpacity
+            style={styles.skipBtn}
+            onPress={handleSkip}
+            accessibilityLabel="Sign in to existing account"
+            accessibilityRole="button"
+          >
             <Text style={styles.skipBtnText}>Sign in</Text>
           </TouchableOpacity>
         )}
@@ -243,13 +253,15 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     paddingVertical: Spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
     ...Shadow.gold,
   },
   primaryBtnText: {
     ...Typography.h4,
     color: Colors.textInverse,
   },
-  skipBtn: { paddingVertical: Spacing.sm },
+  skipBtn: { paddingVertical: Spacing.sm, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   skipBtnText: {
     fontSize: 15,
     color: Colors.textSecondary,

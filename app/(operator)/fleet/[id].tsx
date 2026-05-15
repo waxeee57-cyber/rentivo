@@ -15,9 +15,11 @@ import { useListing } from '@/lib/hooks/useListing'
 import { useCamera } from '@/lib/hooks/useCamera'
 import { Image } from 'expo-image'
 import { Config } from '@/constants/config'
+import { MOCK_OPERATOR } from '@/lib/mockData'
 import { CATEGORIES } from '@/constants/categories'
 import type { CancellationPolicy, RentalCategory } from '@/types'
-import { updateListing } from '@/lib/api/listings'
+import { updateListing, deleteListing } from '@/lib/api/listings'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 const POLICIES: { key: CancellationPolicy; label: string; desc: string }[] = [
   { key: 'flexible', label: 'Flexible', desc: 'Full refund 1 day before' },
@@ -30,6 +32,8 @@ export default function EditVehicleScreen() {
   const { listing, loading } = useListing(id ?? '')
   const { showToast } = useToastStore()
   const { showPhotoOptions } = useCamera()
+  const { operator } = useAuthStore()
+  const operatorId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? '')
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -90,17 +94,21 @@ export default function EditVehicleScreen() {
     setSaving(true)
     try {
       const validPhotos = photos.filter((p): p is string => p !== null)
-      await updateListing(id ?? '', {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        price_per_day: price,
-        category,
-        available,
-        min_rental_days: parseInt(minRentalDays, 10),
-        cancellation_policy: policy,
-        cover_image_url: validPhotos[0] ?? undefined,
-        images: validPhotos.length > 0 ? validPhotos : undefined,
-      })
+      await updateListing(
+        id ?? '',
+        {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          price_per_day: price,
+          category,
+          available,
+          min_rental_days: parseInt(minRentalDays, 10),
+          cancellation_policy: policy,
+          cover_image_url: validPhotos[0] ?? undefined,
+          images: validPhotos.length > 0 ? validPhotos : undefined,
+        },
+        operatorId,
+      )
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       showToast({ message: 'Updated ✓', type: 'success' })
       router.back()
@@ -114,10 +122,16 @@ export default function EditVehicleScreen() {
   const handleDelete = async () => {
     setDeleting(true)
     try {
-      await new Promise<void>(r => setTimeout(r, 600))
+      if (Config.useMock) {
+        await new Promise<void>(r => setTimeout(r, 600))
+      } else {
+        await deleteListing(id ?? '', operatorId)
+      }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       showToast({ message: 'Vehicle removed', type: 'info' })
-      router.back()
+      router.replace('/(operator)/fleet' as Parameters<typeof router.replace>[0])
+    } catch {
+      showToast({ message: 'Failed to delete vehicle', type: 'error' })
     } finally {
       setDeleting(false)
     }

@@ -36,7 +36,7 @@ const HERO_HEIGHT = Math.round(screenHeight * 0.52)
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { listing, loading, error, refetch } = useListing(id ?? '')
-  const { language } = useAuthStore()
+  const { language, user } = useAuthStore()
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [showDatePicker, setShowDatePicker] = useState(false)
@@ -65,7 +65,26 @@ export default function ListingDetailScreen() {
 
   const isHostListing = listing.owner_type === 'host'
 
-  const { user } = useAuthStore()
+  // Contact is available for logged-in users. At the listing-detail stage there is no
+  // booking yet, so the button navigates to the booking flow instead of an existing chat.
+  const canContact = Boolean(user?.id)
+
+  const handleContactHost = () => {
+    if (!canContact) {
+      Alert.alert(
+        language === 'hu' ? 'Bejelentkezés szükséges' : 'Login required',
+        language === 'hu'
+          ? 'Bejelentkezés után tudod felvenni a kapcsolatot a házigazdával.'
+          : 'Please log in to contact the host.',
+      )
+      return
+    }
+    // Navigate to booking flow — user initiates a booking to open chat
+    router.push({
+      pathname: '/(consumer)/booking/[listingId]',
+      params: { listingId: listing.id },
+    })
+  }
 
   const handleReport = () => {
     const reasons = [
@@ -284,6 +303,8 @@ export default function ListingDetailScreen() {
             <TouchableOpacity
               style={[styles.datePicker, startDate && styles.datePickerActive]}
               onPress={() => setShowDatePicker(true)}
+              accessibilityLabel={dateLabel}
+              accessibilityRole="button"
             >
               <Text style={[styles.datePickerText, startDate && styles.datePickerTextActive]}>
                 {dateLabel}
@@ -330,7 +351,11 @@ export default function ListingDetailScreen() {
                 <Text style={styles.desc} numberOfLines={showFullDesc ? undefined : 4}>
                   {listing.description}
                 </Text>
-                <TouchableOpacity onPress={() => setShowFullDesc(v => !v)}>
+                <TouchableOpacity
+                  onPress={() => setShowFullDesc(v => !v)}
+                  accessibilityLabel={showFullDesc ? t('showLess', language) : t('showMore', language)}
+                  accessibilityRole="button"
+                >
                   <Text style={styles.showMore}>{showFullDesc ? t('showLess', language) : t('showMore', language)}</Text>
                 </TouchableOpacity>
               </View>
@@ -364,8 +389,17 @@ export default function ListingDetailScreen() {
                   />
                 ))}
                 {listing.review_count > 2 && (
-                  <TouchableOpacity style={styles.seeAllReviews}>
-                    <Text style={styles.seeAllReviewsText}>See all {listing.review_count} reviews →</Text>
+                  <TouchableOpacity
+                    style={styles.seeAllReviews}
+                    onPress={() => Alert.alert(
+                      t('reviews', language),
+                      `${listing.review_count} ${language === 'hu' ? 'értékelés megtekintése hamarosan elérhető.' : 'reviews view coming in the next update.'}`,
+                      [{ text: 'OK' }],
+                    )}
+                    accessibilityLabel={`See all ${listing.review_count} reviews`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.seeAllReviewsText}>{t('seeAllReviews', language)} ({listing.review_count}) →</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -405,11 +439,15 @@ export default function ListingDetailScreen() {
                   )}
                 </View>
                 <TouchableOpacity
-                  style={styles.askQuestionBtn}
-                  onPress={() => router.push(`/(consumer)/bookings/chat/bk-001`)}
+                  style={[styles.askQuestionBtn, !canContact && styles.askQuestionBtnDisabled]}
+                  onPress={handleContactHost}
+                  accessibilityLabel={canContact ? t('messageHost', language) : t('loginToContact', language)}
+                  accessibilityRole="button"
                 >
-                  <Ionicons name="chatbubble-outline" size={16} color={Colors.primary} />
-                  <Text style={styles.askQuestionText}>{t('messageHost', language)}</Text>
+                  <Ionicons name="chatbubble-outline" size={16} color={canContact ? Colors.primary : Colors.textTertiary} />
+                  <Text style={[styles.askQuestionText, !canContact && styles.askQuestionTextDisabled]}>
+                    {canContact ? t('messageHost', language) : t('loginToContact', language)}
+                  </Text>
                 </TouchableOpacity>
               </View>
               <Divider />
@@ -422,16 +460,22 @@ export default function ListingDetailScreen() {
                 <OperatorCard operator={listing.operator} />
                 <View style={styles.operatorActions}>
                   <TouchableOpacity
-                    style={styles.askQuestionBtn}
-                    onPress={() => router.push(`/(consumer)/bookings/chat/bk-001`)}
+                    style={[styles.askQuestionBtn, !canContact && styles.askQuestionBtnDisabled]}
+                    onPress={handleContactHost}
+                    accessibilityLabel={canContact ? t('contactOperator', language) : t('loginToContact', language)}
+                    accessibilityRole="button"
                   >
-                    <Ionicons name="chatbubble-outline" size={16} color={Colors.primary} />
-                    <Text style={styles.askQuestionText}>Ask a question</Text>
+                    <Ionicons name="chatbubble-outline" size={16} color={canContact ? Colors.primary : Colors.textTertiary} />
+                    <Text style={[styles.askQuestionText, !canContact && styles.askQuestionTextDisabled]}>
+                      {canContact ? t('askQuestion', language) : t('loginToContact', language)}
+                    </Text>
                   </TouchableOpacity>
                   {listing.operator.phone ? (
                     <TouchableOpacity
                       style={styles.callBtn}
-                      onPress={() => Linking.openURL(`tel:${listing.operator!.phone}`)}
+                      onPress={() => void Linking.openURL(`tel:${listing.operator!.phone}`)}
+                      accessibilityLabel={`Call ${listing.operator.name}`}
+                      accessibilityRole="button"
                     >
                       <Ionicons name="call-outline" size={16} color={Colors.success} />
                       <Text style={styles.callBtnText}>Call</Text>
@@ -467,6 +511,8 @@ export default function ListingDetailScreen() {
                           void Linking.openURL(url)
                         }
                       }}
+                      accessibilityLabel={t('getDirections', language)}
+                      accessibilityRole="button"
                     >
                       <Text style={styles.locationDirections}>{t('getDirections', language)}</Text>
                     </TouchableOpacity>
@@ -489,6 +535,8 @@ export default function ListingDetailScreen() {
                     key={sim.id}
                     style={styles.similarCard}
                     onPress={() => router.push(`/(consumer)/listing/${sim.id}`)}
+                    accessibilityLabel={`${sim.title}, ${formatPricePerDay(sim.price_per_day, language)}`}
+                    accessibilityRole="button"
                   >
                     <View style={styles.similarImgPlaceholder}>
                       <Text style={styles.similarEmoji}>{getCategoryEmoji(sim.category)}</Text>
@@ -755,6 +803,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
   },
   askQuestionText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
+  askQuestionBtnDisabled: { backgroundColor: Colors.surfaceWarm, borderColor: Colors.border, opacity: 0.6 },
+  askQuestionTextDisabled: { color: Colors.textTertiary },
   callBtn: {
     flexDirection: 'row',
     alignItems: 'center',

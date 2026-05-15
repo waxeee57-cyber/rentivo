@@ -36,6 +36,8 @@ function BookingCard({
     <TouchableOpacity
       style={styles.card}
       onPress={() => router.push(`/(host)/bookings/${booking.id}`)}
+      accessibilityLabel={`Booking from ${booking.guest_name}, ${booking.status}`}
+      accessibilityRole="button"
     >
       <View style={styles.cardTop}>
         <View style={styles.avatar}>
@@ -47,11 +49,11 @@ function BookingCard({
             {formatDateRange(booking.start_date, booking.end_date)}
           </Text>
           <Text style={styles.price}>
-            {booking.total_days} days · €{(booking.total_amount / 100).toFixed(2)}
+            {booking.total_days} days · {booking.total_amount > 0 ? `€${booking.total_amount.toFixed(2)}` : '—'}
           </Text>
           {(booking.status === 'confirmed' || booking.status === 'completed' || booking.status === 'active') && (
             <Text style={styles.payout}>
-              You receive: €{((booking.total_amount * 0.85) / 100).toFixed(2)} · 2 business days
+              You receive: €{(booking.total_amount * 0.85).toFixed(2)} · 2 business days
             </Text>
           )}
         </View>
@@ -69,12 +71,22 @@ function BookingCard({
       {(onConfirm || onDecline) && (
         <View style={styles.actions}>
           {onDecline && (
-            <TouchableOpacity style={styles.declineBtn} onPress={onDecline}>
+            <TouchableOpacity
+              style={styles.declineBtn}
+              onPress={onDecline}
+              accessibilityLabel="Decline booking"
+              accessibilityRole="button"
+            >
               <Text style={styles.declineBtnText}>Decline</Text>
             </TouchableOpacity>
           )}
           {onConfirm && (
-            <TouchableOpacity style={styles.confirmBtn} onPress={onConfirm}>
+            <TouchableOpacity
+              style={styles.confirmBtn}
+              onPress={onConfirm}
+              accessibilityLabel="Confirm booking"
+              accessibilityRole="button"
+            >
               <Text style={styles.confirmBtnText}>Confirm</Text>
             </TouchableOpacity>
           )}
@@ -288,9 +300,11 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
     borderRadius: Radius.lg,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.error,
     backgroundColor: Colors.errorSurface,
+    minHeight: 44,
   },
   declineBtnText: { fontSize: 14, fontWeight: '700', color: Colors.error },
   confirmBtn: {
@@ -298,7 +312,9 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
     borderRadius: Radius.lg,
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: Colors.primary,
+    minHeight: 44,
   },
   confirmBtnText: { fontSize: 14, fontWeight: '700', color: Colors.textInverse },
 

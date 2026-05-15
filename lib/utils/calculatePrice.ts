@@ -2,6 +2,9 @@ import type { PriceCalculation } from '@/types'
 
 const PLATFORM_CUT = parseFloat(process.env.EXPO_PUBLIC_PLATFORM_CUT ?? '0.025')
 
+/**
+ * Calculates price breakdown. All prices are in whole euros (not cents).
+ */
 export function calculatePrice(
   pricePerDay: number,
   totalDays: number,
@@ -19,11 +22,11 @@ export function calculatePrice(
     const dailyRemainder = remainingDays * pricePerDay
     subtotal = weeklyTotal + dailyRemainder
     breakdown = weeks > 0 && remainingDays > 0
-      ? `${weeks}w × €${(pricePerWeek / 100).toFixed(0)} + ${remainingDays}d × €${(pricePerDay / 100).toFixed(0)}`
-      : `${weeks}w × €${(pricePerWeek / 100).toFixed(0)}`
+      ? `${weeks}w × €${Math.round(pricePerWeek)} + ${remainingDays}d × €${Math.round(pricePerDay)}`
+      : `${weeks}w × €${Math.round(pricePerWeek)}`
   } else {
     subtotal = totalDays * pricePerDay
-    breakdown = `${totalDays} days × €${(pricePerDay / 100).toFixed(0)}`
+    breakdown = `${totalDays} days × €${Math.round(pricePerDay)}`
   }
 
   const platformFee = Math.round(subtotal * PLATFORM_CUT)

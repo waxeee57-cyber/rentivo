@@ -26,7 +26,7 @@ export function ListingMarker({ listing, selected, onPress }: ListingMarkerProps
     }
   }, [selected, scale])
 
-  const price = `€${Math.round(listing.price_per_day / 100)}`
+  const price = `€${Math.round(listing.price_per_day)}`
 
   return (
     <Marker

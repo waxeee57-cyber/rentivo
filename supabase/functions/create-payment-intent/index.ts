@@ -40,7 +40,8 @@ serve(async (req) => {
     const { booking_id, amount_eur, listing_title, operator_stripe_account_id } = await req.json()
 
     const amountCents = Math.round(amount_eur * 100)
-    const platformFeeCents = Math.round(amountCents * 0.10)
+    const platformCut = parseFloat(Deno.env.get('PLATFORM_CUT') ?? '0.10')
+    const platformFeeCents = Math.round(amountCents * platformCut)
 
     const params: Stripe.PaymentIntentCreateParams = {
       amount: amountCents,

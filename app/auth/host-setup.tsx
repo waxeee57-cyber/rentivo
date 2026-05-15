@@ -48,11 +48,15 @@ export default function HostSetupScreen() {
   }
 
   const handleVerify = () => {
-    setVerifying(true)
-    setTimeout(() => {
-      setVerifying(false)
-      setVerified(true)
-    }, 1500)
+    if (Config.useMock) {
+      setVerifying(true)
+      setTimeout(() => {
+        setVerifying(false)
+        setVerified(true)
+      }, 1500)
+    } else {
+      router.push('/(consumer)/profile/verify')
+    }
   }
 
   const handleComplete = () => {

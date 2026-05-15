@@ -45,15 +45,16 @@ export async function savePushToken(
   token: string,
   isOperator = false,
 ): Promise<void> {
+  const payload: Record<string, string> = { push_token: token }
   if (isOperator) {
     await supabase
       .from('rentivo_operators')
-      .update({ push_token: token } as never)
+      .update(payload)
       .eq('auth_id', userId)
   } else {
     await supabase
       .from('rentivo_users')
-      .update({ push_token: token } as never)
+      .update(payload)
       .eq('auth_id', userId)
   }
 }

@@ -1,27 +1,29 @@
 const EUR_TO_HUF = 400
 
-export function formatEUR(cents: number): string {
-  return `€${(cents / 100).toFixed(0)}`
+/**
+ * Formats a price stored in whole euros (e.g. 150 → "€150").
+ * Prices in the DB are DECIMAL(10,2) EUR — NOT cents. Do NOT divide by 100.
+ */
+export function formatEUR(euros: number): string {
+  return `€${Math.round(euros).toLocaleString('en-US')}`
 }
 
-export function formatEURDecimal(cents: number): string {
-  return `€${(cents / 100).toFixed(2)}`
+export function formatEURDecimal(euros: number): string {
+  return `€${euros.toFixed(2)}`
 }
 
-export function formatPrice(cents: number, language: string): string {
-  const euros = cents / 100
+export function formatPrice(euros: number, language: string): string {
   if (language === 'hu') {
     const huf = Math.round(euros * EUR_TO_HUF)
     return `${huf.toLocaleString('hu-HU')} Ft`
   }
-  return `€${euros.toFixed(0)}`
+  return `€${Math.round(euros).toLocaleString('en-US')}`
 }
 
-export function formatPricePerDay(cents: number, language: string): string {
-  const euros = cents / 100
+export function formatPricePerDay(euros: number, language: string): string {
   if (language === 'hu') {
     const huf = Math.round(euros * EUR_TO_HUF)
     return `${huf.toLocaleString('hu-HU')} Ft/nap`
   }
-  return `€${euros.toFixed(0)}/day`
+  return `€${Math.round(euros).toLocaleString('en-US')}/day`
 }

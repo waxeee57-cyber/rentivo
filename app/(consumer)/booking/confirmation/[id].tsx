@@ -18,9 +18,12 @@ export default function BookingConfirmationScreen() {
 
   useEffect(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       showToast({ message: `${t('bookingConfirmed', language)} ✓`, type: 'success' })
     }, 800)
+    return () => clearTimeout(timer)
+    // Intentional: runs once on mount — language and showToast captured at mount time
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

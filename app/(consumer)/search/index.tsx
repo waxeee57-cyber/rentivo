@@ -160,7 +160,7 @@ export default function SearchScreen() {
           <CategoryPill
             key={c.key}
             label={t(CAT_I18N_KEYS[c.key], language)}
-            icon={c.icon as any}
+            icon={c.icon}
             active={selectedCategory === c.key}
             onPress={() => setSelectedCategory(selectedCategory === c.key ? null : c.key)}
           />

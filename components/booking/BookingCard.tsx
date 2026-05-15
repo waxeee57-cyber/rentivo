@@ -65,6 +65,7 @@ function PulsingDot() {
 function BookingCardComponent({ booking, onPress }: BookingCardProps) {
   const statusKey = (booking.status in STATUS_CONFIG ? booking.status : 'pending') as StatusKey
   const config = STATUS_CONFIG[statusKey]
+  const imageUri = booking.listing?.images?.[0] ?? booking.listing?.cover_image_url ?? null
 
   const daysUntil = booking.status === 'confirmed' || booking.status === 'pending'
     ? differenceInDays(parseISO(booking.start_date), new Date())
@@ -77,12 +78,17 @@ function BookingCardComponent({ booking, onPress }: BookingCardProps) {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.88}>
       {/* Image */}
-      <Image
-        source={{ uri: booking.listing?.cover_image_url ?? undefined }}
-        style={styles.image}
-        contentFit="cover"
-        placeholder="https://via.placeholder.com/80x80/162038/4A5E78?text=📷"
-      />
+      {imageUri ? (
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.image}
+          contentFit="cover"
+        />
+      ) : (
+        <View style={[styles.image, styles.imagePlaceholder]}>
+          <Text style={styles.imagePlaceholderText}>🚗</Text>
+        </View>
+      )}
 
       {/* Content */}
       <View style={styles.info}>
@@ -140,6 +146,12 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch' as const,
     borderRadius: 0,
   },
+  imagePlaceholder: {
+    backgroundColor: Colors.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imagePlaceholderText: { fontSize: 28 },
   info: {
     flex: 1,
     padding: Spacing.md,

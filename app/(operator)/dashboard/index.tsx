@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { subDays, format, startOfMonth } from 'date-fns'
@@ -87,11 +87,12 @@ const sparkStyles = StyleSheet.create({
 interface QuickActionCardProps {
   icon: string
   label: string
-  route: string
+  route?: string
+  externalUrl?: string
   badge?: number
 }
 
-function QuickActionCard({ icon, label, route, badge }: QuickActionCardProps) {
+function QuickActionCard({ icon, label, route, externalUrl, badge }: QuickActionCardProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
@@ -106,10 +107,18 @@ function QuickActionCard({ icon, label, route, badge }: QuickActionCardProps) {
     }
   }, [badge])
 
+  const handlePress = () => {
+    if (externalUrl) {
+      void Linking.openURL(externalUrl)
+    } else if (route) {
+      router.push(route as Parameters<typeof router.push>[0])
+    }
+  }
+
   return (
     <TouchableOpacity
       style={qaStyles.card}
-      onPress={() => router.push(route as Parameters<typeof router.push>[0])}
+      onPress={handlePress}
       activeOpacity={0.8}
       accessibilityLabel={label}
       accessibilityRole="button"
@@ -234,25 +243,34 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Quick action cards */}
-        <View style={styles.quickActions}>
-          <QuickActionCard
-            icon="＋"
-            label={t('addVehicle', language)}
-            route="/(operator)/fleet/new"
-          />
-          <QuickActionCard
-            icon="📋"
-            label={t('bookings', language)}
-            route="/(operator)/bookings"
-            badge={pendingCount}
-          />
-          <QuickActionCard
-            icon="💬"
-            label={t('messages', language)}
-            route="/(operator)/messages"
-            badge={unreadCount > 0 ? unreadCount : undefined}
-          />
+        {/* Quick action cards — 2×2 grid */}
+        <View style={styles.quickActionsGrid}>
+          <View style={styles.quickActionsRow}>
+            <QuickActionCard
+              icon="＋"
+              label={t('addVehicle', language)}
+              route="/(operator)/fleet/new"
+            />
+            <QuickActionCard
+              icon="📋"
+              label={t('bookings', language)}
+              route="/(operator)/bookings"
+              badge={pendingCount}
+            />
+          </View>
+          <View style={styles.quickActionsRow}>
+            <QuickActionCard
+              icon="💬"
+              label={t('messages', language)}
+              route="/(operator)/messages"
+              badge={unreadCount > 0 ? unreadCount : undefined}
+            />
+            <QuickActionCard
+              icon="💳"
+              label={language === 'hu' ? 'Kifizetés' : 'Payouts'}
+              externalUrl="https://dashboard.stripe.com/express"
+            />
+          </View>
         </View>
 
         {loading ? (
@@ -348,7 +366,7 @@ const styles = StyleSheet.create({
 
   // Stripe onboarding banner
   stripeBanner: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: Colors.warning,
     paddingVertical: 12,
     paddingHorizontal: Spacing.base,
     alignItems: 'center',
@@ -356,7 +374,7 @@ const styles = StyleSheet.create({
   stripeBannerText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#0A1628',
+    color: Colors.background,
   },
 
   // Monthly stats row
@@ -396,10 +414,13 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
 
-  quickActions: {
-    flexDirection: 'row',
+  quickActionsGrid: {
     gap: Spacing.sm,
     marginBottom: Spacing.xl,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
   },
   section: { marginTop: Spacing.xl },
   sectionTitle: {

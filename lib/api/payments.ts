@@ -62,7 +62,10 @@ export async function createPaymentIntent(params: {
     const err = await res.json().catch(() => ({ error: 'Unknown error' }))
     throw new Error((err as { error?: string }).error ?? 'Failed to create payment intent')
   }
-  return res.json() as Promise<{ clientSecret: string; payment_intent_id: string }>
+
+  // Edge Function returns snake_case: { client_secret, payment_intent_id }
+  const raw = await res.json() as { client_secret: string; payment_intent_id: string }
+  return { clientSecret: raw.client_secret, payment_intent_id: raw.payment_intent_id }
 }
 
 export async function createDepositHold(

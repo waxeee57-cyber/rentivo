@@ -1,15 +1,17 @@
 import React, { useState, useRef, useCallback } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Modal } from 'react-native'
 import { Image } from 'expo-image'
+import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { impactAsync, notificationAsync, ImpactFeedbackStyle, NotificationFeedbackType } from 'expo-haptics'
 import { Colors, Radius, Spacing, Shadow, Typography } from '@/constants/colors'
 import { StarRating } from '@/components/ui/StarRating'
-import { formatEUR } from '@/lib/utils/formatCurrency'
+import { formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { getCategoryEmoji, getCategoryLabel } from '@/constants/categories'
 import { getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
 import { useWishlistStore } from '@/lib/store/useWishlistStore'
-import type { Listing } from '@/types'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import type { Listing, RentalCategory } from '@/types'
 
 const { width } = Dimensions.get('window')
 const GRID_CARD_WIDTH = (width - Spacing.base * 3) / 2
@@ -18,6 +20,26 @@ interface ListingCardProps {
   listing: Listing
   variant?: 'full' | 'grid'
   showAvailableBadge?: boolean
+}
+
+// Gradient palettes per category — shown when no image is available
+const CATEGORY_GRADIENTS: Record<RentalCategory | 'default', readonly [string, string]> = {
+  car:        ['#1A2B45', '#0A1628'],
+  motorcycle: ['#2B1A45', '#0A1628'],
+  yacht:      ['#1A2B45', '#0A2845'],
+  villa:      ['#1A3445', '#0A1628'],
+  bike:       ['#1A3430', '#0A1628'],
+  scooter:    ['#2B1A45', '#0A1628'],
+  kayak:      ['#1A2B45', '#0A2845'],
+  surfboard:  ['#1A3445', '#0A2840'],
+  equipment:  ['#1A2B45', '#0A1628'],
+  other:      ['#1A2B45', '#0A1628'],
+  default:    ['#1A2B45', '#0A1628'],
+}
+
+function getGradient(category: string): [string, string] {
+  const g = CATEGORY_GRADIENTS[category as RentalCategory] ?? CATEGORY_GRADIENTS.default
+  return [g[0], g[1]]
 }
 
 const CONTEXT_ACTIONS = [
@@ -30,12 +52,17 @@ const CONTEXT_ACTIONS = [
 
 function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }: ListingCardProps) {
   const { isWishlisted, toggle } = useWishlistStore()
+  const language = useAuthStore((s) => s.language)
   const wishlisted = isWishlisted(listing.id)
   const scale = useRef(new Animated.Value(1)).current
   const [showContext, setShowContext] = useState(false)
   const [hidden, setHidden] = useState(false)
 
-  if (hidden) return null
+  const isFull = variant === 'full'
+  // Image priority: images[0] → cover_image_url → null (gradient placeholder)
+  const imageUri = listing.images?.[0] ?? listing.cover_image_url ?? null
+  const gradient = getGradient(listing.category)
+  const priceLabel = formatPricePerDay(listing.price_per_day, language)
 
   const onPressIn = useCallback(() => Animated.spring(scale, { toValue: 0.97, damping: 15, useNativeDriver: true }).start(), [scale])
   const onPressOut = useCallback(() => Animated.spring(scale, { toValue: 1, damping: 15, useNativeDriver: true }).start(), [scale])
@@ -77,9 +104,7 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
     }
   }, [listing, toggle])
 
-  const isFull = variant === 'full'
-
-  // Urgency signals shown on detail page only
+  if (hidden) return null
 
   return (
     <>
@@ -91,33 +116,44 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
           onLongPress={handleLongPress}
           delayLongPress={400}
           activeOpacity={1}
-          accessibilityLabel={`${listing.title}, ${formatEUR(listing.price_per_day)} per day, ${listing.operator?.city ?? listing.host?.city ?? ''}`}
+          accessibilityLabel={`${listing.title}, ${priceLabel}, ${listing.pickup_address ?? listing.operator?.city ?? listing.host?.city ?? ''}`}
           accessibilityRole="button"
           accessibilityHint="Double tap to view details, long press for options"
         >
-          {/* Image */}
+          {/* Image / Gradient placeholder */}
           <View style={styles.imageContainer}>
-            <Image
-              source={{ uri: listing.cover_image_url ?? undefined }}
-              style={isFull ? styles.imageFull : styles.imageGrid}
-              contentFit="cover"
-              placeholder="https://via.placeholder.com/400x250/162038/4A5E78?text=Rentivo"
-            />
+            {imageUri !== null ? (
+              <Image
+                source={{ uri: imageUri }}
+                style={isFull ? styles.imageFull : styles.imageGrid}
+                contentFit="cover"
+              />
+            ) : (
+              <LinearGradient
+                colors={gradient}
+                style={[isFull ? styles.imageFull : styles.imageGrid, styles.imagePlaceholder]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Text style={styles.imagePlaceholderIcon}>{getCategoryEmoji(listing.category)}</Text>
+                <Text style={styles.imagePlaceholderTitle} numberOfLines={2}>{listing.title}</Text>
+              </LinearGradient>
+            )}
             {/* Category badge */}
             <View style={styles.categoryBadge}>
               <Text style={styles.categoryText}>
                 {getCategoryEmoji(listing.category)} {getCategoryLabel(listing.category)}
               </Text>
             </View>
-            {/* Available badge */}
-            {showAvailableBadge && listing.available && (
+            {/* Available / Instant book badge */}
+            {showAvailableBadge === true && listing.available && (
               <View style={styles.availableBadge}>
                 <Text style={styles.availableBadgeText}>⚡ Available now</Text>
               </View>
             )}
-            {!showAvailableBadge && listing.instant_book && (
+            {showAvailableBadge !== true && listing.instant_book === true && (
               <View style={styles.availableBadge}>
-                <Text style={styles.availableBadgeText}>⚡ Available now</Text>
+                <Text style={styles.availableBadgeText}>⚡ Instant book</Text>
               </View>
             )}
             {/* Heart button — connected to wishlist store */}
@@ -134,12 +170,14 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
 
           {/* Info */}
           <View style={styles.info}>
-            <Text style={styles.title} numberOfLines={1}>{listing.title}</Text>
-            <Text style={styles.operator} numberOfLines={1}>
-              {listing.owner_type === 'host'
-                ? `${listing.host?.name ?? 'Private host'} · ${listing.host?.city ?? ''}`
-                : `${listing.operator?.name ?? ''} · ${listing.operator?.city ?? ''}`}
-            </Text>
+            {/* Title: max 2 lines with ellipsis */}
+            <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{listing.title}</Text>
+            {/* Location: pickup_address preferred, city as fallback */}
+            {(listing.pickup_address ?? listing.operator?.city ?? listing.host?.city) != null && (
+              <Text style={styles.location} numberOfLines={1}>
+                📍 {listing.pickup_address ?? listing.operator?.city ?? listing.host?.city}
+              </Text>
+            )}
             <View style={styles.ratingRow}>
               <StarRating rating={listing.rating} reviewCount={listing.review_count} size={12} />
               {listing.booking_count != null && listing.booking_count > 0 && (
@@ -155,8 +193,7 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
               </View>
             )}
             <View style={styles.priceRow}>
-              <Text style={styles.price}>{formatEUR(listing.price_per_day)}</Text>
-              <Text style={styles.priceUnit}>/day</Text>
+              <Text style={styles.price}>{priceLabel}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -212,49 +249,83 @@ export default ListingCard
 const styles = StyleSheet.create({
   cardFull: {
     width: '100%',
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    overflow: 'hidden', borderWidth: 1, borderColor: Colors.border,
-    ...Shadow.sm, marginBottom: Spacing.md,
+    backgroundColor: '#1A2B45',
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#2A3B55',
+    ...Shadow.sm,
+    marginBottom: Spacing.md,
   },
   cardGrid: {
     width: GRID_CARD_WIDTH,
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    overflow: 'hidden', borderWidth: 1, borderColor: Colors.border,
-    ...Shadow.sm, marginBottom: Spacing.base,
+    backgroundColor: '#1A2B45',
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#2A3B55',
+    ...Shadow.sm,
+    marginBottom: Spacing.base,
   },
   imageContainer: { position: 'relative' },
-  imageFull: { width: '100%', height: 180 },
-  imageGrid: { width: '100%', height: 180 },
+  imageFull: { width: '100%', height: 200 },
+  imageGrid: { width: '100%', height: 150 },
+  imagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  imagePlaceholderIcon: { fontSize: 36 },
+  imagePlaceholderTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.5)',
+    textAlign: 'center',
+    paddingHorizontal: Spacing.sm,
+  },
   categoryBadge: {
-    position: 'absolute', top: Spacing.sm, left: Spacing.sm,
-    backgroundColor: 'rgba(10,22,40,0.72)',
-    borderRadius: Radius.full, paddingHorizontal: 10, paddingVertical: 4,
+    position: 'absolute',
+    top: Spacing.sm,
+    left: Spacing.sm,
+    backgroundColor: 'rgba(10,22,40,0.80)',
+    borderRadius: Radius.full,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   categoryText: { fontSize: 11, fontWeight: '700', color: Colors.white },
   availableBadge: {
-    position: 'absolute', bottom: Spacing.sm, left: Spacing.sm,
-    backgroundColor: Colors.success, borderRadius: Radius.full,
-    paddingHorizontal: 8, paddingVertical: 3,
+    position: 'absolute',
+    bottom: Spacing.sm,
+    left: Spacing.sm,
+    backgroundColor: Colors.success,
+    borderRadius: Radius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   availableBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.white },
   heartBtn: {
-    position: 'absolute', top: Spacing.sm, right: Spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: Radius.full,
-    width: 36, height: 36, alignItems: 'center', justifyContent: 'center',
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: Radius.full,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
     ...Shadow.sm,
   },
   heart: { fontSize: 16 },
-  info: { padding: Spacing.base, paddingBottom: Spacing.base },
-  title: { ...Typography.h4, color: Colors.text, marginBottom: 4 },
-  operator: { fontSize: 14, color: Colors.text, marginBottom: 6 },
+  info: { padding: Spacing.base, paddingBottom: Spacing.md },
+  title: { ...Typography.h4, color: Colors.text, marginBottom: 4, lineHeight: 20 },
+  location: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 6 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  rentalCount: { fontSize: 14, color: Colors.textSecondary },
+  rentalCount: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
   policyRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   policyDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.success },
-  policyText: { fontSize: 13, color: Colors.textSecondary },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
+  policyText: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 4 },
   price: { ...Typography.priceS, color: Colors.primary },
-  priceUnit: { fontSize: 15, color: Colors.textSecondary },
 })
 
 const contextStyles = StyleSheet.create({

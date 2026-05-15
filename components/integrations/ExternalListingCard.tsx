@@ -25,6 +25,7 @@ interface ExternalListingCardProps {
 export function ExternalListingCard({ listing }: ExternalListingCardProps) {
   const scale = useRef(new Animated.Value(1)).current
   const platform = PLATFORM_INFO[listing.platform] ?? PLATFORM_INFO.other
+  const imageUri = listing.images?.[0] ?? listing.cover_image_url ?? null
 
   const onPressIn = () =>
     Animated.spring(scale, { toValue: 0.97, damping: 15, useNativeDriver: true }).start()
@@ -45,12 +46,17 @@ export function ExternalListingCard({ listing }: ExternalListingCardProps) {
         activeOpacity={1}
       >
         <View style={styles.imageContainer}>
-          <Image
-            source={{ uri: listing.cover_image_url ?? undefined }}
-            style={styles.image}
-            contentFit="cover"
-            placeholder="https://via.placeholder.com/400x200/1A2942/8A9BB5?text=..."
-          />
+          {imageUri ? (
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.image}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.image, styles.imagePlaceholder]}>
+              <Text style={styles.imagePlaceholderText}>🏠</Text>
+            </View>
+          )}
           <View style={[styles.platformBadge, { backgroundColor: platform.color }]}>
             <Text
               style={styles.platformBadgeText}
@@ -118,6 +124,12 @@ const styles = StyleSheet.create({
   },
   imageContainer: { position: 'relative' },
   image: { width: '100%', height: 180 },
+  imagePlaceholder: {
+    backgroundColor: Colors.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imagePlaceholderText: { fontSize: 48 },
   platformBadge: {
     position: 'absolute',
     top: Spacing.sm,

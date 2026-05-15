@@ -111,13 +111,25 @@ function HostListingCard({ listing, language }: { listing: Listing; language: 'e
         <TouchableOpacity
           style={styles.editBtn}
           onPress={() => router.push(`/(consumer)/listing/${listing.id}`)}
+          accessibilityLabel="View listing"
+          accessibilityRole="button"
         >
           <Text style={styles.editBtnText}>View listing</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.editBtn}>
+        <TouchableOpacity
+          style={styles.editBtn}
+          onPress={() => router.push(`/(host)/listings/new` as Parameters<typeof router.push>[0])}
+          accessibilityLabel="Edit listing"
+          accessibilityRole="button"
+        >
           <Text style={styles.editBtnText}>Edit →</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.editBtn} onPress={() => { void handleShare() }}>
+        <TouchableOpacity
+          style={styles.editBtn}
+          onPress={() => { void handleShare() }}
+          accessibilityLabel="Share listing"
+          accessibilityRole="button"
+        >
           <Text style={styles.editBtnText}>↗ Share</Text>
         </TouchableOpacity>
       </View>
@@ -202,6 +214,8 @@ export default function HostListingsScreen() {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
           router.push('/(host)/listings/new' as Parameters<typeof router.push>[0])
         }}
+        accessibilityLabel="List something new"
+        accessibilityRole="button"
       >
         <Text style={styles.fabText}>+ List something new</Text>
       </TouchableOpacity>
@@ -212,6 +226,8 @@ export default function HostListingsScreen() {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
           router.push('/(host)/listings/add-external' as Parameters<typeof router.push>[0])
         }}
+        accessibilityLabel="Import from Airbnb or Booking.com"
+        accessibilityRole="button"
       >
         <Text style={styles.importBtnText}>↗ Import from Airbnb / Booking.com</Text>
       </TouchableOpacity>
@@ -270,7 +286,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: Colors.surfaceWarm,
+    minHeight: 44,
   },
   editBtnText: { fontSize: 13, fontWeight: '600', color: Colors.text },
 

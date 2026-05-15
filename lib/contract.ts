@@ -9,8 +9,8 @@ export function generateContractHTML(
 ): string {
   const startDate = new Date(booking.start_date).toLocaleDateString('en-GB')
   const endDate = new Date(booking.end_date).toLocaleDateString('en-GB')
-  const total = `€${(booking.total_amount / 100).toFixed(2)}`
-  const deposit = `€${(booking.deposit_amount / 100).toFixed(2)}`
+  const total = `€${booking.total_amount.toFixed(2)}`
+  const deposit = `€${booking.deposit_amount.toFixed(2)}`
 
   return `<!DOCTYPE html>
 <html>
@@ -64,9 +64,9 @@ export function generateContractHTML(
   <div class="section">
     <h2>Payment</h2>
     <table>
-      <tr><td>Daily rate</td><td>€${(booking.price_per_day / 100).toFixed(2)}</td></tr>
-      <tr><td>Subtotal</td><td>€${(booking.subtotal / 100).toFixed(2)}</td></tr>
-      <tr><td>Service fee</td><td>€${(booking.platform_fee / 100).toFixed(2)}</td></tr>
+      <tr><td>Daily rate</td><td>€${booking.price_per_day.toFixed(2)}</td></tr>
+      <tr><td>Subtotal</td><td>€${booking.subtotal.toFixed(2)}</td></tr>
+      <tr><td>Service fee</td><td>€${booking.platform_fee.toFixed(2)}</td></tr>
       <tr class="price-row"><td>Total charged</td><td>${total}</td></tr>
       <tr><td>Security deposit</td><td>${deposit}</td></tr>
     </table>

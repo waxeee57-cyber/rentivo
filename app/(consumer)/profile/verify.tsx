@@ -9,6 +9,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Config } from '@/constants/config'
+import { supabase } from '@/lib/supabase'
 
 type Step = 1 | 2 | 3
 
@@ -53,17 +54,52 @@ export default function VerifyScreen() {
     if (step < 3) {
       setStep((step + 1) as Step)
     } else {
-      handleSubmit()
+      void handleSubmit()
     }
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (Config.useMock) {
       setSubmitted(true)
       return
     }
-    // TODO: Upload photos to Supabase Storage and set verification_status = 'pending'
-    setSubmitted(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        Alert.alert('Error', 'Please log in to verify your identity')
+        return
+      }
+      const userId = session.user.id
+      const uploadedUrls: string[] = []
+
+      for (const [stepKey, uri] of Object.entries(photos)) {
+        if (!uri) continue
+        const ext = uri.split('.').pop() ?? 'jpg'
+        const path = `kyc/${userId}/step${stepKey}_${Date.now()}.${ext}`
+        const response = await fetch(uri)
+        const blob = await response.blob()
+        const { error: uploadError } = await supabase.storage
+          .from('verification-docs')
+          .upload(path, blob, { contentType: `image/${ext}`, upsert: true })
+        if (uploadError) throw uploadError
+        const { data: { publicUrl } } = supabase.storage
+          .from('verification-docs')
+          .getPublicUrl(path)
+        uploadedUrls.push(publicUrl)
+      }
+
+      await supabase
+        .from('rentivo_users')
+        .update({
+          verification_status: 'pending',
+          verification_docs: uploadedUrls,
+        })
+        .eq('auth_id', userId)
+
+      setSubmitted(true)
+    } catch {
+      Alert.alert('Error', 'Could not submit documents. Please try again.')
+    }
   }
 
   if (submitted) {

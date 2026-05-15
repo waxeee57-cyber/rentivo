@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react'
 import {
   View, Text, FlatList, TouchableOpacity, ScrollView,
   StyleSheet, Dimensions, Platform, Animated, Modal, RefreshControl,
+  ListRenderItem,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -12,7 +13,7 @@ import { ListingCard } from '@/components/listing/ListingCard'
 import { ExternalListingCard } from '@/components/integrations/ExternalListingCard'
 import { AffiliateSearchDisclosure } from '@/components/integrations/AffiliateDisclosure'
 import { ListingPreviewSheet } from '@/components/map/ListingPreviewSheet'
-import { CityPickerSheet, CITIES } from '@/components/map/CityPickerSheet'
+import { CityPickerSheet } from '@/components/map/CityPickerSheet'
 import type { City } from '@/components/map/CityPickerSheet'
 import { DatePickerSheet } from '@/components/booking/DatePickerSheet'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -100,7 +101,7 @@ export default function ExploreScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const mapRef = useRef<typeof MapView extends null ? never : InstanceType<NonNullable<typeof MapView>>>(null)
 
-  const { latitude, longitude } = useLocation()
+  useLocation() // initializes device location tracking
   const filters: SearchFilters = selectedCategory ? { category: selectedCategory } : {}
   const { listings: rawListings, loading, error } = useListings(filters)
 
@@ -188,6 +189,14 @@ export default function ExploreScreen() {
     await new Promise<void>(r => setTimeout(r, 700))
     setRefreshing(false)
   }, [])
+
+  const renderListItem = useCallback<ListRenderItem<AnyListing>>(({ item }) => {
+    if (item.sourceType === 'native') {
+      // grid variant in 2-col (rentivo-only), full variant in single-col (all-sources)
+      return <ListingCard listing={item as Listing} variant={source === 'rentivo' ? 'grid' : 'full'} showAvailableBadge />
+    }
+    return <ExternalListingCard listing={item as ExternalListing} />
+  }, [source])
 
   // Navigate from map preview to listing detail
   const handleViewListing = useCallback((listing: AnyListing) => {
@@ -283,7 +292,7 @@ export default function ExploreScreen() {
               onPress={() => setSelectedCategory(prev => prev === c.key ? null : c.key)}
             >
               <Ionicons
-                name={c.icon as any}
+                name={c.icon}
                 size={14}
                 color={selectedCategory === c.key ? Colors.textInverse : Colors.textSecondary}
                 style={{ marginRight: 4 }}
@@ -328,17 +337,21 @@ export default function ExploreScreen() {
           <TouchableOpacity
             style={[styles.sourceBtn, source === 'rentivo' && styles.sourceBtnActive]}
             onPress={() => setSource('rentivo')}
+            accessibilityLabel={t('sourceRentivoOnly', language)}
+            accessibilityRole="button"
           >
             <Text style={[styles.sourceBtnText, source === 'rentivo' && styles.sourceBtnTextActive]}>
-              Rentivo only
+              {t('sourceRentivoOnly', language)}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.sourceBtn, source === 'all' && styles.sourceBtnActive]}
             onPress={() => setSource('all')}
+            accessibilityLabel={t('sourceAllPlatforms', language)}
+            accessibilityRole="button"
           >
             <Text style={[styles.sourceBtnText, source === 'all' && styles.sourceBtnTextActive]}>
-              🌐 All platforms
+              🌐 {t('sourceAllPlatforms', language)}
             </Text>
           </TouchableOpacity>
         </View>
@@ -394,7 +407,7 @@ export default function ExploreScreen() {
         ) : showDiscovery ? (
           <ScrollView contentContainerStyle={styles.discoveryContainer}>
             {/* Inspire me */}
-            <Text style={styles.discoverySectionTitle}>💡 Need ideas?</Text>
+            <Text style={styles.discoverySectionTitle}>💡 {t('discoverIdeas', language)}</Text>
             {INSPIRE_THEMES.map(theme => (
               <TouchableOpacity
                 key={theme.title}
@@ -404,6 +417,8 @@ export default function ExploreScreen() {
                   if (theme.city) setCityName(theme.city)
                   setViewMode('list')
                 }}
+                accessibilityLabel={theme.title}
+                accessibilityRole="button"
               >
                 <Text style={styles.inspireEmoji}>{theme.emoji}</Text>
                 <View style={styles.inspireInfo}>
@@ -416,7 +431,7 @@ export default function ExploreScreen() {
 
             {/* Browse by mood */}
             <Text style={[styles.discoverySectionTitle, { marginTop: Spacing.xl }]}>
-              🎭 What's your vibe?
+              🎭 {t('browseByMood', language)}
             </Text>
             <View style={styles.moodGrid}>
               {MOODS.map(mood => (
@@ -424,6 +439,8 @@ export default function ExploreScreen() {
                   key={mood.label}
                   style={styles.moodCard}
                   onPress={() => setSelectedCategory(mood.category)}
+                  accessibilityLabel={mood.label}
+                  accessibilityRole="button"
                 >
                   <Text style={styles.moodEmoji}>{mood.emoji}</Text>
                   <Text style={styles.moodLabel}>{mood.label}</Text>
@@ -433,8 +450,11 @@ export default function ExploreScreen() {
           </ScrollView>
         ) : (
           <FlatList
+            key={source === 'rentivo' ? 'grid-2' : 'list-1'}
             data={displayListings}
             keyExtractor={item => item.id}
+            numColumns={source === 'rentivo' ? 2 : 1}
+            columnWrapperStyle={source === 'rentivo' ? styles.columnWrapper : undefined}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
             initialNumToRender={6}
@@ -449,11 +469,7 @@ export default function ExploreScreen() {
                 colors={[Colors.primary]}
               />
             }
-            renderItem={({ item }) =>
-              item.sourceType === 'native'
-                ? <ListingCard listing={item as Listing} variant="full" showAvailableBadge />
-                : <ExternalListingCard listing={item as ExternalListing} />
-            }
+            renderItem={renderListItem}
           />
         )}
       </Animated.View>
@@ -600,7 +616,7 @@ const styles = StyleSheet.create({
   categoryPill: {
     backgroundColor: Colors.surface,
     borderRadius: Radius.full,
-    height: 40, paddingHorizontal: 16,
+    minHeight: 44, paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -655,7 +671,8 @@ const styles = StyleSheet.create({
   sourceBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
   sourceBtnTextActive: { color: Colors.textInverse },
 
-  listContent: { padding: Spacing.base, paddingTop: Spacing.sm },
+  listContent: { padding: Spacing.base, paddingTop: Spacing.sm, paddingBottom: 100 },
+  columnWrapper: { gap: Spacing.base },
   sortBar: { flexGrow: 0 },
   sortContent: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm, gap: Spacing.sm },
   sortDivider: {
@@ -672,7 +689,7 @@ const styles = StyleSheet.create({
   sortPillTextActive: { color: Colors.textInverse },
 
   // Discovery styles
-  discoveryContainer: { padding: Spacing.base },
+  discoveryContainer: { padding: Spacing.base, paddingBottom: 100 },
   discoverySectionTitle: {
     fontSize: 18, fontWeight: '800', color: Colors.text,
     marginBottom: Spacing.md,

@@ -200,7 +200,12 @@ export default function FleetScreen() {
           }
           ListHeaderComponent={
             <>
-              <TouchableOpacity style={styles.shareRow} onPress={handleShare}>
+              <TouchableOpacity
+                style={styles.shareRow}
+                onPress={handleShare}
+                accessibilityLabel="Share my listing"
+                accessibilityRole="button"
+              >
                 <Text style={styles.shareText}>🔗 Share my listing</Text>
               </TouchableOpacity>
               <View style={styles.rentalOsCard}>
@@ -247,6 +252,8 @@ export default function FleetScreen() {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
           router.push('/(operator)/fleet/new' as Parameters<typeof router.push>[0])
         }}
+        accessibilityLabel="Add new vehicle"
+        accessibilityRole="button"
       >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
@@ -291,6 +298,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.primary,
     alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
   },
   shareText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
   rentalOsCard: {

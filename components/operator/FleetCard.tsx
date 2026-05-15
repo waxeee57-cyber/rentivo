@@ -19,14 +19,21 @@ export function FleetCard({ listing, onEdit, onToggleAvailable }: FleetCardProps
     onToggleAvailable(v)
   }
 
+  const imageUri = listing.images?.[0] ?? listing.cover_image_url ?? null
+
   return (
     <View style={styles.card}>
-      <Image
-        source={{ uri: listing.cover_image_url ?? undefined }}
-        style={styles.image}
-        contentFit="cover"
-        placeholder="https://via.placeholder.com/120x80/F5F3EF"
-      />
+      {imageUri ? (
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.image}
+          contentFit="cover"
+        />
+      ) : (
+        <View style={[styles.image, styles.imagePlaceholder]}>
+          <Text style={styles.imagePlaceholderText}>🚗</Text>
+        </View>
+      )}
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={1}>{listing.title}</Text>
         <Text style={styles.sub} numberOfLines={1}>
@@ -74,6 +81,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   image: { width: 120, height: 100 },
+  imagePlaceholder: {
+    backgroundColor: Colors.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imagePlaceholderText: { fontSize: 28 },
   info: { flex: 1, padding: Spacing.md },
   title: { fontSize: 15, fontWeight: '700', color: Colors.text },
   sub: { fontSize: 14, color: Colors.textSecondary, marginBottom: Spacing.xs },

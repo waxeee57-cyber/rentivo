@@ -50,7 +50,8 @@ export default function ConsumerLayout() {
         tabBarInactiveTintColor: Colors.textTertiary,
         tabBarStyle: {
           backgroundColor: Colors.background,
-          borderTopWidth: 0,
+          borderTopWidth: 1,
+          borderTopColor: Colors.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.3,
@@ -86,6 +87,18 @@ export default function ConsumerLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
+        name="bookings"
+        options={{
+          title: t('bookings', language),
+          tabBarBadge: bookingsBadge > 0 ? bookingsBadge : undefined,
+          tabBarBadgeStyle: { backgroundColor: Colors.error, fontSize: 10 },
+          tabBarIcon: ({ focused }) => (
+            <TabIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} />
+          ),
+        }}
+        listeners={{ tabPress: triggerHaptic }}
+      />
+      <Tabs.Screen
         name="wishlist"
         options={{
           title: t('wishlist', language),
@@ -95,18 +108,6 @@ export default function ConsumerLayout() {
               size={24}
               color={focused ? Colors.primary : Colors.textTertiary}
             />
-          ),
-        }}
-        listeners={{ tabPress: triggerHaptic }}
-      />
-      <Tabs.Screen
-        name="bookings"
-        options={{
-          title: t('bookings', language),
-          tabBarBadge: bookingsBadge > 0 ? bookingsBadge : undefined,
-          tabBarBadgeStyle: { backgroundColor: Colors.error, fontSize: 10 },
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} />
           ),
         }}
         listeners={{ tabPress: triggerHaptic }}
@@ -136,6 +137,9 @@ export default function ConsumerLayout() {
       <Tabs.Screen name="damage/pickup/[bookingId]" options={{ href: null }} />
       <Tabs.Screen name="damage/return/[bookingId]" options={{ href: null }} />
       <Tabs.Screen name="profile/connected-platforms" options={{ href: null }} />
+      <Tabs.Screen name="profile/delete-account" options={{ href: null }} />
+      <Tabs.Screen name="profile/privacy-settings" options={{ href: null }} />
+      <Tabs.Screen name="profile/notifications" options={{ href: null }} />
     </Tabs>
   )
 }

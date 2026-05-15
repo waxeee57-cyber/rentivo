@@ -32,10 +32,10 @@ serve(async (req) => {
         const bookingId = pi.metadata?.booking_id
         if (bookingId) {
           await supabase.from('rentivo_bookings').update({
-            payment_status: 'captured',
+            payment_status: 'paid',
             status: 'confirmed',
             paid_at: new Date().toISOString(),
-            stripe_charge_id: pi.latest_charge as string,
+            stripe_charge_id: typeof pi.latest_charge === 'string' ? pi.latest_charge : null,
           }).eq('id', bookingId)
         }
         break

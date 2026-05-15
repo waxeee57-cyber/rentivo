@@ -94,34 +94,22 @@ export default function HostProfileScreen() {
             onPress={() => Alert.alert('Payout Setup', 'Configure your bank account for payouts at dashboard.rentivo.app → Payouts', [{ text: 'OK' }])}
           />
           <Divider />
-          <MenuItem label="🔔 Notification preferences" onPress={() => Alert.alert('Notifications', 'Notification settings coming soon.', [{ text: 'OK' }])} />
+          <MenuItem label="🔔 Notification preferences" onPress={() => router.push('/(consumer)/profile/privacy-settings' as Parameters<typeof router.push>[0])} />
         </Card>
 
-        {Config.useMock && (
-          <Card style={styles.card}>
-            <Text style={styles.sectionTitle}>{t('sectionSwitchRole', language)}</Text>
-            <View style={styles.roleRow}>
-              <TouchableOpacity
-                style={[styles.roleBtn, role === 'consumer' && styles.roleBtnActive]}
-                onPress={() => { setRole('consumer'); router.replace('/(consumer)/explore') }}
-              >
-                <Text style={styles.roleText}>🌴 {t('roleConsumer', language)}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.roleBtn, role === 'host' && styles.roleBtnActive]}
-                onPress={() => { setRole('host'); router.replace('/(host)/dashboard') }}
-              >
-                <Text style={styles.roleText}>🏠 {t('roleHost', language)}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.roleBtn, role === 'operator' && styles.roleBtnActive]}
-                onPress={() => { setRole('operator'); router.replace('/(operator)/dashboard') }}
-              >
-                <Text style={styles.roleText}>🏢 {t('roleOperator', language)}</Text>
-              </TouchableOpacity>
-            </View>
-          </Card>
-        )}
+        <Card style={styles.card}>
+          <Text style={styles.sectionTitle}>{t('sectionSwitchRole', language)}</Text>
+          <TouchableOpacity
+            style={styles.switchRoleBtn}
+            onPress={() => { setRole('consumer'); router.replace('/(consumer)/explore') }}
+            accessibilityLabel="Switch to consumer view"
+            accessibilityRole="button"
+          >
+            <Text style={styles.switchRoleIcon}>🔍</Text>
+            <Text style={styles.switchRoleText}>{t('roleConsumer', language)}</Text>
+            <Text style={styles.switchRoleChevron}>›</Text>
+          </TouchableOpacity>
+        </Card>
 
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>{t('sectionLanguage', language)}</Text>
@@ -146,7 +134,7 @@ export default function HostProfileScreen() {
           <Divider />
           <MenuItem label={`🔒 ${t('privacyPolicy', language)}`} onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/privacy')} />
           <Divider />
-          <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={() => Alert.alert(t('helpSupport', language), 'Email us at support@rentivo.app\n\nResponse time: within 24 hours', [{ text: 'OK' }])} />
+          <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={() => void Linking.openURL('mailto:support@rentivo.app')} />
         </Card>
 
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
@@ -163,7 +151,12 @@ export default function HostProfileScreen() {
 
 function MenuItem({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <TouchableOpacity
+      style={styles.menuItem}
+      onPress={onPress}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+    >
       <Text style={styles.menuLabel}>{label}</Text>
       <Text style={styles.menuChevron}>›</Text>
     </TouchableOpacity>
@@ -226,21 +219,25 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: Spacing.md,
   },
-  menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.sm },
+  menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.sm, minHeight: 44 },
   menuLabel: { fontSize: 15, color: Colors.text },
   menuChevron: { fontSize: 20, color: Colors.textTertiary },
 
-  roleRow: { flexDirection: 'row', gap: Spacing.sm },
-  roleBtn: {
-    flex: 1,
-    padding: Spacing.sm,
+  switchRoleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: Colors.border,
-    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    minHeight: 44,
   },
-  roleBtnActive: { backgroundColor: Colors.primarySurface, borderColor: Colors.primary },
-  roleText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '600' },
+  switchRoleIcon: { fontSize: 18 },
+  switchRoleText: { flex: 1, fontSize: 15, color: Colors.text, fontWeight: '600' },
+  switchRoleChevron: { fontSize: 20, color: Colors.textTertiary },
 
   langRow: { flexDirection: 'row', gap: Spacing.sm },
   langBtn: {
@@ -256,7 +253,7 @@ const styles = StyleSheet.create({
   langText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
   langTextActive: { color: Colors.primary },
 
-  signOutBtn: { marginHorizontal: Spacing.base, marginTop: Spacing.base, padding: Spacing.base, alignItems: 'center' },
+  signOutBtn: { marginHorizontal: Spacing.base, marginTop: Spacing.base, padding: Spacing.base, alignItems: 'center', minHeight: 44 },
   signOutText: { fontSize: 16, color: Colors.error, fontWeight: '600' },
   appVersion: { textAlign: 'center', fontSize: 12, color: Colors.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
 })

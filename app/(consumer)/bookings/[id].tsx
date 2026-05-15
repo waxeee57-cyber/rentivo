@@ -195,10 +195,12 @@ export default function BookingDetailScreen() {
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => {
-            if (booking.status === 'confirmed' || booking.status === 'active' || booking.status === 'completed') {
-              showToast({ message: 'Contract download coming soon', type: 'info' })
+            if (booking.contract_url) {
+              void Linking.openURL(booking.contract_url)
+            } else if (booking.status === 'confirmed' || booking.status === 'active' || booking.status === 'completed') {
+              showToast({ message: 'Contract is being generated — check back in a few minutes', type: 'info' })
             } else {
-              showToast({ message: 'Contract available after confirmation', type: 'info' })
+              showToast({ message: 'Contract will be available after booking is confirmed', type: 'info' })
             }
           }}
           accessibilityLabel="View rental contract"
@@ -222,6 +224,8 @@ export default function BookingDetailScreen() {
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnGold]}
             onPress={() => router.push(`/(consumer)/bookings/review/${booking.id}`)}
+            accessibilityLabel="Leave a review for this booking"
+            accessibilityRole="button"
           >
             <Text style={[styles.actionBtnText, { color: Colors.primaryDark }]}>⭐ Leave a Review</Text>
           </TouchableOpacity>
@@ -232,6 +236,8 @@ export default function BookingDetailScreen() {
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnDanger]}
             onPress={() => setShowCancelSheet(true)}
+            accessibilityLabel="Cancel this booking"
+            accessibilityRole="button"
           >
             <Text style={[styles.actionBtnText, { color: Colors.error }]}>✕ Cancel Booking</Text>
           </TouchableOpacity>
@@ -283,7 +289,7 @@ const styles = StyleSheet.create({
   refundMessage: { fontSize: 12, color: Colors.textTertiary, marginTop: 4, lineHeight: 18 },
   inspectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   inspLabel: { fontSize: 14, color: Colors.textSecondary },
-  phoneBtn: { backgroundColor: Colors.primarySurface, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center' },
+  phoneBtn: { backgroundColor: Colors.primarySurface, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', justifyContent: 'center', minHeight: 44 },
   phoneBtnText: { fontSize: 15, color: Colors.primaryDark, fontWeight: '600' },
   actionBtn: {
     borderWidth: 1.5,
@@ -291,8 +297,10 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     padding: Spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: Spacing.sm,
     backgroundColor: Colors.surface,
+    minHeight: 44,
   },
   actionBtnGold: { borderColor: Colors.primary, backgroundColor: Colors.primarySurface },
   actionBtnDanger: { borderColor: Colors.error + '44', backgroundColor: Colors.errorSurface },

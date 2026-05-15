@@ -62,7 +62,7 @@ export default function BookingFlowScreen() {
   const endDate = endDateParam
     ? new Date(endDateParam)
     : (() => { const d = new Date(); d.setDate(d.getDate() + 4); return d })()
-  const totalDays = differenceInDays(endDate, startDate)
+  const totalDays = Math.max(1, differenceInDays(endDate, startDate))
 
   if (loading || !listing) return <SafeAreaView style={styles.container}><SkeletonCard /></SafeAreaView>
 
@@ -193,11 +193,17 @@ export default function BookingFlowScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Trip summary */}
         <View style={styles.summaryCard}>
-          <Image
-            source={{ uri: listing.cover_image_url ?? undefined }}
-            style={styles.summaryImage}
-            contentFit="cover"
-          />
+          {(listing.images?.[0] ?? listing.cover_image_url) ? (
+            <Image
+              source={{ uri: (listing.images?.[0] ?? listing.cover_image_url) as string }}
+              style={styles.summaryImage}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.summaryImage, styles.summaryImagePlaceholder]}>
+              <Text style={styles.summaryImagePlaceholderText}>🚗</Text>
+            </View>
+          )}
           <View style={styles.summaryBody}>
             <Text style={styles.summaryTitle} numberOfLines={1}>{listing.title}</Text>
             <Text style={styles.summaryOp} numberOfLines={1}>{listing.operator?.name} · {listing.operator?.city}</Text>
@@ -259,6 +265,9 @@ export default function BookingFlowScreen() {
                   key={slot}
                   style={[styles.timeSlot, pickupTime === slot && styles.timeSlotActive]}
                   onPress={() => setPickupTime(slot)}
+                  accessibilityLabel={`Pickup time ${slot}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: pickupTime === slot }}
                 >
                   <Text style={[styles.timeSlotText, pickupTime === slot && styles.timeSlotTextActive]}>
                     {slot}
@@ -386,6 +395,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
   },
   summaryImage: { width: '100%', height: 140 },
+  summaryImagePlaceholder: {
+    backgroundColor: Colors.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summaryImagePlaceholderText: { fontSize: 48 },
   summaryBody: { padding: Spacing.base },
   summaryTitle: { fontSize: 17, fontWeight: '800', color: Colors.text, marginBottom: 2 },
   summaryOp: { fontSize: 12, color: Colors.textSecondary, marginBottom: Spacing.md },

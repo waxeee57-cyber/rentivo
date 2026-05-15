@@ -343,7 +343,9 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xl,
     padding: Spacing.base,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: Spacing.xs,
+    minHeight: 44,
   },
   addBtnText: { fontSize: 14, color: Colors.primary, fontWeight: '700' },
 

@@ -39,8 +39,8 @@ export function filterListings(listings: Listing[], state: SearchState): Listing
         if (!match) return false
       }
       if (state.category && l.category !== state.category) return false
-      if (state.minPrice != null && l.price_per_day < state.minPrice * 100) return false
-      if (state.maxPrice != null && l.price_per_day > state.maxPrice * 100) return false
+      if (state.minPrice != null && l.price_per_day < state.minPrice) return false
+      if (state.maxPrice != null && l.price_per_day > state.maxPrice) return false
       if (state.instantBook && !l.instant_book) return false
       if (state.capacity != null && (l.capacity ?? 1) < state.capacity) return false
       if (state.city) {

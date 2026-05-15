@@ -279,7 +279,7 @@ export default function PrivacySettingsScreen() {
 
             <TouchableOpacity
               style={styles.actionRow}
-              onPress={() => router.push('/profile/delete-account' as Href)}
+              onPress={() => router.push('/(consumer)/profile/delete-account' as Href)}
               accessibilityLabel={isHu ? 'Fiók törlése' : 'Delete account'}
               accessibilityRole="button"
             >

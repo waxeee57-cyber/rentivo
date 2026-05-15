@@ -86,9 +86,9 @@ export default function NewListingScreen() {
         description: description || null,
         category,
         subcategory: null,
-        price_per_day: Math.round(parseFloat(pricePerDay) * 100),
+        price_per_day: Math.round(parseFloat(pricePerDay)),
         price_per_week: null,
-        deposit_amount: Math.round(parseFloat(deposit || '0') * 100),
+        deposit_amount: Math.round(parseFloat(deposit || '0')),
         currency: 'EUR',
         available: true,
         min_rental_days: 1,
@@ -109,8 +109,7 @@ export default function NewListingScreen() {
         str_registration_number: strNumber.trim() || null,
       })
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      showToast({ message: 'Your vehicle is now live! 🎉', type: 'success' })
-      router.back()
+      setPublished(true)
     } catch {
       showToast({ message: getError('server_error'), type: 'error' })
     } finally {

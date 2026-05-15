@@ -93,7 +93,7 @@ serve(async (req) => {
       .eq('listing_id', listing_id)
       .eq('reason', 'ical_sync')
 
-    // Upsert new blocked dates
+    // Upsert new blocked date ranges — ON CONFLICT DO UPDATE handles overlap with manual blocks
     if (events.length > 0) {
       const rows = events.map((e) => ({
         listing_id,
@@ -101,7 +101,9 @@ serve(async (req) => {
         end_date: e.end,
         reason: 'ical_sync',
       }))
-      await supabase.from('rentivo_availability').insert(rows)
+      await supabase
+        .from('rentivo_availability')
+        .upsert(rows, { onConflict: 'listing_id,blocked_date', ignoreDuplicates: false })
     }
 
     return new Response(JSON.stringify({ count: events.length, synced: true }), {

@@ -71,11 +71,26 @@ export async function createListing(listing: Omit<Listing, 'id' | 'created_at' |
   return data as Listing
 }
 
-export async function updateListing(id: string, updates: Partial<Listing>): Promise<void> {
-  const { error } = await supabase
+export async function updateListing(id: string, updates: Partial<Listing>, operatorId?: string): Promise<void> {
+  let query = supabase
     .from('rentivo_listings')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
+
+  if (operatorId) {
+    query = query.eq('operator_id', operatorId)
+  }
+
+  const { error } = await query
+  if (error) throw error
+}
+
+export async function deleteListing(id: string, operatorId: string): Promise<void> {
+  const { error } = await supabase
+    .from('rentivo_listings')
+    .delete()
+    .eq('id', id)
+    .eq('operator_id', operatorId)
 
   if (error) throw error
 }

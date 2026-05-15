@@ -19,37 +19,43 @@ export function ListingCarousel({ images, height = 300 }: ListingCarouselProps) 
     setCurrentIndex(index)
   }
 
-  const imgs = images.length > 0 ? images : ['https://via.placeholder.com/800x500/F5F3EF/A0A0A0?text=No+Image']
+  const hasImages = images.length > 0
 
   return (
     <View style={{ height }}>
-      <ScrollView
-        ref={scrollRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-      >
-        {imgs.map((uri, i) => (
-          <Image
-            key={i}
-            source={{ uri }}
-            style={{ width, height }}
-            contentFit="cover"
-          />
-        ))}
-      </ScrollView>
+      {hasImages ? (
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+        >
+          {images.map((uri, i) => (
+            <Image
+              key={i}
+              source={{ uri }}
+              style={{ width, height }}
+              contentFit="cover"
+            />
+          ))}
+        </ScrollView>
+      ) : (
+        <View style={[{ width, height }, styles.placeholder]}>
+          <Text style={styles.placeholderText}>🚗</Text>
+        </View>
+      )}
 
-      {imgs.length > 1 && (
+      {hasImages && images.length > 1 && (
         <>
           <View style={styles.dots}>
-            {imgs.map((_, i) => (
+            {images.map((_, i) => (
               <View key={i} style={[styles.dot, i === currentIndex && styles.dotActive]} />
             ))}
           </View>
           <View style={styles.counter}>
-            <Text style={styles.counterText}>{currentIndex + 1}/{imgs.length}</Text>
+            <Text style={styles.counterText}>{currentIndex + 1}/{images.length}</Text>
           </View>
         </>
       )}
@@ -58,6 +64,12 @@ export function ListingCarousel({ images, height = 300 }: ListingCarouselProps) 
 }
 
 const styles = StyleSheet.create({
+  placeholder: {
+    backgroundColor: Colors.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderText: { fontSize: 60 },
   dots: {
     position: 'absolute',
     bottom: Spacing.md,

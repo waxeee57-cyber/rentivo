@@ -49,7 +49,8 @@ export default function OperatorLayout() {
         tabBarInactiveTintColor: Colors.textTertiary,
         tabBarStyle: {
           backgroundColor: Colors.background,
-          borderTopWidth: 0,
+          borderTopWidth: 1,
+          borderTopColor: Colors.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.3,
