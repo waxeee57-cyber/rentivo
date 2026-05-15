@@ -40,7 +40,7 @@ export default function VerifyScreen() {
       if (data.session?.user) {
         setUser(data.session.user as unknown as Parameters<typeof setUser>[0])
       }
-      // Route based on role — new users without role go to onboarding
+      // Route based on role — new users without role check consent first
       if (role === 'operator') {
         router.replace('/(operator)/dashboard')
       } else if (role === 'host') {
@@ -48,8 +48,17 @@ export default function VerifyScreen() {
       } else if (role === 'consumer') {
         router.replace('/(consumer)/explore')
       } else {
-        // New user — no role set yet, go to onboarding
-        router.replace('/onboarding')
+        // New user — check if GDPR consent already collected
+        const { data: consentRow } = await supabase
+          .from('rentivo_consent')
+          .select('user_id')
+          .eq('user_id', data.session!.user.id)
+          .maybeSingle()
+        if (consentRow) {
+          router.replace('/onboarding')
+        } else {
+          router.replace('/auth/consent')
+        }
       }
     } catch (e) {
       Alert.alert('Invalid code', 'Please check the code and try again.')

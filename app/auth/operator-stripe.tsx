@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Config } from '@/constants/config'
+import { supabase } from '@/lib/supabase'
 
 type StepStatus = 'done' | 'pending' | 'active'
 
@@ -61,10 +62,20 @@ export default function OperatorStripeScreen() {
       }, 1000)
       return
     }
-    // TODO: Open Stripe Connect onboarding URL in WebView
-    // const { data } = await supabase.functions.invoke('create-stripe-account-link')
-    // router.push(`/auth/stripe-webview?url=${data.url}`)
-    router.replace('/(operator)/dashboard')
+    setConnecting(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('create-stripe-account-link')
+      if (error) throw error
+      if (data?.url) {
+        await Linking.openURL(data.url)
+      }
+      router.replace('/(operator)/dashboard')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Could not start Stripe onboarding'
+      Alert.alert('Connection error', msg)
+    } finally {
+      setConnecting(false)
+    }
   }
 
   const handleSkip = () => {
