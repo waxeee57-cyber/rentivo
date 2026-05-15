@@ -67,6 +67,7 @@ export default function BookingFlowScreen() {
   const [startHour, setStartHour] = useState('10:00')
   const [totalHours, setTotalHours] = useState(2)
   const [promoCode, setPromoCode] = useState('')
+  const [flightNumber, setFlightNumber] = useState('')
   const [promoDiscount, setPromoDiscount] = useState(0)
   const [promoApplied, setPromoApplied] = useState(false)
   const [promoLoading, setPromoLoading] = useState(false)
@@ -234,6 +235,7 @@ export default function BookingFlowScreen() {
           consumer_signature: null,
           operator_signature: null,
           notes: notes.trim() || null,
+          flight_number: flightNumber.trim() || null,
           promo_code: promoApplied ? promoCode : null,
           promo_discount: promoDiscount,
         })
@@ -431,6 +433,14 @@ export default function BookingFlowScreen() {
               value={notes} onChangeText={setNotes}
               placeholder={language === 'es' ? 'Peticiones especiales...' : language === 'hu' ? 'Különleges kérések...' : 'Special requests...'}
               multiline numberOfLines={3}
+            />
+            <Input
+              label={language === 'es' ? '✈️ Número de vuelo (opcional)' : language === 'hu' ? '✈️ Járatszám (opcionális)' : '✈️ Flight number (optional)'}
+              value={flightNumber}
+              onChangeText={v => setFlightNumber(v.toUpperCase())}
+              placeholder="e.g. FR1234"
+              autoCapitalize="characters"
+              maxLength={10}
             />
 
             <Text style={styles.formTitle}>
