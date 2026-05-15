@@ -247,16 +247,16 @@ export default function ExploreScreen() {
 
       {/* Floating search bar */}
       <View style={[styles.searchBar, { top: searchBarTop }]}>
-        <TouchableOpacity style={styles.searchSection} onPress={() => setShowCityPicker(true)}>
+        <TouchableOpacity style={styles.searchSection} onPress={() => setShowCityPicker(true)} accessibilityLabel={`Location: ${cityName}`} accessibilityRole="button">
           <Ionicons name="location" size={16} color={Colors.primary} />
           <Text style={styles.searchCity}>{cityName}</Text>
         </TouchableOpacity>
         <View style={styles.searchDivider} />
-        <TouchableOpacity style={styles.searchSection} onPress={() => setShowDatePicker(true)}>
+        <TouchableOpacity style={styles.searchSection} onPress={() => setShowDatePicker(true)} accessibilityLabel={`Dates: ${dateLabel}`} accessibilityRole="button">
           <Ionicons name="calendar-outline" size={16} color={Colors.textSecondary} />
           <Text style={[styles.searchDates, startDate != null && styles.searchDatesActive]}>{dateLabel}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilterSheet(true)}>
+        <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilterSheet(true)} accessibilityLabel="Sort and filter" accessibilityRole="button">
           <Ionicons name="options-outline" size={16} color={Colors.primary} />
         </TouchableOpacity>
       </View>
@@ -303,6 +303,8 @@ export default function ExploreScreen() {
           setViewMode(v => v === 'map' ? 'list' : 'map')
           setSelectedListing(null)
         }}
+        accessibilityLabel={viewMode === 'map' ? 'Switch to list view' : 'Switch to map view'}
+        accessibilityRole="button"
       >
         <Text style={styles.toggleText}>
           {viewMode === 'map' ? '≡ List' : '⊕ Map'}

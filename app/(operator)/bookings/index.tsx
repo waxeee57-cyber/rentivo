@@ -225,5 +225,5 @@ const styles = StyleSheet.create({
   tabBadgeActive: { backgroundColor: Colors.textInverse },
   tabBadgeText: { fontSize: 9, fontWeight: '800', color: Colors.text },
   tabBadgeTextActive: { color: Colors.error },
-  list: { paddingHorizontal: Spacing.base },
+  list: { paddingHorizontal: Spacing.base, paddingBottom: 100 },
 })

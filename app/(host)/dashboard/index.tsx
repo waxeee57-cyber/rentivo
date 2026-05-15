@@ -99,7 +99,7 @@ export default function HostDashboardScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Your listings</Text>
-            <TouchableOpacity onPress={() => router.push('/(host)/listings')}>
+            <TouchableOpacity onPress={() => router.push('/(host)/listings')} accessibilityLabel="See all listings" accessibilityRole="button">
               <Text style={styles.seeAll}>See all →</Text>
             </TouchableOpacity>
           </View>
@@ -108,6 +108,8 @@ export default function HostDashboardScreen() {
             <TouchableOpacity
               style={styles.listingCard}
               onPress={() => router.push(`/(consumer)/listing/${MOCK_HOST_LISTING.id}`)}
+              accessibilityLabel={`View listing: ${MOCK_HOST_LISTING.title}`}
+              accessibilityRole="button"
             >
               <View style={styles.listingEmoji}>
                 <Text style={{ fontSize: 32 }}>🚗</Text>
@@ -136,6 +138,8 @@ export default function HostDashboardScreen() {
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => router.push('/(host)/listings/new')}
+            accessibilityLabel="Add new listing"
+            accessibilityRole="button"
           >
             <Text style={styles.addBtnText}>+ Add listing</Text>
           </TouchableOpacity>
@@ -145,7 +149,7 @@ export default function HostDashboardScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent bookings</Text>
-            <TouchableOpacity onPress={() => router.push('/(host)/bookings')}>
+            <TouchableOpacity onPress={() => router.push('/(host)/bookings')} accessibilityLabel="See all bookings" accessibilityRole="button">
               <Text style={styles.seeAll}>See all →</Text>
             </TouchableOpacity>
           </View>
@@ -160,6 +164,8 @@ export default function HostDashboardScreen() {
               key={b.id}
               style={styles.bookingRow}
               onPress={() => router.push(`/(host)/bookings/${b.id}`)}
+              accessibilityLabel={`Booking from ${b.guest_name}, ${b.status}`}
+              accessibilityRole="button"
             >
               <View style={styles.bookingAvatar}>
                 <Text style={styles.bookingAvatarText}>{b.guest_name[0]}</Text>

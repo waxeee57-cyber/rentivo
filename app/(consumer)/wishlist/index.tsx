@@ -46,6 +46,6 @@ export default function WishlistScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  grid: { padding: Spacing.base },
+  grid: { padding: Spacing.base, paddingBottom: 100 },
   columnWrapper: { justifyContent: 'space-between' },
 })

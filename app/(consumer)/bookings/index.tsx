@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderRadius: Radius.pill,
   },
-  list: { paddingHorizontal: Spacing.base },
+  list: { paddingHorizontal: Spacing.base, paddingBottom: 100 },
   activeActions: {
     flexDirection: 'row',
     gap: Spacing.sm,

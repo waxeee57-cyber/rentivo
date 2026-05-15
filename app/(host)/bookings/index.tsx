@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   tabText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
   tabTextActive: { color: Colors.textInverse },
-  list: { paddingHorizontal: Spacing.base },
+  list: { paddingHorizontal: Spacing.base, paddingBottom: 100 },
 
   card: {
     backgroundColor: Colors.surface,

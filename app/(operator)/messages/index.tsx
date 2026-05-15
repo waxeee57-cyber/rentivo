@@ -76,7 +76,7 @@ export default function OperatorMessagesScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
         }
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.row} onPress={() => handlePress(item)} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.row} onPress={() => handlePress(item)} activeOpacity={0.7} accessibilityLabel={`Message from ${item.guest_name ?? 'Guest'}${item.unread_operator > 0 ? `, ${item.unread_operator} unread` : ''}`} accessibilityRole="button">
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>
                 {(item.guest_name ?? 'G')[0].toUpperCase()}
@@ -123,7 +123,7 @@ export default function OperatorMessagesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  listContent: { paddingVertical: Spacing.sm },
+  listContent: { paddingVertical: Spacing.sm, paddingBottom: 100 },
   emptyContainer: { flex: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 120, paddingHorizontal: Spacing.xl },
   emptyIcon: { fontSize: 48, marginBottom: Spacing.base },
