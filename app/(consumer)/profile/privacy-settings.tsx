@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import {
-  View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, ActivityIndicator,
+  View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, ActivityIndicator, Animated,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -9,6 +9,42 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
+
+function PrivacySettingsSkeleton() {
+  const opacity = useRef(new Animated.Value(0.4)).current
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.8, duration: 1000, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.4, duration: 1000, useNativeDriver: true }),
+      ]),
+    ).start()
+  }, [])
+  return (
+    <View style={skeletonStyles.container}>
+      <Animated.View style={[skeletonStyles.row, skeletonStyles.titleRow, { opacity }]} />
+      <Animated.View style={[skeletonStyles.row, skeletonStyles.subtitleRow, { opacity }]} />
+      <Animated.View style={[skeletonStyles.section, { opacity }]} />
+      <Animated.View style={[skeletonStyles.section, { opacity }]} />
+      <Animated.View style={[skeletonStyles.section, { opacity }]} />
+    </View>
+  )
+}
+
+const skeletonStyles = StyleSheet.create({
+  container: {
+    flex: 1, backgroundColor: Colors.background,
+    padding: Spacing.base, paddingTop: Spacing.xxxl,
+  },
+  row: { backgroundColor: Colors.surface, borderRadius: 8 },
+  titleRow: { height: 32, width: '60%', marginBottom: Spacing.sm },
+  subtitleRow: { height: 16, width: '90%', marginBottom: Spacing.xl },
+  section: {
+    height: 120, backgroundColor: Colors.surface,
+    borderRadius: Radius.lg, marginBottom: Spacing.md,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+})
 
 interface ConsentRecord {
   marketing_email: boolean
@@ -115,11 +151,7 @@ export default function PrivacySettingsScreen() {
   }
 
   if (loading) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator color={Colors.primary} size="large" />
-      </View>
-    )
+    return <PrivacySettingsSkeleton />
   }
 
   return (
