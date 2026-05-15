@@ -179,7 +179,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder'}>
+        <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY || ''}>
           <Fragment>
             <StatusBar style="light" />
             <OfflineBanner />

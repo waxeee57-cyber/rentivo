@@ -19,6 +19,8 @@ import { calculatePrice } from '@/lib/utils/calculatePrice'
 import { getError } from '@/lib/errors'
 import { Config } from '@/constants/config'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { supabase } from '@/lib/supabase'
+import { createBooking } from '@/lib/api/bookings'
 import { t } from '@/constants/i18n'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 
@@ -56,7 +58,6 @@ export default function BookingFlowScreen() {
   )
 
   const handlePayment = async () => {
-    // Hard guard — no double submit
     if (submitting || submitted) return
 
     if (!guestName.trim()) {
@@ -70,11 +71,55 @@ export default function BookingFlowScreen() {
 
     setSubmitting(true)
     try {
-      await new Promise<void>(r => setTimeout(r, 1500))
+      let bookingId: string
+
+      if (Config.useMock) {
+        await new Promise<void>(r => setTimeout(r, 1500))
+        bookingId = `mock-${Math.random().toString(36).slice(2, 8)}`
+      } else {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session?.user) {
+          showToast({ message: getError('auth_required'), type: 'error' })
+          return
+        }
+
+        const booking = await createBooking({
+          listing_id: listing.id,
+          operator_id: listing.operator_id,
+          user_id: session.user.id,
+          guest_name: guestName.trim(),
+          guest_email: guestEmail.trim() || null,
+          guest_phone: guestPhone.trim(),
+          guest_nationality: null,
+          driver_license_no: null,
+          start_date: format(startDate, 'yyyy-MM-dd'),
+          end_date: format(endDate, 'yyyy-MM-dd'),
+          total_days: totalDays,
+          pickup_time: pickupTime,
+          return_time: null,
+          pickup_location: null,
+          price_per_day: listing.price_per_day,
+          subtotal: priceCalc.subtotal,
+          platform_fee: priceCalc.platformFee,
+          total_amount: priceCalc.total,
+          deposit_amount: listing.deposit_amount,
+          currency: 'EUR',
+          status: 'pending',
+          payment_status: 'pending',
+          payment_intent_id: null,
+          paid_at: null,
+          contract_signed_at: null,
+          contract_url: null,
+          consumer_signature: null,
+          operator_signature: null,
+          notes: notes.trim() || null,
+        })
+        bookingId = booking.id
+      }
+
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      const bookingRef = `#${Math.random().toString(36).slice(2, 8).toUpperCase()}`
       setSubmitted(true)
-      router.replace(`/(consumer)/booking/confirmation/${bookingRef}`)
+      router.replace(`/(consumer)/booking/confirmation/${bookingId}`)
     } catch {
       showToast({ message: getError('payment_failed'), type: 'error' })
     } finally {

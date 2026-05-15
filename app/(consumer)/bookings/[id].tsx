@@ -45,12 +45,12 @@ const STATUS_COLORS: Record<BookingStatus, string> = {
 export default function BookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const bookingId = Config.useMock ? (id ?? 'bk-001') : (id ?? '')
-  const { booking, loading, error } = useBooking(bookingId)
+  const { booking, loading, error, refetch } = useBooking(bookingId)
   const [showCancelSheet, setShowCancelSheet] = useState(false)
   const [cancelling, setCancelling] = useState(false)
 
   if (loading) return <SafeAreaView style={styles.container}><SkeletonCard /></SafeAreaView>
-  if (error || !booking) return <ErrorState message={error ?? 'Booking not found'} />
+  if (error || !booking) return <ErrorState message={error ?? 'Booking not found'} onRetry={refetch} />
 
   const pickupToday = isDateToday(booking.start_date)
   const returnToday = isDateToday(booking.end_date)

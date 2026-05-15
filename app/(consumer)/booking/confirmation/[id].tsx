@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
   },
   msgBtn: {
-    height: 48,
+    minHeight: 52,
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: Colors.border,

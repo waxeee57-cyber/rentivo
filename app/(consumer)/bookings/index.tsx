@@ -86,7 +86,7 @@ export default function BookingsScreen() {
     setRefreshing(false)
   }, [refetch])
 
-  if (error) return <ErrorState message={error} />
+  if (error) return <ErrorState message={error} onRetry={refetch} />
 
   const upcomingCount = filterBookings(bookings, 'upcoming').length
   const activeCount = filterBookings(bookings, 'active').length

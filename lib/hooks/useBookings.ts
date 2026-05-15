@@ -50,6 +50,7 @@ export function useBooking(id: string | null) {
   const [booking, setBooking] = useState<Booking | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [tick, setTick] = useState(0)
 
   useEffect(() => {
     if (!id) { setLoading(false); return }
@@ -60,7 +61,9 @@ export function useBooking(id: string | null) {
       .catch(e => { if (!cancelled) setError(String(e)) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [id])
+  }, [id, tick])
 
-  return { booking, loading, error }
+  const refetch = useCallback(() => setTick(t => t + 1), [])
+
+  return { booking, loading, error, refetch }
 }

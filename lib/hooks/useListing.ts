@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { fetchListing } from '@/lib/api/listings'
 import type { Listing } from '@/types'
 
@@ -6,6 +6,7 @@ export function useListing(id: string) {
   const [listing, setListing] = useState<Listing | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [tick, setTick] = useState(0)
 
   useEffect(() => {
     if (!id) return
@@ -17,7 +18,9 @@ export function useListing(id: string) {
       .catch(e => { if (!cancelled) setError(String(e)) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [id])
+  }, [id, tick])
 
-  return { listing, loading, error }
+  const refetch = useCallback(() => setTick(t => t + 1), [])
+
+  return { listing, loading, error, refetch }
 }

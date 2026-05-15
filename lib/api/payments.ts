@@ -1,5 +1,31 @@
 import { Config } from '@/constants/config'
 
+export const PLATFORM_FEE_RATE = 0.025 // 2.5%
+
+/**
+ * Returns the platform fee portion of a given amount.
+ * Current rate: 2.5% (Config.platformCut = 0.025)
+ * TODO: Stripe production — pass fee via application_fee_amount on PaymentIntent
+ */
+export function calculatePlatformFee(amountEur: number): number {
+  return Math.round(amountEur * Config.platformCut * 100) / 100
+}
+
+/**
+ * Converts a EUR decimal amount to Stripe's integer cent representation.
+ * TODO: Stripe production — use this in every PaymentIntent amount field
+ */
+export function toStripeAmount(amountEur: number): number {
+  return Math.round(amountEur * 100) // EUR cents
+}
+
+/**
+ * Converts Stripe's integer cent representation back to EUR decimal.
+ */
+export function fromStripeAmount(amountCents: number): number {
+  return amountCents / 100
+}
+
 export async function createPaymentIntent(
   listingId: string,
   amount: number,

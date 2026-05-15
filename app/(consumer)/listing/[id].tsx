@@ -34,7 +34,7 @@ const HERO_HEIGHT = Math.round(screenHeight * 0.52)
 
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const { listing, loading, error } = useListing(id ?? '')
+  const { listing, loading, error, refetch } = useListing(id ?? '')
   const { language } = useAuthStore()
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
@@ -44,7 +44,7 @@ export default function ListingDetailScreen() {
   const insets = useSafeAreaInsets()
 
   if (loading) return <View style={styles.container}><SkeletonCard /></View>
-  if (error || !listing) return <ErrorState message={error ?? 'Listing not found'} />
+  if (error || !listing) return <ErrorState message={error ?? 'Listing not found'} onRetry={refetch} />
 
   const totalDays = startDate && endDate ? Math.max(1, differenceInDays(endDate, startDate)) : null
   const priceCalc = totalDays

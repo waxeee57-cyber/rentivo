@@ -1,52 +1,36 @@
-# Stripe Connect Production Activation Checklist
+# Stripe Production Checklist — Rentivo
 
-## STÁTUSZ: PENDING
-Aktiválás előtt minden pont teljesítendő.
+## Implemented
+- Stripe Connect Express onboarding UI (app/auth/operator-stripe.tsx)
+- create-stripe-account-link Edge Function (deployed)
+- stripe-webhook Edge Function (deployed)
+- delete-account Edge Function (deployed)
+- Platform fee: 2.5% (Config.platformCut)
+- Payment utilities: calculatePlatformFee, toStripeAmount (lib/api/payments.ts)
 
-## LÉPÉSEK
+## Before Go-Live (Required)
+- [ ] Rotate: sk_test_ to sk_live_ in Supabase Edge Function secrets
+- [ ] Rotate: pk_test_ to pk_live_ in EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY
+- [ ] Add Stripe-Signature verification in stripe-webhook function
+- [ ] Set STRIPE_WEBHOOK_SECRET in Supabase Edge Function secrets
+- [ ] Handle account.updated webhook → update stripe_onboarded flag in rentivo_operators
+- [ ] Handle payout.paid webhook → notify operator via push notification
+- [ ] Test full Connect Express onboarding with real bank account in Stripe test mode
+- [ ] Enable Stripe Radar fraud rules in Dashboard
 
-### Dashboard beállítások (manuális — Roli csinálja)
-- [ ] Stripe Dashboard → Platform profile complete
-- [ ] Business name: DomRol Kft.
-- [ ] Brand settings: Rentivo logo + colors (#E8A44A)
-- [ ] Support URL: rentivo.domrol.com
-- [ ] Privacy Policy URL: rentivo.domrol.com/legal/privacy
-- [ ] Terms URL: rentivo.domrol.com/legal/terms
+## Future Gates (Post-Launch)
+- [ ] Stripe Identity KYC (kyc_verified_at hook already in rentivo_operators)
+- [ ] Stripe Tax for EU VAT automation (at 100k ARR)
+- [ ] ChartMogul MRR tracking integration (mrr_summary view ready)
 
-### KFT regisztráció (manuális)
-- [ ] KFT alapítási dokumentumok feltöltve
-- [ ] EU VAT szám (ha van)
-- [ ] Bank account HU vagy EU
+## Test Cards
+- Success: 4242 4242 4242 4242, any future date, any CVC
+- Decline: 4000 0000 0000 0002
+- 3D Secure: 4000 0025 0000 3155
+- Test IBAN: GB33BUKB20201555555555
 
-### Technikai (Claude Code implementálja)
-- [ ] Live publishable key → Vercel env var
-- [ ] Live secret key → Vercel env var + EAS env var
-- [ ] Webhook endpoint live: /api/stripe/webhook
-- [ ] Webhook events: checkout.session.completed, account.updated, payout.paid
-- [ ] Destination charges implementálva
-- [ ] Capability polling: transfers.status === "active" before payout
-- [ ] SCA/3DS2: Stripe automatikusan kezeli EU kártyáknál
-- [ ] Stripe Tax: enabled
-
-### Testing (manuális)
-- [ ] Test mode → Live mode váltás tesztelve
-- [ ] Valódi kártyával teszt tranzakció €1 összegben
-- [ ] Operator payout teszt
-- [ ] Webhook delivery ellenőrzés Stripe Dashboard-ban
-
-### EU Compliance
-- [ ] Stripe Tax EU VAT calculation enabled
-- [ ] PSD2 SCA: automatikus (Stripe kezeli)
-- [ ] GDPR: Stripe adatfeldolgozói megállapodás elfogadva
-
-## FEES MEMÓRIA
-- EEA kártyák: 1.5% + €0.25
-- UK: 2.5% + €0.25
-- Nem-EU: 3.25% + €0.25
-- Kifizetés: 0.25% + €0.10
-- Express account: €2/hó aktív fiókonként
-
-## INSTANT PAYOUT (jövőbeni kapu)
-Lyft pattern: "kapj 1 óra alatt" → 40% adoption 6 hónap alatt
-Aktiválás: amikor 20+ aktív operátor van
-Hook helye: app/(operator)/profile/index.tsx → Payout settings
+## Webhook Events to Handle
+- [x] checkout.session.completed (stub exists)
+- [ ] account.updated → stripe_onboarded = true
+- [ ] payout.paid → push notification to operator
+- [ ] charge.dispute.created → alert to admin
