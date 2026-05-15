@@ -160,8 +160,7 @@ export async function searchBookingAccommodations(
     if (!response.ok) throw new Error(`Booking API error: ${response.status}`)
     const data = await response.json() as { data?: BookingAPIItem[] }
     return (data.data ?? []).map(mapBookingItem)
-  } catch (err) {
-    console.error('Booking.com API error:', err)
+  } catch {
     return []
   }
 }
@@ -203,8 +202,7 @@ export async function searchBookingCarRentals(
     if (!response.ok) throw new Error(`Booking Cars API error: ${response.status}`)
     const data = await response.json() as { data?: BookingCarItem[] }
     return (data.data ?? []).map(item => mapBookingCarItem(item, params.pickupLocation))
-  } catch (err) {
-    console.error('Booking.com Cars API error:', err)
+  } catch {
     return []
   }
 }
