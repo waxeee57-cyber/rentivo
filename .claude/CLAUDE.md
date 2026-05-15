@@ -1,25 +1,28 @@
-# Rentivo App — Claude Code Constitution
+# Rentivo — Claude Code Configuration
 
-## Mi ez
-Rentivo mobil marketplace app.
-Turisták bérelhetnek autót, csónakot, villát, bringát
-helyi operátoroktól (B2C) és magánszemélyektől (C2C).
+## Projekt
+React Native + Expo app (C:\projects\Rentivo)
+Supabase: xeyfsacbozucxrwlefro.supabase.co
+Web: rentivo.domrol.com
 
-## Stack
-- Expo SDK 54 + expo-router v6
-- TypeScript strict
-- Supabase (auth, db, realtime, storage)
-- Stripe Connect (payments, operator payouts)
-- Zustand (state)
-- react-native-maps (Apple Maps)
-- react-native-reanimated v3.16 (szándékosan downgrade)
-- @expo/vector-icons Ionicons
-- date-fns, zod, react-hook-form
+## Gyors referencia
+- Részletes szabályok: .claude/rules/ mappában
+- Feature shippolás: /ship-feature skill
+- RLS audit: /rls-audit skill
+- Stripe debug: /stripe-debug skill
+- Teljes audit: /full-audit skill
+
+## Legfontosabb szabályok
+- 0 TypeScript error minden commitnál
+- Config.useMock = false (live mód)
+- user_id (NEM traveler_id) a bookings táblában
+- push_token nullázás: .eq('auth_id', userId)
+- DELETED_USER_ID = '00000000-0000-0000-0000-000000000001'
 
 ## Három user típus
-1. TRAVELER  → bérel (consumer flows)
-2. HOST      → magánszemély aki kiad (C2C)
-3. OPERATOR  → profi vállalkozó (B2C)
+1. TRAVELER → bérel (consumer flows)
+2. HOST → magánszemély aki kiad (C2C)
+3. OPERATOR → profi vállalkozó (B2C)
 
 ## Architektúra
 ```
@@ -30,29 +33,11 @@ app/
   (operator)/           operator flows
   (host)/               host flows (C2C)
   auth/                 login, role selection
-components/
-  ui/                   Button, Card, Badge, Input...
-  map/                  térkép komponensek
-  listing/              listing kártyák, calendar
-  booking/              foglalás flow
-  damage/               kárfelmérés
-  operator/             operator UI
-lib/
-  supabase.ts
-  stripe.ts
-  storage.ts
-  contract.ts
-  notifications.ts
-  store/                Zustand stores
-  hooks/                custom hooks
-  api/                  API layer
-  utils/                helpers
-types/index.ts           minden TypeScript type
-constants/
-  colors.ts             Dark Mediterranean theme
-  i18n.ts               EN/ES/HU fordítások
-  categories.ts
-  config.ts
+components/ui/          Button, Card, Badge, Input...
+lib/api/                API layer (listings, bookings, payments...)
+lib/store/              Zustand stores
+supabase/functions/     Edge Functions
+supabase/migrations/    DB migrációk
 ```
 
 ## Design — Dark Mediterranean
@@ -65,34 +50,31 @@ TextSecondary:#8A9BB5  muted blue-gray
 Border:       #1E3050
 ```
 
-## Szabályok
-1. Minden szín Colors.* konstansból — soha hardcode
-2. Minden string t() i18n funkción keresztül
-3. Minden screen: loading state + error state
-4. Minden kép: fallback ha betöltés sikertelen
-5. Mock mód: EXPO_PUBLIC_USE_MOCK=true mindig működik
-6. TypeScript strict — 0 hiba
-7. Tab nevek: expose/search/bookings/profile (no /index suffix)
-8. Visszagomb: ScreenHeader komponens minden nem-tab screenen
+## Ismert bug-ok (audit alapján, javítandó)
+- booking/[listingId].tsx: Nincs Stripe CardField — payment flow hiányzik
+- booking/[listingId].tsx: startDate/endDate hardcode (+1/+4 nap)
+- bookings/review/[bookingId].tsx: user_id = null — RLS sérti
+- operator/fleet/[id].tsx: handleSave csak setTimeout mock
+- host/listings/new.tsx: handlePublish nem hív Supabase-t
+- supabase/functions/create-payment-intent: nem létezik
+- supabase/functions/stripe-webhook: teljes placeholder
+- supabase/functions/ical-export: placeholder
+- supabase/functions/ical-import: placeholder
 
-## Ismert működési szabályok
-- initialRouteName NEM kerül a Tabs komponensbe
-- expo-router v6: tab name = mappa neve (/index nélkül)
-- Reanimated v3 — nem v4 (worklets kompatibilitás)
-- Dark map style: customMapStyle prop a MapView-n
-
-## Fontos fájlok
-- constants/colors.ts    design tokens
-- constants/i18n.ts      fordítások (EN/ES/HU)
-- lib/mockData.ts        minden mock adat
-- types/index.ts         minden type
-- lib/store/useAuthStore role + session kezelés
+## Agents
+- lead-orchestrator: fő koordinátor (opus)
+- supabase-backend: DB + Edge Functions
+- rn-frontend: UI + komponensek
+- stripe-payments: fizetési flow
+- code-reviewer: TypeScript + security
+- marketing-seo: SEO + App Store
+- test-runner: flow audit
 
 ## Tesztelés
 `npx expo start --tunnel` → Expo Go QR kód
-Mock mód: minden Supabase + Stripe hívás mockolt
+Mock mód: EXPO_PUBLIC_USE_MOCK=true
 
-## Debug Toolbar
-Az Expo Go natív route overlay nem távolítható el React Native kóddal.
-Production EAS buildben (TestFlight, App Store) NEM jelenik meg.
-A bemutató Expo Go-ban zajlik — ez ismert korlát, nem bug.
+## Ismert korlátok
+- expo-router v6: tab name = mappa neve (/index nélkül)
+- Reanimated v3 (nem v4 — worklets kompatibilitás)
+- Expo Go natív route overlay — production EAS buildben nem jelenik meg

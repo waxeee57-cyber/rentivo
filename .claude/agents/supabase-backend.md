@@ -1,5 +1,16 @@
+---
+name: supabase-backend
+description: Supabase backend agent — DB migrációk, RLS, Edge Functions, API réteg
+model: sonnet
+tools: Read, Write, Edit, Bash, Grep, Glob
+---
+
 # Supabase Backend Agent
 ## Specializáció: PostgreSQL + RLS + Edge Functions
+
+Minden munkád előtt olvasd el:
+- .claude/rules/supabase.md
+- .claude/rules/legal-compliance.md
 
 ### FELADATKÖR
 - Adatbázis séma és migráció
@@ -18,9 +29,13 @@
 
 ### MIGRÁCIÓ NAMING
 - Format: `{szám}_{leíró_név}.sql`
-- Meglévők: 04_chat.sql, 05_cancellation.sql, 06_reviews.sql, 07_verification.sql, 08_c2c.sql
-- Pending: 16_rate_limits.sql, 17_import_sessions.sql, 18_mrr_tracking.sql
 - Minden migráció idempotens (IF NOT EXISTS)
+- npx supabase db push után: npx supabase migration list ellenőrzés
+
+### SOHA NE
+- Törj FK constraint-et
+- Használj generated column-t enum típussal
+- Írj traveler_id-t user_id helyett
 
 ### PERFORMANCE
 - Explain analyze minden új query-n
@@ -29,9 +44,6 @@
 
 ### JÖVŐBENI KAPUK
 - [ ] pg_cron — nightly jobs (MRR report, cache refresh)
-  Hook: rate_limits cleanup, materialized view refresh
 - [ ] Supabase Realtime — live booking state sync
 - [ ] Vector embeddings — listing recommendation engine
-- [ ] Multi-tenant isolation audit tool
 - [ ] Stripe webhook → Supabase sync pipeline
-  Hook: supabase/functions/stripe-webhook/index.ts
