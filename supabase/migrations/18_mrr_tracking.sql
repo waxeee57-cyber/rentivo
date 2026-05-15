@@ -22,7 +22,7 @@ SELECT
   SUM(CASE WHEN payment_status = 'paid' THEN total_amount * 0.10 ELSE 0 END) as platform_fee_eur,
   COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_bookings,
   SUM(CASE WHEN status = 'completed' THEN total_amount ELSE 0 END) as gmv_eur
-FROM public.bookings
+FROM public.rentivo_bookings
 GROUP BY DATE_TRUNC('month', created_at)
 ORDER BY month DESC;
 

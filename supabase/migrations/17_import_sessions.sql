@@ -1,13 +1,14 @@
 -- Import session tracking: Airbnb/Booking.com listing import folyamat
 -- Jövőbeni integráció: channel manager API-kkal
 
-CREATE TYPE IF NOT EXISTS import_platform AS ENUM (
-  'airbnb', 'booking_com', 'vrbo', 'turo', 'holidu', 'rentalcars', 'other'
-);
-
-CREATE TYPE IF NOT EXISTS import_status AS ENUM (
-  'pending', 'processing', 'completed', 'failed', 'cancelled'
-);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'import_platform') THEN
+    CREATE TYPE import_platform AS ENUM ('airbnb', 'booking_com', 'vrbo', 'turo', 'holidu', 'rentalcars', 'other');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'import_status') THEN
+    CREATE TYPE import_status AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled');
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.import_sessions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -19,7 +20,7 @@ CREATE TABLE IF NOT EXISTS public.import_sessions (
   raw_data JSONB,              -- Platform-tól visszakapott nyers adat
   parsed_data JSONB,           -- Feldolgozott, Rentivo-kompatibilis adat
   error_message TEXT,
-  listing_id UUID REFERENCES public.listings(id), -- Létrehozott listing (ha sikeres)
+  listing_id UUID REFERENCES public.rentivo_listings(id), -- Létrehozott listing (ha sikeres)
   ical_url TEXT,               -- iCal sync URL (ha van)
   -- Jövőbeni: channel manager szinkronizáláshoz
   channel_manager_id TEXT,     -- Hostaway/RentalsUnited listing ID
