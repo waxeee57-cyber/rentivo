@@ -68,7 +68,14 @@ export default function OperatorProfileScreen() {
         </Card>
 
         <Card style={styles.card}>
+          <MenuItem
+            label="📊 Analytics"
+            onPress={() => router.push('/(operator)/analytics' as Parameters<typeof router.push>[0])}
+          />
+          <Divider />
           <MenuItem label={`🔗 ${t('connectedPlatforms', language)}`} onPress={() => router.push('/(consumer)/profile/connected-platforms' as Parameters<typeof router.push>[0])} />
+          <Divider />
+          <MenuItem label="🚗 Delivery Settings" onPress={() => router.push('/(operator)/settings/delivery' as Parameters<typeof router.push>[0])} />
           <Divider />
           <MenuItem label={t('businessSettings', language)} onPress={() => void Linking.openURL('https://dashboard.rentivo.app')} />
           <Divider />

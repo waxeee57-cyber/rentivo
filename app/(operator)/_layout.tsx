@@ -120,6 +120,7 @@ export default function OperatorLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       {/* Hidden screens */}
+      <Tabs.Screen name="analytics" options={{ href: null }} />
       <Tabs.Screen name="bookings/[id]" options={{ href: null }} />
       <Tabs.Screen name="bookings/chat/[bookingId]" options={{ href: null }} />
       <Tabs.Screen name="bookings/calendar" options={{ href: null }} />
@@ -127,6 +128,9 @@ export default function OperatorLayout() {
       <Tabs.Screen name="fleet/[id]" options={{ href: null }} />
       <Tabs.Screen name="damage/[bookingId]" options={{ href: null }} />
       <Tabs.Screen name="profile/team" options={{ href: null }} />
+      <Tabs.Screen name="settings/delivery" options={{ href: null }} />
+      <Tabs.Screen name="fleet/pricing/[id]" options={{ href: null }} />
+      <Tabs.Screen name="bookings/sign/[bookingId]" options={{ href: null }} />
     </Tabs>
   )
 }

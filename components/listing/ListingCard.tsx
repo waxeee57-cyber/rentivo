@@ -11,6 +11,8 @@ import { getCategoryEmoji, getCategoryLabel } from '@/constants/categories'
 import { getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
 import { useWishlistStore } from '@/lib/store/useWishlistStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { TierBadge } from '@/components/operator/TierBadge'
+import { calculateTier } from '@/lib/operator-tier'
 import type { Listing, RentalCategory } from '@/types'
 
 const { width } = Dimensions.get('window')
@@ -174,6 +176,12 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
           <View style={styles.info}>
             {/* Title: max 2 lines with ellipsis */}
             <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{listing.title}</Text>
+            {/* Operator tier badge */}
+            {listing.operator != null && (
+              <View style={styles.tierRow}>
+                <TierBadge tier={calculateTier(listing.operator)} size="sm" />
+              </View>
+            )}
             {/* Location: pickup_address preferred, city as fallback */}
             {(listing.pickup_address ?? listing.operator?.city ?? listing.host?.city) != null && (
               <Text style={styles.location} numberOfLines={1}>
@@ -320,6 +328,7 @@ const styles = StyleSheet.create({
   heart: { fontSize: 16 },
   info: { padding: Spacing.base, paddingBottom: Spacing.md },
   title: { ...Typography.h4, color: Colors.text, marginBottom: 4, lineHeight: 20 },
+  tierRow: { marginBottom: 4 },
   location: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 6 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   rentalCount: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },

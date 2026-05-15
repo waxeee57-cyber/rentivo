@@ -1,148 +1,214 @@
-import React, { useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput } from 'react-native'
+import React, { useState, useEffect, useCallback } from 'react'
+import {
+  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  TextInput, ActivityIndicator,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Button } from '@/components/ui/Button'
-import { useToastStore } from '@/lib/store/useToastStore'
 import { Card } from '@/components/ui/Card'
+import { useToastStore } from '@/lib/store/useToastStore'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { Config } from '@/constants/config'
+import { supabase } from '@/lib/supabase'
+import type { OperatorStaffMember } from '@/types'
 
-type TeamRole = 'owner' | 'manager' | 'staff'
+type StaffRole = 'admin' | 'staff' | 'viewer'
 
-interface TeamMember {
-  id: string
-  name: string
-  email: string
-  role: TeamRole
-  phone?: string
-}
-
-const ROLE_LABELS: Record<TeamRole, string> = {
-  owner: 'Owner — full access',
-  manager: 'Manager — bookings + chat',
-  staff: 'Staff — pickup/return only',
-}
-
-const ROLE_COLORS: Record<TeamRole, string> = {
-  owner: Colors.primary,
-  manager: Colors.info,
-  staff: Colors.textSecondary,
-}
-
-const MOCK_TEAM: TeamMember[] = [
-  { id: 't-001', name: 'Roland Costa', email: 'roland@costasol.com', role: 'owner', phone: '+34600000000' },
-  { id: 't-002', name: 'Maria Sanchez', email: 'maria@costasol.com', role: 'manager' },
-  { id: 't-003', name: 'Pedro Garcia', email: 'pedro@costasol.com', role: 'staff' },
+const ROLES: { key: StaffRole; label: string; desc: string }[] = [
+  { key: 'admin', label: 'Admin', desc: 'Full access' },
+  { key: 'staff', label: 'Staff', desc: 'Manage bookings' },
+  { key: 'viewer', label: 'Viewer', desc: 'Read only' },
 ]
 
-export default function TeamScreen() {
-  const [members, setMembers] = useState<TeamMember[]>(MOCK_TEAM)
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteRole, setInviteRole] = useState<TeamRole>('staff')
-  const { showToast } = useToastStore()
+const MOCK_STAFF: OperatorStaffMember[] = [
+  {
+    id: 's-001',
+    operator_id: 'op-001',
+    user_id: null,
+    email: 'maria@example.com',
+    role: 'admin',
+    status: 'active',
+    invited_at: '2026-01-15T00:00:00Z',
+    joined_at: '2026-01-16T00:00:00Z',
+  },
+  {
+    id: 's-002',
+    operator_id: 'op-001',
+    user_id: null,
+    email: 'carlos@example.com',
+    role: 'staff',
+    status: 'invited',
+    invited_at: '2026-05-01T00:00:00Z',
+    joined_at: null,
+  },
+]
 
-  const handleInvite = () => {
+const roleColor: Record<StaffRole, string> = {
+  admin: Colors.primary,
+  staff: Colors.success,
+  viewer: Colors.textSecondary,
+}
+
+export default function TeamScreen() {
+  const { operator } = useAuthStore()
+  const { showToast } = useToastStore()
+  const operatorId = Config.useMock ? 'op-001' : (operator?.id ?? '')
+
+  const [staff, setStaff] = useState<OperatorStaffMember[]>([])
+  const [loading, setLoading] = useState(true)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<StaffRole>('staff')
+  const [inviting, setInviting] = useState(false)
+
+  const loadStaff = useCallback(async () => {
+    if (Config.useMock) {
+      setStaff(MOCK_STAFF)
+      setLoading(false)
+      return
+    }
+    const { data } = await supabase
+      .from('rentivo_operator_staff')
+      .select('*')
+      .eq('operator_id', operatorId)
+      .order('invited_at', { ascending: false })
+    setStaff((data as OperatorStaffMember[]) ?? [])
+    setLoading(false)
+  }, [operatorId])
+
+  useEffect(() => { void loadStaff() }, [loadStaff])
+
+  const handleInvite = async () => {
     if (!inviteEmail.trim() || !inviteEmail.includes('@')) {
       showToast({ message: 'Enter a valid email address', type: 'error' })
       return
     }
-    const newMember: TeamMember = {
-      id: `t-${Date.now()}`,
-      name: inviteEmail.split('@')[0],
-      email: inviteEmail.trim(),
-      role: inviteRole,
+    setInviting(true)
+    if (!Config.useMock) {
+      const { error } = await supabase
+        .from('rentivo_operator_staff')
+        .insert({
+          operator_id: operatorId,
+          email: inviteEmail.trim().toLowerCase(),
+          role: inviteRole,
+          status: 'invited',
+        })
+      if (error) {
+        showToast({ message: 'Failed to send invite', type: 'error' })
+        setInviting(false)
+        return
+      }
     }
-    setMembers(prev => [...prev, newMember])
+    showToast({ message: `Invite sent to ${inviteEmail.trim()}`, type: 'success' })
     setInviteEmail('')
-    showToast({ message: `Invite sent to ${newMember.email}`, type: 'success' })
+    void loadStaff()
+    setInviting(false)
   }
 
-  const handleRemove = (id: string) => {
-    setMembers(prev => prev.filter(m => m.id !== id))
-    showToast({ message: 'Team member removed', type: 'success' })
+  const handleRemove = async (memberId: string) => {
+    if (!Config.useMock) {
+      await supabase.from('rentivo_operator_staff').delete().eq('id', memberId)
+    }
+    setStaff(prev => prev.filter(s => s.id !== memberId))
+    showToast({ message: 'Member removed', type: 'success' })
   }
-
-  const ROLES: TeamRole[] = ['owner', 'manager', 'staff']
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScreenHeader title="👥 Team" />
-
+      <ScreenHeader title="Team Members" />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sectionTitle}>Team members</Text>
-
-        {members.map(m => (
-          <Card key={m.id} style={styles.memberCard}>
-            <View style={styles.memberRow}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {m.name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.memberInfo}>
-                <Text style={styles.memberName}>{m.name}</Text>
-                <Text style={styles.memberEmail}>{m.email}</Text>
-                <View style={[styles.roleBadge, { backgroundColor: ROLE_COLORS[m.role] + '20' }]}>
-                  <Text style={[styles.roleText, { color: ROLE_COLORS[m.role] }]}>
-                    {ROLE_LABELS[m.role]}
-                  </Text>
-                </View>
-              </View>
-              {m.role !== 'owner' && (
-                <TouchableOpacity
-                  onPress={() => handleRemove(m.id)}
-                  style={styles.removeBtn}
-                  accessibilityLabel={`Remove ${m.name}`}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.removeText}>✕</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </Card>
-        ))}
-
-        <Text style={[styles.sectionTitle, { marginTop: Spacing.xl }]}>Invite team member</Text>
 
         <Card style={styles.inviteCard}>
+          <Text style={styles.sectionTitle}>Invite Member</Text>
           <TextInput
             style={styles.emailInput}
-            placeholder="Email address"
-            placeholderTextColor={Colors.textTertiary}
             value={inviteEmail}
             onChangeText={setInviteEmail}
+            placeholder="email@example.com"
+            placeholderTextColor={Colors.textSecondary}
             keyboardType="email-address"
             autoCapitalize="none"
-            accessibilityLabel="Team member email"
+            accessibilityLabel="Email address to invite"
           />
-
-          <Text style={styles.roleLabel}>Role</Text>
           <View style={styles.roleRow}>
-            {ROLES.map(role => (
+            {ROLES.map(r => (
               <TouchableOpacity
-                key={role}
-                style={[styles.rolePill, inviteRole === role && styles.rolePillActive]}
-                onPress={() => setInviteRole(role)}
-                accessibilityLabel={role}
+                key={r.key}
+                style={[styles.roleChip, inviteRole === r.key && styles.roleChipActive]}
+                onPress={() => setInviteRole(r.key)}
+                accessibilityLabel={`Select role ${r.label}`}
                 accessibilityRole="radio"
-                accessibilityState={{ selected: inviteRole === role }}
+                accessibilityState={{ selected: inviteRole === r.key }}
               >
-                <Text style={[styles.rolePillText, inviteRole === role && styles.rolePillTextActive]}>
-                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                <Text style={[styles.roleText, inviteRole === r.key && styles.roleTextActive]}>
+                  {r.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-
-          <Text style={styles.roleDescription}>{ROLE_LABELS[inviteRole]}</Text>
-
+          <Text style={styles.roleDesc}>
+            {ROLES.find(r => r.key === inviteRole)?.desc}
+          </Text>
           <Button
-            title="Send invite"
+            title={inviting ? 'Sending...' : 'Send Invite'}
             onPress={handleInvite}
+            loading={inviting}
             fullWidth
-            style={{ marginTop: Spacing.base }}
+            style={{ marginTop: Spacing.md }}
           />
         </Card>
+
+        {loading ? (
+          <ActivityIndicator color={Colors.primary} style={{ marginTop: 20 }} />
+        ) : (
+          <>
+            <Text style={styles.listTitle}>Team ({staff.length})</Text>
+            {staff.map(member => (
+              <Card key={member.id} style={styles.memberCard}>
+                <View style={styles.memberRow}>
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>
+                      {member.email.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.memberInfo}>
+                    <Text style={styles.memberEmail}>{member.email}</Text>
+                    <View style={styles.badgeRow}>
+                      <View style={[styles.roleBadge, { borderColor: roleColor[member.role] }]}>
+                        <Text style={[styles.roleBadgeText, { color: roleColor[member.role] }]}>
+                          {member.role}
+                        </Text>
+                      </View>
+                      <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: member.status === 'active' ? Colors.successSurface : Colors.surface },
+                      ]}>
+                        <Text style={[
+                          styles.statusText,
+                          { color: member.status === 'active' ? Colors.success : Colors.textSecondary },
+                        ]}>
+                          {member.status === 'active' ? '● Active' : '○ Invited'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.removeBtn}
+                    onPress={() => handleRemove(member.id)}
+                    accessibilityLabel={`Remove ${member.email}`}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.removeText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              </Card>
+            ))}
+            {staff.length === 0 && (
+              <Text style={styles.emptyText}>No team members yet. Invite someone above.</Text>
+            )}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   )
@@ -150,49 +216,90 @@ export default function TeamScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
+  content: { padding: Spacing.base, paddingBottom: 100 },
+  inviteCard: { padding: Spacing.base, marginBottom: Spacing.lg },
   sectionTitle: {
-    fontSize: 12, fontWeight: '700', color: Colors.textTertiary,
-    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md,
+    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: Spacing.md,
   },
-  memberCard: { marginBottom: Spacing.sm },
-  memberRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  avatar: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: Colors.primarySurface,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: Colors.primaryLight,
-  },
-  avatarText: { fontSize: 18, fontWeight: '800', color: Colors.primaryDark },
-  memberInfo: { flex: 1 },
-  memberName: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  memberEmail: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
-  roleBadge: {
-    alignSelf: 'flex-start', borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.sm, paddingVertical: 2, marginTop: 4,
-  },
-  roleText: { fontSize: 11, fontWeight: '700' },
-  removeBtn: {
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: Colors.errorSurface, alignItems: 'center', justifyContent: 'center',
-  },
-  removeText: { fontSize: 12, color: Colors.error, fontWeight: '700' },
-  inviteCard: {},
   emailInput: {
-    backgroundColor: Colors.surfaceWarm, borderRadius: Radius.lg,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: Spacing.base, paddingVertical: Spacing.md,
-    fontSize: 14, color: Colors.text, marginBottom: Spacing.md,
+    backgroundColor: Colors.surfaceWarm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    color: Colors.text,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+    fontSize: 14,
+    minHeight: 44,
+    marginBottom: Spacing.md,
   },
-  roleLabel: { fontSize: 12, fontWeight: '700', color: Colors.textTertiary, marginBottom: Spacing.sm },
-  roleRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm },
-  rolePill: {
-    flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.pill,
-    borderWidth: 1, borderColor: Colors.border, alignItems: 'center',
+  roleRow: { flexDirection: 'row', gap: Spacing.sm },
+  roleChip: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
     backgroundColor: Colors.surfaceWarm,
   },
-  rolePillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  rolePillText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  rolePillTextActive: { color: Colors.textInverse },
-  roleDescription: { fontSize: 12, color: Colors.textTertiary, marginBottom: Spacing.sm },
+  roleChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  roleText: { color: Colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  roleTextActive: { color: Colors.textInverse },
+  roleDesc: {
+    color: Colors.textTertiary,
+    fontSize: 12,
+    marginTop: Spacing.sm,
+  },
+  listTitle: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: Spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  memberCard: { padding: Spacing.md, marginBottom: Spacing.sm },
+  memberRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.primaryLight,
+  },
+  avatarText: { color: Colors.primaryDark, fontWeight: '700', fontSize: 18 },
+  memberInfo: { flex: 1 },
+  memberEmail: { color: Colors.text, fontSize: 14, fontWeight: '500', marginBottom: 4 },
+  badgeRow: { flexDirection: 'row', gap: Spacing.sm },
+  roleBadge: {
+    borderWidth: 1,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  roleBadgeText: { fontSize: 11, fontWeight: '700' },
+  statusBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
+  statusText: { fontSize: 11, fontWeight: '600' },
+  removeBtn: {
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeText: { color: Colors.error, fontSize: 16, fontWeight: '700' },
+  emptyText: {
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginTop: Spacing.xl,
+    fontSize: 14,
+  },
 })

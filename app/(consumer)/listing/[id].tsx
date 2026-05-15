@@ -43,6 +43,7 @@ export default function ListingDetailScreen() {
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showFullDesc, setShowFullDesc] = useState(false)
+  const [rentalType, setRentalType] = useState<'daily' | 'hourly'>('daily')
   const isWishlisted = useWishlistStore(s => s.isWishlisted)
   const insets = useSafeAreaInsets()
 
@@ -254,6 +255,30 @@ export default function ListingDetailScreen() {
               </Text>
             )}
           </View>
+
+          {listing.hourly_rental_enabled && (
+            <View style={styles.typeSelector}>
+              {(['daily', 'hourly'] as const).map(type => (
+                <TouchableOpacity
+                  key={type}
+                  style={[styles.typeBtn, rentalType === type && styles.typeBtnActive]}
+                  onPress={() => setRentalType(type)}
+                  accessibilityLabel={`${type} rental`}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: rentalType === type }}
+                >
+                  <Text style={[styles.typeBtnText, rentalType === type && styles.typeBtnTextActive]}>
+                    {type === 'daily' ? '📅 Daily' : '⏱ Hourly'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+          {listing.hourly_rental_enabled && rentalType === 'hourly' && listing.price_per_hour != null && (
+            <Text style={styles.hourlyPrice}>
+              €{listing.price_per_hour}/hour · min {listing.min_rental_hours ?? 2}h
+            </Text>
+          )}
 
           <View style={styles.infoChips}>
             {listing.year ? <View style={styles.infoChip}><Text style={styles.infoChipText}>🚗 {listing.year}</Text></View> : null}
@@ -641,6 +666,7 @@ export default function ListingDetailScreen() {
                   listingId: listing.id,
                   startDate: startDate.toISOString(),
                   endDate: endDate.toISOString(),
+                  rentalType,
                 },
               })
             } else {
@@ -931,6 +957,17 @@ const styles = StyleSheet.create({
   similarEmoji: { fontSize: 36 },
   similarTitle: { fontSize: 13, fontWeight: '600', color: Colors.text, padding: Spacing.sm, paddingBottom: 2 },
   similarPrice: { fontSize: 12, color: Colors.primary, fontWeight: '700', paddingHorizontal: Spacing.sm, paddingBottom: Spacing.sm },
+
+  typeSelector: { flexDirection: 'row', gap: 8, marginBottom: Spacing.base },
+  typeBtn: {
+    flex: 1, padding: 12, borderRadius: Radius.sm, borderWidth: 1,
+    borderColor: Colors.border, alignItems: 'center',
+    minHeight: 44, justifyContent: 'center',
+  },
+  typeBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  typeBtnText: { color: Colors.textSecondary, fontSize: 14, fontWeight: '600' },
+  typeBtnTextActive: { color: Colors.background },
+  hourlyPrice: { color: Colors.primary, fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: Spacing.base },
 
   bookingBar: {
     flexDirection: 'row',

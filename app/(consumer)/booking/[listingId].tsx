@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -28,6 +28,7 @@ import { t } from '@/constants/i18n'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { INSURANCE_PACKAGES } from '@/types'
 import type { InsuranceId } from '@/types'
+import { validatePromoCode } from '@/lib/api/promo'
 
 const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
   const hour = 8 + Math.floor(i / 2)
@@ -40,10 +41,12 @@ export default function BookingFlowScreen() {
     listingId,
     startDate: startDateParam,
     endDate: endDateParam,
+    rentalType: rentalTypeParam,
   } = useLocalSearchParams<{
     listingId: string
     startDate?: string
     endDate?: string
+    rentalType?: string
   }>()
   const { listing, loading } = useListing(listingId ?? '')
   const { language } = useAuthStore()
@@ -54,10 +57,16 @@ export default function BookingFlowScreen() {
   const [guestPhone, setGuestPhone] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
   const [notes, setNotes] = useState('')
+  const [flightNumber, setFlightNumber] = useState('')
   const [insurancePackage, setInsurancePackage] = useState<InsuranceId>('basic')
   const [cardComplete, setCardComplete] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [rentalType, setRentalType] = useState<'daily' | 'hourly'>(
+    rentalTypeParam === 'hourly' ? 'hourly' : 'daily',
+  )
+  const [startHour, setStartHour] = useState('10:00')
+  const [totalHours, setTotalHours] = useState(2)
   const { showToast } = useToastStore()
 
   const startDate = startDateParam
@@ -79,7 +88,12 @@ export default function BookingFlowScreen() {
 
   const selectedInsurance = INSURANCE_PACKAGES.find(p => p.id === insurancePackage) ?? INSURANCE_PACKAGES[0]
   const insuranceTotalCost = selectedInsurance.price * totalDays
-  const grandTotal = priceCalc.total + insuranceTotalCost
+  const hourlySubtotal = rentalType === 'hourly' && listing.price_per_hour != null
+    ? listing.price_per_hour * totalHours
+    : 0
+  const grandTotal = rentalType === 'hourly'
+    ? hourlySubtotal + insuranceTotalCost
+    : priceCalc.total + insuranceTotalCost
 
   const handlePayment = async () => {
     if (submitting || submitted) return
@@ -138,6 +152,7 @@ export default function BookingFlowScreen() {
           consumer_signature: null,
           operator_signature: null,
           notes: notes.trim() || null,
+          flight_number: flightNumber.trim() || null,
         })
         bookingId = booking.id
 
@@ -235,12 +250,76 @@ export default function BookingFlowScreen() {
 
         {step === 1 && (
           <>
-            <PriceBreakdown
-              calculation={priceCalc}
-              insuranceName={t(selectedInsurance.nameKey, language)}
-              insurancePricePerDay={selectedInsurance.price}
-              totalDays={totalDays}
-            />
+            {listing.hourly_rental_enabled && (
+              <View style={styles.rentalTypeRow}>
+                {(['daily', 'hourly'] as const).map(rt => (
+                  <TouchableOpacity
+                    key={rt}
+                    style={[styles.typeChip, rentalType === rt && styles.typeChipActive]}
+                    onPress={() => setRentalType(rt)}
+                    accessibilityLabel={`Select ${rt} rental`}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: rentalType === rt }}
+                  >
+                    <Text style={[styles.typeChipText, rentalType === rt && styles.typeChipTextActive]}>
+                      {rt === 'daily' ? '📅 Daily' : '⏱ Hourly'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {rentalType === 'hourly' && (
+              <View style={styles.hourlySection}>
+                <Text style={styles.formTitle}>Start time</Text>
+                <ScrollView
+                  horizontal showsHorizontalScrollIndicator={false}
+                  style={{ marginBottom: Spacing.md }}
+                >
+                  {TIME_SLOTS.slice(0, 20).map(slot => (
+                    <TouchableOpacity
+                      key={slot}
+                      style={[styles.slotBtn, startHour === slot && styles.slotBtnActive]}
+                      onPress={() => setStartHour(slot)}
+                      accessibilityLabel={`Start at ${slot}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: startHour === slot }}
+                    >
+                      <Text style={[styles.slotText, startHour === slot && styles.slotTextActive]}>{slot}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <Text style={styles.formTitle}>Duration</Text>
+                <View style={styles.hoursRow}>
+                  {[2, 3, 4, 6, 8, 12].map(h => (
+                    <TouchableOpacity
+                      key={h}
+                      style={[styles.slotBtn, totalHours === h && styles.slotBtnActive]}
+                      onPress={() => setTotalHours(h)}
+                      accessibilityLabel={`${h} hours`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: totalHours === h }}
+                    >
+                      <Text style={[styles.slotText, totalHours === h && styles.slotTextActive]}>{h}h</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {listing.price_per_hour != null && (
+                  <Text style={styles.hourlyTotal}>
+                    Total: €{listing.price_per_hour * totalHours}
+                  </Text>
+                )}
+              </View>
+            )}
+
+            {rentalType === 'daily' && (
+              <PriceBreakdown
+                calculation={priceCalc}
+                insuranceName={t(selectedInsurance.nameKey, language)}
+                insurancePricePerDay={selectedInsurance.price}
+                totalDays={totalDays}
+              />
+            )}
 
             <InsuranceSelector
               selected={insurancePackage}
@@ -270,6 +349,25 @@ export default function BookingFlowScreen() {
               placeholder={language === 'es' ? 'Peticiones especiales...' : language === 'hu' ? 'Különleges kérések...' : 'Special requests...'}
               multiline numberOfLines={3}
             />
+
+            <View style={styles.flightSection}>
+              <Text style={styles.flightLabel}>✈️ Airport pickup? (optional)</Text>
+              <TextInput
+                style={styles.flightInput}
+                value={flightNumber}
+                onChangeText={setFlightNumber}
+                placeholder="Flight number (e.g. FR1234)"
+                placeholderTextColor={Colors.textSecondary}
+                autoCapitalize="characters"
+                maxLength={10}
+                accessibilityLabel="Flight number input"
+              />
+              {flightNumber.length > 0 && (
+                <Text style={styles.flightHint}>
+                  We'll track your flight and adjust pickup if delayed.
+                </Text>
+              )}
+            </View>
 
             <Text style={styles.formTitle}>
               {language === 'es' ? 'Hora de recogida' : language === 'hu' ? 'Átvétel időpontja' : 'Pickup time'}
@@ -522,4 +620,42 @@ const styles = StyleSheet.create({
   payBtnDisabled: { opacity: 0.5, shadowOpacity: 0 },
   payBtnText: { color: Colors.textInverse, fontWeight: '800', fontSize: 17 },
   secureNote: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginTop: Spacing.sm },
+
+  // Hourly rental styles
+  rentalTypeRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base },
+  typeChip: {
+    flex: 1, padding: Spacing.md, borderRadius: Radius.sm,
+    borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center', minHeight: 44, justifyContent: 'center',
+  },
+  typeChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  typeChipText: { color: Colors.textSecondary, fontSize: 14, fontWeight: '600' },
+  typeChipTextActive: { color: Colors.background },
+  hourlySection: { marginBottom: Spacing.base },
+  slotBtn: {
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: Radius.sm,
+    borderWidth: 1, borderColor: Colors.border,
+    marginRight: Spacing.sm, minHeight: 44, justifyContent: 'center',
+  },
+  slotBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  slotText: { color: Colors.textSecondary, fontSize: 13, fontWeight: '600' },
+  slotTextActive: { color: Colors.background },
+  hoursRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  hourlyTotal: { color: Colors.primary, fontSize: 18, fontWeight: '700', marginTop: Spacing.md },
+
+  // Flight tracking
+  flightSection: { marginBottom: 16 },
+  flightLabel: { color: Colors.textSecondary, fontSize: 14, marginBottom: 8 },
+  flightInput: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    color: Colors.text,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    minHeight: 44,
+  },
+  flightHint: { color: Colors.primary, fontSize: 12, marginTop: 4 },
 })

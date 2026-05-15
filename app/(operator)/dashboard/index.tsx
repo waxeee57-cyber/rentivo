@@ -16,6 +16,8 @@ import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
 import { formatEUR, formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { t } from '@/constants/i18n'
+import { getTierProgress } from '@/lib/operator-tier'
+import { TierBadge } from '@/components/operator/TierBadge'
 
 const MOCK_REVENUE_BARS = [
   { label: 'Fri', revenue: 85 },
@@ -279,6 +281,36 @@ export default function DashboardScreen() {
           <QuickStats bookings={bookings} totalVehicles={fleet.length} />
         )}
 
+        {/* Operator tier card */}
+        {(() => {
+          const opData = Config.useMock ? MOCK_OPERATOR : operator
+          if (opData == null) return null
+          const progress = getTierProgress(opData)
+          return (
+            <View style={tierStyles.card}>
+              <View style={tierStyles.row}>
+                <TierBadge tier={progress.current.tier} size="md" />
+                {progress.next != null && (
+                  <Text style={tierStyles.nextLabel}>{`→ ${progress.next.label} next`}</Text>
+                )}
+              </View>
+              {progress.next != null && (
+                <View style={tierStyles.progressBar}>
+                  <View
+                    style={[
+                      tierStyles.progressFill,
+                      { width: `${Math.round(progress.bookingsProgress * 100)}%` },
+                    ]}
+                  />
+                </View>
+              )}
+              <Text style={tierStyles.hint}>
+                {`${opData.total_bookings ?? 0} bookings · ${opData.avg_rating ?? opData.rating ?? 0} ★`}
+              </Text>
+            </View>
+          )
+        })()}
+
         {/* 7-day revenue sparkline */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('revenueLast7', language)}</Text>
@@ -452,4 +484,20 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
   },
   emptyActionText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
+})
+
+const tierStyles = StyleSheet.create({
+  card: {
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: Spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  nextLabel: { color: Colors.textSecondary, fontSize: 13 },
+  progressBar: { height: 4, backgroundColor: Colors.border, borderRadius: 2, marginBottom: 6 },
+  progressFill: { height: 4, backgroundColor: Colors.primary, borderRadius: 2 },
+  hint: { color: Colors.textSecondary, fontSize: 12 },
 })

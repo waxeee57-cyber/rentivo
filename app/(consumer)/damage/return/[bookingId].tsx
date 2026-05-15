@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import {
-  View, Text, ScrollView, Switch, TextInput, StyleSheet, TouchableOpacity,
+  View, Text, ScrollView, Switch, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -12,9 +12,10 @@ import { DamagePhotoGrid } from '@/components/damage/DamagePhotoGrid'
 import { SignatureCanvas } from '@/components/booking/SignatureCanvas'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { Card } from '@/components/ui/Card'
-import { createDamageReport } from '@/lib/api/damage'
+import { createDamageReport, fetchDamageReport } from '@/lib/api/damage'
 import { uploadDamagePhoto } from '@/lib/storage'
 import { useToastStore } from '@/lib/store/useToastStore'
+import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
 import type { PhotoSlot } from '@/components/damage/DamagePhotoGrid'
 import type { FuelLevel } from '@/types'
@@ -43,10 +44,26 @@ export default function ReturnDamageScreen() {
   const [consumerSig, setConsumerSig] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [aiAnalyzing, setAiAnalyzing] = useState(false)
+  const [aiResult, setAiResult] = useState<{ has_damage: boolean; analysis: string } | null>(null)
   const { showToast } = useToastStore()
 
   const handlePhoto = (slot: PhotoSlot, uri: string) => {
     setPhotos(prev => ({ ...prev, [slot]: uri }))
+  }
+
+  const runAIDamageCheck = async (beforeUrl: string, afterUrl: string) => {
+    setAiAnalyzing(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('damage-detector', {
+        body: { before_image_url: beforeUrl, after_image_url: afterUrl },
+      })
+      if (!error && data) {
+        setAiResult({ has_damage: data.has_damage as boolean, analysis: data.analysis as string })
+      }
+    } finally {
+      setAiAnalyzing(false)
+    }
   }
 
   const handleSubmitPress = () => {
@@ -105,6 +122,14 @@ export default function ReturnDamageScreen() {
         signed_at: consumerSig ? new Date().toISOString() : null,
       })
 
+      // Run AI damage comparison if both before and after front photos are available
+      const pickupReport = await fetchDamageReport(bkId, 'pickup')
+      const beforeUrl = pickupReport?.photo_front ?? null
+      const afterUrl = uploadedPhotos.front ?? null
+      if (beforeUrl && afterUrl) {
+        void runAIDamageCheck(beforeUrl, afterUrl)
+      }
+
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       showToast({ message: 'Return inspection complete! ✓', type: 'success' })
       router.back()
@@ -124,6 +149,27 @@ export default function ReturnDamageScreen() {
 
         <Text style={styles.sectionTitle}>Photos (6 required)</Text>
         <DamagePhotoGrid photos={photos} onPhoto={handlePhoto} />
+
+        {aiAnalyzing && (
+          <View style={styles.aiLoadingContainer}>
+            <ActivityIndicator color={Colors.primary} />
+            <Text style={styles.aiLoadingText}>AI analyzing photos...</Text>
+          </View>
+        )}
+        {aiResult && (
+          <View style={[
+            styles.aiResultContainer,
+            { backgroundColor: aiResult.has_damage ? Colors.errorSurface : Colors.successSurface },
+          ]}>
+            <Text style={[
+              styles.aiResultTitle,
+              { color: aiResult.has_damage ? Colors.error : Colors.success },
+            ]}>
+              {aiResult.has_damage ? 'Damage Detected' : 'No New Damage'}
+            </Text>
+            <Text style={styles.aiResultText}>{aiResult.analysis}</Text>
+          </View>
+        )}
 
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>Mileage & Fuel</Text>
@@ -252,4 +298,9 @@ const styles = StyleSheet.create({
   },
   sigSubtitle: { fontSize: 13, color: Colors.textSecondary, marginBottom: Spacing.md },
   sigConfirm: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', lineHeight: 18 },
+  aiLoadingContainer: { padding: Spacing.base, alignItems: 'center' as const },
+  aiLoadingText: { color: Colors.textSecondary, marginTop: Spacing.sm, fontSize: 14 },
+  aiResultContainer: { borderRadius: Radius.lg, padding: Spacing.base, marginHorizontal: Spacing.base, marginBottom: Spacing.base },
+  aiResultTitle: { fontSize: 16, fontWeight: '700' as const, marginBottom: Spacing.xs },
+  aiResultText: { color: Colors.text, fontSize: 14, lineHeight: 20 },
 })

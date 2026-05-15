@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 import { Avatar } from '@/components/ui/Avatar'
 import { StarRating } from '@/components/ui/StarRating'
+import { TierBadge } from '@/components/operator/TierBadge'
+import { calculateTier } from '@/lib/operator-tier'
 import type { Operator } from '@/types'
 
 interface OperatorCardProps {
@@ -19,6 +21,7 @@ export function OperatorCard({ operator, onViewListings }: OperatorCardProps) {
           <View style={styles.nameRow}>
             <Text style={styles.name}>{operator.name}</Text>
             {operator.verified && <Text style={styles.verified}> ✓</Text>}
+            <TierBadge tier={calculateTier(operator)} size="md" />
           </View>
           <Text style={styles.city}>{operator.city}, {operator.country}</Text>
           <StarRating rating={operator.rating} reviewCount={operator.review_count} size={12} />

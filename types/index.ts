@@ -71,7 +71,15 @@ export interface Operator {
   active: boolean
   stripe_account_id: string | null
   stripe_onboarded: boolean
+  tier?: 'new' | 'verified' | 'top' | 'elite'
+  total_bookings?: number
+  response_rate?: number
+  avg_rating?: number
   created_at: string
+  delivery_enabled?: boolean
+  delivery_radius_km?: number
+  delivery_fee_eur?: number
+  delivery_zones?: string[]
 }
 
 export interface Listing {
@@ -112,6 +120,16 @@ export interface Listing {
   host?: Host
   instant_book?: boolean
   str_registration_number?: string | null
+  hourly_rental_enabled?: boolean
+  price_per_hour?: number | null
+  min_rental_hours?: number | null
+  pricing_rules?: {
+    weekend_multiplier?: number
+    peak_months?: number[]
+    peak_multiplier?: number
+    weekly_discount?: number
+    monthly_discount?: number
+  }
 }
 
 export interface RentivoUser {
@@ -170,6 +188,27 @@ export interface Booking {
   host_id?: string | null
   owner_type?: OwnerType
   host?: Host
+  delivery_requested?: boolean
+  delivery_address?: string | null
+  delivery_fee?: number
+  rental_type?: 'daily' | 'hourly'
+  start_time?: string | null
+  end_time?: string | null
+  total_hours?: number | null
+  // Digital contract + e-signature (eIDAS SES)
+  contract_html?: string | null
+  guest_signature?: string | null
+  operator_signature_data?: string | null
+  guest_signed_at?: string | null
+  operator_signed_at?: string | null
+  contract_status?: string | null
+  // Flight tracking
+  flight_number?: string | null
+  flight_arrival_time?: string | null
+  flight_status?: string | null
+  // Promo code
+  promo_code?: string | null
+  promo_discount?: number
 }
 
 export interface DamageReport {
@@ -328,3 +367,37 @@ export const INSURANCE_PACKAGES = [
 ] as const
 
 export type InsuranceId = typeof INSURANCE_PACKAGES[number]['id']
+
+export interface PromoCode {
+  id: string
+  code: string
+  discount_type: 'percent' | 'fixed'
+  discount_value: number
+  max_uses: number
+  current_uses: number
+  valid_from: string
+  valid_until: string | null
+  min_booking_value: number
+  created_at: string
+}
+
+export interface Referral {
+  id: string
+  referrer_user_id: string
+  referred_user_id: string | null
+  referral_code: string
+  status: string
+  reward_points: number
+  created_at: string
+}
+
+export interface OperatorStaffMember {
+  id: string
+  operator_id: string
+  user_id: string | null
+  email: string
+  role: 'admin' | 'staff' | 'viewer'
+  status: 'invited' | 'active' | 'suspended'
+  invited_at: string
+  joined_at: string | null
+}

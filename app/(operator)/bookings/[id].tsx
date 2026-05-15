@@ -188,6 +188,24 @@ export default function OperatorBookingDetailScreen() {
           <Text style={styles.payoutNote}>Transfer: 2 business days after pickup</Text>
         </Card>
 
+        {/* Flight info */}
+        {booking.flight_number != null && (
+          <View style={flightStyles.flightCard}>
+            <Text style={flightStyles.flightTitle}>✈️ Flight Info</Text>
+            <Text style={flightStyles.flightNum}>{booking.flight_number}</Text>
+            {booking.flight_arrival_time != null && (
+              <Text style={flightStyles.flightArrival}>
+                Arrival: {new Date(booking.flight_arrival_time).toLocaleTimeString()}
+              </Text>
+            )}
+            <View style={[flightStyles.statusBadge, { backgroundColor: booking.flight_status === 'on_time' ? Colors.successSurface : Colors.warningSurface }]}>
+              <Text style={[flightStyles.statusText, { color: booking.flight_status === 'on_time' ? Colors.success : Colors.warning }]}>
+                {booking.flight_status === 'on_time' ? '✅ On Time' : booking.flight_status === 'delayed' ? '⚠️ Delayed' : '⏳ Tracking...'}
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Message Guest */}
         <TouchableOpacity
           style={styles.messageBtn}
@@ -288,4 +306,42 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   messageBtnText: { fontSize: 15, color: Colors.primaryDark, fontWeight: '600' },
+})
+
+const flightStyles = StyleSheet.create({
+  flightCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  flightTitle: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  flightNum: {
+    color: Colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  flightArrival: {
+    color: Colors.textSecondary,
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
 })

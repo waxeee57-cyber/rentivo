@@ -47,6 +47,9 @@ export default function EditVehicleScreen() {
   const [showDelete, setShowDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [initialized, setInitialized] = useState(false)
+  const [hourlyEnabled, setHourlyEnabled] = useState(false)
+  const [pricePerHour, setPricePerHour] = useState('')
+  const [minHours, setMinHours] = useState('2')
 
   useEffect(() => {
     if (listing && !initialized) {
@@ -66,6 +69,9 @@ export default function EditVehicleScreen() {
         slots[0] = listing.cover_image_url
         setPhotos(slots)
       }
+      setHourlyEnabled(listing.hourly_rental_enabled ?? false)
+      setPricePerHour(String(listing.price_per_hour ?? ''))
+      setMinHours(String(listing.min_rental_hours ?? 2))
       setInitialized(true)
     }
   }, [listing, initialized])
@@ -106,6 +112,9 @@ export default function EditVehicleScreen() {
           cancellation_policy: policy,
           cover_image_url: validPhotos[0] ?? undefined,
           images: validPhotos.length > 0 ? validPhotos : undefined,
+          hourly_rental_enabled: hourlyEnabled,
+          price_per_hour: hourlyEnabled ? (parseFloat(pricePerHour) || null) : null,
+          min_rental_hours: hourlyEnabled ? (parseInt(minHours, 10) || 2) : null,
         },
         operatorId,
       )
@@ -298,6 +307,62 @@ export default function EditVehicleScreen() {
           </TouchableOpacity>
         ))}
 
+        {/* Hourly Rental */}
+        <Text style={styles.sectionTitle}>Hourly Rental</Text>
+        <Card style={styles.card}>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleLeft}>
+              <Text style={styles.toggleTitle}>Enable hourly booking</Text>
+              <Text style={styles.toggleSub}>
+                {hourlyEnabled ? 'Travellers can book by the hour' : 'Daily booking only'}
+              </Text>
+            </View>
+            <Switch
+              value={hourlyEnabled}
+              onValueChange={v => {
+                setHourlyEnabled(v)
+                void Haptics.impactAsync(v ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light)
+              }}
+              trackColor={{ false: Colors.border, true: Colors.primary }}
+              thumbColor={Colors.surface}
+              accessibilityLabel={`Hourly rental: ${hourlyEnabled ? 'enabled' : 'disabled'}`}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: hourlyEnabled }}
+            />
+          </View>
+          {hourlyEnabled && (
+            <View style={styles.hourlyFields}>
+              <Text style={styles.hourlyFieldLabel}>Price per hour (€)</Text>
+              <TextInput
+                style={styles.input}
+                value={pricePerHour}
+                onChangeText={setPricePerHour}
+                keyboardType="decimal-pad"
+                placeholder="25.00"
+                placeholderTextColor={Colors.textTertiary}
+                accessibilityLabel="Price per hour in euros"
+              />
+              <Text style={[styles.hourlyFieldLabel, { marginTop: Spacing.md }]}>Minimum hours</Text>
+              <View style={styles.minHoursRow}>
+                {[1, 2, 3, 4, 6, 8].map(h => (
+                  <TouchableOpacity
+                    key={h}
+                    style={[styles.dayChip, minHours === String(h) && styles.dayChipActive]}
+                    onPress={() => setMinHours(String(h))}
+                    accessibilityLabel={`Minimum ${h} hour${h > 1 ? 's' : ''}`}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: minHours === String(h) }}
+                  >
+                    <Text style={[styles.dayChipText, minHours === String(h) && styles.dayChipTextActive]}>
+                      {h}h
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+        </Card>
+
         <Button
           title="Save changes"
           onPress={handleSave}
@@ -313,6 +378,15 @@ export default function EditVehicleScreen() {
           accessibilityRole="button"
         >
           <Text style={styles.icalBtnText}>📅 iCal Sync</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.pricingBtn}
+          onPress={() => router.push(`/(operator)/fleet/pricing/${id}` as Parameters<typeof router.push>[0])}
+          accessibilityLabel="Edit pricing rules"
+          accessibilityRole="button"
+        >
+          <Text style={styles.pricingBtnText}>📊 Pricing Rules</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -419,10 +493,20 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   icalBtnText: { fontSize: 15, fontWeight: '700', color: Colors.primary },
+  pricingBtn: {
+    marginTop: Spacing.sm, padding: Spacing.md, alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.borderGold,
+    borderRadius: Radius.lg, backgroundColor: Colors.surface,
+    minHeight: 44,
+  },
+  pricingBtnText: { color: Colors.primary, fontWeight: '600', fontSize: 14 },
   deleteBtn: {
     marginTop: Spacing.base, padding: Spacing.md, alignItems: 'center',
     borderWidth: 1.5, borderColor: Colors.error + '55',
     borderRadius: Radius.lg, backgroundColor: Colors.errorSurface,
   },
   deleteBtnText: { fontSize: 15, fontWeight: '700', color: Colors.error },
+  hourlyFields: { marginTop: Spacing.base, gap: Spacing.xs },
+  hourlyFieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: Spacing.xs },
+  minHoursRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
 })

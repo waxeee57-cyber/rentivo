@@ -137,6 +137,7 @@ export default function ConsumerLayout() {
       <Tabs.Screen name="profile/delete-account" options={{ href: null }} />
       <Tabs.Screen name="profile/privacy-settings" options={{ href: null }} />
       <Tabs.Screen name="profile/notifications" options={{ href: null }} />
+      <Tabs.Screen name="booking/sign/[bookingId]" options={{ href: null }} />
     </Tabs>
   )
 }

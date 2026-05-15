@@ -1,0 +1,10 @@
+ALTER TABLE public.rentivo_operators
+ADD COLUMN IF NOT EXISTS delivery_enabled BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS delivery_radius_km INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS delivery_fee_eur NUMERIC(10,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS delivery_zones TEXT[] DEFAULT ARRAY[]::TEXT[];
+
+ALTER TABLE public.rentivo_bookings
+ADD COLUMN IF NOT EXISTS delivery_requested BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS delivery_address TEXT,
+ADD COLUMN IF NOT EXISTS delivery_fee NUMERIC(10,2) DEFAULT 0;
