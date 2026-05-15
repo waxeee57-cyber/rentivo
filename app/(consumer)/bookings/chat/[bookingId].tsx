@@ -134,7 +134,6 @@ export default function ConsumerChatScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
 
     if (Config.useMock) {
-      sendChatNotification('operator', booking?.guest_name ?? 'Guest', text, true)
       setSending(false)
 
       // Simulate operator typing + reply after 2-3 seconds
@@ -188,7 +187,16 @@ export default function ConsumerChatScreen() {
           unread_operator: (conversation?.unread_operator ?? 0) + 1,
         })
         .eq('id', convId)
-      sendChatNotification('operator', booking?.guest_name ?? 'Guest', text, false)
+      // Notify operator about new consumer message
+      // booking.operator.auth_id is the operator's Supabase auth id
+      if (booking?.operator?.auth_id) {
+        void sendChatNotification({
+          recipientUserId: booking.operator.auth_id,
+          senderName: booking.guest_name || 'Guest',
+          message: text,
+          bookingId: id,
+        })
+      }
     } finally {
       setSending(false)
     }

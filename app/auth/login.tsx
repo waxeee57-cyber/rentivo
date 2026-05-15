@@ -2,14 +2,12 @@ import React, { useState } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing } from '@/constants/colors'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
-
-// Module-level store for OTP phone — shared with verify.tsx in the same auth session
-export let pendingOtpPhone = ''
 
 export default function LoginScreen() {
   const [phone, setPhone] = useState('')
@@ -25,7 +23,7 @@ export default function LoginScreen() {
         phone: normalizedPhone,
       })
       if (error) throw error
-      pendingOtpPhone = normalizedPhone
+      await AsyncStorage.setItem('pending_otp_phone', normalizedPhone)
       router.push('/auth/verify')
     } catch (e) {
       Alert.alert('Error', String(e))

@@ -1,20 +1,27 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity, Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
-import { pendingOtpPhone } from '@/app/auth/login'
 
 export default function VerifyScreen() {
+  const [phone, setPhone] = useState('')
   const [code, setCode] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const inputs = useRef<(TextInput | null)[]>([])
   const { role, setSession, setUser } = useAuthStore()
+
+  useEffect(() => {
+    AsyncStorage.getItem('pending_otp_phone').then(saved => {
+      if (saved) setPhone(saved)
+    })
+  }, [])
 
   const handleDigit = (index: number, value: string) => {
     const digit = value.replace(/\D/g, '').slice(-1)
@@ -31,11 +38,12 @@ export default function VerifyScreen() {
     setLoading(true)
     try {
       const { data, error } = await supabase.auth.verifyOtp({
-        phone: pendingOtpPhone,
+        phone,
         token: otp,
         type: 'sms',
       })
       if (error) throw error
+      await AsyncStorage.removeItem('pending_otp_phone')
       setSession(data.session as unknown as Record<string, unknown>)
       if (data.session?.user) {
         setUser(data.session.user as unknown as Parameters<typeof setUser>[0])

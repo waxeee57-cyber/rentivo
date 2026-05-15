@@ -293,6 +293,15 @@ export default function EditVehicleScreen() {
         />
 
         <TouchableOpacity
+          style={styles.icalBtn}
+          onPress={() => router.push(`/(operator)/fleet/ical-sync/${id}` as Parameters<typeof router.push>[0])}
+          accessibilityLabel="iCal sync"
+          accessibilityRole="button"
+        >
+          <Text style={styles.icalBtnText}>📅 iCal Sync</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={styles.deleteBtn}
           onPress={() => setShowDelete(true)}
           accessibilityLabel="Delete this vehicle"
@@ -389,6 +398,13 @@ const styles = StyleSheet.create({
   policyText: { flex: 1 },
   policyLabel: { fontSize: 15, fontWeight: '700', color: Colors.text },
   policyDesc: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
+  icalBtn: {
+    marginTop: Spacing.sm, padding: Spacing.md, alignItems: 'center',
+    borderWidth: 1.5, borderColor: Colors.primary,
+    borderRadius: Radius.lg, backgroundColor: Colors.primarySurface,
+    minHeight: 48,
+  },
+  icalBtnText: { fontSize: 15, fontWeight: '700', color: Colors.primary },
   deleteBtn: {
     marginTop: Spacing.base, padding: Spacing.md, alignItems: 'center',
     borderWidth: 1.5, borderColor: Colors.error + '55',

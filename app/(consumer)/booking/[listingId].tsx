@@ -31,7 +31,15 @@ const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
 })
 
 export default function BookingFlowScreen() {
-  const { listingId } = useLocalSearchParams<{ listingId: string }>()
+  const {
+    listingId,
+    startDate: startDateParam,
+    endDate: endDateParam,
+  } = useLocalSearchParams<{
+    listingId: string
+    startDate?: string
+    endDate?: string
+  }>()
   const { listing, loading } = useListing(listingId ?? '')
   const { language } = useAuthStore()
   const [step, setStep] = useState(1)
@@ -44,8 +52,12 @@ export default function BookingFlowScreen() {
   const [submitted, setSubmitted] = useState(false)
   const { showToast } = useToastStore()
 
-  const startDate = addDays(new Date(), 1)
-  const endDate = addDays(new Date(), 4)
+  const startDate = startDateParam
+    ? new Date(startDateParam)
+    : (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d })()
+  const endDate = endDateParam
+    ? new Date(endDateParam)
+    : (() => { const d = new Date(); d.setDate(d.getDate() + 4); return d })()
   const totalDays = differenceInDays(endDate, startDate)
 
   if (loading || !listing) return <SafeAreaView style={styles.container}><SkeletonCard /></SafeAreaView>

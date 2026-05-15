@@ -111,6 +111,7 @@ export interface Listing {
   host_id?: string | null
   host?: Host
   instant_book?: boolean
+  str_registration_number?: string | null
 }
 
 export interface RentivoUser {

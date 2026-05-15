@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -6,13 +6,17 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { ListingCard } from '@/components/listing/ListingCard'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { useWishlistStore } from '@/lib/store/useWishlistStore'
+import { useWishlistStore, syncWishlistFromSupabase } from '@/lib/store/useWishlistStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
 
 export default function WishlistScreen() {
   const { items } = useWishlistStore()
-  const { language } = useAuthStore()
+  const { language, user } = useAuthStore()
+
+  useEffect(() => {
+    if (user?.id) void syncWishlistFromSupabase(user.id)
+  }, [user?.id])
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>

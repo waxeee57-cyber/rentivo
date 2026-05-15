@@ -27,10 +27,11 @@ import type { RentalCategory } from '@/types'
 const FEATURE_OPTIONS = ['AC', 'GPS', 'Bluetooth', 'USB', 'Leather seats', 'Sunroof', 'Convertible', '4WD', 'Child seat']
 
 export default function NewListingScreen() {
-  const { operator } = useAuthStore()
+  const { operator, language } = useAuthStore()
   const { showPhotoOptions } = useCamera()
   const { showToast } = useToastStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? '')
+  const isHu = language === 'hu'
 
   const [step, setStep] = useState(1)
   const [category, setCategory] = useState<RentalCategory>('car')
@@ -44,6 +45,7 @@ export default function NewListingScreen() {
   const [features, setFeatures] = useState<string[]>([])
   const [photos, setPhotos] = useState<(string | null)[]>(Array(6).fill(null))
   const [saving, setSaving] = useState(false)
+  const [strNumber, setStrNumber] = useState('')
   const [published, setPublished] = useState(false)
 
   const toggleFeature = (f: string) => {
@@ -104,6 +106,7 @@ export default function NewListingScreen() {
         pickup_address: null,
         latitude: null,
         longitude: null,
+        str_registration_number: strNumber.trim() || null,
       })
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       showToast({ message: 'Your vehicle is now live! 🎉', type: 'success' })
@@ -233,6 +236,25 @@ export default function NewListingScreen() {
           <>
             <Text style={styles.stepTitle}>Details & Features</Text>
             <Input label="Description" value={description} onChangeText={setDescription} placeholder="Tell renters about this vehicle..." multiline numberOfLines={4} />
+            {category === 'villa' && (
+              <>
+                <Text style={styles.fieldLabel}>
+                  {isHu ? 'STR regisztrációs szám' : 'STR Registration Number'}
+                </Text>
+                <Text style={styles.strHint}>
+                  {isHu
+                    ? 'EU STR rendelet 2024/1028 — kötelező rövid távú bérbeadásnál'
+                    : 'EU STR Regulation 2024/1028 — required for short-term rentals'}
+                </Text>
+                <Input
+                  label=""
+                  value={strNumber}
+                  onChangeText={setStrNumber}
+                  placeholder="HU-12345-678"
+                  accessibilityLabel={isHu ? 'STR regisztrációs szám' : 'STR registration number'}
+                />
+              </>
+            )}
             <Text style={styles.fieldLabel}>Features</Text>
             <View style={styles.featureGrid}>
               {FEATURE_OPTIONS.map(f => (
@@ -260,6 +282,7 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 12, fontWeight: '700', color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.sm },
   categories: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: Spacing.base },
   featureGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  strHint: { fontSize: 12, color: Colors.textSecondary, marginBottom: Spacing.sm, lineHeight: 18 },
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
   photoSlot: {
     width: '31%',

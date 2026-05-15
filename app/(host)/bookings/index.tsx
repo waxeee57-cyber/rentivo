@@ -13,6 +13,7 @@ import { Config } from '@/constants/config'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useHostBookings } from '@/lib/hooks/useBookings'
 import { formatDateRange } from '@/lib/utils/formatDate'
+import { updateBookingStatus } from '@/lib/api/bookings'
 import type { Booking, BookingStatus } from '@/types'
 
 type Tab = 'pending' | 'confirmed' | 'past'
@@ -113,19 +114,33 @@ export default function HostBookingsScreen() {
     return b.status === 'completed' || b.status === 'cancelled'
   })
 
-  const handleConfirm = (bookingId: string) => {
-    setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'confirmed' as BookingStatus } : b))
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    showToast({ message: 'Booking confirmed ✓', type: 'success' })
+  const handleConfirm = async (bookingId: string) => {
+    try {
+      if (!Config.useMock) {
+        await updateBookingStatus(bookingId, 'confirmed')
+      }
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'confirmed' as BookingStatus } : b))
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      showToast({ message: 'Booking confirmed ✓', type: 'success' })
+    } catch {
+      showToast({ message: 'Failed to confirm booking. Please try again.', type: 'error' })
+    }
   }
 
-  const handleDecline = () => {
+  const handleDecline = async () => {
     if (!decliningId) return
     const id = decliningId
     setDecliningId(null)
-    setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' as BookingStatus } : b))
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-    showToast({ message: 'Booking declined.', type: 'info' })
+    try {
+      if (!Config.useMock) {
+        await updateBookingStatus(id, 'cancelled')
+      }
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' as BookingStatus } : b))
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      showToast({ message: 'Booking declined.', type: 'info' })
+    } catch {
+      showToast({ message: 'Failed to decline booking. Please try again.', type: 'error' })
+    }
   }
 
   if (loading && !Config.useMock) {

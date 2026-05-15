@@ -26,6 +26,7 @@ import { getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/ut
 import { Config } from '@/constants/config'
 import { MOCK_REVIEWS, MOCK_LISTINGS } from '@/lib/mockData'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useWishlistStore, toggleWishlistItem } from '@/lib/store/useWishlistStore'
 import { t } from '@/constants/i18n'
 import type { CancellationPolicy } from '@/types'
 
@@ -40,7 +41,7 @@ export default function ListingDetailScreen() {
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showFullDesc, setShowFullDesc] = useState(false)
-  const [favorited, setFavorited] = useState(false)
+  const isWishlisted = useWishlistStore(s => s.isWishlisted)
   const insets = useSafeAreaInsets()
 
   if (loading) return <View style={styles.container}><SkeletonCard /></View>
@@ -167,16 +168,16 @@ export default function ListingDetailScreen() {
             <TouchableOpacity
               style={styles.actionBtn}
               onPress={() => {
-                setFavorited(v => !v)
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+                if (user?.id) void toggleWishlistItem(listing, user.id)
               }}
-              accessibilityLabel={favorited ? 'Remove from favorites' : 'Add to favorites'}
+              accessibilityLabel={isWishlisted(listing.id) ? 'Remove from favorites' : 'Add to favorites'}
               accessibilityRole="button"
             >
               <Ionicons
-                name={favorited ? 'heart' : 'heart-outline'}
+                name={isWishlisted(listing.id) ? 'heart' : 'heart-outline'}
                 size={18}
-                color={favorited ? Colors.error : Colors.text}
+                color={isWishlisted(listing.id) ? Colors.error : Colors.text}
               />
             </TouchableOpacity>
             <TouchableOpacity
@@ -519,7 +520,14 @@ export default function ListingDetailScreen() {
           onPress={() => {
             if (startDate && endDate) {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-              router.push(`/(consumer)/booking/${listing.id}`)
+              router.push({
+                pathname: '/(consumer)/booking/[listingId]',
+                params: {
+                  listingId: listing.id,
+                  startDate: startDate.toISOString(),
+                  endDate: endDate.toISOString(),
+                },
+              })
             } else {
               setShowDatePicker(true)
             }

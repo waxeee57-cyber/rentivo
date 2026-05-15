@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment } from 'react'
+import { useEffect, useState, Fragment, useCallback } from 'react'
 import { Stack, router, usePathname } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import {
@@ -122,8 +122,9 @@ export default function RootLayout() {
     if (!session) return
     const userId = (session as Record<string, unknown> & { user?: { id?: string } }).user?.id
     if (!userId) return
-    // Prevent infinite loop: skip if already on the consent screen
-    if (pathname === '/auth/consent') return
+    // Prevent infinite loop: skip on all auth/ and onboarding screens
+    if (pathname.startsWith('/auth/')) return
+    if (pathname.startsWith('/onboarding')) return
 
     void supabase
       .from('rentivo_consent')
@@ -168,16 +169,18 @@ export default function RootLayout() {
     }
   }, [unreadCount, setUnreadCount])
 
-  const handleGdprAccept = async () => {
+  const handleGdprAccept = useCallback(async () => {
     await AsyncStorage.setItem('gdpr_accepted', 'true')
     setGdprAccepted(true)
-  }
+  }, [])
 
-  const handleGdprManage = async () => {
+  const handleGdprManage = useCallback(async () => {
     await AsyncStorage.setItem('gdpr_accepted', 'true')
     setGdprAccepted(true)
-    router.push('/(consumer)/profile/privacy-settings')
-  }
+    setTimeout(() => {
+      router.push('/(consumer)/profile/privacy-settings')
+    }, 300)
+  }, [])
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

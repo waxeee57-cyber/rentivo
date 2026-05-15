@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { Listing } from '@/types'
+import { supabase } from '@/lib/supabase'
 
 interface WishlistState {
   items: Listing[]
@@ -31,3 +32,35 @@ export const useWishlistStore = create<WishlistState>()(
     },
   ),
 )
+
+export async function toggleWishlistItem(listing: Listing, userId: string) {
+  const store = useWishlistStore.getState()
+  const isWishlisted = store.isWishlisted(listing.id)
+
+  if (isWishlisted) {
+    store.remove(listing.id)
+    await supabase
+      .from('rentivo_wishlist')
+      .delete()
+      .eq('user_id', userId)
+      .eq('listing_id', listing.id)
+  } else {
+    store.toggle(listing)
+    await supabase
+      .from('rentivo_wishlist')
+      .upsert({ user_id: userId, listing_id: listing.id })
+  }
+}
+
+export async function syncWishlistFromSupabase(userId: string) {
+  const { data } = await supabase
+    .from('rentivo_wishlist')
+    .select('listing_id')
+    .eq('user_id', userId)
+
+  if (data) {
+    useWishlistStore.setState(state => ({
+      items: state.items.filter(item => data.some(d => d.listing_id === item.id)),
+    }))
+  }
+}

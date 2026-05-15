@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import { supabase } from '@/lib/supabase'
+import { Config } from '@/constants/config'
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -150,14 +151,88 @@ export async function scheduleReturnReminder(
   }
 }
 
-export function sendChatNotification(
-  to: 'operator' | 'consumer',
-  senderName: string,
-  preview: string,
-  isMock: boolean,
-): void {
-  const body = preview.length > 80 ? preview.slice(0, 80) + '…' : preview
-  if (isMock) return
+const EXPO_PUSH_API = 'https://exp.host/--/api/v2/push/send'
+
+export async function sendChatNotification(params: {
+  recipientUserId: string
+  senderName: string
+  message: string
+  bookingId: string
+}): Promise<void> {
+  if (Config.useMock) return
+
+  try {
+    const { data: tokenData } = await supabase
+      .from('rentivo_push_tokens')
+      .select('token')
+      .eq('auth_id', params.recipientUserId)
+      .maybeSingle()
+
+    if (!tokenData?.token) return
+
+    await fetch(EXPO_PUSH_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        to: tokenData.token,
+        title: params.senderName,
+        body: params.message.length > 100
+          ? params.message.substring(0, 97) + '...'
+          : params.message,
+        data: {
+          type: 'chat',
+          bookingId: params.bookingId,
+        },
+        sound: 'default',
+        badge: 1,
+      }),
+    })
+  } catch (error) {
+    console.error('Push notification error:', error) // SAFE: error logging
+  }
+}
+
+export async function sendBookingNotification(params: {
+  recipientUserId: string
+  title: string
+  body: string
+  bookingId: string
+  type: 'booking_confirmed' | 'booking_cancelled' | 'pickup_reminder' | 'return_reminder'
+}): Promise<void> {
+  if (Config.useMock) return
+
+  try {
+    const { data: tokenData } = await supabase
+      .from('rentivo_push_tokens')
+      .select('token')
+      .eq('auth_id', params.recipientUserId)
+      .maybeSingle()
+
+    if (!tokenData?.token) return
+
+    await fetch(EXPO_PUSH_API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        to: tokenData.token,
+        title: params.title,
+        body: params.body,
+        data: {
+          type: params.type,
+          bookingId: params.bookingId,
+        },
+        sound: 'default',
+      }),
+    })
+  } catch (error) {
+    console.error('Push notification error:', error) // SAFE: error logging
+  }
 }
 
 export function getNotificationContent(
