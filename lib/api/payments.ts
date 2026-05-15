@@ -26,23 +26,43 @@ export function fromStripeAmount(amountCents: number): number {
   return amountCents / 100
 }
 
-export async function createPaymentIntent(
-  listingId: string,
-  amount: number,
-  currency = 'EUR',
-): Promise<{ clientSecret: string }> {
+export async function createPaymentIntent(params: {
+  bookingId: string
+  amountEur: number
+  listingTitle: string
+  operatorStripeAccountId?: string | null
+  accessToken: string
+}): Promise<{ clientSecret: string; payment_intent_id: string }> {
   if (Config.useMock) {
-    return { clientSecret: 'pi_mock_secret_' + Date.now() }
+    return {
+      clientSecret: 'pi_mock_secret_' + Date.now(),
+      payment_intent_id: 'pi_mock_' + Date.now(),
+    }
   }
 
-  const res = await fetch(`${Config.apiUrl}/payments/intent`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ listingId, amount, currency }),
-  })
+  const res = await fetch(
+    `${Config.supabaseUrl}/functions/v1/create-payment-intent`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${params.accessToken}`,
+        apikey: Config.supabaseAnonKey,
+      },
+      body: JSON.stringify({
+        booking_id: params.bookingId,
+        amount_eur: params.amountEur,
+        listing_title: params.listingTitle,
+        operator_stripe_account_id: params.operatorStripeAccountId ?? null,
+      }),
+    }
+  )
 
-  if (!res.ok) throw new Error('Failed to create payment intent')
-  return res.json() as Promise<{ clientSecret: string }>
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error((err as { error?: string }).error ?? 'Failed to create payment intent')
+  }
+  return res.json() as Promise<{ clientSecret: string; payment_intent_id: string }>
 }
 
 export async function createDepositHold(

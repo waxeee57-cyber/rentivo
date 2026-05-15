@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { differenceInDays, addDays, format } from 'date-fns'
 import * as Haptics from 'expo-haptics'
+import { CardField, useStripe } from '@stripe/stripe-react-native'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -21,6 +22,7 @@ import { Config } from '@/constants/config'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { supabase } from '@/lib/supabase'
 import { createBooking } from '@/lib/api/bookings'
+import { createPaymentIntent } from '@/lib/api/payments'
 import { t } from '@/constants/i18n'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 
@@ -42,12 +44,14 @@ export default function BookingFlowScreen() {
   }>()
   const { listing, loading } = useListing(listingId ?? '')
   const { language } = useAuthStore()
+  const { confirmPayment } = useStripe()
   const [step, setStep] = useState(1)
   const [pickupTime, setPickupTime] = useState('10:00')
   const [guestName, setGuestName] = useState('')
   const [guestPhone, setGuestPhone] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
   const [notes, setNotes] = useState('')
+  const [cardComplete, setCardComplete] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const { showToast } = useToastStore()
@@ -95,6 +99,7 @@ export default function BookingFlowScreen() {
           return
         }
 
+        // Step 1: Create booking (pending — no payment yet)
         const booking = await createBooking({
           listing_id: listing.id,
           operator_id: listing.operator_id,
@@ -127,6 +132,25 @@ export default function BookingFlowScreen() {
           notes: notes.trim() || null,
         })
         bookingId = booking.id
+
+        // Step 2: Create PaymentIntent via Edge Function
+        const { clientSecret } = await createPaymentIntent({
+          bookingId,
+          amountEur: priceCalc.total,
+          listingTitle: listing.title,
+          operatorStripeAccountId: listing.operator?.stripe_account_id ?? null,
+          accessToken: session.access_token,
+        })
+
+        // Step 3: Confirm payment with CardField input
+        const { error: stripeError } = await confirmPayment(clientSecret, {
+          paymentMethodType: 'Card',
+        })
+
+        if (stripeError) {
+          showToast({ message: stripeError.message ?? getError('payment_failed'), type: 'error' })
+          return
+        }
       }
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
@@ -287,6 +311,28 @@ export default function BookingFlowScreen() {
               <Text style={styles.guestRecapContact}>{guestPhone}{guestEmail ? ` · ${guestEmail}` : ''}</Text>
             </View>
 
+            {/* Card input */}
+            {!Config.useMock && (
+              <View style={styles.cardFieldWrapper}>
+                <Text style={styles.cardLabel}>
+                  {language === 'hu' ? 'Bankkártya adatok' : 'Card details'}
+                </Text>
+                <CardField
+                  postalCodeEnabled={false}
+                  onCardChange={(details) => setCardComplete(details.complete)}
+                  style={styles.cardField}
+                  cardStyle={{
+                    backgroundColor: Colors.surface,
+                    textColor: Colors.text,
+                    placeholderColor: Colors.textSecondary,
+                    borderColor: Colors.border,
+                    borderWidth: 1,
+                    borderRadius: 8,
+                  }}
+                />
+              </View>
+            )}
+
             {/* Trust signals */}
             <View style={styles.trustGrid}>
               {[
@@ -306,10 +352,10 @@ export default function BookingFlowScreen() {
             <TouchableOpacity
               style={[
                 styles.payBtn,
-                (submitting || submitted || !guestName.trim()) && styles.payBtnDisabled,
+                (submitting || submitted || !guestName.trim() || (!Config.useMock && !cardComplete)) && styles.payBtnDisabled,
               ]}
               onPress={() => void handlePayment()}
-              disabled={submitting || submitted || !guestName.trim()}
+              disabled={submitting || submitted || !guestName.trim() || (!Config.useMock && !cardComplete)}
               accessibilityLabel={`Pay ${formatEURDecimal(priceCalc.total)}`}
               accessibilityRole="button"
             >
@@ -410,6 +456,10 @@ const styles = StyleSheet.create({
   trustGridItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   trustGridIcon: { fontSize: 14, width: 20, textAlign: 'center' },
   trustGridText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500' },
+
+  cardFieldWrapper: { marginBottom: Spacing.base },
+  cardLabel: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: Spacing.sm },
+  cardField: { height: 50, marginBottom: 4 },
 
   payBtn: {
     backgroundColor: Colors.primary, borderRadius: Radius.pill,
