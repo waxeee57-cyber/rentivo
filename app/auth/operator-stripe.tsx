@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: Radius.full,
     backgroundColor: Colors.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',

@@ -38,10 +38,10 @@ export default function HostLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#E8A44A',
-        tabBarInactiveTintColor: '#6B7A99',
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textTertiary,
         tabBarStyle: {
-          backgroundColor: '#0D1B2E',
+          backgroundColor: Colors.background,
           borderTopWidth: 0,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },

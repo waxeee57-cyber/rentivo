@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   unit: { fontSize: 13, color: Colors.textSecondary },
   total: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
   bookBtn: {
-    height: 48,
+    minHeight: 52,
     borderRadius: Radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
