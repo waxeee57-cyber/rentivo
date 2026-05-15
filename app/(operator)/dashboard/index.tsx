@@ -2,7 +2,7 @@ import React, { useMemo, useEffect, useRef } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { subDays, format } from 'date-fns'
+import { subDays, format, startOfMonth } from 'date-fns'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { QuickStats } from '@/components/operator/QuickStats'
 import { BookingRow } from '@/components/operator/BookingRow'
@@ -14,7 +14,7 @@ import { useFleet } from '@/lib/hooks/useFleet'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
 import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
-import { formatEUR } from '@/lib/utils/formatCurrency'
+import { formatEUR, formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { t } from '@/constants/i18n'
 
 const MOCK_REVENUE_BARS = [
@@ -181,12 +181,58 @@ export default function DashboardScreen() {
   const todayPickups = bookings.filter(b => b.start_date === today && b.status !== 'cancelled')
   const todayReturns = bookings.filter(b => b.end_date === today && b.status === 'active')
 
+  const monthStart = startOfMonth(new Date()).toISOString()
+
+  const monthlyBookings = useMemo(() => {
+    if (Config.useMock) return 14
+    return bookings.filter(b => b.created_at >= monthStart && b.status !== 'cancelled').length
+  }, [bookings, monthStart])
+
+  const monthlyRevenue = useMemo(() => {
+    if (Config.useMock) return 3840
+    return bookings
+      .filter(b => b.created_at >= monthStart && b.status !== 'cancelled')
+      .reduce((sum, b) => sum + b.total_amount, 0)
+  }, [bookings, monthStart])
+
+  const stripeOnboarded = Config.useMock ? true : (operator?.stripe_onboarded ?? false)
+
   if (error) return <ErrorState message={error} />
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {!stripeOnboarded && (
+        <TouchableOpacity
+          style={styles.stripeBanner}
+          onPress={() => router.push('/auth/operator-stripe' as Parameters<typeof router.push>[0])}
+          accessibilityLabel="Set up Stripe payouts"
+          accessibilityRole="button"
+        >
+          <Text style={styles.stripeBannerText}>
+            {language === 'hu'
+              ? '⚡ Állítsd be a kifizetéseket a foglalások fogadásához →'
+              : '⚡ Set up payouts to accept bookings →'}
+          </Text>
+        </TouchableOpacity>
+      )}
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.greeting}>{greeting}, {opName.split(' ')[0]} 👋</Text>
+
+        {/* Monthly stats */}
+        <View style={styles.monthlyStats}>
+          <View style={[styles.monthlyStatCard, styles.monthlyStatPrimary]}>
+            <Text style={styles.monthlyStatValue}>{formatEURDecimal(monthlyRevenue)}</Text>
+            <Text style={styles.monthlyStatLabel}>
+              {language === 'hu' ? 'Havi bevétel' : 'Revenue this month'}
+            </Text>
+          </View>
+          <View style={styles.monthlyStatCard}>
+            <Text style={styles.monthlyStatValueAlt}>{monthlyBookings}</Text>
+            <Text style={styles.monthlyStatLabel}>
+              {language === 'hu' ? 'Foglalás' : 'Bookings'}
+            </Text>
+          </View>
+        </View>
 
         {/* Quick action cards */}
         <View style={styles.quickActions}>
@@ -299,6 +345,57 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
   greeting: { fontSize: 24, fontWeight: '800', color: Colors.text, marginBottom: Spacing.xl },
+
+  // Stripe onboarding banner
+  stripeBanner: {
+    backgroundColor: '#F59E0B',
+    paddingVertical: 12,
+    paddingHorizontal: Spacing.base,
+    alignItems: 'center',
+  },
+  stripeBannerText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#0A1628',
+  },
+
+  // Monthly stats row
+  monthlyStats: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  monthlyStatCard: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.xl,
+    padding: Spacing.base,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  monthlyStatPrimary: {
+    backgroundColor: Colors.primarySubtle,
+    borderColor: Colors.primary,
+    borderWidth: 1.5,
+  },
+  monthlyStatValue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.primary,
+    marginBottom: 4,
+  },
+  monthlyStatValueAlt: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  monthlyStatLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+
   quickActions: {
     flexDirection: 'row',
     gap: Spacing.sm,

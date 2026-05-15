@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import React, { useMemo, useEffect, useRef } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
@@ -9,6 +9,40 @@ import { useHostBookings } from '@/lib/hooks/useBookings'
 import { formatEURDecimal, formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { Config } from '@/constants/config'
+
+function DashboardSkeleton() {
+  const opacity = useRef(new Animated.Value(0.4)).current
+  useEffect(() => {
+    Animated.loop(Animated.sequence([
+      Animated.timing(opacity, { toValue: 0.8, duration: 1000, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0.4, duration: 1000, useNativeDriver: true }),
+    ])).start()
+  }, [opacity])
+  return (
+    <SafeAreaView style={skStyles.container} edges={['top']}>
+      <View style={{ padding: Spacing.base }}>
+        <Animated.View style={[skStyles.title, { opacity }]} />
+        <View style={skStyles.statsGrid}>
+          {[0, 1, 2, 3].map(i => (
+            <Animated.View key={i} style={[skStyles.statCard, { opacity }]} />
+          ))}
+        </View>
+        <Animated.View style={[skStyles.card, { opacity }]} />
+        <Animated.View style={[skStyles.cardShort, { opacity }]} />
+        <Animated.View style={[skStyles.cardShort, { opacity }]} />
+      </View>
+    </SafeAreaView>
+  )
+}
+
+const skStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  title: { height: 30, width: '60%', backgroundColor: Colors.surface, borderRadius: Radius.md, marginBottom: Spacing.xl },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl },
+  statCard: { flex: 1, minWidth: '45%', height: 70, backgroundColor: Colors.surface, borderRadius: Radius.xl },
+  card: { height: 100, backgroundColor: Colors.surface, borderRadius: Radius.xl, marginBottom: Spacing.md },
+  cardShort: { height: 64, backgroundColor: Colors.surface, borderRadius: Radius.xl, marginBottom: Spacing.sm },
+})
 
 export default function HostDashboardScreen() {
   const { host, language } = useAuthStore()
@@ -42,11 +76,7 @@ export default function HostDashboardScreen() {
   const recentBookings = Config.useMock ? MOCK_BOOKINGS.slice(0, 3) : bookings.slice(0, 3)
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <ActivityIndicator color={Colors.primary} style={{ flex: 1 }} />
-      </SafeAreaView>
-    )
+    return <DashboardSkeleton />
   }
 
   return (

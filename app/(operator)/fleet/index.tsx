@@ -97,7 +97,7 @@ const wizardStyles = StyleSheet.create({
 })
 
 export default function FleetScreen() {
-  const { operator } = useAuthStore()
+  const { operator, language } = useAuthStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? null)
   const { fleet, loading, toggleAvailability, refetch } = useFleet(opId)
   const { showToast } = useToastStore()
@@ -215,14 +215,29 @@ export default function FleetScreen() {
             </>
           }
           renderItem={({ item }) => (
-            <FleetCard
-              listing={item}
-              onEdit={() => router.push(`/(operator)/fleet/${item.id}`)}
-              onToggleAvailable={available => {
-                toggleAvailability(item.id, available)
-                showToast({ message: available ? 'Vehicle is now live!' : 'Vehicle paused.', type: 'info' })
-              }}
-            />
+            <View style={styles.fleetCardWrap}>
+              <FleetCard
+                listing={item}
+                onEdit={() => router.push(`/(operator)/fleet/${item.id}`)}
+                onToggleAvailable={available => {
+                  toggleAvailability(item.id, available)
+                  showToast({ message: available ? 'Vehicle is now live!' : 'Vehicle paused.', type: 'info' })
+                }}
+              />
+              <View style={[
+                styles.availBadge,
+                item.available ? styles.availBadgeLive : styles.availBadgePaused,
+              ]}>
+                <Text style={[
+                  styles.availBadgeText,
+                  item.available ? styles.availBadgeTextLive : styles.availBadgeTextPaused,
+                ]}>
+                  {item.available
+                    ? (language === 'hu' ? 'Aktív' : 'Live')
+                    : (language === 'hu' ? 'Szüneteltetve' : 'Paused')}
+                </Text>
+              </View>
+            </View>
           )}
         />
       )}
@@ -241,6 +256,23 @@ export default function FleetScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+
+  // Availability badge overlay on fleet cards
+  fleetCardWrap: { position: 'relative' },
+  availBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+  },
+  availBadgeLive: { backgroundColor: Colors.successSurface, borderWidth: 1, borderColor: Colors.success },
+  availBadgePaused: { backgroundColor: Colors.surfaceWarm, borderWidth: 1, borderColor: Colors.border },
+  availBadgeText: { fontSize: 11, fontWeight: '700' },
+  availBadgeTextLive: { color: Colors.success },
+  availBadgeTextPaused: { color: Colors.textTertiary },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',

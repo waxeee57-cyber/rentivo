@@ -1,5 +1,5 @@
-import React from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native'
+import React, { useEffect, useRef } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -9,6 +9,26 @@ import { Config } from '@/constants/config'
 import { useBooking } from '@/lib/hooks/useBookings'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 
+function BookingDetailSkeleton() {
+  const opacity = useRef(new Animated.Value(0.4)).current
+  useEffect(() => {
+    Animated.loop(Animated.sequence([
+      Animated.timing(opacity, { toValue: 0.8, duration: 1000, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0.4, duration: 1000, useNativeDriver: true }),
+    ])).start()
+  }, [opacity])
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={{ padding: Spacing.base, paddingTop: Spacing.xl }}>
+        <Animated.View style={[{ height: 28, width: '50%', backgroundColor: Colors.surface, borderRadius: Radius.md, marginBottom: Spacing.xl }, { opacity }]} />
+        <Animated.View style={[{ height: 120, backgroundColor: Colors.surface, borderRadius: Radius.xl, marginBottom: Spacing.md }, { opacity }]} />
+        <Animated.View style={[{ height: 80, backgroundColor: Colors.surface, borderRadius: Radius.xl, marginBottom: Spacing.md }, { opacity }]} />
+        <Animated.View style={[{ height: 80, backgroundColor: Colors.surface, borderRadius: Radius.xl, marginBottom: Spacing.md }, { opacity }]} />
+      </View>
+    </SafeAreaView>
+  )
+}
+
 export default function HostBookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { booking: liveBooking, loading } = useBooking(Config.useMock ? null : (id ?? null))
@@ -17,11 +37,7 @@ export default function HostBookingDetailScreen() {
     : liveBooking
 
   if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator color={Colors.primary} style={{ flex: 1 }} />
-      </SafeAreaView>
-    )
+    return <BookingDetailSkeleton />
   }
 
   if (!booking) {
