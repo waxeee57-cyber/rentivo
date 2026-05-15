@@ -135,7 +135,18 @@ export default function ProfileScreen() {
           <Divider />
           <MenuItem label={`🍪 ${t('cookiePolicy', language)}`} onPress={() => router.push('/(consumer)/legal/cookies' as Href)} />
           <Divider />
+          <MenuItem label={`🛡️ ${language === 'hu' ? 'Adatvédelmi beállítások' : 'Privacy settings'}`} onPress={() => router.push('/(consumer)/profile/privacy-settings' as Href)} />
+          <Divider />
           <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={() => Alert.alert(t('helpSupport', language), 'Email us at support@rentivo.app\n\nResponse time: within 24 hours', [{ text: 'OK' }])} />
+        </Card>
+
+        <Card style={styles.card}>
+          <Text style={styles.sectionTitle}>{language === 'hu' ? 'FIÓK TÖRLÉSE' : 'ACCOUNT DELETION'}</Text>
+          <MenuItem
+            label={`🗑️ ${language === 'hu' ? 'Fiók törlése' : 'Delete account'}`}
+            onPress={() => router.push('/(consumer)/profile/delete-account' as Href)}
+            danger
+          />
         </Card>
 
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
@@ -150,10 +161,15 @@ export default function ProfileScreen() {
   )
 }
 
-function MenuItem({ label, onPress }: { label: string; onPress: () => void }) {
+function MenuItem({ label, onPress, danger }: { label: string; onPress: () => void; danger?: boolean }) {
   return (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-      <Text style={styles.menuLabel}>{label}</Text>
+    <TouchableOpacity
+      style={styles.menuItem}
+      onPress={onPress}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+    >
+      <Text style={[styles.menuLabel, danger && styles.menuLabelDanger]}>{label}</Text>
       <Text style={styles.menuChevron}>›</Text>
     </TouchableOpacity>
   )
@@ -195,6 +211,7 @@ const styles = StyleSheet.create({
   langTextActive: { color: Colors.primaryDark },
   menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.sm },
   menuLabel: { fontSize: 15, color: Colors.text },
+  menuLabelDanger: { color: Colors.error },
   menuChevron: { fontSize: 20, color: Colors.textTertiary },
   signOutBtn: { marginHorizontal: Spacing.base, marginTop: Spacing.base, padding: Spacing.base, alignItems: 'center' },
   signOutText: { fontSize: 16, color: Colors.error, fontWeight: '600' },

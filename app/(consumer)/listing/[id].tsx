@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Share, Platform, Linking,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Share, Platform, Linking, Alert,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -63,6 +63,49 @@ export default function ListingDetailScreen() {
   const policy = (listing.cancellation_policy ?? 'moderate') as CancellationPolicy
 
   const isHostListing = listing.owner_type === 'host'
+
+  const { user } = useAuthStore()
+
+  const handleReport = () => {
+    const reasons = [
+      { label: language === 'hu' ? 'Hamis hirdetés' : 'Fake listing', value: 'fake_listing' },
+      { label: language === 'hu' ? 'Illegális jármű' : 'Illegal vehicle', value: 'illegal_vehicle' },
+      { label: language === 'hu' ? 'Félrevezető információ' : 'Misleading info', value: 'misleading_info' },
+      { label: language === 'hu' ? 'Egyéb' : 'Other', value: 'other' },
+    ]
+    Alert.alert(
+      language === 'hu' ? 'Hirdetés bejelentése' : 'Report listing',
+      language === 'hu' ? 'Válaszd ki a bejelentés okát:' : 'Select a reason:',
+      [
+        ...reasons.map(r => ({
+          text: r.label,
+          onPress: async () => {
+            try {
+              const { supabase: sb } = await import('@/lib/supabase')
+              await sb.from('rentivo_reports').insert({
+                reporter_id: user?.id ?? null,
+                listing_id: listing.id,
+                operator_id: listing.operator_id ?? null,
+                reason: r.value,
+              })
+              Alert.alert(
+                language === 'hu' ? 'Köszönjük' : 'Thank you',
+                language === 'hu'
+                  ? 'Bejelentésedet megkaptuk. 24 órán belül megvizsgáljuk. DSA 16. cikk.'
+                  : 'We received your report. We will review it within 24 hours. DSA Article 16.',
+              )
+            } catch {
+              Alert.alert(
+                language === 'hu' ? 'Hiba' : 'Error',
+                language === 'hu' ? 'Nem sikerült bejelenteni.' : 'Could not submit report.',
+              )
+            }
+          },
+        })),
+        { text: language === 'hu' ? 'Mégse' : 'Cancel', style: 'cancel' },
+      ],
+    )
+  }
 
   const similarListings = Config.useMock
     ? MOCK_LISTINGS.filter(l => {
@@ -135,6 +178,14 @@ export default function ListingDetailScreen() {
                 size={18}
                 color={favorited ? Colors.error : Colors.text}
               />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={handleReport}
+              accessibilityLabel={language === 'hu' ? 'Hirdetés bejelentése' : 'Report this listing'}
+              accessibilityRole="button"
+            >
+              <Ionicons name="flag-outline" size={18} color={Colors.text} />
             </TouchableOpacity>
           </View>
         </View>
