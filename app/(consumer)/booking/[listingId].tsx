@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -70,6 +70,8 @@ export default function BookingFlowScreen() {
   const [promoDiscount, setPromoDiscount] = useState(0)
   const [promoApplied, setPromoApplied] = useState(false)
   const [promoLoading, setPromoLoading] = useState(false)
+  const [identityStatus, setIdentityStatus] = useState<string | null>(null)
+  const [identityLoading, setIdentityLoading] = useState(true)
   const { showToast } = useToastStore()
 
   const startDate = startDateParam
@@ -80,7 +82,67 @@ export default function BookingFlowScreen() {
     : (() => { const d = new Date(); d.setDate(d.getDate() + 4); return d })()
   const totalDays = Math.max(1, differenceInDays(endDate, startDate))
 
+  useEffect(() => {
+    if (Config.useMock) {
+      setIdentityStatus('approved')
+      setIdentityLoading(false)
+      return
+    }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) { setIdentityStatus(null); setIdentityLoading(false); return }
+      supabase
+        .from('rentivo_identity_verifications')
+        .select('status')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => {
+          setIdentityStatus(data?.status ?? 'unverified')
+          setIdentityLoading(false)
+        })
+    })
+  }, [])
+
   if (loading || !listing) return <SafeAreaView style={styles.container}><SkeletonCard /></SafeAreaView>
+
+  const requiresVerification = listing.operator?.requires_identity_verification ?? false
+  const isIdentityApproved = identityStatus === 'approved'
+
+  if (requiresVerification && !identityLoading && !isIdentityApproved) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScreenHeader title="Booking" />
+        <View style={verGateStyles.container}>
+          <Text style={verGateStyles.icon}>🔐</Text>
+          <Text style={verGateStyles.title}>Identity verification required</Text>
+          <Text style={verGateStyles.desc}>
+            {identityStatus === 'pending' || identityStatus === 'in_progress'
+              ? 'Your verification is being processed. Please check back shortly.'
+              : 'This operator requires verified identity before booking.'}
+          </Text>
+          {(identityStatus === 'unverified' || identityStatus === 'declined' || identityStatus == null) && (
+            <TouchableOpacity
+              style={verGateStyles.button}
+              onPress={() => router.push('/(consumer)/profile/identity-verification' as any)}
+              accessibilityLabel="Verify identity"
+            >
+              <Text style={verGateStyles.buttonText}>Verify my identity →</Text>
+            </TouchableOpacity>
+          )}
+          {(identityStatus === 'pending' || identityStatus === 'in_progress') && (
+            <TouchableOpacity
+              style={[verGateStyles.button, { backgroundColor: Colors.warning }]}
+              onPress={() => router.back()}
+              accessibilityLabel="Go back"
+            >
+              <Text style={verGateStyles.buttonText}>Go back</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   const priceCalc = calculatePrice(
     listing.price_per_day,
@@ -574,6 +636,23 @@ export default function BookingFlowScreen() {
     </SafeAreaView>
   )
 }
+
+const verGateStyles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+  icon: { fontSize: 56, marginBottom: 16 },
+  title: { color: Colors.text, fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 12 },
+  desc: { color: Colors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+  button: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    minHeight: 52,
+    alignItems: 'center',
+    width: '100%',
+  },
+  buttonText: { color: Colors.background, fontSize: 16, fontWeight: '700' },
+})
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },

@@ -137,7 +137,7 @@ export default function ProfileScreen() {
           {/* Verification banner */}
           <TouchableOpacity
             style={styles.verifyBanner}
-            onPress={() => router.push('/(consumer)/profile/verify' as Href)}
+            onPress={() => router.push('/(consumer)/profile/identity-verification' as Href)}
             accessibilityLabel={t('verifyIdentityBanner', language)}
             accessibilityRole="button"
           >
@@ -355,7 +355,7 @@ export default function ProfileScreen() {
           <Text style={styles.sectionTitle}>{t('sectionAccount', language)}</Text>
           <MenuItem
             label={`🪪 ${t('identityVerification', language)}`}
-            onPress={() => router.push('/(consumer)/profile/verify' as Href)}
+            onPress={() => router.push('/(consumer)/profile/identity-verification' as Href)}
           />
           <Divider />
           <MenuItem
