@@ -1,5 +1,5 @@
 import { useEffect, useState, Fragment } from 'react'
-import { Stack } from 'expo-router'
+import { Stack, router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import {
   GestureHandlerRootView,
@@ -115,6 +115,24 @@ export default function RootLayout() {
     )
     return () => subscription.unsubscribe()
   }, [setSession])
+
+  // GDPR DB consent gate — new users who bypassed the modal
+  useEffect(() => {
+    if (!session) return
+    const userId = (session as Record<string, unknown> & { user?: { id?: string } }).user?.id
+    if (!userId) return
+
+    void supabase
+      .from('rentivo_consent')
+      .select('terms_accepted, privacy_accepted')
+      .eq('user_id', userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data?.terms_accepted || !data?.privacy_accepted) {
+          router.replace('/auth/consent')
+        }
+      })
+  }, [(session as Record<string, unknown> & { user?: { id?: string } })?.user?.id])
 
   // Push notifications
   useEffect(() => {

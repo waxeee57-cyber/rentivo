@@ -75,6 +75,12 @@ export default function PrivacySettingsScreen() {
         { user_id: session.user.id, ...updateData },
         { onConflict: 'user_id' },
       )
+
+      // Push consent withdrawn → null the token on both tables (auth_id FK)
+      if (field === 'marketing_push' && !value) {
+        await supabase.from('rentivo_users').update({ push_token: null }).eq('auth_id', session.user.id)
+        await supabase.from('rentivo_operators').update({ push_token: null }).eq('auth_id', session.user.id)
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Error'
       Alert.alert(isHu ? 'Hiba' : 'Error', msg)

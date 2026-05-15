@@ -55,7 +55,14 @@ export default function ConsentScreen() {
       }, { onConflict: 'user_id' })
 
       if (error) throw error
-      router.replace('/')
+
+      // Push consent declined → null the push token (auth_id is the FK on rentivo_users)
+      if (!marketingPush) {
+        await supabase.from('rentivo_users').update({ push_token: null }).eq('auth_id', session.user.id)
+      }
+
+      // Route to onboarding — avoids infinite loop with root layout consent check
+      router.replace('/onboarding')
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Something went wrong'
       Alert.alert('Error', msg)
