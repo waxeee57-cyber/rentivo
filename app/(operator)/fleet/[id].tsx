@@ -17,6 +17,7 @@ import { Image } from 'expo-image'
 import { Config } from '@/constants/config'
 import { CATEGORIES } from '@/constants/categories'
 import type { CancellationPolicy, RentalCategory } from '@/types'
+import { updateListing } from '@/lib/api/listings'
 
 const POLICIES: { key: CancellationPolicy; label: string; desc: string }[] = [
   { key: 'flexible', label: 'Flexible', desc: 'Full refund 1 day before' },
@@ -81,12 +82,30 @@ export default function EditVehicleScreen() {
       showToast({ message: 'Vehicle name is required', type: 'error' })
       return
     }
+    const price = parseFloat(pricePerDay)
+    if (isNaN(price) || price <= 0) {
+      showToast({ message: 'Valid price per day is required', type: 'error' })
+      return
+    }
     setSaving(true)
     try {
-      await new Promise<void>(r => setTimeout(r, 600))
+      const validPhotos = photos.filter((p): p is string => p !== null)
+      await updateListing(id ?? '', {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        price_per_day: price,
+        category,
+        available,
+        min_rental_days: parseInt(minRentalDays, 10),
+        cancellation_policy: policy,
+        cover_image_url: validPhotos[0] ?? undefined,
+        images: validPhotos.length > 0 ? validPhotos : undefined,
+      })
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       showToast({ message: 'Updated ✓', type: 'success' })
       router.back()
+    } catch {
+      showToast({ message: 'Failed to save changes', type: 'error' })
     } finally {
       setSaving(false)
     }

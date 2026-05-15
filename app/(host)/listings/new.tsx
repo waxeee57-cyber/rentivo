@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, KeyboardAvoidingView, Platform,
+  ScrollView, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -12,6 +12,11 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { WhatNextScreen } from '@/components/ui/WhatNextScreen'
 import { useCamera } from '@/lib/hooks/useCamera'
+import { supabase } from '@/lib/supabase'
+import { createListing } from '@/lib/api/listings'
+import { useToastStore } from '@/lib/store/useToastStore'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import type { Listing } from '@/types'
 
 const CATEGORIES: { key: string; icon: React.ComponentProps<typeof Ionicons>['name']; label: string }[] = [
   { key: 'car', icon: 'car-outline', label: 'Car' },
@@ -34,6 +39,9 @@ type Step = 1 | 2 | 3 | 4 | 5
 
 export default function NewHostListingScreen() {
   const { showPhotoOptions } = useCamera()
+  const { showToast } = useToastStore()
+  const { language } = useAuthStore()
+  const isHu = language === 'hu'
   const [step, setStep] = useState<Step>(1)
   const [category, setCategory] = useState('')
   const [make, setMake] = useState('')
@@ -49,6 +57,7 @@ export default function NewHostListingScreen() {
   const [city, setCity] = useState('')
   const [address, setAddress] = useState('')
   const [strRegistration, setStrRegistration] = useState('')
+  const [publishing, setPublishing] = useState(false)
 
   const handlePickPhoto = async (index: number) => {
     const uri = await showPhotoOptions()
@@ -71,14 +80,72 @@ export default function NewHostListingScreen() {
 
   const nextStep = () => {
     if (step < 5) setStep((step + 1) as Step)
-    else handlePublish()
+    else void handlePublish()
   }
 
   const [published, setPublished] = useState(false)
 
-  const handlePublish = () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    setPublished(true)
+  const handlePublish = async () => {
+    const derivedTitle = [make, model].filter(Boolean).join(' ').trim() || category
+    if (!derivedTitle) {
+      Alert.alert(
+        isHu ? 'Hiba' : 'Error',
+        isHu ? 'Kategória megadása kötelező' : 'Category is required',
+      )
+      return
+    }
+
+    setPublishing(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) throw new Error('Not authenticated')
+
+      const { data: hostRecord } = await supabase
+        .from('rentivo_hosts')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+
+      await createListing({
+        operator_id: '',
+        host_id: hostRecord?.id ?? null,
+        title: derivedTitle,
+        description: description.trim() || null,
+        category: category as Listing['category'],
+        subcategory: null,
+        price_per_day: parseFloat(pricePerDay) || 0,
+        price_per_week: null,
+        deposit_amount: 0,
+        currency: 'EUR',
+        available: true,
+        min_rental_days: 1,
+        max_rental_days: null,
+        capacity: null,
+        year: year ? parseInt(year, 10) : null,
+        make: make.trim() || null,
+        model: model.trim() || null,
+        color: color.trim() || null,
+        license_plate: null,
+        features,
+        rules: null,
+        images: photos.filter((p): p is string => p !== null),
+        cover_image_url: photos.find((p) => p !== null) ?? null,
+        cancellation_policy: policy as Listing['cancellation_policy'],
+        pickup_address: address.trim() || null,
+        latitude: null,
+        longitude: null,
+        instant_book: instantBook,
+        owner_type: 'host',
+      })
+
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      showToast({ message: isHu ? 'Hirdetés létrehozva' : 'Listing created', type: 'success' })
+      router.replace('/(host)/listings')
+    } catch {
+      showToast({ message: isHu ? 'Hiba történt' : 'Something went wrong', type: 'error' })
+    } finally {
+      setPublishing(false)
+    }
   }
 
   if (published) {
@@ -382,12 +449,12 @@ export default function NewHostListingScreen() {
 
         <View style={styles.footer}>
           <TouchableOpacity
-            style={[styles.nextBtn, !canProceed() && styles.nextBtnDisabled]}
+            style={[styles.nextBtn, (!canProceed() || publishing) && styles.nextBtnDisabled]}
             onPress={nextStep}
-            disabled={!canProceed()}
+            disabled={!canProceed() || publishing}
           >
             <Text style={styles.nextBtnText}>
-              {step === 5 ? '🚀 Publish listing' : 'Continue →'}
+              {step === 5 ? (publishing ? '...' : '🚀 Publish listing') : 'Continue →'}
             </Text>
           </TouchableOpacity>
         </View>

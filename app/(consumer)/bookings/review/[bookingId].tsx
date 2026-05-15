@@ -11,6 +11,7 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { useBooking } from '@/lib/hooks/useBookings'
 import { useToastStore } from '@/lib/store/useToastStore'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { supabase } from '@/lib/supabase'
@@ -66,6 +67,7 @@ export default function ReviewScreen() {
   const id = Config.useMock ? (bookingId ?? 'bk-004') : (bookingId ?? '')
   const { booking } = useBooking(id)
   const { showToast } = useToastStore()
+  const user = useAuthStore(s => s.user)
 
   const [rating, setRating] = useState(0)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -84,6 +86,10 @@ export default function ReviewScreen() {
 
   const handleSubmit = async () => {
     if (!canSubmit || submitting) return
+    if (!user) {
+      showToast({ message: 'You must be logged in to submit a review.', type: 'error' })
+      return
+    }
     setSubmitting(true)
     try {
       if (!Config.useMock) {
@@ -96,7 +102,7 @@ export default function ReviewScreen() {
           booking_id: id,
           listing_id: booking?.listing_id ?? '',
           operator_id: booking?.operator_id ?? '',
-          user_id: null,
+          user_id: user.id,
           rating,
           comment: fullComment || null,
         })

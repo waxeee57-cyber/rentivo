@@ -1,5 +1,5 @@
 import { useEffect, useState, Fragment } from 'react'
-import { Stack, router } from 'expo-router'
+import { Stack, router, usePathname } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import {
   GestureHandlerRootView,
@@ -97,6 +97,7 @@ export default function RootLayout() {
   const { setSession, session, role, language } = useAuthStore()
   const { setPushToken, setUnreadCount, unreadCount } = useNotificationStore()
   const [gdprAccepted, setGdprAccepted] = useState<boolean | null>(null)
+  const pathname = usePathname()
 
   // Check GDPR acceptance
   useEffect(() => {
@@ -121,6 +122,8 @@ export default function RootLayout() {
     if (!session) return
     const userId = (session as Record<string, unknown> & { user?: { id?: string } }).user?.id
     if (!userId) return
+    // Prevent infinite loop: skip if already on the consent screen
+    if (pathname === '/auth/consent') return
 
     void supabase
       .from('rentivo_consent')
@@ -132,7 +135,7 @@ export default function RootLayout() {
           router.replace('/auth/consent')
         }
       })
-  }, [(session as Record<string, unknown> & { user?: { id?: string } })?.user?.id])
+  }, [(session as Record<string, unknown> & { user?: { id?: string } })?.user?.id, pathname])
 
   // Push notifications
   useEffect(() => {
@@ -173,7 +176,7 @@ export default function RootLayout() {
   const handleGdprManage = async () => {
     await AsyncStorage.setItem('gdpr_accepted', 'true')
     setGdprAccepted(true)
-    // In a real app, navigate to cookie preferences
+    router.push('/(consumer)/profile/privacy-settings')
   }
 
   return (
