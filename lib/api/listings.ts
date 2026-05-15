@@ -98,3 +98,31 @@ export async function deleteListing(id: string, operatorId: string): Promise<voi
 export async function toggleListingAvailability(id: string, available: boolean): Promise<void> {
   await updateListing(id, { available })
 }
+
+export async function getAvailableTodayListings(): Promise<Listing[]> {
+  if (Config.useMock) {
+    return MOCK_LISTINGS.filter(l => l.available && l.instant_book).slice(0, 6)
+  }
+  const { data, error } = await supabase
+    .from('rentivo_listings')
+    .select('*, operator:rentivo_operators(*)')
+    .eq('available', true)
+    .eq('instant_book', true)
+    .limit(6)
+  if (error) throw error
+  return (data as Listing[]) ?? []
+}
+
+export async function getLastMinuteListings(): Promise<Listing[]> {
+  if (Config.useMock) {
+    return [...MOCK_LISTINGS].sort(() => -1).slice(0, 6)
+  }
+  const { data, error } = await supabase
+    .from('rentivo_listings')
+    .select('*, operator:rentivo_operators(*)')
+    .eq('available', true)
+    .order('created_at', { ascending: false })
+    .limit(6)
+  if (error) throw error
+  return (data as Listing[]) ?? []
+}

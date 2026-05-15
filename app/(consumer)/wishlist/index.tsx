@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react'
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
@@ -13,16 +13,24 @@ import { t } from '@/constants/i18n'
 export default function WishlistScreen() {
   const { items } = useWishlistStore()
   const { language, user } = useAuthStore()
+  const [syncing, setSyncing] = useState(false)
 
   useEffect(() => {
-    if (user?.id) void syncWishlistFromSupabase(user.id)
+    if (user?.id) {
+      setSyncing(true)
+      void syncWishlistFromSupabase(user.id).finally(() => setSyncing(false))
+    }
   }, [user?.id])
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <ScreenHeader title={`❤️ ${t('savedListings', language)}`} />
 
-      {items.length === 0 ? (
+      {syncing && items.length === 0 ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+        </View>
+      ) : items.length === 0 ? (
         <EmptyState
           emoji="❤️"
           title={t('noSavedListings', language)}
@@ -52,4 +60,5 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   grid: { padding: Spacing.base, paddingBottom: 100 },
   columnWrapper: { justifyContent: 'space-between' },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 })

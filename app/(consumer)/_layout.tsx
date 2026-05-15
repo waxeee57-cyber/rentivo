@@ -99,15 +99,11 @@ export default function ConsumerLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="wishlist"
+        name="assistant"
         options={{
-          title: t('wishlist', language),
+          title: t('assistant', language),
           tabBarIcon: ({ focused }) => (
-            <Ionicons
-              name={focused ? 'heart' : 'heart-outline'}
-              size={24}
-              color={focused ? Colors.primary : Colors.textTertiary}
-            />
+            <TabIcon name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} focused={focused} />
           ),
         }}
         listeners={{ tabPress: triggerHaptic }}
@@ -124,6 +120,7 @@ export default function ConsumerLayout() {
       />
 
       {/* Hidden screens */}
+      <Tabs.Screen name="wishlist" options={{ href: null }} />
       <Tabs.Screen name="listing/[id]" options={{ href: null }} />
       <Tabs.Screen name="booking/[listingId]" options={{ href: null }} />
       <Tabs.Screen name="booking/confirmation/[id]" options={{ href: null }} />

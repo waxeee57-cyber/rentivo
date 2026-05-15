@@ -11,8 +11,6 @@ interface ListingMarkerProps {
 }
 
 export function ListingMarker({ listing, selected, onPress }: ListingMarkerProps) {
-  if (!listing.latitude || !listing.longitude) return null
-
   const scale = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
@@ -25,6 +23,8 @@ export function ListingMarker({ listing, selected, onPress }: ListingMarkerProps
       Animated.spring(scale, { toValue: 1, damping: 14, useNativeDriver: true }).start()
     }
   }, [selected, scale])
+
+  if (listing.latitude == null || listing.longitude == null) return null
 
   const price = `€${Math.round(listing.price_per_day)}`
 

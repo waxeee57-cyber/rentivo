@@ -299,3 +299,32 @@ export interface ExternalListing {
 export type AnyListing =
   | (Listing & { sourceType: 'native' })
   | (ExternalListing & { sourceType: 'external' })
+
+// ── Insurance ────────────────────────────────────────────────────────────────
+
+export const INSURANCE_PACKAGES = [
+  {
+    id: 'basic' as const,
+    nameKey: 'insuranceBasic' as const,
+    descKey: 'insuranceBasicDesc' as const,
+    price: 0,
+    icon: '🛡️',
+  },
+  {
+    id: 'standard' as const,
+    nameKey: 'insuranceStandard' as const,
+    descKey: 'insuranceStandardDesc' as const,
+    price: 9.99,
+    icon: '🛡️🛡️',
+  },
+  {
+    id: 'premium' as const,
+    nameKey: 'insurancePremium' as const,
+    descKey: 'insurancePremiumDesc' as const,
+    price: 19.99,
+    icon: '🛡️🛡️🛡️',
+    recommended: true,
+  },
+] as const
+
+export type InsuranceId = typeof INSURANCE_PACKAGES[number]['id']

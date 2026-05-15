@@ -9,6 +9,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
+import BookingVoucher from '@/components/booking/BookingVoucher'
 
 export default function BookingConfirmationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -94,6 +95,9 @@ export default function BookingConfirmationScreen() {
             </View>
           ))}
         </View>
+
+        {/* Offline booking voucher with QR */}
+        <BookingVoucher voucher={{ id: id ?? 'unknown' }} language={language} />
 
         {/* No hidden fees */}
         <View style={styles.noFeesNote}>

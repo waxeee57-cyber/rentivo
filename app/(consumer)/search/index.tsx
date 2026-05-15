@@ -5,10 +5,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, Radius } from '@/constants/colors'
-import { ListingCard } from '@/components/listing/ListingCard'
+import { ListingCard, ListingCardSkeleton } from '@/components/listing/ListingCard'
 import { CategoryPill } from '@/components/ui/CategoryPill'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { SkeletonCard } from '@/components/ui/Skeleton'
+import ListingsMap from '@/components/map/ListingsMap'
 import { useListings } from '@/lib/hooks/useListings'
 import { useSearchHistory } from '@/lib/hooks/useSearchHistory'
 import { filterListings } from '@/lib/hooks/useSearch'
@@ -19,6 +19,7 @@ import type { RentalCategory, SearchFilters } from '@/types'
 import type { SearchState } from '@/lib/hooks/useSearch'
 
 type SortKey = SearchState['sort']
+type ViewMode = 'list' | 'map'
 
 const SORT_OPTION_KEYS: { key: SortKey; labelKey: TranslationKey }[] = [
   { key: 'relevance', labelKey: 'sortRelevance' },
@@ -51,6 +52,7 @@ export default function SearchScreen() {
   const [instantBook, setInstantBook] = useState(false)
   const [minCapacity, setMinCapacity] = useState<number | null>(null)
   const [focused, setFocused] = useState(false)
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
   const inputRef = useRef<TextInput>(null)
 
   const { history, addSearch, clearHistory } = useSearchHistory()
@@ -92,7 +94,44 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.title}>{t('search', language)}</Text>
+      {/* Header row: title + List/Map toggle */}
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>{t('search', language)}</Text>
+        <View style={styles.viewToggle}>
+          <TouchableOpacity
+            style={[styles.toggleBtn, viewMode === 'list' && styles.toggleBtnActive]}
+            onPress={() => setViewMode('list')}
+            accessibilityLabel={t('viewList', language)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: viewMode === 'list' }}
+          >
+            <Ionicons
+              name="list"
+              size={16}
+              color={viewMode === 'list' ? Colors.textInverse : Colors.textSecondary}
+            />
+            <Text style={[styles.toggleText, viewMode === 'list' && styles.toggleTextActive]}>
+              {t('viewList', language)}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleBtn, viewMode === 'map' && styles.toggleBtnActive]}
+            onPress={() => setViewMode('map')}
+            accessibilityLabel={t('viewMap', language)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: viewMode === 'map' }}
+          >
+            <Ionicons
+              name="map"
+              size={16}
+              color={viewMode === 'map' ? Colors.textInverse : Colors.textSecondary}
+            />
+            <Text style={[styles.toggleText, viewMode === 'map' && styles.toggleTextActive]}>
+              {t('viewMap', language)}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* Search bar */}
       <View style={styles.searchRow}>
@@ -167,49 +206,53 @@ export default function SearchScreen() {
         ))}
       </ScrollView>
 
-      {/* Sort + Filters bar */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortBar}>
-        {SORT_OPTION_KEYS.map(opt => (
+      {/* Sort + Filters bar — only shown in list mode */}
+      {viewMode === 'list' && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortBar}>
+          {SORT_OPTION_KEYS.map(opt => (
+            <CategoryPill
+              key={opt.key}
+              label={t(opt.labelKey, language)}
+              active={sortBy === opt.key}
+              onPress={() => setSortBy(opt.key)}
+            />
+          ))}
+          <View style={styles.sortDivider} />
           <CategoryPill
-            key={opt.key}
-            label={t(opt.labelKey, language)}
-            active={sortBy === opt.key}
-            onPress={() => setSortBy(opt.key)}
+            label={`⚡ ${t('filterInstant', language)}`}
+            active={instantBook}
+            onPress={() => setInstantBook(v => !v)}
           />
-        ))}
-        <View style={styles.sortDivider} />
-        <CategoryPill
-          label={`⚡ ${t('filterInstant', language)}`}
-          active={instantBook}
-          onPress={() => setInstantBook(v => !v)}
-        />
-        {CAPACITY_OPTIONS.map(opt => (
-          <CategoryPill
-            key={String(opt.cap)}
-            label={`👥 ${t(opt.labelKey, language)}`}
-            active={minCapacity === opt.cap}
-            onPress={() => setMinCapacity(opt.cap)}
-          />
-        ))}
-      </ScrollView>
+          {CAPACITY_OPTIONS.map(opt => (
+            <CategoryPill
+              key={String(opt.cap)}
+              label={`👥 ${t(opt.labelKey, language)}`}
+              active={minCapacity === opt.cap}
+              onPress={() => setMinCapacity(opt.cap)}
+            />
+          ))}
+        </ScrollView>
+      )}
 
-      {/* Results */}
-      {loading ? (
-        <FlatList
-          data={Array(4).fill(null)}
-          keyExtractor={(_, i) => String(i)}
-          numColumns={2}
-          contentContainerStyle={styles.grid}
-          columnWrapperStyle={styles.columnWrapper}
-          renderItem={() => <SkeletonCard />}
-        />
+      {/* Map view */}
+      {viewMode === 'map' ? (
+        <ListingsMap listings={filtered} />
+      ) : loading ? (
+        /* List loading state */
+        <View style={styles.skeletonGrid}>
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ListingCardSkeleton key={i} variant="grid" />
+          ))}
+        </View>
       ) : filtered.length === 0 ? (
+        /* List empty state */
         <EmptyState
           emoji="🔍"
           title="No results"
           subtitle={query ? 'Try different search terms or remove filters' : 'Try a different category'}
         />
       ) : (
+        /* List results */
         <FlatList
           data={filtered}
           keyExtractor={item => item.id}
@@ -230,9 +273,45 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.base,
+    paddingTop: Spacing.md,
+  },
   title: {
     fontSize: 26, fontWeight: '800', color: Colors.text,
-    paddingHorizontal: Spacing.base, paddingTop: Spacing.md,
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 3,
+    gap: 2,
+  },
+  toggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: Radius.pill,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  toggleBtnActive: {
+    backgroundColor: Colors.primary,
+  },
+  toggleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  toggleTextActive: {
+    color: Colors.textInverse,
   },
   searchRow: {
     paddingHorizontal: Spacing.base,
@@ -301,6 +380,12 @@ const styles = StyleSheet.create({
   sortDivider: {
     width: 1, height: 24, backgroundColor: Colors.border,
     marginHorizontal: Spacing.xs, alignSelf: 'center',
+  },
+  skeletonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: Spacing.base,
+    gap: Spacing.base,
   },
   list: { flex: 1 },
   grid: { padding: Spacing.base, paddingBottom: 100 },

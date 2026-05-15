@@ -6,23 +6,25 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Colors, Spacing, Radius, Shadow } from '@/constants/colors'
 import { useListings } from '@/lib/hooks/useListings'
 import { useLocation } from '@/lib/hooks/useLocation'
-import { ListingCard } from '@/components/listing/ListingCard'
+import { ListingCard, ListingCardSkeleton } from '@/components/listing/ListingCard'
 import { ExternalListingCard } from '@/components/integrations/ExternalListingCard'
 import { AffiliateSearchDisclosure } from '@/components/integrations/AffiliateDisclosure'
 import { ListingPreviewSheet } from '@/components/map/ListingPreviewSheet'
 import { CityPickerSheet } from '@/components/map/CityPickerSheet'
 import type { City } from '@/components/map/CityPickerSheet'
 import { DatePickerSheet } from '@/components/booking/DatePickerSheet'
-import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { CATEGORIES } from '@/constants/categories'
 import { searchAllSources } from '@/lib/api/unifiedSearch'
+import { getAvailableTodayListings, getLastMinuteListings } from '@/lib/api/listings'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t, type TranslationKey } from '@/constants/i18n'
 import { openAffiliateLink } from '@/lib/utils/affiliateLinks'
+import { formatPricePerDay } from '@/lib/utils/formatCurrency'
+import { Image } from 'expo-image'
 import type { Listing, RentalCategory, SearchFilters, AnyListing, ExternalListing } from '@/types'
 import { format } from 'date-fns'
 import { router } from 'expo-router'
@@ -99,6 +101,8 @@ export default function ExploreScreen() {
   const [allSourceLoading, setAllSourceLoading] = useState(false)
   const [showFilterSheet, setShowFilterSheet] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [availableTodayListings, setAvailableTodayListings] = useState<Listing[]>([])
+  const [lastMinuteListings, setLastMinuteListings] = useState<Listing[]>([])
   const mapRef = useRef<typeof MapView extends null ? never : InstanceType<NonNullable<typeof MapView>>>(null)
 
   useLocation() // initializes device location tracking
@@ -147,6 +151,16 @@ export default function ExploreScreen() {
       setAllSourceLoading(false)
     }).catch(() => setAllSourceLoading(false))
   }, [source, selectedCategory, cityName, startDate, endDate])
+
+  // Load horizontal section data on mount
+  useEffect(() => {
+    getAvailableTodayListings()
+      .then(setAvailableTodayListings)
+      .catch(() => setAvailableTodayListings([]))
+    getLastMinuteListings()
+      .then(setLastMinuteListings)
+      .catch(() => setLastMinuteListings([]))
+  }, [])
 
   const displayListings: AnyListing[] = source === 'all'
     ? allSourceListings
@@ -197,6 +211,56 @@ export default function ExploreScreen() {
     }
     return <ExternalListingCard listing={item as ExternalListing} />
   }, [source])
+
+  const renderAvailableTodayItem = useCallback<ListRenderItem<Listing>>(({ item }) => (
+    <TouchableOpacity
+      style={hStyles.hCard}
+      onPress={() => router.push(`/(consumer)/listing/${item.id}`)}
+      accessibilityLabel={`${item.title}, ${formatPricePerDay(item.price_per_day, language)}`}
+      accessibilityRole="button"
+    >
+      {item.cover_image_url != null ? (
+        <Image source={{ uri: item.cover_image_url }} style={hStyles.hCardImage} contentFit="cover" />
+      ) : (
+        <View style={[hStyles.hCardImage, hStyles.hCardImagePlaceholder]}>
+          <Text style={hStyles.hCardPlaceholderText}>{item.title.charAt(0)}</Text>
+        </View>
+      )}
+      <View style={hStyles.hCardInfo}>
+        <Text style={hStyles.hCardTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={hStyles.hCardPrice}>{formatPricePerDay(item.price_per_day, language)}</Text>
+        {item.instant_book === true && (
+          <View style={hStyles.instantBadge}>
+            <Text style={hStyles.instantBadgeText}>⚡ Instant</Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  ), [language])
+
+  const renderLastMinuteItem = useCallback<ListRenderItem<Listing>>(({ item }) => (
+    <TouchableOpacity
+      style={hStyles.hCard}
+      onPress={() => router.push(`/(consumer)/listing/${item.id}`)}
+      accessibilityLabel={`${item.title}, ${formatPricePerDay(item.price_per_day, language)}`}
+      accessibilityRole="button"
+    >
+      {item.cover_image_url != null ? (
+        <Image source={{ uri: item.cover_image_url }} style={hStyles.hCardImage} contentFit="cover" />
+      ) : (
+        <View style={[hStyles.hCardImage, hStyles.hCardImagePlaceholder]}>
+          <Text style={hStyles.hCardPlaceholderText}>{item.title.charAt(0)}</Text>
+        </View>
+      )}
+      <View style={hStyles.hCardInfo}>
+        <Text style={hStyles.hCardTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={hStyles.hCardPrice}>{formatPricePerDay(item.price_per_day, language)}</Text>
+        <View style={hStyles.dealBadge}>
+          <Text style={hStyles.dealBadgeText}>🔥 Last minute</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  ), [language])
 
   // Navigate from map preview to listing detail
   const handleViewListing = useCallback((listing: AnyListing) => {
@@ -280,6 +344,8 @@ export default function ExploreScreen() {
           <TouchableOpacity
             style={[styles.categoryPill, selectedCategory === null && styles.categoryPillActive]}
             onPress={() => setSelectedCategory(null)}
+            accessibilityLabel={t('catAll', language)}
+            accessibilityRole="button"
           >
             <Text style={[styles.categoryPillText, selectedCategory === null && styles.categoryPillTextActive]}>
               {t('catAll', language)}
@@ -290,6 +356,8 @@ export default function ExploreScreen() {
               key={c.key}
               style={[styles.categoryPill, selectedCategory === c.key && styles.categoryPillActive]}
               onPress={() => setSelectedCategory(prev => prev === c.key ? null : c.key)}
+              accessibilityLabel={t(CAT_I18N_KEYS[c.key], language)}
+              accessibilityRole="button"
             >
               <Ionicons
                 name={c.icon}
@@ -375,6 +443,8 @@ export default function ExploreScreen() {
               key={opt.key}
               style={[styles.sortPill, sortBy === opt.key && styles.sortPillActive]}
               onPress={() => setSortBy(opt.key)}
+              accessibilityLabel={`Sort by: ${opt.label}`}
+              accessibilityRole="button"
             >
               <Text style={[styles.sortPillText, sortBy === opt.key && styles.sortPillTextActive]}>
                 {opt.label}
@@ -391,6 +461,8 @@ export default function ExploreScreen() {
               key={String(opt.cap)}
               style={[styles.sortPill, minCapacity === opt.cap && styles.sortPillActive]}
               onPress={() => setMinCapacity(opt.cap)}
+              accessibilityLabel={`Capacity: ${opt.label}`}
+              accessibilityRole="button"
             >
               <Text style={[styles.sortPillText, minCapacity === opt.cap && styles.sortPillTextActive]}>
                 👥 {opt.label}
@@ -401,8 +473,10 @@ export default function ExploreScreen() {
 
         {error && <ErrorState message={error} />}
         {isLoading ? (
-          <View style={{ padding: Spacing.base }}>
-            {Array(4).fill(null).map((_, i) => <SkeletonCard key={i} />)}
+          <View style={styles.skeletonGrid}>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ListingCardSkeleton key={i} variant="grid" />
+            ))}
           </View>
         ) : showDiscovery ? (
           <ScrollView contentContainerStyle={styles.discoveryContainer}>
@@ -470,6 +544,60 @@ export default function ExploreScreen() {
               />
             }
             renderItem={renderListItem}
+            ListHeaderComponent={source === 'rentivo' ? (
+              <View>
+                {availableTodayListings.length > 0 && (
+                  <View style={hStyles.section}>
+                    <View style={hStyles.sectionHeader}>
+                      <Text style={hStyles.sectionTitle}>
+                        {`⚡ ${t('availableTodayTitle', language)}`}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => setSelectedCategory(null)}
+                        accessibilityLabel={t('seeAll', language)}
+                        accessibilityRole="button"
+                        style={hStyles.seeAllBtn}
+                      >
+                        <Text style={hStyles.seeAllText}>{`${t('seeAll', language)} →`}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <FlatList
+                      horizontal
+                      data={availableTodayListings}
+                      keyExtractor={item => `avail-${item.id}`}
+                      renderItem={renderAvailableTodayItem}
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={hStyles.hList}
+                    />
+                  </View>
+                )}
+                {lastMinuteListings.length > 0 && (
+                  <View style={hStyles.section}>
+                    <View style={hStyles.sectionHeader}>
+                      <Text style={hStyles.sectionTitle}>
+                        {`🔥 ${t('lastMinuteTitle', language)}`}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => setSelectedCategory(null)}
+                        accessibilityLabel={t('seeAll', language)}
+                        accessibilityRole="button"
+                        style={hStyles.seeAllBtn}
+                      >
+                        <Text style={hStyles.seeAllText}>{`${t('seeAll', language)} →`}</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <FlatList
+                      horizontal
+                      data={lastMinuteListings}
+                      keyExtractor={item => `lm-${item.id}`}
+                      renderItem={renderLastMinuteItem}
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={hStyles.hList}
+                    />
+                  </View>
+                )}
+              </View>
+            ) : null}
           />
         )}
       </Animated.View>
@@ -513,6 +641,8 @@ export default function ExploreScreen() {
                 key={opt.key}
                 style={[filterStyles.pill, sortBy === opt.key && filterStyles.pillActive]}
                 onPress={() => setSortBy(opt.key)}
+                accessibilityLabel={`Sort by: ${opt.label}`}
+                accessibilityRole="button"
               >
                 <Text style={[filterStyles.pillText, sortBy === opt.key && filterStyles.pillTextActive]}>
                   {opt.label}
@@ -532,6 +662,8 @@ export default function ExploreScreen() {
                 key={opt.label}
                 style={[filterStyles.pill, minCapacity === opt.cap && filterStyles.pillActive]}
                 onPress={() => setMinCapacity(opt.cap)}
+                accessibilityLabel={`Capacity: ${opt.label}`}
+                accessibilityRole="button"
               >
                 <Text style={[filterStyles.pillText, minCapacity === opt.cap && filterStyles.pillTextActive]}>
                   {opt.label}
@@ -546,6 +678,8 @@ export default function ExploreScreen() {
               setViewMode('list')
               setShowFilterSheet(false)
             }}
+            accessibilityLabel={t('applyFilters', language)}
+            accessibilityRole="button"
           >
             <Text style={filterStyles.applyBtnText}>{t('applyFilters', language)}</Text>
           </TouchableOpacity>
@@ -556,7 +690,7 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.surfaceWarm },
+  container: { flex: 1, backgroundColor: Colors.background },
 
   webMapPlaceholder: {
     backgroundColor: Colors.surfaceWarm,
@@ -671,6 +805,12 @@ const styles = StyleSheet.create({
   sourceBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
   sourceBtnTextActive: { color: Colors.textInverse },
 
+  skeletonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: Spacing.base,
+    gap: Spacing.base,
+  },
   listContent: { padding: Spacing.base, paddingTop: Spacing.sm, paddingBottom: 100 },
   columnWrapper: { gap: Spacing.base },
   sortBar: { flexGrow: 0 },
@@ -683,6 +823,8 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill, paddingHorizontal: 14, paddingVertical: 6,
     backgroundColor: Colors.surfaceWarm,
     borderWidth: 1, borderColor: Colors.border,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   sortPillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   sortPillText: { fontSize: 13, fontWeight: '600', color: Colors.text },
@@ -745,6 +887,8 @@ const filterStyles = StyleSheet.create({
     borderRadius: Radius.pill,
     borderWidth: 1, borderColor: Colors.border,
     backgroundColor: Colors.surfaceWarm,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   pillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   pillText: { fontSize: 13, fontWeight: '600', color: Colors.text },
@@ -755,4 +899,97 @@ const filterStyles = StyleSheet.create({
     alignItems: 'center', marginTop: Spacing.sm,
   },
   applyBtnText: { fontSize: 16, fontWeight: '800', color: Colors.textInverse },
+})
+
+const hStyles = StyleSheet.create({
+  section: {
+    marginBottom: Spacing.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.base,
+    marginBottom: Spacing.sm,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  seeAllBtn: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.sm,
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  hList: {
+    paddingHorizontal: Spacing.base,
+    gap: Spacing.md,
+  },
+  hCard: {
+    width: 220,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadow.sm,
+  },
+  hCardImage: {
+    width: '100%',
+    height: 130,
+  },
+  hCardImagePlaceholder: {
+    backgroundColor: Colors.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hCardPlaceholderText: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: Colors.textTertiary,
+  },
+  hCardInfo: {
+    padding: Spacing.sm,
+    gap: 4,
+  },
+  hCardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  hCardPrice: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  instantBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.successSurface,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  instantBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.success,
+  },
+  dealBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.warningSurface,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  dealBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.warning,
+  },
 })

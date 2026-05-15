@@ -6,12 +6,18 @@ import { supabase } from '@/lib/supabase'
 
 interface AuthState {
   role: UserRole
+  /** Alias for `role` — the currently active dashboard role */
+  currentRole: UserRole
   user: RentivoUser | null
   operator: Operator | null
   host: Host | null
   session: Record<string, unknown> | null
   loading: boolean
   language: 'en' | 'es' | 'hu'
+  /** True when the signed-in user has an operator account record */
+  hasOperatorAccount: boolean
+  /** True when the signed-in user has a host account record */
+  hasHostAccount: boolean
   setRole: (role: UserRole) => void
   setUser: (user: RentivoUser | null) => void
   setOperator: (operator: Operator | null) => void
@@ -26,22 +32,34 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       role: null,
+      currentRole: null,
       user: null,
       operator: null,
       host: null,
       session: null,
       loading: false,
       language: 'en',
-      setRole: (role) => set({ role }),
+      hasOperatorAccount: false,
+      hasHostAccount: false,
+      setRole: (role) => set({ role, currentRole: role }),
       setUser: (user) => set({ user }),
-      setOperator: (operator) => set({ operator }),
-      setHost: (host) => set({ host }),
+      setOperator: (operator) => set({ operator, hasOperatorAccount: operator !== null }),
+      setHost: (host) => set({ host, hasHostAccount: host !== null }),
       setSession: (session) => set({ session }),
       setLoading: (loading) => set({ loading }),
       setLanguage: (language) => set({ language }),
       signOut: async () => {
         await supabase.auth.signOut()
-        set({ role: null, user: null, operator: null, host: null, session: null })
+        set({
+          role: null,
+          currentRole: null,
+          user: null,
+          operator: null,
+          host: null,
+          session: null,
+          hasOperatorAccount: false,
+          hasHostAccount: false,
+        })
       },
     }),
     {

@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
-import { differenceInDays, addDays, format } from 'date-fns'
+import { differenceInDays, format } from 'date-fns'
 import * as Haptics from 'expo-haptics'
 import { CardField, useStripe } from '@stripe/stripe-react-native'
 import { Colors, Spacing, Radius } from '@/constants/colors'
@@ -13,6 +13,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { HelpTooltip } from '@/components/ui/HelpTooltip'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { PriceBreakdown } from '@/components/booking/PriceBreakdown'
+import { InsuranceSelector } from '@/components/booking/InsuranceSelector'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { useListing } from '@/lib/hooks/useListing'
 import { useToastStore } from '@/lib/store/useToastStore'
@@ -25,6 +26,8 @@ import { createBooking } from '@/lib/api/bookings'
 import { createPaymentIntent } from '@/lib/api/payments'
 import { t } from '@/constants/i18n'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
+import { INSURANCE_PACKAGES } from '@/types'
+import type { InsuranceId } from '@/types'
 
 const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
   const hour = 8 + Math.floor(i / 2)
@@ -51,6 +54,7 @@ export default function BookingFlowScreen() {
   const [guestPhone, setGuestPhone] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
   const [notes, setNotes] = useState('')
+  const [insurancePackage, setInsurancePackage] = useState<InsuranceId>('basic')
   const [cardComplete, setCardComplete] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -72,6 +76,10 @@ export default function BookingFlowScreen() {
     listing.deposit_amount,
     listing.price_per_week,
   )
+
+  const selectedInsurance = INSURANCE_PACKAGES.find(p => p.id === insurancePackage) ?? INSURANCE_PACKAGES[0]
+  const insuranceTotalCost = selectedInsurance.price * totalDays
+  const grandTotal = priceCalc.total + insuranceTotalCost
 
   const handlePayment = async () => {
     if (submitting || submitted) return
@@ -118,8 +126,8 @@ export default function BookingFlowScreen() {
           price_per_day: listing.price_per_day,
           subtotal: priceCalc.subtotal,
           platform_fee: priceCalc.platformFee,
-          total_amount: priceCalc.total,
-          deposit_amount: listing.deposit_amount,
+          total_amount: grandTotal,
+          deposit_amount: selectedInsurance.price > 0 ? 0 : listing.deposit_amount,
           currency: 'EUR',
           status: 'pending',
           payment_status: 'pending',
@@ -136,7 +144,7 @@ export default function BookingFlowScreen() {
         // Step 2: Create PaymentIntent via Edge Function
         const { clientSecret } = await createPaymentIntent({
           bookingId,
-          amountEur: priceCalc.total,
+          amountEur: grandTotal,
           listingTitle: listing.title,
           operatorStripeAccountId: listing.operator?.stripe_account_id ?? null,
           accessToken: session.access_token,
@@ -227,7 +235,18 @@ export default function BookingFlowScreen() {
 
         {step === 1 && (
           <>
-            <PriceBreakdown calculation={priceCalc} />
+            <PriceBreakdown
+              calculation={priceCalc}
+              insuranceName={t(selectedInsurance.nameKey, language)}
+              insurancePricePerDay={selectedInsurance.price}
+              totalDays={totalDays}
+            />
+
+            <InsuranceSelector
+              selected={insurancePackage}
+              onSelect={setInsurancePackage}
+              language={language}
+            />
 
             <Text style={styles.formTitle}>{t('guestInfo', language)}</Text>
             <Input
@@ -299,14 +318,29 @@ export default function BookingFlowScreen() {
                 <Text style={styles.priceLabel}>{platformFeeLabel}</Text>
                 <Text style={styles.priceValue}>{formatEURDecimal(priceCalc.platformFee)}</Text>
               </View>
+              {selectedInsurance.price > 0 && (
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>
+                    {`${t(selectedInsurance.nameKey, language)} ${t('insurance', language)}`}
+                  </Text>
+                  <Text style={styles.priceValue}>{formatEURDecimal(insuranceTotalCost)}</Text>
+                </View>
+              )}
               <View style={[styles.priceRow, styles.priceTotal]}>
                 <Text style={styles.priceTotalLabel}>Total now</Text>
-                <Text style={styles.priceTotalValue}>{formatEURDecimal(priceCalc.total)}</Text>
+                <Text style={styles.priceTotalValue}>{formatEURDecimal(grandTotal)}</Text>
               </View>
-              <View style={styles.depositRow}>
-                <Text style={styles.depositLabel}>🔒 Refundable deposit</Text>
-                <Text style={styles.depositValue}>{formatEURDecimal(refundableDeposit)}</Text>
-              </View>
+              {selectedInsurance.price > 0 ? (
+                <View style={styles.depositRow}>
+                  <Text style={styles.depositLabel}>✓ No deposit required</Text>
+                  <Text style={[styles.depositValue, { color: Colors.success }]}>Included</Text>
+                </View>
+              ) : (
+                <View style={styles.depositRow}>
+                  <Text style={styles.depositLabel}>🔒 Refundable deposit</Text>
+                  <Text style={styles.depositValue}>{formatEURDecimal(refundableDeposit)}</Text>
+                </View>
+              )}
               <View style={styles.trustRow}>
                 <Text style={styles.trustItem}>✓ Free cancel until 48h before</Text>
                 <Text style={styles.trustItem}>✓ No hidden fees</Text>
@@ -365,14 +399,14 @@ export default function BookingFlowScreen() {
               ]}
               onPress={() => void handlePayment()}
               disabled={submitting || submitted || !guestName.trim() || (!Config.useMock && !cardComplete)}
-              accessibilityLabel={`Pay ${formatEURDecimal(priceCalc.total)}`}
+              accessibilityLabel={`Pay ${formatEURDecimal(grandTotal)}`}
               accessibilityRole="button"
             >
               {submitting ? (
                 <ActivityIndicator color={Colors.textInverse} size="small" />
               ) : (
                 <Text style={styles.payBtnText}>
-                  Pay {formatEURDecimal(priceCalc.total)} →
+                  Pay {formatEURDecimal(grandTotal)} →
                 </Text>
               )}
             </TouchableOpacity>

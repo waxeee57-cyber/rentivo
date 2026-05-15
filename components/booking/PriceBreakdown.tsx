@@ -8,15 +8,39 @@ import type { PriceCalculation } from '@/types'
 interface PriceBreakdownProps {
   calculation: PriceCalculation
   compact?: boolean
+  insuranceName?: string
+  insurancePricePerDay?: number
+  totalDays?: number
 }
 
-export function PriceBreakdown({ calculation, compact = false }: PriceBreakdownProps) {
+export function PriceBreakdown({
+  calculation,
+  compact = false,
+  insuranceName,
+  insurancePricePerDay,
+  totalDays,
+}: PriceBreakdownProps) {
+  const insuranceTotal =
+    insurancePricePerDay !== undefined && insurancePricePerDay > 0 && totalDays !== undefined
+      ? insurancePricePerDay * totalDays
+      : null
+
   return (
     <View style={styles.container}>
       <Row label={calculation.breakdown} value={formatEURDecimal(calculation.subtotal)} />
       <Row label="Service fee (2.5%)" value={formatEURDecimal(calculation.platformFee)} />
+      {insuranceTotal !== null && insuranceName !== undefined && (
+        <Row
+          label={`${insuranceName} insurance`}
+          value={formatEURDecimal(insuranceTotal)}
+        />
+      )}
       <Divider style={{ marginVertical: Spacing.sm }} />
-      <Row label="Total" value={formatEURDecimal(calculation.total)} bold />
+      <Row
+        label="Total"
+        value={formatEURDecimal(calculation.total + (insuranceTotal ?? 0))}
+        bold
+      />
       {!compact && calculation.deposit > 0 && (
         <Row
           label="Security deposit (refundable)"

@@ -1,5 +1,5 @@
-import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Linking } from 'react-native'
+import React, { useEffect, useRef } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Linking, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import type { Href } from 'expo-router'
@@ -12,9 +12,10 @@ import { useBookings } from '@/lib/hooks/useBookings'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import { t } from '@/constants/i18n'
+import { useLoyalty } from '@/lib/hooks/useLoyalty'
 
 export default function ProfileScreen() {
-  const { user, operator, host, signOut, language, setLanguage } = useAuthStore()
+  const { user, operator, signOut, language, setLanguage, hasOperatorAccount, hasHostAccount, setRole } = useAuthStore()
   const { showToast } = useToastStore()
 
   const name = Config.useMock ? 'Marco Ferreira' : (user?.name ?? operator?.name ?? 'User')
@@ -34,6 +35,24 @@ export default function ProfileScreen() {
   const tripCount = Config.useMock ? 4 : bookings.filter(b => b.status === 'completed').length
   const reviewCount = Config.useMock ? 2 : 0
   const avgRating = Config.useMock ? '4.9' : '—'
+
+  // Loyalty: sum completed booking totals (EUR) × 100 to get cents
+  const totalSpentCents = Config.useMock
+    ? 92300  // mock: €923 spent → 923 points → Silver tier
+    : bookings
+        .filter(b => b.status === 'completed')
+        .reduce((sum, b) => sum + Math.round(b.total_amount * 100), 0)
+
+  const loyalty = useLoyalty(totalSpentCents)
+
+  const progressAnim = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: loyalty.progressPercent / 100,
+      duration: 800,
+      useNativeDriver: false,
+    }).start()
+  }, [loyalty.progressPercent, progressAnim])
 
   const handleSignOut = () => {
     Alert.alert(t('signOut', language), 'Are you sure?', [
@@ -124,6 +143,71 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Loyalty Card */}
+        <Card style={styles.card}>
+          <View style={styles.loyaltyHeader}>
+            <Text style={styles.sectionTitle}>{t('loyaltyTitle', language)}</Text>
+            <View style={[styles.tierBadge, { backgroundColor: loyalty.tierInfo.color + '22', borderColor: loyalty.tierInfo.color + '66' }]}>
+              <Text style={[styles.tierBadgeText, { color: loyalty.tierInfo.color }]}>
+                {loyalty.tierInfo.label.toUpperCase()}
+              </Text>
+            </View>
+          </View>
+
+          <Text
+            style={[styles.loyaltyPoints, { color: loyalty.tierInfo.color }]}
+            accessibilityLabel={`${loyalty.points} ${t('loyaltyPoints', language)}`}
+          >
+            {loyalty.points.toLocaleString()}{' '}
+            <Text style={styles.loyaltyPointsLabel}>{t('loyaltyPoints', language)}</Text>
+          </Text>
+
+          {/* Progress bar */}
+          <View
+            style={styles.progressTrack}
+            accessibilityLabel={t('loyaltyProgressLabel', language)}
+            accessibilityRole="progressbar"
+          >
+            <Animated.View
+              style={[
+                styles.progressFill,
+                {
+                  backgroundColor: loyalty.tierInfo.color,
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+          </View>
+
+          {loyalty.nextTierInfo ? (
+            <Text style={styles.loyaltyNextText}>
+              <Text style={{ color: loyalty.nextTierInfo.color, fontWeight: '700' }}>
+                {loyalty.pointsToNextTier}
+              </Text>
+              {' '}{t('loyaltyNextTier', language)}{' '}
+              <Text style={{ color: loyalty.nextTierInfo.color, fontWeight: '700' }}>
+                {loyalty.nextTierInfo.label}
+              </Text>
+            </Text>
+          ) : (
+            <Text style={styles.loyaltyNextText}>{t('loyaltyMaxTier', language)}</Text>
+          )}
+
+          {/* Perks list */}
+          <Text style={[styles.sectionTitle, { marginTop: Spacing.md, marginBottom: Spacing.sm }]}>
+            {t('loyaltyPerks', language)}
+          </Text>
+          {loyalty.tierInfo.perks.map((perk) => (
+            <View key={perk} style={styles.perkRow}>
+              <Text style={[styles.perkDot, { color: loyalty.tierInfo.color }]}>●</Text>
+              <Text style={styles.perkText}>{perk}</Text>
+            </View>
+          ))}
+        </Card>
+
         {/* Quick access */}
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>
@@ -185,43 +269,49 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
-        {(Config.useMock || operator !== null || host !== null) && (
-          <Card style={styles.card}>
-            <Text style={styles.sectionTitle}>{t('sectionSwitchRole', language)}</Text>
-            <View style={styles.switchRoleColumn}>
-              {(Config.useMock || operator !== null) && (
-                <TouchableOpacity
-                  style={styles.switchRoleBtn}
-                  onPress={() => {
-                    useAuthStore.getState().setRole('operator')
-                    router.replace('/(operator)/dashboard')
-                  }}
-                  accessibilityLabel="Switch to operator view"
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.switchRoleIcon}>🏢</Text>
-                  <Text style={styles.switchRoleText}>{t('roleOperator', language)}</Text>
-                  <Text style={styles.switchRoleChevron}>›</Text>
-                </TouchableOpacity>
-              )}
-              {(Config.useMock || host !== null) && (
-                <TouchableOpacity
-                  style={styles.switchRoleBtn}
-                  onPress={() => {
-                    useAuthStore.getState().setRole('host')
-                    router.replace('/(host)/dashboard')
-                  }}
-                  accessibilityLabel="Switch to host view"
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.switchRoleIcon}>🏠</Text>
-                  <Text style={styles.switchRoleText}>{t('roleHost', language)}</Text>
-                  <Text style={styles.switchRoleChevron}>›</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </Card>
-        )}
+        <Card style={styles.card}>
+          <Text style={styles.sectionTitle}>{t('sectionSwitchRole', language)}</Text>
+          <View style={styles.switchRoleColumn}>
+            {(Config.useMock || hasOperatorAccount) && (
+              <TouchableOpacity
+                style={styles.switchRoleBtn}
+                onPress={() => { setRole('operator'); router.replace('/(operator)/dashboard') }}
+                accessibilityLabel="Switch to Operator Dashboard"
+                accessibilityRole="button"
+              >
+                <Text style={styles.switchRoleIcon}>🏢</Text>
+                <Text style={styles.switchRoleText}>{t('roleOperator', language)}</Text>
+                <Text style={styles.switchRoleChevron}>›</Text>
+              </TouchableOpacity>
+            )}
+            {(Config.useMock || hasHostAccount) && (
+              <TouchableOpacity
+                style={styles.switchRoleBtn}
+                onPress={() => { setRole('host'); router.replace('/(host)/dashboard') }}
+                accessibilityLabel="Switch to Host Dashboard"
+                accessibilityRole="button"
+              >
+                <Text style={styles.switchRoleIcon}>🏠</Text>
+                <Text style={styles.switchRoleText}>{t('roleHost', language)}</Text>
+                <Text style={styles.switchRoleChevron}>›</Text>
+              </TouchableOpacity>
+            )}
+            {!Config.useMock && !hasOperatorAccount && (
+              <TouchableOpacity
+                style={[styles.switchRoleBtn, styles.switchRoleBtnAccent]}
+                onPress={() => router.push('/auth/operator-setup' as Href)}
+                accessibilityLabel="Become an Operator"
+                accessibilityRole="button"
+              >
+                <Text style={styles.switchRoleIcon}>+</Text>
+                <Text style={[styles.switchRoleText, styles.switchRoleTextAccent]}>
+                  {language === 'hu' ? 'Legyen operátor' : language === 'es' ? 'Convertirse en operador' : 'Become an operator'}
+                </Text>
+                <Text style={styles.switchRoleChevron}>›</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </Card>
 
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>{t('sectionAccount', language)}</Text>
@@ -400,5 +490,30 @@ const styles = StyleSheet.create({
   },
   switchRoleIcon: { fontSize: 18 },
   switchRoleText: { flex: 1, fontSize: 15, color: Colors.text, fontWeight: '600' },
+  switchRoleTextAccent: { color: Colors.primary },
+  switchRoleBtnAccent: { borderColor: Colors.primary, borderStyle: 'dashed' },
   switchRoleChevron: { fontSize: 20, color: Colors.textTertiary },
+  // Loyalty
+  loyaltyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
+  tierBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+  },
+  tierBadgeText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8 },
+  loyaltyPoints: { fontSize: 28, fontWeight: '800', marginBottom: Spacing.sm },
+  loyaltyPointsLabel: { fontSize: 14, fontWeight: '400', color: Colors.textSecondary },
+  progressTrack: {
+    height: 8,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.border,
+    overflow: 'hidden',
+    marginBottom: Spacing.sm,
+  },
+  progressFill: { height: '100%', borderRadius: Radius.pill },
+  loyaltyNextText: { fontSize: 13, color: Colors.textSecondary, marginBottom: Spacing.xs },
+  perkRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: 4 },
+  perkDot: { fontSize: 8 },
+  perkText: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
 })

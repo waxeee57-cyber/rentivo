@@ -16,12 +16,14 @@ interface ButtonProps {
   style?: ViewStyle
   textStyle?: TextStyle
   fullWidth?: boolean
+  accessibilityLabel?: string
 }
 
 export function Button({
   title, onPress, variant = 'primary',
   loading = false, disabled = false,
   style, textStyle, fullWidth = false,
+  accessibilityLabel,
 }: ButtonProps) {
   const isDisabled = disabled || loading
 
@@ -37,6 +39,8 @@ export function Button({
         style,
       ]}
       activeOpacity={0.8}
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityRole="button"
     >
       {loading
         ? <ActivityIndicator color={variant === 'primary' ? Colors.textInverse : Colors.primary} size="small" />

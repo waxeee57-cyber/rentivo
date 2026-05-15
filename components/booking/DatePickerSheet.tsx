@@ -14,7 +14,7 @@ interface DatePickerSheetProps {
   onApply: (start: Date, end: Date) => void
   onClose: () => void
   blockedDates?: string[]  // ISO date strings e.g. "2026-05-20"
-  pricePerDay?: number     // cents, for price preview
+  pricePerDay?: number     // whole euros (NOT cents), for price preview
 }
 
 export function DatePickerSheet({
@@ -64,7 +64,7 @@ export function DatePickerSheet({
     const subtotal = pricePerDay * duration
     const fee = Math.round(subtotal * platformCut)
     const total = subtotal + fee
-    return `${duration} night${duration > 1 ? 's' : ''} · €${(total / 100).toFixed(2)} total`
+    return `${duration} night${duration > 1 ? 's' : ''} · €${total.toFixed(2)} total`
   })()
 
   // Check if a selected range overlaps with blocked dates

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Modal } from 'react-native'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -127,6 +127,8 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
                 source={{ uri: imageUri }}
                 style={isFull ? styles.imageFull : styles.imageGrid}
                 contentFit="cover"
+                transition={300}
+                placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
               />
             ) : (
               <LinearGradient
@@ -358,4 +360,41 @@ const contextStyles = StyleSheet.create({
     paddingVertical: Spacing.md, alignItems: 'center',
   },
   cancelText: { fontSize: 16, fontWeight: '700', color: Colors.text },
+})
+
+// ---------------------------------------------------------------------------
+// ListingCardSkeleton — animated placeholder while listings are loading
+// ---------------------------------------------------------------------------
+
+export function ListingCardSkeleton({ variant = 'grid' }: { variant?: 'full' | 'grid' }) {
+  const opacity = useRef(new Animated.Value(0.3)).current
+  const isFull = variant === 'full'
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ])
+    )
+    animation.start()
+    return () => animation.stop()
+  }, [opacity])
+
+  return (
+    <Animated.View style={[isFull ? styles.cardFull : styles.cardGrid, { opacity }]}>
+      <View style={[isFull ? styles.imageFull : styles.imageGrid, skeletonStyles.imageSkeleton]} />
+      <View style={skeletonStyles.info}>
+        <View style={[skeletonStyles.line, { width: '70%' }]} />
+        <View style={[skeletonStyles.line, { width: '45%', marginTop: 8 }]} />
+        <View style={[skeletonStyles.line, { width: '30%', marginTop: 8 }]} />
+      </View>
+    </Animated.View>
+  )
+}
+
+const skeletonStyles = StyleSheet.create({
+  imageSkeleton: { backgroundColor: Colors.border },
+  info: { padding: 12, paddingBottom: 16 },
+  line: { height: 12, backgroundColor: Colors.border, borderRadius: 6 },
 })

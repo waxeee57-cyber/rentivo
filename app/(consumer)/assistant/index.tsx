@@ -1,0 +1,495 @@
+import React, { useState, useRef, useCallback } from 'react'
+import {
+  View, Text, ScrollView, TextInput, TouchableOpacity,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
+import { Colors, Spacing, Radius, Typography } from '@/constants/colors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { supabase } from '@/lib/supabase'
+import { Config } from '@/constants/config'
+
+interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+}
+
+const MOCK_REPLIES: Record<string, string> = {
+  default: 'I can help you find the perfect rental! We have cars, boats, villas, and more available in Marbella and Budapest. What are you looking for?',
+  car: 'Great choice! We have sedans from €45/day and SUVs from €75/day in Marbella. Would you like to see available dates?',
+  boat: 'We have kayaks from €25/day and luxury yachts from €350/day. Most are available in the Costa del Sol area.',
+  weekend: 'This weekend we have 12 vehicles available in Marbella and 8 in Budapest. Shall I filter by category?',
+}
+
+function getMockReply(text: string): string {
+  const lower = text.toLowerCase()
+  if (lower.includes('car') || lower.includes('vehicle')) return MOCK_REPLIES.car
+  if (lower.includes('boat') || lower.includes('yacht') || lower.includes('kayak')) return MOCK_REPLIES.boat
+  if (lower.includes('weekend') || lower.includes('saturday') || lower.includes('sunday')) return MOCK_REPLIES.weekend
+  return MOCK_REPLIES.default
+}
+
+export default function AssistantScreen() {
+  const { language } = useAuthStore()
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [inputText, setInputText] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+  const scrollViewRef = useRef<ScrollView>(null)
+
+  const sendMessage = useCallback(async (text: string) => {
+    const trimmed = text.trim()
+    if (!trimmed || isTyping) return
+
+    const userMsg: ChatMessage = {
+      id: `u-${Date.now()}`,
+      role: 'user',
+      content: trimmed,
+    }
+
+    setMessages(prev => [...prev, userMsg])
+    setInputText('')
+    setIsTyping(true)
+
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true })
+    }, 50)
+
+    if (Config.useMock) {
+      await new Promise<void>(resolve => setTimeout(resolve, 1200 + Math.random() * 800))
+      const assistantMsg: ChatMessage = {
+        id: `a-${Date.now()}`,
+        role: 'assistant',
+        content: getMockReply(trimmed),
+      }
+      setMessages(prev => [...prev, assistantMsg])
+      setIsTyping(false)
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true })
+      }, 50)
+      return
+    }
+
+    try {
+      const history = [...messages, userMsg].map(m => ({
+        role: m.role,
+        content: m.content,
+      }))
+
+      const { data, error } = await supabase.functions.invoke('rental-assistant', {
+        body: { messages: history },
+      })
+
+      if (error) throw error
+
+      const assistantMsg: ChatMessage = {
+        id: `a-${Date.now()}`,
+        role: 'assistant',
+        content: (data as { response: string }).response,
+      }
+      setMessages(prev => [...prev, assistantMsg])
+    } catch {
+      const errMsg: ChatMessage = {
+        id: `err-${Date.now()}`,
+        role: 'assistant',
+        content: t('assistantError', language),
+      }
+      setMessages(prev => [...prev, errMsg])
+    } finally {
+      setIsTyping(false)
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true })
+      }, 50)
+    }
+  }, [isTyping, messages, language])
+
+  const handleSend = useCallback(() => {
+    void sendMessage(inputText)
+  }, [inputText, sendMessage])
+
+  const handleSuggestion = useCallback((text: string) => {
+    void sendMessage(text)
+  }, [sendMessage])
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerIcon}>
+          <Ionicons name="chatbubble-ellipses" size={20} color={Colors.primary} />
+        </View>
+        <View style={styles.headerText}>
+          <Text style={styles.headerTitle}>{t('assistantTitle', language)}</Text>
+          <Text style={styles.headerSubtitle}>{t('assistantSubtitle', language)}</Text>
+        </View>
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
+      >
+        {/* Messages area */}
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.messageArea}
+          contentContainerStyle={styles.messageContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Empty state / welcome */}
+          {messages.length === 0 && (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIconWrap}>
+                <Ionicons name="chatbubble-ellipses" size={40} color={Colors.primary} />
+              </View>
+              <Text style={styles.emptyText}>{t('assistantEmpty', language)}</Text>
+
+              {/* Quick suggestion chips */}
+              <View style={styles.chips}>
+                <TouchableOpacity
+                  style={styles.chip}
+                  onPress={() => handleSuggestion(t('assistantSuggest1', language))}
+                  accessibilityLabel={t('assistantSuggest1', language)}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="car-outline" size={14} color={Colors.primary} />
+                  <Text style={styles.chipText}>{t('assistantSuggest1', language)}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.chip}
+                  onPress={() => handleSuggestion(t('assistantSuggest2', language))}
+                  accessibilityLabel={t('assistantSuggest2', language)}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="boat-outline" size={14} color={Colors.primary} />
+                  <Text style={styles.chipText}>{t('assistantSuggest2', language)}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.chip}
+                  onPress={() => handleSuggestion(t('assistantSuggest3', language))}
+                  accessibilityLabel={t('assistantSuggest3', language)}
+                  accessibilityRole="button"
+                >
+                  <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
+                  <Text style={styles.chipText}>{t('assistantSuggest3', language)}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Suggestion chips above messages (once conversation started) */}
+          {messages.length > 0 && (
+            <View style={styles.chipsRow}>
+              <TouchableOpacity
+                style={styles.chipSmall}
+                onPress={() => handleSuggestion(t('assistantSuggest1', language))}
+                accessibilityLabel={t('assistantSuggest1', language)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.chipSmallText}>{t('assistantSuggest1', language)}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.chipSmall}
+                onPress={() => handleSuggestion(t('assistantSuggest2', language))}
+                accessibilityLabel={t('assistantSuggest2', language)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.chipSmallText}>{t('assistantSuggest2', language)}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.chipSmall}
+                onPress={() => handleSuggestion(t('assistantSuggest3', language))}
+                accessibilityLabel={t('assistantSuggest3', language)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.chipSmallText}>{t('assistantSuggest3', language)}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Message bubbles */}
+          {messages.map(msg => (
+            <View
+              key={msg.id}
+              style={[
+                styles.bubbleWrap,
+                msg.role === 'user' ? styles.bubbleWrapUser : styles.bubbleWrapAssistant,
+              ]}
+            >
+              {msg.role === 'assistant' && (
+                <View style={styles.avatarDot}>
+                  <Ionicons name="chatbubble-ellipses" size={12} color={Colors.primary} />
+                </View>
+              )}
+              <View
+                style={[
+                  styles.bubble,
+                  msg.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.bubbleText,
+                    msg.role === 'user' && styles.bubbleTextUser,
+                  ]}
+                >
+                  {msg.content}
+                </Text>
+              </View>
+            </View>
+          ))}
+
+          {/* Typing indicator */}
+          {isTyping && (
+            <View style={[styles.bubbleWrap, styles.bubbleWrapAssistant]}>
+              <View style={styles.avatarDot}>
+                <Ionicons name="chatbubble-ellipses" size={12} color={Colors.primary} />
+              </View>
+              <View style={[styles.bubble, styles.bubbleAssistant, styles.typingBubble]}>
+                <ActivityIndicator size="small" color={Colors.primary} />
+                <Text style={styles.typingText}>{t('assistantTyping', language)}</Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.bottomSpacer} />
+        </ScrollView>
+
+        {/* Input bar */}
+        <View style={styles.inputBar}>
+          <TextInput
+            style={styles.textInput}
+            value={inputText}
+            onChangeText={setInputText}
+            placeholder={t('assistantPlaceholder', language)}
+            placeholderTextColor={Colors.textTertiary}
+            multiline
+            maxLength={500}
+            returnKeyType="send"
+            onSubmitEditing={handleSend}
+            accessibilityLabel={t('assistantPlaceholder', language)}
+          />
+          <TouchableOpacity
+            style={[styles.sendBtn, (!inputText.trim() || isTyping) && styles.sendBtnDisabled]}
+            onPress={handleSend}
+            disabled={!inputText.trim() || isTyping}
+            accessibilityLabel={t('assistantSend', language)}
+            accessibilityRole="button"
+          >
+            <Ionicons name="send" size={18} color={Colors.textInverse} />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  )
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  container: { flex: 1, backgroundColor: Colors.background },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  headerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerText: { flex: 1 },
+  headerTitle: {
+    ...Typography.h4,
+    color: Colors.text,
+  },
+  headerSubtitle: {
+    ...Typography.caption,
+    color: Colors.textTertiary,
+    marginTop: 2,
+  },
+
+  // Message area
+  messageArea: { flex: 1 },
+  messageContent: {
+    paddingHorizontal: Spacing.base,
+    paddingTop: Spacing.md,
+    flexGrow: 1,
+  },
+  bottomSpacer: { height: Spacing.md },
+
+  // Empty state
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: Spacing.xxxl,
+    paddingHorizontal: Spacing.xl,
+  },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.base,
+  },
+  emptyText: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: Spacing.xl,
+  },
+
+  // Chips (empty state)
+  chips: {
+    gap: Spacing.sm,
+    alignItems: 'center',
+    width: '100%',
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.primarySurface,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.borderGold,
+    minHeight: 44,
+  },
+  chipText: {
+    ...Typography.bodyS,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+
+  // Chips (inline row above messages)
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginBottom: Spacing.md,
+  },
+  chipSmall: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    backgroundColor: Colors.primarySurface,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.borderGold,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  chipSmallText: {
+    ...Typography.caption,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+
+  // Bubbles
+  bubbleWrap: {
+    marginBottom: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.xs,
+    maxWidth: '85%',
+  },
+  bubbleWrapUser: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
+  bubbleWrapAssistant: { alignSelf: 'flex-start' },
+  avatarDot: {
+    width: 24,
+    height: 24,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  bubble: {
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flex: 1,
+  },
+  bubbleUser: {
+    backgroundColor: Colors.primary,
+    borderBottomRightRadius: 4,
+  },
+  bubbleAssistant: {
+    backgroundColor: Colors.surfaceWarm,
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  bubbleText: {
+    ...Typography.body,
+    color: Colors.text,
+    lineHeight: 20,
+  },
+  bubbleTextUser: {
+    color: Colors.textInverse,
+  },
+
+  // Typing indicator
+  typingBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingVertical: 12,
+  },
+  typingText: {
+    ...Typography.bodyS,
+    color: Colors.textTertiary,
+    fontStyle: 'italic',
+  },
+
+  // Input bar
+  inputBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  textInput: {
+    flex: 1,
+    backgroundColor: Colors.surfaceWarm,
+    borderRadius: Radius.xxl,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    fontSize: 14,
+    color: Colors.text,
+    maxHeight: 100,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  sendBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendBtnDisabled: {
+    backgroundColor: Colors.textTertiary,
+  },
+})

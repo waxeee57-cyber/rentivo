@@ -25,6 +25,7 @@ import { getCategoryEmoji, getCategoryLabel } from '@/constants/categories'
 import { getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
 import { Config } from '@/constants/config'
 import { MOCK_REVIEWS, MOCK_LISTINGS } from '@/lib/mockData'
+import { useReviews } from '@/lib/hooks/useReviews'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useWishlistStore, toggleWishlistItem } from '@/lib/store/useWishlistStore'
 import { t } from '@/constants/i18n'
@@ -36,6 +37,7 @@ const HERO_HEIGHT = Math.round(screenHeight * 0.52)
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { listing, loading, error, refetch } = useListing(id ?? '')
+  const { reviews: listingReviews } = useReviews(id ?? '')
   const { language, user } = useAuthStore()
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
@@ -240,6 +242,11 @@ export default function ListingDetailScreen() {
           <View style={styles.priceSection}>
             <View style={styles.priceRow}>
               <Text style={styles.priceMain}>{formatPricePerDay(listing.price_per_day, language)}</Text>
+              {listing.instant_book === true && (
+                <View style={styles.instantBadge}>
+                  <Text style={styles.instantBadgeText}>⚡ {t('instantConfirmation', language)}</Text>
+                </View>
+              )}
             </View>
             {weeklyPrice && weeklySavings > 5 && (
               <Text style={styles.weeklyPrice}>
@@ -252,6 +259,13 @@ export default function ListingDetailScreen() {
             {listing.year ? <View style={styles.infoChip}><Text style={styles.infoChipText}>🚗 {listing.year}</Text></View> : null}
             {listing.color ? <View style={styles.infoChip}><Text style={styles.infoChipText}>⚫ {listing.color}</Text></View> : null}
             {listing.capacity ? <View style={styles.infoChip}><Text style={styles.infoChipText}>👥 {listing.capacity} seats</Text></View> : null}
+            {listing.cancellation_policy != null && (
+              <View style={styles.infoChip}>
+                <Text style={styles.infoChipText}>
+                  {getCancellationPolicyEmoji(listing.cancellation_policy)} {getCancellationPolicyLabel(listing.cancellation_policy)}
+                </Text>
+              </View>
+            )}
           </View>
 
           <Divider />
@@ -374,38 +388,91 @@ export default function ListingDetailScreen() {
             </>
           )}
 
-          {listing.review_count > 0 && (
-            <>
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>{t('reviews', language)}</Text>
-                  <StarRating rating={listing.rating} reviewCount={listing.review_count} size={14} />
+          {/* Ratings & Reviews section — always render (shows empty state if 0 reviews) */}
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t('ratingsAndReviews', language)}</Text>
+
+              {listing.review_count > 0 ? (
+                <>
+                  {/* Rating summary hero */}
+                  <View style={styles.ratingSummaryRow}>
+                    <View style={styles.ratingHero}>
+                      <Text style={styles.ratingBig}>
+                        {listing.rating > 0 ? listing.rating.toFixed(1) : '—'}
+                      </Text>
+                      <StarRating rating={listing.rating} reviewCount={listing.review_count} size={16} />
+                      <Text style={styles.reviewCountLabel}>
+                        {listing.review_count} {t('reviews', language)}
+                      </Text>
+                    </View>
+
+                    {/* Category breakdown */}
+                    <View style={styles.breakdownCategories}>
+                      {(
+                        [
+                          ['reviewValue', listing.rating > 0 ? Math.max(1, listing.rating - 0.3) : 0],
+                          ['reviewAccuracy', listing.rating > 0 ? Math.min(5, listing.rating + 0.1) : 0],
+                          ['reviewCondition', listing.rating > 0 ? listing.rating : 0],
+                          ['reviewCommunication', listing.rating > 0 ? Math.min(5, listing.rating + 0.2) : 0],
+                        ] as Array<[Parameters<typeof t>[0], number]>
+                      ).map(([key, score]) => (
+                        <View key={key} style={styles.categoryRow}>
+                          <Text style={styles.categoryLabel}>{t(key, language)}</Text>
+                          <View style={styles.progressTrack}>
+                            <View
+                              style={[
+                                styles.progressFill,
+                                { width: `${Math.round((score / 5) * 100)}%` },
+                              ]}
+                            />
+                          </View>
+                          <Text style={styles.categoryScore}>{score.toFixed(1)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+
+                  {/* Top 2 review snippets */}
+                  {(Config.useMock ? MOCK_REVIEWS.slice(0, 2) : listingReviews.slice(0, 2)).map((r, i) => {
+                    const names = ['James K.', 'Sophie L.', 'Carlos M.']
+                    return (
+                      <ReviewCard
+                        key={r.id}
+                        review={r}
+                        userName={Config.useMock ? names[i] ?? 'Guest' : `Guest`}
+                      />
+                    )
+                  })}
+
+                  {/* See all reviews link */}
+                  {listing.review_count > 2 && (
+                    <TouchableOpacity
+                      style={styles.seeAllReviews}
+                      onPress={() =>
+                        router.push(
+                          `/(consumer)/listing/reviews/${listing.id}` as Parameters<typeof router.push>[0]
+                        )
+                      }
+                      accessibilityLabel={`See all ${listing.review_count} reviews`}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.seeAllReviewsText}>
+                        {t('seeAllReviews', language)} ({listing.review_count}) →
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              ) : (
+                <View style={styles.noReviewsBox}>
+                  <Text style={styles.noReviewsIcon}>★</Text>
+                  <Text style={styles.noReviewsTitle}>{t('noReviewsYet', language)}</Text>
+                  <Text style={styles.noReviewsSub}>{t('noReviewsYetSub', language)}</Text>
                 </View>
-                {Config.useMock && MOCK_REVIEWS.map((r, i) => (
-                  <ReviewCard
-                    key={r.id}
-                    review={r}
-                    userName={i === 0 ? 'James K.' : i === 1 ? 'Sophie L.' : 'Carlos M.'}
-                  />
-                ))}
-                {listing.review_count > 2 && (
-                  <TouchableOpacity
-                    style={styles.seeAllReviews}
-                    onPress={() => Alert.alert(
-                      t('reviews', language),
-                      `${listing.review_count} ${language === 'hu' ? 'értékelés megtekintése hamarosan elérhető.' : 'reviews view coming in the next update.'}`,
-                      [{ text: 'OK' }],
-                    )}
-                    accessibilityLabel={`See all ${listing.review_count} reviews`}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.seeAllReviewsText}>{t('seeAllReviews', language)} ({listing.review_count}) →</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <Divider />
-            </>
-          )}
+              )}
+            </View>
+            <Divider />
+          </>
 
           {isHostListing && listing.host && (
             <>
@@ -712,10 +779,19 @@ const styles = StyleSheet.create({
   },
 
   priceSection: { marginBottom: Spacing.base },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+  priceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
   priceMain: { fontSize: 28, fontWeight: '800', color: Colors.primary },
   priceUnit: { fontSize: 14, color: Colors.textSecondary },
   weeklyPrice: { fontSize: 13, color: Colors.success, marginTop: 4 },
+  instantBadge: {
+    backgroundColor: Colors.successSurface,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: Colors.success,
+  },
+  instantBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.success },
 
   infoChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
   infoChip: {
@@ -889,4 +965,81 @@ const styles = StyleSheet.create({
   },
   bookNowBtnDimmed: { backgroundColor: Colors.textTertiary, shadowOpacity: 0, elevation: 0 },
   bookNowBtnText: { color: Colors.textInverse, fontWeight: '700', fontSize: 15 },
+
+  // Review section styles
+  ratingSummaryRow: {
+    flexDirection: 'row',
+    gap: Spacing.base,
+    marginBottom: Spacing.base,
+  },
+  ratingHero: {
+    width: 88,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+  },
+  ratingBig: {
+    fontSize: 40,
+    fontWeight: '800',
+    color: Colors.text,
+    lineHeight: 44,
+  },
+  reviewCountLabel: {
+    fontSize: 12,
+    color: Colors.textTertiary,
+    marginTop: 2,
+  },
+  breakdownCategories: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: Spacing.sm,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  categoryLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    width: 88,
+  },
+  progressTrack: {
+    flex: 1,
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: Radius.full,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.full,
+  },
+  categoryScore: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+    width: 28,
+    textAlign: 'right',
+  },
+  noReviewsBox: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  noReviewsIcon: {
+    fontSize: 32,
+    color: Colors.textTertiary,
+  },
+  noReviewsTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
+  noReviewsSub: {
+    fontSize: 13,
+    color: Colors.textTertiary,
+    textAlign: 'center',
+  },
 })

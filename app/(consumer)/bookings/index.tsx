@@ -119,6 +119,8 @@ export default function BookingsScreen() {
               key={tab.key}
               style={styles.tab}
               onPress={() => handleTabPress(tab.key, index)}
+              accessibilityLabel={t(tab.labelKey, language)}
+              accessibilityRole="tab"
             >
               <View style={styles.tabInner}>
                 <Text style={[styles.tabLabel, selectedTab === tab.key && styles.tabLabelActive]}>
@@ -186,12 +188,16 @@ export default function BookingsScreen() {
                   <TouchableOpacity
                     style={styles.activeActionBtn}
                     onPress={() => router.push(`/(consumer)/bookings/${item.id}`)}
+                    accessibilityLabel="View contract"
+                    accessibilityRole="button"
                   >
                     <Text style={styles.activeActionText}>📋 View contract</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.activeActionBtn}
                     onPress={() => router.push(`/(consumer)/bookings/chat/${item.id}` as Parameters<typeof router.push>[0])}
+                    accessibilityLabel="Message host"
+                    accessibilityRole="button"
                   >
                     <Text style={styles.activeActionText}>💬 Message</Text>
                   </TouchableOpacity>
@@ -269,6 +275,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   activeActionText: { fontSize: 13, fontWeight: '600', color: Colors.text },
 })
