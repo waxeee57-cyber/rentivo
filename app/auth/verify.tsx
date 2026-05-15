@@ -8,6 +8,7 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { pendingOtpPhone } from '@/app/auth/login'
 
 export default function VerifyScreen() {
   const [code, setCode] = useState(['', '', '', '', '', ''])
@@ -30,16 +31,25 @@ export default function VerifyScreen() {
     setLoading(true)
     try {
       const { data, error } = await supabase.auth.verifyOtp({
-        phone: '',
+        phone: pendingOtpPhone,
         token: otp,
         type: 'sms',
       })
       if (error) throw error
       setSession(data.session as unknown as Record<string, unknown>)
+      if (data.session?.user) {
+        setUser(data.session.user as unknown as Parameters<typeof setUser>[0])
+      }
+      // Route based on role — new users without role go to onboarding
       if (role === 'operator') {
         router.replace('/(operator)/dashboard')
-      } else {
+      } else if (role === 'host') {
+        router.replace('/(host)/dashboard')
+      } else if (role === 'consumer') {
         router.replace('/(consumer)/explore')
+      } else {
+        // New user — no role set yet, go to onboarding
+        router.replace('/onboarding')
       }
     } catch (e) {
       Alert.alert('Invalid code', 'Please check the code and try again.')

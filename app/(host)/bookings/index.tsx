@@ -5,10 +5,13 @@ import { router } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { MOCK_BOOKINGS } from '@/lib/mockData'
 import { Config } from '@/constants/config'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useHostBookings } from '@/lib/hooks/useBookings'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import type { Booking, BookingStatus } from '@/types'
 
@@ -88,11 +91,21 @@ const EMPTY_MESSAGES: Record<Tab, { emoji: string; title: string; subtitle: stri
 
 export default function HostBookingsScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('pending')
+  const [decliningId, setDecliningId] = useState<string | null>(null)
+  const { showToast } = useToastStore()
+  const { host } = useAuthStore()
+  const hostId = Config.useMock ? 'host-001' : (host?.id ?? null)
+  const { bookings: liveBookings, loading } = useHostBookings(hostId)
   const [bookings, setBookings] = useState<Booking[]>(
     Config.useMock ? MOCK_BOOKINGS : []
   )
-  const [decliningId, setDecliningId] = useState<string | null>(null)
-  const { showToast } = useToastStore()
+
+  // Sync live bookings to local state (preserves optimistic updates)
+  React.useEffect(() => {
+    if (!Config.useMock && liveBookings.length > 0) {
+      setBookings(liveBookings)
+    }
+  }, [liveBookings])
 
   const filtered = bookings.filter(b => {
     if (activeTab === 'pending') return b.status === 'pending'
@@ -113,6 +126,16 @@ export default function HostBookingsScreen() {
     setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' as BookingStatus } : b))
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
     showToast({ message: 'Booking declined.', type: 'info' })
+  }
+
+  if (loading && !Config.useMock) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Text style={styles.title}>Bookings</Text>
+        <SkeletonCard />
+        <SkeletonCard />
+      </SafeAreaView>
+    )
   }
 
   return (

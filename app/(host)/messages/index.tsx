@@ -9,6 +9,8 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Config } from '@/constants/config'
 import { MOCK_CONVERSATIONS } from '@/lib/mockData'
+import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 import type { Conversation } from '@/types'
 import { format } from 'date-fns'
 
@@ -25,20 +27,33 @@ function formatTime(iso: string): string {
 
 export default function HostMessagesScreen() {
   const router = useRouter()
+  const { host } = useAuthStore()
   const [conversations, setConversations] = useState<Conversation[]>(
     Config.useMock ? [...MOCK_CONVERSATIONS] : []
   )
   const [refreshing, setRefreshing] = useState(false)
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     if (Config.useMock) {
       setConversations([...MOCK_CONVERSATIONS])
+      return
     }
-  }, [])
+    if (!host?.id) return
+    const { data } = await supabase
+      .from('rentivo_conversations')
+      .select('*, listing:rentivo_listings(*)')
+      .eq('host_id', host.id)
+      .order('last_message_at', { ascending: false })
+    setConversations((data as Conversation[]) ?? [])
+  }, [host?.id])
+
+  React.useEffect(() => {
+    void load()
+  }, [load])
 
   const onRefresh = async () => {
     setRefreshing(true)
-    load()
+    await load()
     setRefreshing(false)
   }
 

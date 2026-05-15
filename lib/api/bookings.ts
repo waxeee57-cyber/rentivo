@@ -42,6 +42,20 @@ export async function fetchOperatorBookings(operatorId: string): Promise<Booking
   return (data as Booking[]) ?? []
 }
 
+export async function fetchHostBookings(hostId: string): Promise<Booking[]> {
+  if (Config.useMock) return MOCK_BOOKINGS
+
+  // Join through listings to filter by host_id
+  const { data, error } = await supabase
+    .from('rentivo_bookings')
+    .select('*, listing:rentivo_listings!inner(*)')
+    .eq('listing.host_id', hostId)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return (data as Booking[]) ?? []
+}
+
 export async function createBooking(
   booking: Omit<Booking, 'id' | 'created_at' | 'pickup_damage_done' | 'return_damage_done' | 'has_damage_claim'>,
 ): Promise<Booking> {

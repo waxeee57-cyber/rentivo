@@ -101,6 +101,8 @@ export default function ListingDetailScreen() {
           <TouchableOpacity
             style={[styles.backBtn, { top: insets.top + 8 }]}
             onPress={() => router.back()}
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
           >
             <Ionicons name="arrow-back" size={20} color={Colors.text} />
           </TouchableOpacity>
@@ -114,6 +116,8 @@ export default function ListingDetailScreen() {
                   message: `Check out ${listing.title} on Rentivo — ${formatEUR(listing.price_per_day)}/day`,
                 })
               }}
+              accessibilityLabel="Share this listing"
+              accessibilityRole="button"
             >
               <Ionicons name="share-outline" size={18} color={Colors.text} />
             </TouchableOpacity>
@@ -123,6 +127,8 @@ export default function ListingDetailScreen() {
                 setFavorited(v => !v)
                 void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
               }}
+              accessibilityLabel={favorited ? 'Remove from favorites' : 'Add to favorites'}
+              accessibilityRole="button"
             >
               <Ionicons
                 name={favorited ? 'heart' : 'heart-outline'}
@@ -468,6 +474,8 @@ export default function ListingDetailScreen() {
               setShowDatePicker(true)
             }
           }}
+          accessibilityLabel={startDate ? `Book ${listing.title}` : 'Select rental dates'}
+          accessibilityRole="button"
         >
           <Text style={styles.bookNowBtnText}>
             {startDate ? t('bookNow', language) : t('selectDates', language)}

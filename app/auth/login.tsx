@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 
+// Module-level store for OTP phone — shared with verify.tsx in the same auth session
+export let pendingOtpPhone = ''
+
 export default function LoginScreen() {
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
@@ -17,10 +20,12 @@ export default function LoginScreen() {
     if (!phone.trim()) { Alert.alert('Please enter your phone number'); return }
     setLoading(true)
     try {
+      const normalizedPhone = phone.trim().replace(/\s/g, '')
       const { error } = await supabase.auth.signInWithOtp({
-        phone: phone.trim().replace(/\s/g, ''),
+        phone: normalizedPhone,
       })
       if (error) throw error
+      pendingOtpPhone = normalizedPhone
       router.push('/auth/verify')
     } catch (e) {
       Alert.alert('Error', String(e))

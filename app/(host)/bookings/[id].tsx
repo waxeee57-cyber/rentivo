@@ -1,18 +1,28 @@
 import React from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { MOCK_BOOKINGS } from '@/lib/mockData'
 import { Config } from '@/constants/config'
+import { useBooking } from '@/lib/hooks/useBookings'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 
 export default function HostBookingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
+  const { booking: liveBooking, loading } = useBooking(Config.useMock ? null : (id ?? null))
   const booking = Config.useMock
     ? MOCK_BOOKINGS.find(b => b.id === id) ?? MOCK_BOOKINGS[0]
-    : null
+    : liveBooking
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator color={Colors.primary} style={{ flex: 1 }} />
+      </SafeAreaView>
+    )
+  }
 
   if (!booking) {
     return (

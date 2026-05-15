@@ -1,25 +1,53 @@
-import React from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
+import React, { useMemo } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { MOCK_HOST, MOCK_HOST_LISTING, MOCK_BOOKINGS } from '@/lib/mockData'
+import { useHostBookings } from '@/lib/hooks/useBookings'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { Config } from '@/constants/config'
 
 export default function HostDashboardScreen() {
   const { host } = useAuthStore()
+  const hostId = Config.useMock ? MOCK_HOST.id : (host?.id ?? null)
+  const { bookings, loading } = useHostBookings(hostId)
   const hostData = Config.useMock ? MOCK_HOST : host
   const firstName = hostData?.name?.split(' ')[0] ?? 'Host'
 
-  const monthlyEarnings = Config.useMock ? 42000 : 0
-  const upcomingPickups = Config.useMock ? 2 : 0
-  const activeRentals = Config.useMock ? 1 : 0
+  const today = new Date().toISOString().split('T')[0]
+  const thisMonth = new Date().toISOString().slice(0, 7)
+
+  const monthlyEarnings = useMemo(() => {
+    if (Config.useMock) return 42000
+    return bookings
+      .filter(b => b.start_date.startsWith(thisMonth) && b.status !== 'cancelled')
+      .reduce((sum, b) => sum + (b.total_amount - b.platform_fee), 0)
+  }, [bookings, thisMonth])
+
+  const upcomingPickups = useMemo(() => {
+    if (Config.useMock) return 2
+    return bookings.filter(b => b.start_date >= today && (b.status === 'confirmed' || b.status === 'pending')).length
+  }, [bookings, today])
+
+  const activeRentals = useMemo(() => {
+    if (Config.useMock) return 1
+    return bookings.filter(b => b.status === 'active').length
+  }, [bookings])
+
   const rating = Config.useMock ? MOCK_HOST.rating : (host?.rating ?? 0)
 
-  const recentBookings = Config.useMock ? MOCK_BOOKINGS.slice(0, 3) : []
+  const recentBookings = Config.useMock ? MOCK_BOOKINGS.slice(0, 3) : bookings.slice(0, 3)
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ActivityIndicator color={Colors.primary} style={{ flex: 1 }} />
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

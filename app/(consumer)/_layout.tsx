@@ -6,6 +6,7 @@ import { Colors } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
 import { MOCK_CONVERSATIONS } from '@/lib/mockData'
+import { Config } from '@/constants/config'
 import { t } from '@/constants/i18n'
 
 function TabIcon({ name, focused, size = 24 }: {
@@ -36,25 +37,27 @@ const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Ligh
 export default function ConsumerLayout() {
   const { language } = useAuthStore()
   const { unreadCount } = useNotificationStore()
-  const consumerChatUnread = MOCK_CONVERSATIONS.reduce((sum, c) => sum + (c.unread_consumer ?? 0), 0)
+  const consumerChatUnread = Config.useMock
+    ? MOCK_CONVERSATIONS.reduce((sum, c) => sum + (c.unread_consumer ?? 0), 0)
+    : 0
   const bookingsBadge = unreadCount + consumerChatUnread
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarActiveTintColor: '#E8A44A',
+        tabBarInactiveTintColor: '#6B7A99',
         tabBarStyle: {
-          backgroundColor: Colors.surface,
+          backgroundColor: '#0D1B2E',
           borderTopWidth: 0,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.3,
           shadowRadius: 12,
           elevation: 20,
-          height: 84,
-          paddingBottom: 20,
+          height: 60,
+          paddingBottom: 8,
         },
         tabBarLabelStyle: {
           fontSize: 10,

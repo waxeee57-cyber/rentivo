@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { fetchUserBookings, fetchBooking } from '@/lib/api/bookings'
+import { fetchUserBookings, fetchBooking, fetchHostBookings } from '@/lib/api/bookings'
 import type { Booking } from '@/types'
 
 export function useBookings(userId: string | null) {
@@ -18,6 +18,28 @@ export function useBookings(userId: string | null) {
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [userId, tick])
+
+  const refetch = useCallback(() => setTick(t => t + 1), [])
+
+  return { bookings, loading, error, refetch }
+}
+
+export function useHostBookings(hostId: string | null) {
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [tick, setTick] = useState(0)
+
+  useEffect(() => {
+    if (!hostId) { setLoading(false); return }
+    let cancelled = false
+    setLoading(true)
+    fetchHostBookings(hostId)
+      .then(data => { if (!cancelled) setBookings(data) })
+      .catch(e => { if (!cancelled) setError(String(e)) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [hostId, tick])
 
   const refetch = useCallback(() => setTick(t => t + 1), [])
 
