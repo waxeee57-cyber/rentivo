@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import type { Href } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
@@ -14,7 +15,7 @@ import { t } from '@/constants/i18n'
 import { supabase } from '@/lib/supabase'
 
 export default function HostProfileScreen() {
-  const { host, signOut, role, setRole, language, setLanguage } = useAuthStore()
+  const { host, signOut, setRole, language, setLanguage } = useAuthStore()
   const hostData = Config.useMock ? MOCK_HOST : host
 
   const name = hostData?.name ?? 'Host'
@@ -44,9 +45,16 @@ export default function HostProfileScreen() {
   }, [host?.id])
 
   const handleSignOut = () => {
-    Alert.alert('Sign out', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign out', style: 'destructive', onPress: signOut },
+    Alert.alert(t('signOut', language), 'Are you sure?', [
+      { text: t('cancel', language), style: 'cancel' },
+      {
+        text: t('signOut', language),
+        style: 'destructive',
+        onPress: async () => {
+          await signOut()
+          router.replace('/auth/login' as Href)
+        },
+      },
     ])
   }
 
@@ -152,7 +160,12 @@ export default function HostProfileScreen() {
           <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={() => void Linking.openURL('mailto:support@rentivo.app')} />
         </Card>
 
-        <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
+        <TouchableOpacity
+          style={styles.signOutBtn}
+          onPress={handleSignOut}
+          accessibilityLabel={t('signOut', language)}
+          accessibilityRole="button"
+        >
           <Text style={styles.signOutText}>{t('signOut', language)}</Text>
         </TouchableOpacity>
 

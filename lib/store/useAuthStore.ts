@@ -60,6 +60,14 @@ export const useAuthStore = create<AuthState>()(
           hasOperatorAccount: false,
           hasHostAccount: false,
         })
+        // Clear the persisted Zustand snapshot so stale state cannot
+        // conflict with a subsequent fresh login.
+        try {
+          await AsyncStorage.removeItem('rentivo-auth')
+        } catch {
+          // Silently ignore — worst case the persist rehydration wins on
+          // next boot, but the Supabase session will already be gone.
+        }
       },
     }),
     {

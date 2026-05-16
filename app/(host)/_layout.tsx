@@ -49,11 +49,11 @@ export default function HostLayout() {
           shadowOpacity: 0.3,
           shadowRadius: 12,
           elevation: 20,
-          height: 60,
-          paddingBottom: 8,
+          height: 88,
+          paddingBottom: 12,
         },
         tabBarLabelStyle: {
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: '600',
         },
       }}

@@ -46,7 +46,19 @@ export default function VerifyScreen() {
       await AsyncStorage.removeItem('pending_otp_phone')
       setSession(data.session as unknown as Record<string, unknown>)
       if (data.session?.user) {
-        setUser(data.session.user as unknown as Parameters<typeof setUser>[0])
+        // Fetch the full rentivo_users profile so the store has name,
+        // phone, and role — not just the bare Supabase Auth user object.
+        const { data: profile } = await supabase
+          .from('rentivo_users')
+          .select('*')
+          .eq('id', data.session.user.id)
+          .maybeSingle()
+        if (profile) {
+          setUser(profile as unknown as Parameters<typeof setUser>[0])
+        } else {
+          // Profile row not yet created (first-ever login): store auth user.
+          setUser(data.session.user as unknown as Parameters<typeof setUser>[0])
+        }
       }
       // Route based on role — new users without role check consent first
       if (role === 'operator') {

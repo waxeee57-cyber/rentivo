@@ -94,7 +94,7 @@ const gdprStyles = StyleSheet.create({
 })
 
 export default function RootLayout() {
-  const { setSession, session, role, language } = useAuthStore()
+  const { setSession, setUser, session, role, language } = useAuthStore()
   const { setPushToken, setUnreadCount, unreadCount } = useNotificationStore()
   const [gdprAccepted, setGdprAccepted] = useState<boolean | null>(null)
   const pathname = usePathname()
@@ -106,16 +106,37 @@ export default function RootLayout() {
     }).catch(() => setGdprAccepted(true))
   }, [])
 
-  // Supabase auth
+  // Helper: fetch rentivo_users profile and push it into the auth store.
+  // Called both on initial session restore and on every auth state change.
+  const syncProfileFromSession = useCallback(async (s: Record<string, unknown> | null) => {
+    setSession(s)
+    if (!s) {
+      setUser(null)
+      return
+    }
+    const uid = (s as Record<string, unknown> & { user?: { id?: string } }).user?.id
+    if (!uid) return
+    const { data: profile } = await supabase
+      .from('rentivo_users')
+      .select('*')
+      .eq('id', uid)
+      .maybeSingle()
+    if (profile) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setUser(profile as any)
+    }
+  }, [setSession, setUser])
+
+  // Supabase auth — restore session on startup and keep in sync
   useEffect(() => {
     void supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s as Record<string, unknown> | null)
+      void syncProfileFromSession(s as Record<string, unknown> | null)
     })
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, s) => setSession(s as Record<string, unknown> | null),
+      (_event, s) => { void syncProfileFromSession(s as Record<string, unknown> | null) },
     )
     return () => subscription.unsubscribe()
-  }, [setSession])
+  }, [syncProfileFromSession])
 
   // GDPR DB consent gate — new users who bypassed the modal
   useEffect(() => {
@@ -131,8 +152,8 @@ export default function RootLayout() {
       .select('terms_accepted, privacy_accepted')
       .eq('user_id', userId)
       .maybeSingle()
-      .then(({ data }) => {
-        if (!data?.terms_accepted || !data?.privacy_accepted) {
+      .then(({ data, error }) => {
+        if (error || !data?.terms_accepted || !data?.privacy_accepted) {
           router.replace('/auth/consent')
         }
       })

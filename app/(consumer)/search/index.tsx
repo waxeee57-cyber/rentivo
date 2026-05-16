@@ -370,8 +370,8 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.primaryLight,
   },
   trendingChipText: { fontSize: 13, fontWeight: '600', color: Colors.primaryDark },
-  categories: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm },
-  sortBar: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm, gap: Spacing.sm },
+  categories: { paddingHorizontal: 16, paddingVertical: Spacing.sm },
+  sortBar: { paddingHorizontal: 16, paddingBottom: Spacing.sm },
   trendingLabel: {
     paddingHorizontal: Spacing.base, paddingTop: Spacing.sm,
     fontSize: 11, fontWeight: '700', color: Colors.textTertiary,

@@ -338,7 +338,7 @@ export default function ExploreScreen() {
       </View>
 
       {/* Floating category filter */}
-      <View style={styles.categoryBar}>
+      <View style={[styles.categoryBar, { bottom: insets.bottom + 100 }]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -378,7 +378,7 @@ export default function ExploreScreen() {
 
       {/* Map/List toggle */}
       <TouchableOpacity
-        style={styles.toggleBtn}
+        style={[styles.toggleBtn, { bottom: insets.bottom + 152 }]}
         onPress={() => {
           setViewMode(v => v === 'map' ? 'list' : 'map')
           setSelectedListing(null)
@@ -400,7 +400,7 @@ export default function ExploreScreen() {
       )}
 
       {/* List mode overlay */}
-      <Animated.View style={[styles.listOverlay, { transform: [{ translateY: listOverlayY }] }]}>
+      <Animated.View style={[styles.listOverlay, { transform: [{ translateY: listOverlayY }], paddingTop: insets.top + 80 }]}>
         <View style={styles.listHandle} />
 
         {/* Rotating hero headline */}
@@ -770,7 +770,6 @@ const styles = StyleSheet.create({
 
   categoryBar: {
     position: 'absolute',
-    bottom: 120,
     left: 0, right: 0,
     zIndex: 5,
   },
@@ -797,7 +796,7 @@ const styles = StyleSheet.create({
 
   toggleBtn: {
     position: 'absolute',
-    bottom: 170, right: 16,
+    right: 16,
     backgroundColor: Colors.background,
     borderRadius: Radius.full,
     paddingHorizontal: 16, paddingVertical: 10,

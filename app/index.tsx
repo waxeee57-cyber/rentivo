@@ -71,5 +71,7 @@ export default function Index() {
 
   if (role === 'operator') return <Redirect href="/(operator)/dashboard" />
   if (role === 'host') return <Redirect href="/(host)/listings" />
-  return <Redirect href="/(consumer)/explore" />
+  if (role === 'consumer') return <Redirect href="/(consumer)/explore" />
+  // No role set — send to role selection screen
+  return <Redirect href="/auth" />
 }

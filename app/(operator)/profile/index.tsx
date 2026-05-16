@@ -2,6 +2,7 @@ import React from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import type { Href } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { Avatar } from '@/components/ui/Avatar'
@@ -18,7 +19,14 @@ export default function OperatorProfileScreen() {
   const handleSignOut = () => {
     Alert.alert(t('signOut', language), 'Are you sure?', [
       { text: t('cancel', language), style: 'cancel' },
-      { text: t('signOut', language), style: 'destructive', onPress: signOut },
+      {
+        text: t('signOut', language),
+        style: 'destructive',
+        onPress: async () => {
+          await signOut()
+          router.replace('/auth/login' as Href)
+        },
+      },
     ])
   }
 

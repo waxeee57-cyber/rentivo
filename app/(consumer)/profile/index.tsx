@@ -22,7 +22,9 @@ export default function ProfileScreen() {
     Config.useMock ? 'ROLI2026' : `REF${(user?.id ?? 'GUEST').slice(0, 6).toUpperCase()}`,
   )
 
-  const name = Config.useMock ? 'Marco Ferreira' : (user?.name ?? operator?.name ?? 'User')
+  const name = Config.useMock
+    ? 'Marco Ferreira'
+    : (user?.name || operator?.name || (user?.phone ? `···${user.phone.slice(-4)}` : null) || 'New User')
   const email = Config.useMock ? 'marco.ferreira@gmail.com' : (user?.email ?? operator?.email ?? '')
   const avatarUrl = Config.useMock ? null : (user?.avatar_url ?? null)
 
