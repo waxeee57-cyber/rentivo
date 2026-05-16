@@ -24,7 +24,7 @@ serve(async (req) => {
 
     // Get comparable listings in the same city/category
     const { data: comparables } = await supabase
-      .from('listings')
+      .from('rentivo_listings')
       .select('price_per_day, title, city')
       .eq('city', city)
       .eq('category', category)

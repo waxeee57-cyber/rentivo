@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ListRenderItemInfo } from 'react-native'
+import React, { useState, useCallback, useEffect } from 'react'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ListRenderItemInfo, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
@@ -25,8 +25,52 @@ const MOCK_OPERATORS: AdminOperator[] = [
 ]
 
 export default function AdminOperatorsScreen() {
-  const [operators, setOperators] = useState<AdminOperator[]>(MOCK_OPERATORS)
+  const [operators, setOperators] = useState<AdminOperator[]>(Config.useMock ? MOCK_OPERATORS : [])
+  const [loadingList, setLoadingList] = useState(!Config.useMock)
   const { showToast } = useToastStore()
+
+  useEffect(() => {
+    if (Config.useMock) return
+    const load = async () => {
+      setLoadingList(true)
+      try {
+        const { data, error } = await supabase
+          .from('rentivo_operators')
+          .select('id, name, city, approved, suspended, tier')
+          .order('created_at', { ascending: false })
+          .limit(100)
+        if (error) { showToast({ message: 'Failed to load operators', type: 'error' }); return }
+        setOperators(
+          (data ?? []).map(o => ({
+            id: o.id as string,
+            name: (o.name as string | null) ?? 'Unknown',
+            city: (o.city as string | null) ?? '',
+            approved: (o.approved as boolean | null) ?? true,
+            suspended: (o.suspended as boolean | null) ?? false,
+            tier: (o.tier as string | null) ?? 'bronze',
+          }))
+        )
+      } finally {
+        setLoadingList(false)
+      }
+    }
+    void load()
+  }, [showToast])
+
+  const approveOperator = useCallback(async (op: AdminOperator) => {
+    if (!Config.useMock) {
+      const { error } = await supabase
+        .from('rentivo_operators')
+        .update({ approved: true })
+        .eq('id', op.id)
+      if (error) {
+        showToast({ message: 'Failed to approve', type: 'error' })
+        return
+      }
+    }
+    setOperators(prev => prev.map(o => o.id === op.id ? { ...o, approved: true } : o))
+    showToast({ message: 'Operator approved', type: 'success' })
+  }, [showToast])
 
   const toggleSuspend = useCallback(async (op: AdminOperator) => {
     if (!Config.useMock) {
@@ -62,21 +106,41 @@ export default function AdminOperatorsScreen() {
             {item.suspended && <Badge label="Suspended" variant="error" />}
           </View>
         </View>
-        <TouchableOpacity
-          style={[styles.actionBtn, item.suspended && styles.actionBtnActive]}
-          onPress={() => void toggleSuspend(item)}
-          accessibilityLabel={item.suspended ? 'Unsuspend operator' : 'Suspend operator'}
-          accessibilityRole="button"
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Text style={styles.actionBtnText}>
-            {item.suspended ? 'Unsuspend' : 'Suspend'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.actions}>
+          {!item.approved && (
+            <TouchableOpacity
+              style={styles.approveBtn}
+              onPress={() => void approveOperator(item)}
+              accessibilityLabel="Approve operator"
+              accessibilityRole="button"
+            >
+              <Text style={styles.approveBtnText}>Approve</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[styles.actionBtn, item.suspended && styles.actionBtnActive]}
+            onPress={() => void toggleSuspend(item)}
+            accessibilityLabel={item.suspended ? 'Unsuspend operator' : 'Suspend operator'}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.actionBtnText, item.suspended && styles.actionBtnTextActive]}>
+              {item.suspended ? 'Unsuspend' : 'Suspend'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     ),
-    [toggleSuspend]
+    [toggleSuspend, approveOperator]
   )
+
+  if (loadingList) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <ScreenHeader title="Operators" onBack={() => router.back()} />
+        <ActivityIndicator style={{ marginTop: 40 }} color={Colors.primary} />
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -128,6 +192,25 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
     marginTop: 6,
   },
+  actions: {
+    gap: Spacing.xs,
+    alignItems: 'flex-end',
+  },
+  approveBtn: {
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.success,
+    minHeight: 36,
+    justifyContent: 'center',
+    backgroundColor: Colors.successSurface,
+  },
+  approveBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.success,
+  },
   actionBtn: {
     backgroundColor: Colors.surface,
     borderRadius: Radius.md,
@@ -135,7 +218,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderWidth: 1,
     borderColor: Colors.error,
-    minHeight: 44,
+    minHeight: 36,
     justifyContent: 'center',
   },
   actionBtnActive: {
@@ -145,5 +228,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: Colors.error,
+  },
+  actionBtnTextActive: {
+    color: Colors.success,
   },
 })

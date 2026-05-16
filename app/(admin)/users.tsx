@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ListRenderItemInfo } from 'react-native'
+import React, { useState, useCallback, useEffect } from 'react'
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ListRenderItemInfo, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
@@ -24,8 +24,36 @@ const MOCK_USERS: AdminUser[] = [
 ]
 
 export default function AdminUsersScreen() {
-  const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS)
+  const [users, setUsers] = useState<AdminUser[]>(Config.useMock ? MOCK_USERS : [])
+  const [loadingList, setLoadingList] = useState(!Config.useMock)
   const { showToast } = useToastStore()
+
+  useEffect(() => {
+    if (Config.useMock) return
+    const load = async () => {
+      setLoadingList(true)
+      try {
+        const { data, error } = await supabase
+          .from('rentivo_users')
+          .select('id, full_name, email, is_banned, created_at')
+          .order('created_at', { ascending: false })
+          .limit(100)
+        if (error) { showToast({ message: 'Failed to load users', type: 'error' }); return }
+        setUsers(
+          (data ?? []).map(u => ({
+            id: u.id as string,
+            name: (u.full_name as string | null) ?? (u.email as string | null) ?? 'Unknown',
+            email: (u.email as string | null) ?? '',
+            is_banned: (u.is_banned as boolean | null) ?? false,
+            created_at: u.created_at as string,
+          }))
+        )
+      } finally {
+        setLoadingList(false)
+      }
+    }
+    void load()
+  }, [showToast])
 
   const toggleBan = useCallback(async (u: AdminUser) => {
     if (!Config.useMock) {
@@ -70,6 +98,15 @@ export default function AdminUsersScreen() {
     ),
     [toggleBan]
   )
+
+  if (loadingList) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <ScreenHeader title="Users" onBack={() => router.back()} />
+        <ActivityIndicator style={{ marginTop: 40 }} color={Colors.primary} />
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>

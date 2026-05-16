@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking,
 } from 'react-native'
@@ -22,6 +22,7 @@ import { useBooking } from '@/lib/hooks/useBookings'
 import { updateBookingStatus } from '@/lib/api/bookings'
 import { Config } from '@/constants/config'
 import { MOCK_REVIEWS } from '@/lib/mockData'
+import { supabase } from '@/lib/supabase'
 import type { BookingStatus, CancellationPolicy } from '@/types'
 
 const STATUS_LABELS: Record<BookingStatus, string> = {
@@ -48,6 +49,22 @@ export default function BookingDetailScreen() {
   const { booking, loading, error, refetch } = useBooking(bookingId)
   const [showCancelSheet, setShowCancelSheet] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [hasReview, setHasReview] = useState(false)
+  const { showToast } = useToastStore()
+
+  useEffect(() => {
+    if (!booking?.id) return
+    if (Config.useMock) {
+      setHasReview(MOCK_REVIEWS.some(r => r.booking_id === booking.id))
+      return
+    }
+    void supabase
+      .from('rentivo_reviews')
+      .select('id')
+      .eq('booking_id', booking.id)
+      .maybeSingle()
+      .then(({ data }) => setHasReview(!!data))
+  }, [booking?.id])
 
   if (loading) return <SafeAreaView style={styles.container}><SkeletonCard /></SafeAreaView>
   if (error || !booking) return <ErrorState message={error ?? 'Booking not found'} onRetry={refetch} />
@@ -59,12 +76,6 @@ export default function BookingDetailScreen() {
   const refundCalc = ['confirmed', 'pending'].includes(booking.status)
     ? calculateCancellationRefund(policy, booking.start_date, booking.total_amount)
     : null
-
-  const hasReview = Config.useMock
-    ? MOCK_REVIEWS.some(r => r.booking_id === booking.id)
-    : false
-
-  const { showToast } = useToastStore()
 
   const handleCancel = async () => {
     setCancelling(true)
