@@ -37,6 +37,7 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 36,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: Radius.pill,

@@ -24,7 +24,7 @@ export default function OperatorProfileScreen() {
         style: 'destructive',
         onPress: async () => {
           await signOut()
-          router.replace('/auth/login' as Href)
+          router.replace('/auth' as Href)
         },
       },
     ])

@@ -338,7 +338,7 @@ export default function ExploreScreen() {
       </View>
 
       {/* Floating category filter */}
-      <View style={[styles.categoryBar, { bottom: insets.bottom + 100 }]}>
+      <View style={[styles.categoryBar, { bottom: insets.bottom + 90 }]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -378,7 +378,7 @@ export default function ExploreScreen() {
 
       {/* Map/List toggle */}
       <TouchableOpacity
-        style={[styles.toggleBtn, { bottom: insets.bottom + 152 }]}
+        style={[styles.toggleBtn, { bottom: insets.bottom + 142 }]}
         onPress={() => {
           setViewMode(v => v === 'map' ? 'list' : 'map')
           setSelectedListing(null)

@@ -1,4 +1,6 @@
 import { useEffect, useState, Fragment, useCallback } from 'react'
+import { useFonts } from 'expo-font'
+import { Ionicons } from '@expo/vector-icons'
 import { Stack, router, usePathname } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import {
@@ -94,6 +96,7 @@ const gdprStyles = StyleSheet.create({
 })
 
 export default function RootLayout() {
+  useFonts({ ...Ionicons.font })
   const { setSession, setUser, session, role, language } = useAuthStore()
   const { setPushToken, setUnreadCount, unreadCount } = useNotificationStore()
   const [gdprAccepted, setGdprAccepted] = useState<boolean | null>(null)
@@ -144,7 +147,7 @@ export default function RootLayout() {
     const userId = (session as Record<string, unknown> & { user?: { id?: string } }).user?.id
     if (!userId) return
     // Prevent infinite loop: skip on all auth/ and onboarding screens
-    if (pathname.startsWith('/auth/')) return
+    if (pathname.startsWith('/auth')) return
     if (pathname.startsWith('/onboarding')) return
 
     void supabase
