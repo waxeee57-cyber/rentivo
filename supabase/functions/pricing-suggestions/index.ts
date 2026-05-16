@@ -22,14 +22,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    // Get comparable listings in the same city/category
+    // Get comparable listings in the same category
     const { data: comparables } = await supabase
       .from('rentivo_listings')
-      .select('price_per_day, title, city')
-      .eq('city', city)
+      .select('price_per_day')
       .eq('category', category)
       .neq('id', listing_id)
-      .eq('is_active', true)
+      .eq('available', true)
       .limit(20)
 
     const prices = (comparables ?? []).map((l: { price_per_day: number }) => l.price_per_day).filter(Boolean)

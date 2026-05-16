@@ -1,46 +1,90 @@
-import React from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Card } from '@/components/ui/Card'
+import { supabase } from '@/lib/supabase'
+import { Config } from '@/constants/config'
 
-interface StatItem {
-  label: string
-  value: string
+interface DashboardStats {
+  users: number
+  operators: number
+  activeBookings: number
+  revenueEur: number
 }
 
-interface SectionItem {
-  title: string
-  route: string
+const MOCK_STATS: DashboardStats = {
+  users: 1247,
+  operators: 89,
+  activeBookings: 34,
+  revenueEur: 48200,
 }
 
-const stats: StatItem[] = [
-  { label: 'Users', value: '1,247' },
-  { label: 'Operators', value: '89' },
-  { label: 'Active Bookings', value: '34' },
-  { label: 'Revenue (EUR)', value: '€48,200' },
-]
-
-const sections: SectionItem[] = [
+const sections = [
   { title: 'Operators', route: '/(admin)/operators' },
   { title: 'Users', route: '/(admin)/users' },
   { title: 'Promo Codes', route: '/(admin)/promo-codes' },
 ]
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<DashboardStats | null>(Config.useMock ? MOCK_STATS : null)
+  const [loading, setLoading] = useState(!Config.useMock)
+
+  useEffect(() => {
+    if (Config.useMock) return
+    const load = async () => {
+      setLoading(true)
+      try {
+        const [usersRes, opsRes, bookingsRes, revenueRes] = await Promise.all([
+          supabase.from('rentivo_users').select('id', { count: 'exact', head: true }),
+          supabase.from('rentivo_operators').select('id', { count: 'exact', head: true }),
+          supabase.from('rentivo_bookings')
+            .select('id', { count: 'exact', head: true })
+            .in('status', ['confirmed', 'active']),
+          supabase.from('rentivo_bookings')
+            .select('total_amount')
+            .eq('payment_status', 'paid'),
+        ])
+        const revenue = (revenueRes.data ?? []).reduce(
+          (sum, b) => sum + ((b.total_amount as number | null) ?? 0), 0
+        )
+        setStats({
+          users: usersRes.count ?? 0,
+          operators: opsRes.count ?? 0,
+          activeBookings: bookingsRes.count ?? 0,
+          revenueEur: Math.round(revenue),
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+    void load()
+  }, [])
+
+  const statItems = stats ? [
+    { label: 'Users', value: stats.users.toLocaleString() },
+    { label: 'Operators', value: stats.operators.toLocaleString() },
+    { label: 'Active Bookings', value: stats.activeBookings.toLocaleString() },
+    { label: 'Revenue (EUR)', value: `€${stats.revenueEur.toLocaleString()}` },
+  ] : []
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Admin Panel</Text>
-        <View style={styles.statsGrid}>
-          {stats.map((s) => (
-            <Card key={s.label} style={styles.statCard}>
-              <Text style={styles.statValue}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </Card>
-          ))}
-        </View>
+        {loading ? (
+          <ActivityIndicator color={Colors.primary} style={{ marginVertical: Spacing.xl }} />
+        ) : (
+          <View style={styles.statsGrid}>
+            {statItems.map((s) => (
+              <Card key={s.label} style={styles.statCard}>
+                <Text style={styles.statValue}>{s.value}</Text>
+                <Text style={styles.statLabel}>{s.label}</Text>
+              </Card>
+            ))}
+          </View>
+        )}
         {sections.map((s) => (
           <TouchableOpacity
             key={s.title}
