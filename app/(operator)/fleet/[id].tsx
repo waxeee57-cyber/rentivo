@@ -20,6 +20,8 @@ import { CATEGORIES } from '@/constants/categories'
 import type { CancellationPolicy, RentalCategory } from '@/types'
 import { updateListing, deleteListing } from '@/lib/api/listings'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { supabase } from '@/lib/supabase'
+import { PricingInsightWidget } from '@/components/operator/PricingInsightWidget'
 
 const POLICIES: { key: CancellationPolicy; label: string; desc: string }[] = [
   { key: 'flexible', label: 'Flexible', desc: 'Full refund 1 day before' },
@@ -50,6 +52,7 @@ export default function EditVehicleScreen() {
   const [hourlyEnabled, setHourlyEnabled] = useState(false)
   const [pricePerHour, setPricePerHour] = useState('')
   const [minHours, setMinHours] = useState('2')
+  const [requiresKyc, setRequiresKyc] = useState(false)
 
   useEffect(() => {
     if (listing && !initialized) {
@@ -72,6 +75,7 @@ export default function EditVehicleScreen() {
       setHourlyEnabled(listing.hourly_rental_enabled ?? false)
       setPricePerHour(String(listing.price_per_hour ?? ''))
       setMinHours(String(listing.min_rental_hours ?? 2))
+      setRequiresKyc(listing.operator?.requires_identity_verification ?? false)
       setInitialized(true)
     }
   }, [listing, initialized])
@@ -118,6 +122,12 @@ export default function EditVehicleScreen() {
         },
         operatorId,
       )
+      if (!Config.useMock && requiresKyc !== (listing?.operator?.requires_identity_verification ?? false)) {
+        await supabase
+          .from('rentivo_operators')
+          .update({ requires_identity_verification: requiresKyc })
+          .eq('id', operatorId)
+      }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       showToast({ message: 'Updated ✓', type: 'success' })
       router.back()
@@ -227,6 +237,14 @@ export default function EditVehicleScreen() {
           placeholderTextColor={Colors.textTertiary}
           keyboardType="numeric"
           accessibilityLabel="Price per day"
+        />
+
+        {/* AI Pricing Insights */}
+        <PricingInsightWidget
+          listingId={listing.id}
+          city={listing.operator?.city ?? listing.host?.city ?? ''}
+          category={listing.category}
+          currentPrice={listing.price_per_day}
         />
 
         {/* Description */}
@@ -363,6 +381,29 @@ export default function EditVehicleScreen() {
           )}
         </Card>
 
+        {/* Identity Verification Requirement */}
+        <Text style={styles.sectionTitle}>Identity Verification</Text>
+        <Card style={styles.card}>
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleLeft}>
+              <Text style={styles.toggleTitle}>Require Identity Verification</Text>
+              <Text style={styles.toggleSub}>Guests must verify ID before booking</Text>
+            </View>
+            <Switch
+              value={requiresKyc}
+              onValueChange={v => {
+                setRequiresKyc(v)
+                void Haptics.impactAsync(v ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light)
+              }}
+              trackColor={{ false: Colors.border, true: Colors.primary }}
+              thumbColor={Colors.surface}
+              accessibilityLabel={`Require identity verification: ${requiresKyc ? 'enabled' : 'disabled'}`}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: requiresKyc }}
+            />
+          </View>
+        </Card>
+
         <Button
           title="Save changes"
           onPress={handleSave}
@@ -387,6 +428,15 @@ export default function EditVehicleScreen() {
           accessibilityRole="button"
         >
           <Text style={styles.pricingBtnText}>📊 Pricing Rules</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.availabilityBtn}
+          onPress={() => router.push(`/(operator)/fleet/availability/${id}` as Parameters<typeof router.push>[0])}
+          accessibilityLabel="Manage availability"
+          accessibilityRole="button"
+        >
+          <Text style={styles.availabilityBtnText}>📅 Manage Availability</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -500,6 +550,17 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   pricingBtnText: { color: Colors.primary, fontWeight: '600', fontSize: 14 },
+  availabilityBtn: {
+    marginTop: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  availabilityBtnText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
   deleteBtn: {
     marginTop: Spacing.base, padding: Spacing.md, alignItems: 'center',
     borderWidth: 1.5, borderColor: Colors.error + '55',

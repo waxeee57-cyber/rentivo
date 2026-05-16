@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams } from 'expo-router'
@@ -14,6 +14,8 @@ import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
 import { MOCK_CONVERSATIONS, MOCK_MESSAGES } from '@/lib/mockData'
 import { sendChatNotification } from '@/lib/notifications'
+import { translateMessage } from '@/lib/api/translate'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 import type { Message, Conversation } from '@/types'
 import { format } from 'date-fns'
 
@@ -21,7 +23,18 @@ function formatMsgTime(iso: string): string {
   try { return format(new Date(iso), 'HH:mm') } catch { return '' }
 }
 
-function MessageBubble({ msg }: { msg: Message }) {
+type TranslationState = {
+  text: string | null
+  loading: boolean
+}
+
+type MessageBubbleProps = {
+  msg: Message
+  translation: TranslationState
+  onTranslate: (messageId: string, content: string) => void
+}
+
+function MessageBubble({ msg, translation, onTranslate }: MessageBubbleProps) {
   if (msg.sender_role === 'system') {
     return (
       <View style={styles.systemMsg}>
@@ -30,16 +43,43 @@ function MessageBubble({ msg }: { msg: Message }) {
     )
   }
   const isMe = msg.sender_role === 'operator'
+  const canTranslate = !isMe
   return (
     <View style={[styles.bubbleWrapper, isMe ? styles.bubbleWrapperRight : styles.bubbleWrapperLeft]}>
       <View style={[isMe ? styles.operatorBubble : styles.consumerBubble]}>
         <Text style={[styles.bubbleText, isMe && styles.bubbleTextOperator]}>
           {msg.content}
         </Text>
+        {translation.text !== null && (
+          <View style={styles.translationContainer}>
+            <View style={styles.translationDivider} />
+            <Text style={styles.translationText}>
+              {translation.text}
+            </Text>
+          </View>
+        )}
       </View>
       <Text style={[styles.bubbleTime, isMe && styles.bubbleTimeRight]}>
         {formatMsgTime(msg.created_at)}
       </Text>
+      {canTranslate && (
+        <TouchableOpacity
+          style={styles.translateBtn}
+          onPress={() => onTranslate(msg.id, msg.content)}
+          disabled={translation.loading}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={translation.text !== null ? 'Hide translation' : 'Translate message'}
+          accessibilityRole="button"
+        >
+          {translation.loading ? (
+            <ActivityIndicator size="small" color={Colors.primary} style={styles.translateSpinner} />
+          ) : (
+            <Text style={styles.translateBtnText}>
+              {translation.text !== null ? 'Hide translation' : '🌐 Translate'}
+            </Text>
+          )}
+        </TouchableOpacity>
+      )}
     </View>
   )
 }
@@ -48,11 +88,29 @@ export default function OperatorChatScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const id = Config.useMock ? (bookingId ?? 'bk-001') : (bookingId ?? '')
   const { booking } = useBooking(id)
+  const language = useAuthStore(s => s.language)
 
   const [messages, setMessages] = useState<Message[]>([])
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [translations, setTranslations] = useState<Record<string, TranslationState>>({})
+  const listRef = useRef<FlatList<Message>>(null)
+
+  const handleTranslate = useCallback(async (messageId: string, content: string) => {
+    // Toggle off if already translated
+    if (translations[messageId]?.text !== null && translations[messageId]?.text !== undefined) {
+      setTranslations(prev => ({ ...prev, [messageId]: { text: null, loading: false } }))
+      return
+    }
+    setTranslations(prev => ({ ...prev, [messageId]: { text: null, loading: true } }))
+    try {
+      const translated = await translateMessage(content, language as 'en' | 'es' | 'hu')
+      setTranslations(prev => ({ ...prev, [messageId]: { text: translated, loading: false } }))
+    } catch {
+      setTranslations(prev => ({ ...prev, [messageId]: { text: null, loading: false } }))
+    }
+  }, [translations, language])
 
   const loadMessages = useCallback(async () => {
     if (Config.useMock) {
@@ -97,7 +155,7 @@ export default function OperatorChatScreen() {
     return () => { void supabase.removeChannel(channel) }
   }, [conversation])
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     const text = input.trim()
     if (!text || sending) return
     setInput('')
@@ -149,7 +207,6 @@ export default function OperatorChatScreen() {
         .update({ last_message: text, last_message_at: new Date().toISOString(), unread_consumer: (conversation?.unread_consumer ?? 0) + 1 })
         .eq('id', convId)
       // Notify consumer about new operator message
-      // booking.user_id is the consumer's Supabase auth id
       if (booking?.user_id) {
         void sendChatNotification({
           recipientUserId: booking.user_id,
@@ -161,7 +218,18 @@ export default function OperatorChatScreen() {
     } finally {
       setSending(false)
     }
-  }
+  }, [input, sending, conversation, booking, id])
+
+  const renderItem = useCallback(({ item }: { item: Message }) => {
+    const translation: TranslationState = translations[item.id] ?? { text: null, loading: false }
+    return (
+      <MessageBubble
+        msg={item}
+        translation={translation}
+        onTranslate={handleTranslate}
+      />
+    )
+  }, [translations, handleTranslate])
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -175,11 +243,12 @@ export default function OperatorChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <FlatList
+          ref={listRef}
           data={messages}
           keyExtractor={m => m.id}
           inverted
           contentContainerStyle={styles.messageList}
-          renderItem={({ item }) => <MessageBubble msg={item} />}
+          renderItem={renderItem}
           ListEmptyComponent={
             <View style={styles.emptyChat}>
               <Text style={styles.emptyChatText}>No messages yet.</Text>
@@ -196,11 +265,14 @@ export default function OperatorChatScreen() {
             placeholderTextColor={Colors.textTertiary}
             multiline
             maxLength={500}
+            accessibilityLabel="Message input"
           />
           <TouchableOpacity
             style={[styles.sendBtn, !input.trim() && styles.sendBtnDisabled]}
-            onPress={sendMessage}
+            onPress={() => void sendMessage()}
             disabled={!input.trim() || sending}
+            accessibilityLabel="Send message"
+            accessibilityRole="button"
           >
             <Ionicons name="send" size={18} color={Colors.textInverse} />
           </TouchableOpacity>
@@ -238,6 +310,21 @@ const styles = StyleSheet.create({
   bubbleTextOperator: { color: Colors.textInverse },
   bubbleTime: { fontSize: 10, color: Colors.textTertiary, marginTop: 2 },
   bubbleTimeRight: { textAlign: 'right' },
+  translationContainer: { marginTop: 6 },
+  translationDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.12)', marginBottom: 6 },
+  translationText: { fontSize: 13, color: Colors.text, lineHeight: 18, fontStyle: 'italic' },
+  translateBtn: {
+    marginTop: 4,
+    minHeight: 20,
+  },
+  translateBtnText: {
+    fontSize: 11,
+    color: Colors.primary,
+    fontWeight: '500',
+  },
+  translateSpinner: {
+    height: 16,
+  },
   systemMsg: { alignSelf: 'center', marginVertical: Spacing.sm, maxWidth: '70%' },
   systemMsgText: {
     fontSize: 12,

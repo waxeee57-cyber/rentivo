@@ -80,6 +80,7 @@ export interface Operator {
   delivery_radius_km?: number
   delivery_fee_eur?: number
   delivery_zones?: string[]
+  requires_identity_verification?: boolean
 }
 
 export interface Listing {
@@ -146,6 +147,9 @@ export interface RentivoUser {
   preferred_currency: string
   preferred_language: string
   created_at: string
+  identity_status?: 'unverified' | 'pending' | 'verified' | 'rejected'
+  is_admin?: boolean
+  is_banned?: boolean
 }
 
 export interface Booking {
@@ -209,6 +213,9 @@ export interface Booking {
   // Promo code
   promo_code?: string | null
   promo_discount?: number
+  // Identity verification
+  requires_identity_verification?: boolean
+  identity_verified?: boolean
 }
 
 export interface DamageReport {
@@ -400,4 +407,22 @@ export interface OperatorStaffMember {
   status: 'invited' | 'active' | 'suspended'
   invited_at: string
   joined_at: string | null
+}
+
+export interface IdentityVerification {
+  id: string
+  user_id: string
+  didit_session_id: string | null
+  status: 'pending' | 'in_progress' | 'approved' | 'declined' | 'expired'
+  document_type: string | null
+  document_country: string | null
+  document_number: string | null
+  full_name: string | null
+  date_of_birth: string | null
+  document_expires_at: string | null
+  face_match_score: number | null
+  liveness_passed: boolean | null
+  verified_at: string | null
+  created_at: string
+  updated_at: string
 }

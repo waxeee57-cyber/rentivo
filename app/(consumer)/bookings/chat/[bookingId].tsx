@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
-  StyleSheet, KeyboardAvoidingView, Platform,
+  StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams } from 'expo-router'
@@ -14,6 +14,8 @@ import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
 import { MOCK_CONVERSATIONS, MOCK_MESSAGES } from '@/lib/mockData'
 import { sendChatNotification } from '@/lib/notifications'
+import { translateMessage } from '@/lib/api/translate'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 import type { Message, Conversation } from '@/types'
 import { format } from 'date-fns'
 
@@ -36,7 +38,19 @@ function shouldShowTimestamp(msg: Message, prevMsg: Message | null): boolean {
   return diff > 30 * 60 * 1000
 }
 
-function MessageBubble({ msg, isConsumer }: { msg: Message; isConsumer: boolean }) {
+type TranslationState = {
+  text: string | null
+  loading: boolean
+}
+
+type MessageBubbleProps = {
+  msg: Message
+  isConsumer: boolean
+  translation: TranslationState
+  onTranslate: (messageId: string, content: string) => void
+}
+
+function MessageBubble({ msg, isConsumer, translation, onTranslate }: MessageBubbleProps) {
   if (msg.sender_role === 'system') {
     return (
       <View style={styles.systemMsg}>
@@ -45,16 +59,43 @@ function MessageBubble({ msg, isConsumer }: { msg: Message; isConsumer: boolean 
     )
   }
   const isMe = isConsumer && msg.sender_role === 'consumer'
+  const canTranslate = !isMe
   return (
     <View style={[styles.bubbleWrapper, isMe ? styles.bubbleWrapperRight : styles.bubbleWrapperLeft]}>
       <View style={[isMe ? styles.consumerBubble : styles.operatorBubble]}>
         <Text style={[styles.bubbleText, isMe && styles.bubbleTextConsumer]}>
           {msg.content}
         </Text>
+        {translation.text !== null && (
+          <View style={styles.translationContainer}>
+            <View style={styles.translationDivider} />
+            <Text style={[styles.translationText, isMe && styles.translationTextConsumer]}>
+              {translation.text}
+            </Text>
+          </View>
+        )}
       </View>
       <Text style={[styles.bubbleTime, isMe && styles.bubbleTimeRight]}>
         {formatMsgTime(msg.created_at)}
       </Text>
+      {canTranslate && (
+        <TouchableOpacity
+          style={styles.translateBtn}
+          onPress={() => onTranslate(msg.id, msg.content)}
+          disabled={translation.loading}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={translation.text !== null ? 'Hide translation' : 'Translate message'}
+          accessibilityRole="button"
+        >
+          {translation.loading ? (
+            <ActivityIndicator size="small" color={Colors.primary} style={styles.translateSpinner} />
+          ) : (
+            <Text style={styles.translateBtnText}>
+              {translation.text !== null ? 'Hide translation' : '🌐 Translate'}
+            </Text>
+          )}
+        </TouchableOpacity>
+      )}
     </View>
   )
 }
@@ -63,12 +104,29 @@ export default function ConsumerChatScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const id = Config.useMock ? (bookingId ?? 'bk-001') : (bookingId ?? '')
   const { booking } = useBooking(id)
+  const language = useAuthStore(s => s.language)
 
   const [messages, setMessages] = useState<Message[]>([])
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [inputText, setInputText] = useState('')
   const [sending, setSending] = useState(false)
+  const [translations, setTranslations] = useState<Record<string, TranslationState>>({})
   const listRef = useRef<FlatList<Message>>(null)
+
+  const handleTranslate = useCallback(async (messageId: string, content: string) => {
+    // Toggle off if already translated
+    if (translations[messageId]?.text !== null && translations[messageId]?.text !== undefined) {
+      setTranslations(prev => ({ ...prev, [messageId]: { text: null, loading: false } }))
+      return
+    }
+    setTranslations(prev => ({ ...prev, [messageId]: { text: null, loading: true } }))
+    try {
+      const translated = await translateMessage(content, language as 'en' | 'es' | 'hu')
+      setTranslations(prev => ({ ...prev, [messageId]: { text: translated, loading: false } }))
+    } catch {
+      setTranslations(prev => ({ ...prev, [messageId]: { text: null, loading: false } }))
+    }
+  }, [translations, language])
 
   const loadMessages = useCallback(async () => {
     if (Config.useMock) {
@@ -188,7 +246,6 @@ export default function ConsumerChatScreen() {
         })
         .eq('id', convId)
       // Notify operator about new consumer message
-      // booking.operator.auth_id is the operator's Supabase auth id
       if (booking?.operator?.auth_id) {
         void sendChatNotification({
           recipientUserId: booking.operator.auth_id,
@@ -201,6 +258,25 @@ export default function ConsumerChatScreen() {
       setSending(false)
     }
   }, [inputText, sending, bookingId, conversation, booking, id])
+
+  const renderItem = useCallback(({ item, index }: { item: Message; index: number }) => {
+    const nextMsg = messages[index + 1] ?? null
+    const showTs = shouldShowTimestamp(item, nextMsg)
+    const translation: TranslationState = translations[item.id] ?? { text: null, loading: false }
+    return (
+      <>
+        <MessageBubble
+          msg={item}
+          isConsumer
+          translation={translation}
+          onTranslate={handleTranslate}
+        />
+        {showTs && index < messages.length - 1 && (
+          <Text style={styles.tsLabel}>{formatMsgTime(item.created_at)}</Text>
+        )}
+      </>
+    )
+  }, [messages, translations, handleTranslate])
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -220,21 +296,10 @@ export default function ConsumerChatScreen() {
           keyExtractor={m => m.id}
           inverted
           contentContainerStyle={styles.messageList}
-          renderItem={({ item, index }) => {
-            const nextMsg = messages[index + 1] ?? null
-            const showTs = shouldShowTimestamp(item, nextMsg)
-            return (
-              <>
-                <MessageBubble msg={item} isConsumer />
-                {showTs && index < messages.length - 1 && (
-                  <Text style={styles.tsLabel}>{formatMsgTime(item.created_at)}</Text>
-                )}
-              </>
-            )
-          }}
+          renderItem={renderItem}
           ListEmptyComponent={
             <View style={styles.emptyChat}>
-              <Text style={styles.emptyChatText}>No messages yet. Say hello! 👋</Text>
+              <Text style={styles.emptyChatText}>No messages yet. Say hello!</Text>
             </View>
           }
         />
@@ -291,6 +356,22 @@ const styles = StyleSheet.create({
   bubbleTextConsumer: { color: Colors.textInverse },
   bubbleTime: { fontSize: 10, color: Colors.textTertiary, marginTop: 2 },
   bubbleTimeRight: { textAlign: 'right' },
+  translationContainer: { marginTop: 6 },
+  translationDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginBottom: 6 },
+  translationText: { fontSize: 13, color: Colors.text, lineHeight: 18, fontStyle: 'italic' },
+  translationTextConsumer: { color: 'rgba(255,255,255,0.85)' },
+  translateBtn: {
+    marginTop: 4,
+    minHeight: 20,
+  },
+  translateBtnText: {
+    fontSize: 11,
+    color: Colors.primary,
+    fontWeight: '500',
+  },
+  translateSpinner: {
+    height: 16,
+  },
   systemMsg: { alignSelf: 'center', marginVertical: Spacing.sm, maxWidth: '70%' },
   systemMsgText: {
     fontSize: 12, color: Colors.textTertiary,

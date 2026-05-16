@@ -9,47 +9,79 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- RLS: listings photos — operator or listing owner can upload/read
-CREATE POLICY "Operators upload listing photos" ON storage.objects
-  FOR INSERT WITH CHECK (
-    bucket_id = 'rentivo-listings' AND
-    auth.uid() IS NOT NULL
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Operators upload listing photos') THEN
+    CREATE POLICY "Operators upload listing photos" ON storage.objects
+      FOR INSERT WITH CHECK (
+        bucket_id = 'rentivo-listings' AND
+        auth.uid() IS NOT NULL
+      );
+  END IF;
+END $$;
 
-CREATE POLICY "Anyone reads listing photos" ON storage.objects
-  FOR SELECT USING (bucket_id = 'rentivo-listings');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Anyone reads listing photos') THEN
+    CREATE POLICY "Anyone reads listing photos" ON storage.objects
+      FOR SELECT USING (bucket_id = 'rentivo-listings');
+  END IF;
+END $$;
 
 -- RLS: damage photos — booking parties only
-CREATE POLICY "Booking parties upload damage photos" ON storage.objects
-  FOR INSERT WITH CHECK (
-    bucket_id = 'rentivo-damage' AND
-    auth.uid() IS NOT NULL
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Booking parties upload damage photos') THEN
+    CREATE POLICY "Booking parties upload damage photos" ON storage.objects
+      FOR INSERT WITH CHECK (
+        bucket_id = 'rentivo-damage' AND
+        auth.uid() IS NOT NULL
+      );
+  END IF;
+END $$;
 
-CREATE POLICY "Booking parties read damage photos" ON storage.objects
-  FOR SELECT USING (
-    bucket_id = 'rentivo-damage' AND
-    auth.uid() IS NOT NULL
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Booking parties read damage photos') THEN
+    CREATE POLICY "Booking parties read damage photos" ON storage.objects
+      FOR SELECT USING (
+        bucket_id = 'rentivo-damage' AND
+        auth.uid() IS NOT NULL
+      );
+  END IF;
+END $$;
 
 -- RLS: contracts — private, owner only
-CREATE POLICY "Users access own contracts" ON storage.objects
-  FOR ALL USING (
-    bucket_id = 'rentivo-contracts' AND
-    auth.uid()::text = (storage.foldername(name))[1]
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Users access own contracts') THEN
+    CREATE POLICY "Users access own contracts" ON storage.objects
+      FOR ALL USING (
+        bucket_id = 'rentivo-contracts' AND
+        auth.uid()::text = (storage.foldername(name))[1]
+      );
+  END IF;
+END $$;
 
 -- RLS: avatars — public read, self upload
-CREATE POLICY "Anyone reads avatars" ON storage.objects
-  FOR SELECT USING (bucket_id = 'rentivo-avatars');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Anyone reads avatars') THEN
+    CREATE POLICY "Anyone reads avatars" ON storage.objects
+      FOR SELECT USING (bucket_id = 'rentivo-avatars');
+  END IF;
+END $$;
 
-CREATE POLICY "Users upload own avatar" ON storage.objects
-  FOR INSERT WITH CHECK (
-    bucket_id = 'rentivo-avatars' AND
-    auth.uid()::text = (storage.foldername(name))[1]
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Users upload own avatar') THEN
+    CREATE POLICY "Users upload own avatar" ON storage.objects
+      FOR INSERT WITH CHECK (
+        bucket_id = 'rentivo-avatars' AND
+        auth.uid()::text = (storage.foldername(name))[1]
+      );
+  END IF;
+END $$;
 
-CREATE POLICY "Users update own avatar" ON storage.objects
-  FOR UPDATE USING (
-    bucket_id = 'rentivo-avatars' AND
-    auth.uid()::text = (storage.foldername(name))[1]
-  );
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='objects' AND schemaname='storage' AND policyname='Users update own avatar') THEN
+    CREATE POLICY "Users update own avatar" ON storage.objects
+      FOR UPDATE USING (
+        bucket_id = 'rentivo-avatars' AND
+        auth.uid()::text = (storage.foldername(name))[1]
+      );
+  END IF;
+END $$;

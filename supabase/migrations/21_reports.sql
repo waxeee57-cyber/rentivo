@@ -24,6 +24,14 @@ CREATE TABLE IF NOT EXISTS public.rentivo_reports (
 CREATE INDEX IF NOT EXISTS idx_reports_listing_id ON public.rentivo_reports(listing_id);
 CREATE INDEX IF NOT EXISTS idx_reports_status ON public.rentivo_reports(status);
 ALTER TABLE public.rentivo_reports ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Anyone can create reports" ON public.rentivo_reports FOR INSERT WITH CHECK (true);
-CREATE POLICY "Reporters see own reports" ON public.rentivo_reports FOR SELECT USING (auth.uid() = reporter_id);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='rentivo_reports' AND policyname='Anyone can create reports') THEN
+    CREATE POLICY "Anyone can create reports" ON public.rentivo_reports FOR INSERT WITH CHECK (true);
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='rentivo_reports' AND policyname='Reporters see own reports') THEN
+    CREATE POLICY "Reporters see own reports" ON public.rentivo_reports FOR SELECT USING (auth.uid() = reporter_id);
+  END IF;
+END $$;
 COMMENT ON TABLE public.rentivo_reports IS 'DSA Article 16 — Notice and action mechanism.';

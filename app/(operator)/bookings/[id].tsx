@@ -217,6 +217,17 @@ export default function OperatorBookingDetailScreen() {
           <Text style={styles.messageBtnText}>💬 Message Guest</Text>
         </TouchableOpacity>
 
+        {(booking.status === 'completed' || booking.status === 'active') && (
+          <TouchableOpacity
+            style={styles.disputeBtn}
+            onPress={() => router.push(`/(operator)/bookings/dispute/${booking.id}` as Parameters<typeof router.push>[0])}
+            accessibilityLabel="Open a dispute"
+            accessibilityRole="button"
+          >
+            <Text style={styles.disputeBtnText}>⚠️ Open a Dispute</Text>
+          </TouchableOpacity>
+        )}
+
         <View style={styles.actions}>
           {booking.status === 'confirmed' && (
             <Button
@@ -306,6 +317,16 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   messageBtnText: { fontSize: 15, color: Colors.primaryDark, fontWeight: '600' },
+  disputeBtn: {
+    borderWidth: 1,
+    borderColor: Colors.warning,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+    minHeight: 44,
+  },
+  disputeBtnText: { fontSize: 14, color: Colors.warning, fontWeight: '600' },
 })
 
 const flightStyles = StyleSheet.create({

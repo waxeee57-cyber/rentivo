@@ -77,6 +77,8 @@ export default function OperatorProfileScreen() {
           <Divider />
           <MenuItem label="🚗 Delivery Settings" onPress={() => router.push('/(operator)/settings/delivery' as Parameters<typeof router.push>[0])} />
           <Divider />
+          <MenuItem label="🔑 API & Webhooks" onPress={() => router.push('/(operator)/settings/api/index' as Parameters<typeof router.push>[0])} />
+          <Divider />
           <MenuItem label={t('businessSettings', language)} onPress={() => void Linking.openURL('https://dashboard.rentivo.app')} />
           <Divider />
           <MenuItem label={t('payoutSettings', language)} onPress={() => void Linking.openURL('https://dashboard.rentivo.app/payouts')} />

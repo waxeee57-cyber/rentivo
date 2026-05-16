@@ -219,6 +219,17 @@ export default function BookingDetailScreen() {
           <Text style={styles.actionBtnText}>💬 Message Operator</Text>
         </TouchableOpacity>
 
+        {(booking.status === 'completed' || booking.status === 'active') && (
+          <TouchableOpacity
+            style={styles.disputeBtn}
+            onPress={() => router.push(`/(consumer)/bookings/dispute/${booking.id}` as Parameters<typeof router.push>[0])}
+            accessibilityLabel="Open a dispute"
+            accessibilityRole="button"
+          >
+            <Text style={styles.disputeBtnText}>⚠️ Open a Dispute</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Leave review */}
         {booking.status === 'completed' && !hasReview && (
           <TouchableOpacity
@@ -305,4 +316,14 @@ const styles = StyleSheet.create({
   actionBtnGold: { borderColor: Colors.primary, backgroundColor: Colors.primarySurface },
   actionBtnDanger: { borderColor: Colors.error + '44', backgroundColor: Colors.errorSurface },
   actionBtnText: { fontSize: 15, color: Colors.text, fontWeight: '600' },
+  disputeBtn: {
+    borderWidth: 1,
+    borderColor: Colors.warning,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+    minHeight: 44,
+  },
+  disputeBtnText: { fontSize: 14, color: Colors.warning, fontWeight: '600' },
 })

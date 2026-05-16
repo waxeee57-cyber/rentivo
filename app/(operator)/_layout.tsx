@@ -129,8 +129,11 @@ export default function OperatorLayout() {
       <Tabs.Screen name="damage/[bookingId]" options={{ href: null }} />
       <Tabs.Screen name="profile/team" options={{ href: null }} />
       <Tabs.Screen name="settings/delivery" options={{ href: null }} />
+      <Tabs.Screen name="settings/api/index" options={{ href: null }} />
       <Tabs.Screen name="fleet/pricing/[id]" options={{ href: null }} />
+      <Tabs.Screen name="fleet/availability/[listingId]" options={{ href: null }} />
       <Tabs.Screen name="bookings/sign/[bookingId]" options={{ href: null }} />
+      <Tabs.Screen name="bookings/dispute/[bookingId]" options={{ href: null }} />
     </Tabs>
   )
 }

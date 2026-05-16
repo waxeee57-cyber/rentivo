@@ -23,9 +23,17 @@ CREATE TABLE IF NOT EXISTS public.rentivo_consent (
 );
 CREATE INDEX IF NOT EXISTS idx_consent_user_id ON public.rentivo_consent(user_id);
 ALTER TABLE public.rentivo_consent ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own consent" ON public.rentivo_consent
-  FOR ALL USING (auth.uid() = user_id);
-CREATE TRIGGER update_consent_updated_at
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='rentivo_consent' AND policyname='Users manage own consent') THEN
+    CREATE POLICY "Users manage own consent" ON public.rentivo_consent
+      FOR ALL USING (auth.uid() = user_id);
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='update_consent_updated_at') THEN
+    CREATE TRIGGER update_consent_updated_at
   BEFORE UPDATE ON public.rentivo_consent
   FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
+  END IF;
+END $$;
 COMMENT ON TABLE public.rentivo_consent IS 'GDPR Article 7 consent records. Minden hozzájárulás timestampelt és verziókövetett.';
