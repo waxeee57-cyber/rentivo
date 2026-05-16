@@ -21,6 +21,7 @@ import { CATEGORIES } from '@/constants/categories'
 import { searchAllSources } from '@/lib/api/unifiedSearch'
 import { getAvailableTodayListings, getLastMinuteListings } from '@/lib/api/listings'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useRecentlyViewedStore } from '@/lib/store/useRecentlyViewedStore'
 import { t, type TranslationKey } from '@/constants/i18n'
 import { openAffiliateLink } from '@/lib/utils/affiliateLinks'
 import { formatPricePerDay } from '@/lib/utils/formatCurrency'
@@ -103,6 +104,7 @@ export default function ExploreScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [availableTodayListings, setAvailableTodayListings] = useState<Listing[]>([])
   const [lastMinuteListings, setLastMinuteListings] = useState<Listing[]>([])
+  const recentlyViewed = useRecentlyViewedStore(s => s.items)
   const mapRef = useRef<typeof MapView extends null ? never : InstanceType<NonNullable<typeof MapView>>>(null)
 
   useLocation() // initializes device location tracking
@@ -591,6 +593,21 @@ export default function ExploreScreen() {
                       data={lastMinuteListings}
                       keyExtractor={item => `lm-${item.id}`}
                       renderItem={renderLastMinuteItem}
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={hStyles.hList}
+                    />
+                  </View>
+                )}
+                {recentlyViewed.length > 0 && (
+                  <View style={hStyles.section}>
+                    <View style={hStyles.sectionHeader}>
+                      <Text style={hStyles.sectionTitle}>🕒 {t('recentlyViewed', language)}</Text>
+                    </View>
+                    <FlatList
+                      horizontal
+                      data={recentlyViewed}
+                      keyExtractor={item => `rv-${item.id}`}
+                      renderItem={renderAvailableTodayItem}
                       showsHorizontalScrollIndicator={false}
                       contentContainerStyle={hStyles.hList}
                     />

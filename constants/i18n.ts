@@ -219,6 +219,7 @@ export const translations = {
     loyaltyProgressLabel: 'Progress to next tier',
     availableTodayTitle: 'Available Today',
     lastMinuteTitle: 'Last Minute Deals',
+    recentlyViewed: 'Recently Viewed',
     seeAll: 'See all',
     // AI Assistant
     assistant: 'Assistant',
@@ -446,6 +447,7 @@ export const translations = {
     loyaltyProgressLabel: 'Progreso al siguiente nivel',
     availableTodayTitle: 'Disponible Hoy',
     lastMinuteTitle: 'Ofertas de Último Minuto',
+    recentlyViewed: 'Vistos Recientemente',
     seeAll: 'Ver todo',
     // AI Assistant
     assistant: 'Asistente',
@@ -673,6 +675,7 @@ export const translations = {
     loyaltyProgressLabel: 'Haladás a következő szint felé',
     availableTodayTitle: 'Ma elérhető',
     lastMinuteTitle: 'Last Minute Ajánlatok',
+    recentlyViewed: 'Nemrég megtekintett',
     seeAll: 'Összes',
     // AI Assistant
     assistant: 'Asszisztens',

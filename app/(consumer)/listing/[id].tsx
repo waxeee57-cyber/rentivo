@@ -28,6 +28,8 @@ import { MOCK_REVIEWS, MOCK_LISTINGS } from '@/lib/mockData'
 import { useReviews } from '@/lib/hooks/useReviews'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useWishlistStore, toggleWishlistItem } from '@/lib/store/useWishlistStore'
+import { useRecentlyViewedStore } from '@/lib/store/useRecentlyViewedStore'
+import { useAvailability } from '@/lib/hooks/useAvailability'
 import { t } from '@/constants/i18n'
 import type { CancellationPolicy } from '@/types'
 
@@ -45,10 +47,17 @@ export default function ListingDetailScreen() {
   const [showFullDesc, setShowFullDesc] = useState(false)
   const [rentalType, setRentalType] = useState<'daily' | 'hourly'>('daily')
   const isWishlisted = useWishlistStore(s => s.isWishlisted)
+  const trackViewed = useRecentlyViewedStore(s => s.track)
+  const { blockedDates } = useAvailability(id ?? '')
   const insets = useSafeAreaInsets()
 
   if (loading) return <View style={styles.container}><SkeletonCard /></View>
   if (error || !listing) return <ErrorState message={error ?? 'Listing not found'} onRetry={refetch} />
+
+  // Track after first successful load
+  React.useEffect(() => {
+    if (listing) trackViewed(listing)
+  }, [listing?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalDays = startDate && endDate ? Math.max(1, differenceInDays(endDate, startDate)) : null
   const priceCalc = totalDays
@@ -688,6 +697,8 @@ export default function ListingDetailScreen() {
         endDate={endDate}
         onApply={(s, e) => { setStartDate(s); setEndDate(e) }}
         onClose={() => setShowDatePicker(false)}
+        blockedDates={blockedDates}
+        pricePerDay={listing.price_per_day}
       />
     </View>
   )
