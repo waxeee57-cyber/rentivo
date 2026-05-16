@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as Haptics from 'expo-haptics'
+import Animated, { ZoomIn, FadeInDown } from 'react-native-reanimated'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
+import { ConfettiAnimation } from '@/components/ui/ConfettiAnimation'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
@@ -29,21 +31,29 @@ export default function BookingConfirmationScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      <ConfettiAnimation />
       <ScreenHeader title={t('bookingConfirmed', language)} onBack={() => router.replace('/(consumer)/bookings')} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.successSection}>
-          <View style={styles.checkCircle}>
+          <Animated.View
+            style={styles.checkCircle}
+            entering={ZoomIn.springify().damping(9).stiffness(120)}
+          >
             <Text style={styles.checkMark}>✓</Text>
-          </View>
-          <Text style={styles.title}>{t('bookingConfirmed', language)}</Text>
-          <Text style={styles.ref}>#{ref}</Text>
-          <Text style={styles.subtitle}>
+          </Animated.View>
+          <Animated.Text style={styles.title} entering={FadeInDown.delay(280).springify()}>
+            {t('bookingConfirmed', language)}
+          </Animated.Text>
+          <Animated.Text style={styles.ref} entering={FadeInDown.delay(400).springify()}>
+            #{ref}
+          </Animated.Text>
+          <Animated.Text style={styles.subtitle} entering={FadeInDown.delay(520).springify()}>
             {language === 'es'
               ? 'Tu reserva ha sido enviada. El operador confirmará en breve.'
               : language === 'hu'
               ? 'A foglalásod megérkezett. Az operátor hamarosan visszaigazolja.'
               : 'Your booking has been placed. The operator will confirm shortly.'}
-          </Text>
+          </Animated.Text>
         </View>
 
         {/* What happens next */}

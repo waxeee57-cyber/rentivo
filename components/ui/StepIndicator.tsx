@@ -1,11 +1,42 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
+import Animated, {
+  useSharedValue, useAnimatedStyle,
+  withRepeat, withSequence, withTiming,
+  cancelAnimation,
+} from 'react-native-reanimated'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 
 interface StepIndicatorProps {
   totalSteps: number
   currentStep: number
   labels?: string[]
+}
+
+function PulsingDot({ children }: { children: React.ReactNode }) {
+  const scale = useSharedValue(1)
+
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.18, { duration: 650 }),
+        withTiming(1, { duration: 650 }),
+      ),
+      -1,
+      true,
+    )
+    return () => cancelAnimation(scale)
+  }, [])
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
+  return (
+    <Animated.View style={[styles.dot, styles.dotCurrent, animatedStyle]}>
+      {children}
+    </Animated.View>
+  )
 }
 
 export function StepIndicator({ totalSteps, currentStep, labels }: StepIndicatorProps) {
@@ -16,23 +47,27 @@ export function StepIndicator({ totalSteps, currentStep, labels }: StepIndicator
           const step = i + 1
           const isDone = step < currentStep
           const isCurrent = step === currentStep
+
+          const dot = isCurrent
+            ? (
+              <PulsingDot>
+                <Text style={styles.stepNumCurrent}>{step}</Text>
+              </PulsingDot>
+            )
+            : (
+              <View style={[styles.dot, isDone && styles.dotDone]}>
+                {isDone
+                  ? <Text style={styles.checkmark}>✓</Text>
+                  : <Text style={styles.stepNum}>{step}</Text>
+                }
+              </View>
+            )
+
           return (
             <React.Fragment key={step}>
               <View style={styles.stepCol}>
-                <View style={[
-                  styles.dot,
-                  isDone && styles.dotDone,
-                  isCurrent && styles.dotCurrent,
-                ]}>
-                  {isDone ? (
-                    <Text style={styles.checkmark}>✓</Text>
-                  ) : (
-                    <Text style={[styles.stepNum, isCurrent && styles.stepNumCurrent]}>
-                      {step}
-                    </Text>
-                  )}
-                </View>
-                {labels && labels[i] && (
+                {dot}
+                {labels?.[i] != null && (
                   <Text style={[
                     styles.label,
                     isCurrent && styles.labelCurrent,
@@ -90,6 +125,8 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
   },
   stepNumCurrent: {
+    fontSize: 12,
+    fontWeight: '700',
     color: Colors.primary,
   },
   checkmark: {

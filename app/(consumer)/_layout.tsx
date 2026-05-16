@@ -1,7 +1,12 @@
+import React, { useEffect } from 'react'
 import { Tabs } from 'expo-router'
 import { View, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
+import Animated, {
+  useSharedValue, useAnimatedStyle,
+  withSequence, withSpring,
+} from 'react-native-reanimated'
 import { Colors } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
@@ -14,11 +19,26 @@ function TabIcon({ name, focused, size = 24 }: {
   focused: boolean
   size?: number
 }) {
+  const scale = useSharedValue(1)
+
+  useEffect(() => {
+    if (focused) {
+      scale.value = withSequence(
+        withSpring(1.28, { damping: 5, stiffness: 300 }),
+        withSpring(1, { damping: 8, stiffness: 300 }),
+      )
+    }
+  }, [focused])
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
   return (
-    <View style={tabIconStyles.container}>
+    <Animated.View style={[tabIconStyles.container, animatedStyle]}>
       <Ionicons name={name} size={size} color={focused ? Colors.primary : Colors.textTertiary} />
       {focused && <View style={tabIconStyles.dot} />}
-    </View>
+    </Animated.View>
   )
 }
 

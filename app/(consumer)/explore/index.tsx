@@ -29,6 +29,7 @@ import { Image } from 'expo-image'
 import type { Listing, RentalCategory, SearchFilters, AnyListing, ExternalListing } from '@/types'
 import { format } from 'date-fns'
 import { router } from 'expo-router'
+import { RotatingText } from '@/components/ui/RotatingText'
 
 const CAT_I18N_KEYS: Record<RentalCategory, TranslationKey> = {
   car: 'catCars', motorcycle: 'catMotorcycles', yacht: 'catYachts',
@@ -401,6 +402,16 @@ export default function ExploreScreen() {
       {/* List mode overlay */}
       <Animated.View style={[styles.listOverlay, { transform: [{ translateY: listOverlayY }] }]}>
         <View style={styles.listHandle} />
+
+        {/* Rotating hero headline */}
+        <View style={heroStyles.row}>
+          <Text style={heroStyles.prefix}>Rent a </Text>
+          <RotatingText
+            words={['car', 'boat', 'villa', 'scooter', 'drone']}
+            style={heroStyles.rotating}
+            interval={2400}
+          />
+        </View>
 
         {/* Source toggle */}
         <View style={styles.sourceToggleRow}>
@@ -916,6 +927,25 @@ const filterStyles = StyleSheet.create({
     alignItems: 'center', marginTop: Spacing.sm,
   },
   applyBtnText: { fontSize: 16, fontWeight: '800', color: Colors.textInverse },
+})
+
+const heroStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
+    paddingBottom: Spacing.sm,
+  },
+  prefix: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  rotating: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.primary,
+  },
 })
 
 const hStyles = StyleSheet.create({

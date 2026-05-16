@@ -2,6 +2,11 @@ import React, { useState } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Share, Platform, Linking, Alert,
 } from 'react-native'
+import Animated, {
+  useSharedValue, useAnimatedScrollHandler, useAnimatedStyle,
+  interpolate, Extrapolation,
+} from 'react-native-reanimated'
+import { BlurView } from 'expo-blur'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { differenceInDays } from 'date-fns'
@@ -50,6 +55,32 @@ export default function ListingDetailScreen() {
   const trackViewed = useRecentlyViewedStore(s => s.track)
   const { blockedDates } = useAvailability(id ?? '')
   const insets = useSafeAreaInsets()
+
+  // Parallax hero — must be before early returns (rules of hooks)
+  const scrollY = useSharedValue(0)
+  const scrollHandler = useAnimatedScrollHandler(e => {
+    scrollY.value = e.contentOffset.y
+  })
+  const parallaxStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: interpolate(
+          scrollY.value,
+          [-HERO_HEIGHT, 0],
+          [1.5, 1.08],
+          Extrapolation.CLAMP,
+        ),
+      },
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [-HERO_HEIGHT, 0, HERO_HEIGHT],
+          [-HERO_HEIGHT * 0.3, 0, HERO_HEIGHT * 0.2],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+  }))
 
   if (loading) return <View style={styles.container}><SkeletonCard /></View>
   if (error || !listing) return <ErrorState message={error ?? 'Listing not found'} onRetry={refetch} />
@@ -149,10 +180,17 @@ export default function ListingDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-        {/* Hero image */}
-        <View style={{ height: HERO_HEIGHT, position: 'relative' }}>
-          <ListingCarousel images={listing.images} height={HERO_HEIGHT} />
+      <Animated.ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+      >
+        {/* Hero image with parallax */}
+        <View style={{ height: HERO_HEIGHT, position: 'relative', overflow: 'hidden' }}>
+          <Animated.View style={[StyleSheet.absoluteFill, parallaxStyle]}>
+            <ListingCarousel images={listing.images} height={HERO_HEIGHT} />
+          </Animated.View>
 
           <View style={styles.heroGradient} pointerEvents="none" />
 
@@ -173,52 +211,64 @@ export default function ListingDetailScreen() {
             )}
           </View>
 
-          <TouchableOpacity
-            style={[styles.backBtn, { top: insets.top + 8 }]}
-            onPress={() => router.back()}
-            accessibilityLabel="Go back"
-            accessibilityRole="button"
-          >
-            <Ionicons name="arrow-back" size={20} color={Colors.text} />
-          </TouchableOpacity>
+          <View style={[styles.backBtn, { top: insets.top + 8 }]}>
+            <BlurView intensity={55} tint="dark" style={StyleSheet.absoluteFill} />
+            <TouchableOpacity
+              onPress={() => router.back()}
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+              style={styles.backBtnInner}
+            >
+              <Ionicons name="arrow-back" size={20} color={Colors.text} />
+            </TouchableOpacity>
+          </View>
 
           <View style={[styles.actionBtns, { top: insets.top + 8 }]}>
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => {
-                void Share.share({
-                  title: listing.title,
-                  message: `Check out ${listing.title} on Rentivo — ${formatPricePerDay(listing.price_per_day, language)}`,
-                })
-              }}
-              accessibilityLabel="Share this listing"
-              accessibilityRole="button"
-            >
-              <Ionicons name="share-outline" size={18} color={Colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => {
-                void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-                if (user?.id) void toggleWishlistItem(listing, user.id)
-              }}
-              accessibilityLabel={isWishlisted(listing.id) ? 'Remove from favorites' : 'Add to favorites'}
-              accessibilityRole="button"
-            >
-              <Ionicons
-                name={isWishlisted(listing.id) ? 'heart' : 'heart-outline'}
-                size={18}
-                color={isWishlisted(listing.id) ? Colors.error : Colors.text}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={handleReport}
-              accessibilityLabel={language === 'hu' ? 'Hirdetés bejelentése' : 'Report this listing'}
-              accessibilityRole="button"
-            >
-              <Ionicons name="flag-outline" size={18} color={Colors.text} />
-            </TouchableOpacity>
+            <View style={styles.actionBtn}>
+              <BlurView intensity={55} tint="dark" style={StyleSheet.absoluteFill} />
+              <TouchableOpacity
+                onPress={() => {
+                  void Share.share({
+                    title: listing.title,
+                    message: `Check out ${listing.title} on Rentivo — ${formatPricePerDay(listing.price_per_day, language)}`,
+                  })
+                }}
+                accessibilityLabel="Share this listing"
+                accessibilityRole="button"
+                style={styles.backBtnInner}
+              >
+                <Ionicons name="share-outline" size={18} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.actionBtn}>
+              <BlurView intensity={55} tint="dark" style={StyleSheet.absoluteFill} />
+              <TouchableOpacity
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+                  if (user?.id) void toggleWishlistItem(listing, user.id)
+                }}
+                accessibilityLabel={isWishlisted(listing.id) ? 'Remove from favorites' : 'Add to favorites'}
+                accessibilityRole="button"
+                style={styles.backBtnInner}
+              >
+                <Ionicons
+                  name={isWishlisted(listing.id) ? 'heart' : 'heart-outline'}
+                  size={18}
+                  color={isWishlisted(listing.id) ? Colors.error : Colors.text}
+                />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.actionBtn}>
+              <BlurView intensity={55} tint="dark" style={StyleSheet.absoluteFill} />
+              <TouchableOpacity
+                onPress={handleReport}
+                accessibilityLabel={language === 'hu' ? 'Hirdetés bejelentése' : 'Report this listing'}
+                accessibilityRole="button"
+                style={styles.backBtnInner}
+              >
+                <Ionicons name="flag-outline" size={18} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -652,10 +702,11 @@ export default function ListingDetailScreen() {
 
           <View style={{ height: 100 }} />
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
-      {/* Sticky booking bar */}
+      {/* Sticky booking bar — glassmorphism */}
       <View style={[styles.bookingBar, { paddingBottom: insets.bottom + Spacing.sm }]}>
+        <BlurView intensity={75} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={styles.bookingBarLeft}>
           <Text style={styles.bookingBarPrice}>{formatEUR(listing.price_per_day)}<Text style={styles.bookingBarUnit}>{t('perDay', language)}</Text></Text>
           {priceCalc && totalDays ? (
@@ -737,16 +788,18 @@ const styles = StyleSheet.create({
   backBtn: {
     position: 'absolute',
     left: Spacing.base,
-    backgroundColor: 'rgba(255,255,255,0.95)',
     width: 40, height: 40,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 4,
+  },
+  backBtnInner: {
+    width: '100%', height: '100%',
+    alignItems: 'center', justifyContent: 'center',
   },
   actionBtns: {
     position: 'absolute',
@@ -755,14 +808,14 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   actionBtn: {
-    backgroundColor: 'rgba(255,255,255,0.95)',
     width: 40, height: 40,
     borderRadius: 20,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 6,
     elevation: 4,
   },
@@ -986,14 +1039,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.base,
-    backgroundColor: Colors.surface,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: 'rgba(255,255,255,0.08)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.15,
     shadowRadius: 12,
     elevation: 8,
+    overflow: 'hidden',
   },
   bookingBarLeft: { flex: 1 },
   bookingBarPrice: { fontSize: 18, fontWeight: '700', color: Colors.text },

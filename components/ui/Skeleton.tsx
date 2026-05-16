@@ -1,6 +1,14 @@
-import React, { useEffect, useRef } from 'react'
-import { Animated, StyleSheet, ViewStyle } from 'react-native'
+import React, { useEffect } from 'react'
+import { StyleSheet, View, ViewStyle, Dimensions } from 'react-native'
+import Animated, {
+  useSharedValue, useAnimatedStyle,
+  withRepeat, withTiming, cancelAnimation,
+  Easing,
+} from 'react-native-reanimated'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Colors, Radius } from '@/constants/colors'
+
+const SCREEN_W = Dimensions.get('window').width
 
 interface SkeletonProps {
   width?: number | string
@@ -10,37 +18,48 @@ interface SkeletonProps {
 }
 
 export function Skeleton({ width = '100%', height = 16, borderRadius = Radius.md, style }: SkeletonProps) {
-  const opacity = useRef(new Animated.Value(0.3)).current
+  const shimmerX = useSharedValue(-SCREEN_W)
 
   useEffect(() => {
-    const anim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
-      ]),
+    shimmerX.value = withRepeat(
+      withTiming(SCREEN_W, { duration: 1100, easing: Easing.linear }),
+      -1,
+      false,
     )
-    anim.start()
-    return () => anim.stop()
-  }, [opacity])
+    return () => cancelAnimation(shimmerX)
+  }, [])
+
+  const shimmerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shimmerX.value }],
+  }))
 
   return (
-    <Animated.View
+    <View
       style={[
-        { width: width as number, height, borderRadius, backgroundColor: Colors.border, opacity },
+        { width: width as number, height, borderRadius, backgroundColor: Colors.border, overflow: 'hidden' },
         style,
       ]}
-    />
+    >
+      <Animated.View style={[StyleSheet.absoluteFill, shimmerStyle]}>
+        <LinearGradient
+          colors={['transparent', 'rgba(255,255,255,0.07)', 'transparent']}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={{ flex: 1, width: SCREEN_W * 0.5 }}
+        />
+      </Animated.View>
+    </View>
   )
 }
 
 export function SkeletonCard() {
   return (
-    <Animated.View style={styles.card}>
+    <View style={styles.card}>
       <Skeleton height={160} borderRadius={12} style={{ marginBottom: 12 }} />
       <Skeleton height={16} width="70%" style={{ marginBottom: 8 }} />
       <Skeleton height={12} width="50%" style={{ marginBottom: 8 }} />
       <Skeleton height={14} width="40%" />
-    </Animated.View>
+    </View>
   )
 }
 
