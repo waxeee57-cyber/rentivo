@@ -1,10 +1,5 @@
-import React, { useEffect } from 'react'
-import { StyleSheet, View, ViewStyle, Dimensions } from 'react-native'
-import Animated, {
-  useSharedValue, useAnimatedStyle,
-  withRepeat, withTiming, cancelAnimation,
-  Easing,
-} from 'react-native-reanimated'
+import React, { useEffect, useRef } from 'react'
+import { StyleSheet, View, Animated, ViewStyle, Dimensions } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Colors, Radius } from '@/constants/colors'
 
@@ -18,20 +13,15 @@ interface SkeletonProps {
 }
 
 export function Skeleton({ width = '100%', height = 16, borderRadius = Radius.md, style }: SkeletonProps) {
-  const shimmerX = useSharedValue(-SCREEN_W)
+  const shimmerX = useRef(new Animated.Value(-SCREEN_W)).current
 
   useEffect(() => {
-    shimmerX.value = withRepeat(
-      withTiming(SCREEN_W, { duration: 1100, easing: Easing.linear }),
-      -1,
-      false,
+    const anim = Animated.loop(
+      Animated.timing(shimmerX, { toValue: SCREEN_W, duration: 1100, useNativeDriver: true })
     )
-    return () => cancelAnimation(shimmerX)
+    anim.start()
+    return () => anim.stop()
   }, [])
-
-  const shimmerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: shimmerX.value }],
-  }))
 
   return (
     <View
@@ -40,7 +30,7 @@ export function Skeleton({ width = '100%', height = 16, borderRadius = Radius.md
         style,
       ]}
     >
-      <Animated.View style={[StyleSheet.absoluteFill, shimmerStyle]}>
+      <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ translateX: shimmerX }] }]}>
         <LinearGradient
           colors={['transparent', 'rgba(255,255,255,0.07)', 'transparent']}
           start={{ x: 0, y: 0.5 }}

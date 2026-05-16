@@ -1,10 +1,5 @@
-import React, { useEffect } from 'react'
-import { View, Text, StyleSheet } from 'react-native'
-import Animated, {
-  useSharedValue, useAnimatedStyle,
-  withRepeat, withSequence, withTiming,
-  cancelAnimation,
-} from 'react-native-reanimated'
+import React, { useEffect, useRef } from 'react'
+import { View, Text, Animated, StyleSheet } from 'react-native'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 
 interface StepIndicatorProps {
@@ -14,26 +9,21 @@ interface StepIndicatorProps {
 }
 
 function PulsingDot({ children }: { children: React.ReactNode }) {
-  const scale = useSharedValue(1)
+  const scale = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
-    scale.value = withRepeat(
-      withSequence(
-        withTiming(1.18, { duration: 650 }),
-        withTiming(1, { duration: 650 }),
-      ),
-      -1,
-      true,
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scale, { toValue: 1.18, duration: 650, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1, duration: 650, useNativeDriver: true }),
+      ])
     )
-    return () => cancelAnimation(scale)
+    anim.start()
+    return () => anim.stop()
   }, [])
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }))
-
   return (
-    <Animated.View style={[styles.dot, styles.dotCurrent, animatedStyle]}>
+    <Animated.View style={[styles.dot, styles.dotCurrent, { transform: [{ scale }] }]}>
       {children}
     </Animated.View>
   )

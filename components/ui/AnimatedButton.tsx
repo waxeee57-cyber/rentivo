@@ -1,32 +1,10 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import {
-  Pressable, Text, ActivityIndicator,
+  Pressable, Text, ActivityIndicator, Animated,
   StyleSheet, ViewStyle, TextStyle,
 } from 'react-native'
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated'
 import { impactAsync, ImpactFeedbackStyle } from 'expo-haptics'
 import { Colors, Radius, Spacing } from '@/constants/colors'
-
-const styles = StyleSheet.create({
-  base: {
-    minHeight: 52,
-    borderRadius: Radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
-  },
-  fullWidth: { alignSelf: 'stretch' },
-  primary: { backgroundColor: Colors.primary },
-  secondary: { backgroundColor: Colors.primarySurface, borderWidth: 1, borderColor: Colors.primary },
-  ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.border },
-  danger: { backgroundColor: Colors.errorSurface, borderWidth: 1, borderColor: Colors.error },
-  disabled: { opacity: 0.5 },
-  text: { fontSize: 15, fontWeight: '600' as const },
-  primaryText: { color: Colors.textInverse },
-  secondaryText: { color: Colors.primary },
-  ghostText: { color: Colors.textSecondary },
-  dangerText: { color: Colors.error },
-})
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
@@ -49,22 +27,18 @@ export function AnimatedButton({
   style, textStyle, fullWidth = false,
   accessibilityLabel, haptic = true,
 }: AnimatedButtonProps) {
-  const scale = useSharedValue(1)
+  const scale = useRef(new Animated.Value(1)).current
   const isDisabled = disabled || loading
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }))
 
   return (
     <Pressable
       onPressIn={() => {
         if (isDisabled) return
-        scale.value = withSpring(0.95, { damping: 10, stiffness: 400 })
+        Animated.spring(scale, { toValue: 0.95, damping: 10, useNativeDriver: true }).start()
         if (haptic) void impactAsync(ImpactFeedbackStyle.Light)
       }}
       onPressOut={() => {
-        scale.value = withSpring(1, { damping: 10, stiffness: 400 })
+        Animated.spring(scale, { toValue: 1, damping: 10, useNativeDriver: true }).start()
       }}
       onPress={isDisabled ? undefined : onPress}
       accessibilityLabel={accessibilityLabel ?? title}
@@ -78,7 +52,7 @@ export function AnimatedButton({
         variant === 'danger' && styles.danger,
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
-        animatedStyle,
+        { transform: [{ scale }] },
         style,
       ]}>
         {loading
@@ -101,3 +75,24 @@ export function AnimatedButton({
     </Pressable>
   )
 }
+
+const styles = StyleSheet.create({
+  base: {
+    minHeight: 52,
+    borderRadius: Radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  fullWidth: { alignSelf: 'stretch' },
+  primary: { backgroundColor: Colors.primary },
+  secondary: { backgroundColor: Colors.primarySurface, borderWidth: 1, borderColor: Colors.primary },
+  ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.border },
+  danger: { backgroundColor: Colors.errorSurface, borderWidth: 1, borderColor: Colors.error },
+  disabled: { opacity: 0.5 },
+  text: { fontSize: 15, fontWeight: '600' },
+  primaryText: { color: Colors.textInverse },
+  secondaryText: { color: Colors.primary },
+  ghostText: { color: Colors.textSecondary },
+  dangerText: { color: Colors.error },
+})

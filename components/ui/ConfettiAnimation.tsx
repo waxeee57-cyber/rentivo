@@ -1,10 +1,5 @@
-import React, { useEffect, useMemo } from 'react'
-import { StyleSheet, View, Dimensions } from 'react-native'
-import Animated, {
-  useSharedValue, useAnimatedStyle,
-  withTiming, withDelay, withSequence,
-  cancelAnimation,
-} from 'react-native-reanimated'
+import React, { useRef, useEffect, useMemo } from 'react'
+import { StyleSheet, View, Animated, Dimensions } from 'react-native'
 
 const { width, height } = Dimensions.get('window')
 const COLORS = ['#E8A44A', '#10B981', '#6366F1', '#EC4899', '#F59E0B', '#FFFFFF', '#3B82F6']
@@ -19,33 +14,23 @@ interface ParticleConfig {
 }
 
 function ConfettiParticle({ config }: { config: ParticleConfig }) {
-  const translateY = useSharedValue(-20)
-  const opacity = useSharedValue(0)
+  const translateY = useRef(new Animated.Value(-20)).current
+  const opacity = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
-    translateY.value = withDelay(config.delay, withTiming(height + 80, { duration: 2200 }))
-    opacity.value = withDelay(
-      config.delay,
-      withSequence(
-        withTiming(1, { duration: 80 }),
-        withTiming(1, { duration: 1600 }),
-        withTiming(0, { duration: 280 }),
-      ),
-    )
-    return () => {
-      cancelAnimation(translateY)
-      cancelAnimation(opacity)
-    }
+    Animated.parallel([
+      Animated.sequence([
+        Animated.delay(config.delay),
+        Animated.timing(translateY, { toValue: height + 80, duration: 2200, useNativeDriver: true }),
+      ]),
+      Animated.sequence([
+        Animated.delay(config.delay),
+        Animated.timing(opacity, { toValue: 1, duration: 80, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: 1600, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0, duration: 280, useNativeDriver: true }),
+      ]),
+    ]).start()
   }, [])
-
-  const style = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: config.x },
-      { translateY: translateY.value },
-      { rotate: `${config.rotation}deg` },
-    ],
-    opacity: opacity.value,
-  }))
 
   return (
     <Animated.View
@@ -56,8 +41,12 @@ function ConfettiParticle({ config }: { config: ParticleConfig }) {
           width: config.size,
           height: config.size,
           borderRadius: config.size * 0.25,
+          opacity,
+          transform: [
+            { translateX: config.x },
+            { translateY },
+          ],
         },
-        style,
       ]}
     />
   )

@@ -1,44 +1,37 @@
-import React, { useEffect } from 'react'
-import { Text, StyleSheet, TouchableOpacity } from 'react-native'
-import Animated, {
-  useSharedValue, useAnimatedStyle,
-  withSpring, withTiming,
-  cancelAnimation,
-} from 'react-native-reanimated'
+import React, { useEffect, useRef } from 'react'
+import { Text, StyleSheet, Animated, TouchableOpacity } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 import { useToastStore } from '@/lib/store/useToastStore'
 
 export function Toast() {
   const { toast, hideToast } = useToastStore()
-  const translateY = useSharedValue(-120)
-  const opacity = useSharedValue(0)
+  const translateY = useRef(new Animated.Value(-120)).current
+  const opacity = useRef(new Animated.Value(0)).current
   const insets = useSafeAreaInsets()
 
   useEffect(() => {
     if (toast) {
-      cancelAnimation(translateY)
-      cancelAnimation(opacity)
-      translateY.value = withSpring(0, { damping: 16, stiffness: 260 })
-      opacity.value = withTiming(1, { duration: 180 })
+      Animated.parallel([
+        Animated.spring(translateY, { toValue: 0, damping: 16, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: 180, useNativeDriver: true }),
+      ]).start()
 
       const timer = setTimeout(() => {
-        translateY.value = withTiming(-120, { duration: 220 })
-        opacity.value = withTiming(0, { duration: 180 })
-        setTimeout(hideToast, 230)
+        Animated.parallel([
+          Animated.timing(translateY, { toValue: -120, duration: 220, useNativeDriver: true }),
+          Animated.timing(opacity, { toValue: 0, duration: 180, useNativeDriver: true }),
+        ]).start(() => hideToast())
       }, 3000)
 
       return () => clearTimeout(timer)
     } else {
-      translateY.value = withTiming(-120, { duration: 200 })
-      opacity.value = withTiming(0, { duration: 180 })
+      Animated.parallel([
+        Animated.timing(translateY, { toValue: -120, duration: 200, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0, duration: 180, useNativeDriver: true }),
+      ]).start()
     }
   }, [toast])
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-    opacity: opacity.value,
-  }))
 
   if (!toast) return null
 
@@ -55,8 +48,9 @@ export function Toast() {
         top: insets.top + 16,
         backgroundColor: config.bg,
         borderColor: config.border,
+        transform: [{ translateY }],
+        opacity,
       },
-      animatedStyle,
     ]}>
       <TouchableOpacity style={styles.inner} onPress={hideToast} activeOpacity={0.9}>
         <Text style={[styles.icon, { color: config.iconColor }]}>{config.icon}</Text>

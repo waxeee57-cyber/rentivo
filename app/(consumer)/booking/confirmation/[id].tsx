@@ -1,9 +1,8 @@
-import React, { useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native'
+import React, { useEffect, useRef } from 'react'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import Animated, { ZoomIn, FadeInDown } from 'react-native-reanimated'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
@@ -18,14 +17,26 @@ export default function BookingConfirmationScreen() {
   const ref = (id ?? 'XXXXX').slice(0, 8).toUpperCase()
   const { showToast } = useToastStore()
   const { language } = useAuthStore()
+  const checkScale = useRef(new Animated.Value(0)).current
+  const contentOpacity = useRef(new Animated.Value(0)).current
+  const contentY = useRef(new Animated.Value(20)).current
 
   useEffect(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    // Animate check circle entrance
+    Animated.spring(checkScale, { toValue: 1, damping: 9, stiffness: 120, useNativeDriver: true }).start()
+    // Animate content fade-in
+    Animated.sequence([
+      Animated.delay(280),
+      Animated.parallel([
+        Animated.timing(contentOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.timing(contentY, { toValue: 0, duration: 300, useNativeDriver: true }),
+      ]),
+    ]).start()
     const timer = setTimeout(() => {
       showToast({ message: `${t('bookingConfirmed', language)} ✓`, type: 'success' })
     }, 800)
     return () => clearTimeout(timer)
-    // Intentional: runs once on mount — language and showToast captured at mount time
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -35,25 +46,20 @@ export default function BookingConfirmationScreen() {
       <ScreenHeader title={t('bookingConfirmed', language)} onBack={() => router.replace('/(consumer)/bookings')} />
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.successSection}>
-          <Animated.View
-            style={styles.checkCircle}
-            entering={ZoomIn.springify().damping(9).stiffness(120)}
-          >
+          <Animated.View style={[styles.checkCircle, { transform: [{ scale: checkScale }] }]}>
             <Text style={styles.checkMark}>✓</Text>
           </Animated.View>
-          <Animated.Text style={styles.title} entering={FadeInDown.delay(280).springify()}>
-            {t('bookingConfirmed', language)}
-          </Animated.Text>
-          <Animated.Text style={styles.ref} entering={FadeInDown.delay(400).springify()}>
-            #{ref}
-          </Animated.Text>
-          <Animated.Text style={styles.subtitle} entering={FadeInDown.delay(520).springify()}>
-            {language === 'es'
-              ? 'Tu reserva ha sido enviada. El operador confirmará en breve.'
-              : language === 'hu'
-              ? 'A foglalásod megérkezett. Az operátor hamarosan visszaigazolja.'
-              : 'Your booking has been placed. The operator will confirm shortly.'}
-          </Animated.Text>
+          <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentY }] }}>
+            <Text style={styles.title}>{t('bookingConfirmed', language)}</Text>
+            <Text style={styles.ref}>#{ref}</Text>
+            <Text style={styles.subtitle}>
+              {language === 'es'
+                ? 'Tu reserva ha sido enviada. El operador confirmará en breve.'
+                : language === 'hu'
+                ? 'A foglalásod megérkezett. Az operátor hamarosan visszaigazolja.'
+                : 'Your booking has been placed. The operator will confirm shortly.'}
+            </Text>
+          </Animated.View>
         </View>
 
         {/* What happens next */}

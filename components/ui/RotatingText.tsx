@@ -1,9 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { TextStyle } from 'react-native'
-import Animated, {
-  useSharedValue, useAnimatedStyle, withTiming,
-  cancelAnimation,
-} from 'react-native-reanimated'
+import React, { useState, useEffect, useRef } from 'react'
+import { Animated, TextStyle } from 'react-native'
 
 interface RotatingTextProps {
   words: string[]
@@ -13,38 +9,29 @@ interface RotatingTextProps {
 
 export function RotatingText({ words, style, interval = 2500 }: RotatingTextProps) {
   const [index, setIndex] = useState(0)
-  const opacity = useSharedValue(1)
-  const translateY = useSharedValue(0)
+  const opacity = useRef(new Animated.Value(1)).current
+  const translateY = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     const timer = setInterval(() => {
-      opacity.value = withTiming(0, { duration: 220 })
-      translateY.value = withTiming(-14, { duration: 220 })
-
-      const swap = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(opacity, { toValue: 0, duration: 220, useNativeDriver: true }),
+        Animated.timing(translateY, { toValue: -14, duration: 220, useNativeDriver: true }),
+      ]).start(() => {
         setIndex(i => (i + 1) % words.length)
-        translateY.value = 14
-        opacity.value = withTiming(1, { duration: 220 })
-        translateY.value = withTiming(0, { duration: 220 })
-      }, 230)
-
-      return () => clearTimeout(swap)
+        translateY.setValue(14)
+        Animated.parallel([
+          Animated.timing(opacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+          Animated.timing(translateY, { toValue: 0, duration: 220, useNativeDriver: true }),
+        ]).start()
+      })
     }, interval)
 
-    return () => {
-      clearInterval(timer)
-      cancelAnimation(opacity)
-      cancelAnimation(translateY)
-    }
+    return () => clearInterval(timer)
   }, [words.length, interval])
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }))
-
   return (
-    <Animated.Text style={[style, animatedStyle]}>
+    <Animated.Text style={[style, { opacity, transform: [{ translateY }] }]}>
       {words[index]}
     </Animated.Text>
   )

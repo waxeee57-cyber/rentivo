@@ -1,11 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, Share, Platform, Linking, Alert,
+  View, Text, ScrollView, Animated, TouchableOpacity, StyleSheet, Dimensions, Share, Platform, Linking, Alert,
 } from 'react-native'
-import Animated, {
-  useSharedValue, useAnimatedScrollHandler, useAnimatedStyle,
-  interpolate, Extrapolation,
-} from 'react-native-reanimated'
 import { BlurView } from 'expo-blur'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -57,30 +53,17 @@ export default function ListingDetailScreen() {
   const insets = useSafeAreaInsets()
 
   // Parallax hero — must be before early returns (rules of hooks)
-  const scrollY = useSharedValue(0)
-  const scrollHandler = useAnimatedScrollHandler(e => {
-    scrollY.value = e.contentOffset.y
+  const scrollY = useRef(new Animated.Value(0)).current
+  const parallaxScale = scrollY.interpolate({
+    inputRange: [-HERO_HEIGHT, 0],
+    outputRange: [1.5, 1.08],
+    extrapolate: 'clamp',
   })
-  const parallaxStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        scale: interpolate(
-          scrollY.value,
-          [-HERO_HEIGHT, 0],
-          [1.5, 1.08],
-          Extrapolation.CLAMP,
-        ),
-      },
-      {
-        translateY: interpolate(
-          scrollY.value,
-          [-HERO_HEIGHT, 0, HERO_HEIGHT],
-          [-HERO_HEIGHT * 0.3, 0, HERO_HEIGHT * 0.2],
-          Extrapolation.CLAMP,
-        ),
-      },
-    ],
-  }))
+  const parallaxTranslateY = scrollY.interpolate({
+    inputRange: [-HERO_HEIGHT, 0, HERO_HEIGHT],
+    outputRange: [-HERO_HEIGHT * 0.3, 0, HERO_HEIGHT * 0.2],
+    extrapolate: 'clamp',
+  })
 
   if (loading) return <View style={styles.container}><SkeletonCard /></View>
   if (error || !listing) return <ErrorState message={error ?? 'Listing not found'} onRetry={refetch} />
@@ -183,12 +166,17 @@ export default function ListingDetailScreen() {
       <Animated.ScrollView
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        onScroll={scrollHandler}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true },
+        )}
         scrollEventThrottle={16}
       >
         {/* Hero image with parallax */}
         <View style={{ height: HERO_HEIGHT, position: 'relative', overflow: 'hidden' }}>
-          <Animated.View style={[StyleSheet.absoluteFill, parallaxStyle]}>
+          <Animated.View style={[StyleSheet.absoluteFill, {
+            transform: [{ scale: parallaxScale }, { translateY: parallaxTranslateY }],
+          }]}>
             <ListingCarousel images={listing.images} height={HERO_HEIGHT} />
           </Animated.View>
 

@@ -1,9 +1,5 @@
-import React from 'react'
-import { Pressable, StyleSheet, ViewStyle } from 'react-native'
-import Animated, {
-  useSharedValue, useAnimatedStyle,
-  withSequence, withSpring, withTiming,
-} from 'react-native-reanimated'
+import React, { useRef } from 'react'
+import { Pressable, Animated, StyleSheet, ViewStyle } from 'react-native'
 import { notificationAsync, NotificationFeedbackType } from 'expo-haptics'
 
 interface HeartButtonProps {
@@ -14,27 +10,27 @@ interface HeartButtonProps {
 }
 
 export function HeartButton({ isWishlisted, onToggle, size = 24, containerStyle }: HeartButtonProps) {
-  const scale = useSharedValue(1)
-  const rotation = useSharedValue(0)
+  const scale = useRef(new Animated.Value(1)).current
+  const rotation = useRef(new Animated.Value(0)).current
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value },
-      { rotate: `${rotation.value}deg` },
-    ],
-  }))
+  const rotationDeg = rotation.interpolate({
+    inputRange: [-15, 0, 15],
+    outputRange: ['-15deg', '0deg', '15deg'],
+  })
 
   const handlePress = () => {
-    scale.value = withSequence(
-      withSpring(1.4, { damping: 5, stiffness: 300 }),
-      withSpring(0.9, { damping: 8, stiffness: 300 }),
-      withSpring(1, { damping: 10, stiffness: 300 }),
-    )
-    rotation.value = withSequence(
-      withTiming(-15, { duration: 100 }),
-      withTiming(15, { duration: 100 }),
-      withTiming(0, { duration: 100 }),
-    )
+    Animated.sequence([
+      Animated.spring(scale, { toValue: 1.4, damping: 5, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 0.9, damping: 8, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, damping: 10, useNativeDriver: true }),
+    ]).start()
+
+    Animated.sequence([
+      Animated.timing(rotation, { toValue: -15, duration: 100, useNativeDriver: true }),
+      Animated.timing(rotation, { toValue: 15, duration: 100, useNativeDriver: true }),
+      Animated.timing(rotation, { toValue: 0, duration: 100, useNativeDriver: true }),
+    ]).start()
+
     void notificationAsync(
       isWishlisted ? NotificationFeedbackType.Warning : NotificationFeedbackType.Success
     )
@@ -48,7 +44,7 @@ export function HeartButton({ isWishlisted, onToggle, size = 24, containerStyle 
       accessibilityLabel={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
       accessibilityRole="button"
     >
-      <Animated.Text style={[{ fontSize: size }, animatedStyle]}>
+      <Animated.Text style={{ fontSize: size, transform: [{ scale }, { rotate: rotationDeg }] }}>
         {isWishlisted ? '❤️' : '🤍'}
       </Animated.Text>
     </Pressable>
