@@ -25,7 +25,7 @@ const MOCK_PROMOS: PromoCodeAdmin[] = [
 ]
 
 export default function AdminPromoCodesScreen() {
-  const [promos, setPromos] = useState<PromoCodeAdmin[]>(MOCK_PROMOS)
+  const [promos, setPromos] = useState<PromoCodeAdmin[]>(Config.useMock ? MOCK_PROMOS : [])
   const { showToast } = useToastStore()
 
   useEffect(() => {

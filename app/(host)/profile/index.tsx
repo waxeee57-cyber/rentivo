@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -11,6 +11,7 @@ import { MOCK_HOST } from '@/lib/mockData'
 import { Config } from '@/constants/config'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { t } from '@/constants/i18n'
+import { supabase } from '@/lib/supabase'
 
 export default function HostProfileScreen() {
   const { host, signOut, role, setRole, language, setLanguage } = useAuthStore()
@@ -26,7 +27,21 @@ export default function HostProfileScreen() {
     ? new Date(hostData.member_since).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
     : '—'
 
-  const totalEarned = Config.useMock ? 63000 : 0
+  const [totalEarned, setTotalEarned] = useState(Config.useMock ? 63000 : 0)
+
+  useEffect(() => {
+    if (Config.useMock || !host?.id) return
+    supabase
+      .from('rentivo_bookings')
+      .select('total_amount')
+      .eq('host_id', host.id)
+      .in('status', ['completed', 'active'])
+      .eq('payment_status', 'paid')
+      .then(({ data }) => {
+        const sum = (data ?? []).reduce((acc, b) => acc + ((b.total_amount as number) ?? 0), 0)
+        setTotalEarned(Math.round(sum))
+      })
+  }, [host?.id])
 
   const handleSignOut = () => {
     Alert.alert('Sign out', 'Are you sure?', [

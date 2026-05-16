@@ -13,6 +13,7 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import { t } from '@/constants/i18n'
 import { useLoyalty } from '@/lib/hooks/useLoyalty'
+import { supabase } from '@/lib/supabase'
 
 export default function ProfileScreen() {
   const { user, operator, signOut, language, setLanguage, hasOperatorAccount, hasHostAccount, setRole } = useAuthStore()
@@ -36,8 +37,24 @@ export default function ProfileScreen() {
   const userId = Config.useMock ? 'usr-001' : (user?.id ?? null)
   const { bookings } = useBookings(userId)
   const tripCount = Config.useMock ? 4 : bookings.filter(b => b.status === 'completed').length
-  const reviewCount = Config.useMock ? 2 : 0
-  const avgRating = Config.useMock ? '4.9' : '—'
+  const [reviewCount, setReviewCount] = useState(Config.useMock ? 2 : 0)
+  const [avgRating, setAvgRating] = useState(Config.useMock ? '4.9' : '—')
+
+  useEffect(() => {
+    if (Config.useMock || !user?.id) return
+    supabase
+      .from('rentivo_reviews')
+      .select('rating')
+      .eq('reviewer_id', user.id)
+      .then(({ data }) => {
+        const rows = data ?? []
+        setReviewCount(rows.length)
+        if (rows.length > 0) {
+          const avg = rows.reduce((s, r) => s + ((r.rating as number) ?? 0), 0) / rows.length
+          setAvgRating(avg.toFixed(1))
+        }
+      })
+  }, [user?.id])
 
   // Loyalty: sum completed booking totals (EUR) × 100 to get cents
   const totalSpentCents = Config.useMock

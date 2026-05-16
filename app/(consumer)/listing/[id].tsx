@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import {
   View, Text, ScrollView, Animated, TouchableOpacity, StyleSheet, Dimensions, Share, Platform, Linking, Alert,
 } from 'react-native'
@@ -27,12 +27,13 @@ import { getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/ut
 import { Config } from '@/constants/config'
 import { MOCK_REVIEWS, MOCK_LISTINGS } from '@/lib/mockData'
 import { useReviews } from '@/lib/hooks/useReviews'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useWishlistStore, toggleWishlistItem } from '@/lib/store/useWishlistStore'
 import { useRecentlyViewedStore } from '@/lib/store/useRecentlyViewedStore'
 import { useAvailability } from '@/lib/hooks/useAvailability'
 import { t } from '@/constants/i18n'
-import type { CancellationPolicy } from '@/types'
+import type { CancellationPolicy, Listing } from '@/types'
 
 const { height: screenHeight } = Dimensions.get('window')
 const HERO_HEIGHT = Math.round(screenHeight * 0.52)
@@ -51,6 +52,7 @@ export default function ListingDetailScreen() {
   const trackViewed = useRecentlyViewedStore(s => s.track)
   const { blockedDates } = useAvailability(id ?? '')
   const insets = useSafeAreaInsets()
+  const [similarListings, setSimilarListings] = useState<Listing[]>([])
 
   // Parallax hero — must be before early returns (rules of hooks)
   const scrollY = useRef(new Animated.Value(0)).current
@@ -153,13 +155,30 @@ export default function ListingDetailScreen() {
     )
   }
 
-  const similarListings = Config.useMock
-    ? MOCK_LISTINGS.filter(l => {
-        if (l.id === listing.id) return false
-        if (isHostListing) return l.host_id === listing.host_id && l.id !== listing.id
-        return l.operator_id === listing.operator_id
-      }).slice(0, 3)
-    : []
+  // Load similar listings
+  useEffect(() => {
+    if (Config.useMock) {
+      setSimilarListings(
+        MOCK_LISTINGS.filter(l => {
+          if (l.id === listing.id) return false
+          if (isHostListing) return l.host_id === listing.host_id
+          return l.operator_id === listing.operator_id
+        }).slice(0, 3)
+      )
+      return
+    }
+    const col = isHostListing ? 'host_id' : 'operator_id'
+    const val = isHostListing ? listing.host_id : listing.operator_id
+    if (!val) return
+    supabase
+      .from('rentivo_listings')
+      .select('id, title, category, price_per_day, cover_image_url')
+      .eq(col, val)
+      .neq('id', listing.id)
+      .eq('is_active', true)
+      .limit(3)
+      .then(({ data }) => setSimilarListings((data as Listing[]) ?? []))
+  }, [listing.id, isHostListing, listing.host_id, listing.operator_id])
 
   return (
     <View style={styles.container}>
