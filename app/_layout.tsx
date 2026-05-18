@@ -96,7 +96,7 @@ const gdprStyles = StyleSheet.create({
 })
 
 export default function RootLayout() {
-  useFonts({ ...Ionicons.font })
+  const [fontsLoaded] = useFonts({ ...Ionicons.font })
   const { setSession, setUser, session, role, language } = useAuthStore()
   const { setPushToken, setUnreadCount, unreadCount } = useNotificationStore()
   const [gdprAccepted, setGdprAccepted] = useState<boolean | null>(null)
@@ -205,6 +205,8 @@ export default function RootLayout() {
       router.push('/(consumer)/profile/privacy-settings')
     }, 300)
   }, [])
+
+  if (!fontsLoaded) return null
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

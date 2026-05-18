@@ -67,13 +67,39 @@ export default function ListingDetailScreen() {
     extrapolate: 'clamp',
   })
 
-  if (loading) return <View style={styles.container}><SkeletonCard /></View>
-  if (error || !listing) return <ErrorState message={error ?? 'Listing not found'} onRetry={refetch} />
-
-  // Track after first successful load
-  React.useEffect(() => {
+  // Must be before early returns — Rules of Hooks
+  useEffect(() => {
     if (listing) trackViewed(listing)
   }, [listing?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!listing) return
+    const isHost = listing.owner_type === 'host'
+    if (Config.useMock) {
+      setSimilarListings(
+        MOCK_LISTINGS.filter(l => {
+          if (l.id === listing.id) return false
+          if (isHost) return l.host_id === listing.host_id
+          return l.operator_id === listing.operator_id
+        }).slice(0, 3)
+      )
+      return
+    }
+    const col = isHost ? 'host_id' : 'operator_id'
+    const val = isHost ? listing.host_id : listing.operator_id
+    if (!val) return
+    supabase
+      .from('rentivo_listings')
+      .select('id, title, category, price_per_day, cover_image_url')
+      .eq(col, val)
+      .neq('id', listing.id)
+      .eq('is_active', true)
+      .limit(3)
+      .then(({ data }) => setSimilarListings((data as Listing[]) ?? []))
+  }, [listing?.id, listing?.owner_type, listing?.host_id, listing?.operator_id])
+
+  if (loading) return <View style={styles.container}><SkeletonCard /></View>
+  if (error || !listing) return <ErrorState message={error ?? 'Listing not found'} onRetry={refetch} />
 
   const totalDays = startDate && endDate ? Math.max(1, differenceInDays(endDate, startDate)) : null
   const priceCalc = totalDays
@@ -154,31 +180,6 @@ export default function ListingDetailScreen() {
       ],
     )
   }
-
-  // Load similar listings
-  useEffect(() => {
-    if (Config.useMock) {
-      setSimilarListings(
-        MOCK_LISTINGS.filter(l => {
-          if (l.id === listing.id) return false
-          if (isHostListing) return l.host_id === listing.host_id
-          return l.operator_id === listing.operator_id
-        }).slice(0, 3)
-      )
-      return
-    }
-    const col = isHostListing ? 'host_id' : 'operator_id'
-    const val = isHostListing ? listing.host_id : listing.operator_id
-    if (!val) return
-    supabase
-      .from('rentivo_listings')
-      .select('id, title, category, price_per_day, cover_image_url')
-      .eq(col, val)
-      .neq('id', listing.id)
-      .eq('is_active', true)
-      .limit(3)
-      .then(({ data }) => setSimilarListings((data as Listing[]) ?? []))
-  }, [listing.id, isHostListing, listing.host_id, listing.operator_id])
 
   return (
     <View style={styles.container}>

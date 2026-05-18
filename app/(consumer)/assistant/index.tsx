@@ -4,6 +4,7 @@ import {
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, Radius, Typography } from '@/constants/colors'
 import { t } from '@/constants/i18n'
@@ -117,6 +118,14 @@ export default function AssistantScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.headerBack}
+          onPress={() => router.back()}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
+          <Ionicons name="arrow-back" size={22} color={Colors.text} />
+        </TouchableOpacity>
         <View style={styles.headerIcon}>
           <Ionicons name="chatbubble-ellipses" size={20} color={Colors.primary} />
         </View>
@@ -128,8 +137,8 @@ export default function AssistantScreen() {
 
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
       >
         {/* Messages area */}
         <ScrollView
@@ -300,6 +309,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     gap: Spacing.sm,
+  },
+  headerBack: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: -Spacing.sm,
   },
   headerIcon: {
     width: 40,
