@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -47,43 +47,55 @@ export default function LoginScreen() {
         <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
 
-      <View style={styles.content}>
-        <Text style={styles.title}>Welcome to Rentivo</Text>
-        <Text style={styles.subtitle}>Enter your phone number to continue</Text>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.title}>Welcome to Rentivo</Text>
+          <Text style={styles.subtitle}>Enter your phone number to continue</Text>
 
-        <Input
-          label="Phone number"
-          value={phone}
-          onChangeText={setPhone}
-          placeholder="+34 600 000 000"
-          keyboardType="phone-pad"
-          autoFocus
-        />
+          <Button
+            title="Continue without account (demo)"
+            onPress={handleMockLogin}
+            variant="ghost"
+            fullWidth
+            style={{ marginBottom: Spacing.xl }}
+          />
 
-        <Button
-          title="Send verification code"
-          onPress={handleSendCode}
-          loading={loading}
-          fullWidth
-          style={{ marginBottom: Spacing.md }}
-        />
+          <Input
+            label="Phone number"
+            value={phone}
+            onChangeText={setPhone}
+            placeholder="+34 600 000 000"
+            keyboardType="phone-pad"
+            autoFocus={false}
+          />
 
-        <Button
-          title="Continue without account (demo)"
-          onPress={handleMockLogin}
-          variant="ghost"
-          fullWidth
-        />
-      </View>
+          <Button
+            title="Send verification code"
+            onPress={handleSendCode}
+            loading={loading}
+            fullWidth
+            style={{ marginTop: Spacing.sm }}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  flex: { flex: 1 },
   back: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
   backText: { fontSize: 16, color: Colors.primary, fontWeight: '600' },
-  content: { flex: 1, padding: Spacing.xl, justifyContent: 'center' },
+  content: { flexGrow: 1, padding: Spacing.xl, justifyContent: 'center' },
   title: { fontSize: 28, fontWeight: '800', color: Colors.text, marginBottom: Spacing.sm },
   subtitle: { fontSize: 15, color: Colors.textSecondary, marginBottom: Spacing.xl },
 })
