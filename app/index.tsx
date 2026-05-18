@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Redirect, router } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -57,7 +58,7 @@ export default function Index() {
   }
 
   if (!onboardingChecked) {
-    return <View style={{ flex: 1, backgroundColor: C.background }} />
+    return <SafeAreaView style={{ flex: 1, backgroundColor: C.background }} edges={['top']} />
   }
 
   if (showOnboarding) {

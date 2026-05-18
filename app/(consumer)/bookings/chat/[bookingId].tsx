@@ -220,13 +220,14 @@ export default function ConsumerChatScreen() {
     try {
       let convId = conversation?.id
       if (!convId) {
+        const { data: { session } } = await supabase.auth.getSession()
         const { data: newConv } = await supabase
           .from('rentivo_conversations')
           .insert({
             booking_id: id,
             listing_id: booking?.listing_id ?? '',
             operator_id: booking?.operator_id ?? '',
-            user_id: null,
+            user_id: session?.user?.id ?? null,
           })
           .select()
           .single()

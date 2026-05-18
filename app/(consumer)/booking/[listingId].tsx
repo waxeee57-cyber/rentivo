@@ -142,12 +142,13 @@ export default function BookingFlowScreen() {
     )
   }
 
-  const startDate = startDateParam
-    ? new Date(startDateParam)
-    : (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d })()
-  const endDate = endDateParam
-    ? new Date(endDateParam)
-    : (() => { const d = new Date(); d.setDate(d.getDate() + 4); return d })()
+  if (!startDateParam || !endDateParam) {
+    showToast({ message: 'Kérjük válassz dátumot', type: 'info' })
+    router.back()
+    return null
+  }
+  const startDate = new Date(startDateParam)
+  const endDate = new Date(endDateParam)
   const totalDays = Math.max(1, differenceInDays(endDate, startDate))
 
   const priceCalc = calculatePrice(
