@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -16,6 +16,7 @@ import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
 import { t, type TranslationKey } from '@/constants/i18n'
 import type { BookingStatus } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 type Tab = 'pending' | 'confirmed' | 'active' | 'completed'
 const TABS: { key: Tab; labelKey: TranslationKey }[] = [
@@ -49,6 +50,8 @@ const EMPTY_MESSAGES: Record<Tab, { emoji: string; title: string; subtitle: stri
 }
 
 export default function OperatorBookingsScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { operator, language } = useAuthStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? null)
   const { bookings, loading, refetch } = useOperatorBookings(opId)
@@ -151,8 +154,8 @@ export default function OperatorBookingsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={Colors.primary}
-              colors={[Colors.primary]}
+              tintColor={C.primary}
+              colors={[C.primary]}
             />
           }
           renderItem={({ item }) => (
@@ -189,9 +192,10 @@ export default function OperatorBookingsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md, marginBottom: Spacing.md },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
+  title: { fontSize: 26, fontWeight: '800', color: C.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md, marginBottom: Spacing.md },
   tabs: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.base,
@@ -206,15 +210,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderColor: C.border,
+    backgroundColor: C.surface,
     gap: 4,
   },
-  tabActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  tabText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
-  tabTextActive: { color: Colors.textInverse },
+  tabActive: { backgroundColor: C.primary, borderColor: C.primary },
+  tabText: { fontSize: 12, fontWeight: '600', color: C.textSecondary },
+  tabTextActive: { color: C.textInverse },
   tabBadge: {
-    backgroundColor: Colors.error,
+    backgroundColor: C.error,
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -222,8 +226,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
-  tabBadgeActive: { backgroundColor: Colors.textInverse },
-  tabBadgeText: { fontSize: 9, fontWeight: '800', color: Colors.text },
-  tabBadgeTextActive: { color: Colors.error },
+  tabBadgeActive: { backgroundColor: C.textInverse },
+  tabBadgeText: { fontSize: 9, fontWeight: '800', color: C.text },
+  tabBadgeTextActive: { color: C.error },
   list: { paddingHorizontal: Spacing.base, paddingBottom: 100 },
-})
+  })
+}

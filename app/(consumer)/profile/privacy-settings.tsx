@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react'
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import {
   View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Alert, ActivityIndicator, Animated,
 } from 'react-native'
@@ -9,8 +9,11 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 function PrivacySettingsSkeleton() {
+  const C = useColors()
+  const skeletonStyles = useMemo(() => makeSkeletonStyles(C), [C])
   const opacity = useRef(new Animated.Value(0.4)).current
   useEffect(() => {
     Animated.loop(
@@ -31,20 +34,20 @@ function PrivacySettingsSkeleton() {
   )
 }
 
-const skeletonStyles = StyleSheet.create({
+function makeSkeletonStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create({
   container: {
-    flex: 1, backgroundColor: Colors.background,
+    flex: 1, backgroundColor: C.background,
     padding: Spacing.base, paddingTop: Spacing.xxxl,
   },
-  row: { backgroundColor: Colors.surface, borderRadius: 8 },
+  row: { backgroundColor: C.surface, borderRadius: 8 },
   titleRow: { height: 32, width: '60%', marginBottom: Spacing.sm },
   subtitleRow: { height: 16, width: '90%', marginBottom: Spacing.xl },
   section: {
-    height: 120, backgroundColor: Colors.surface,
+    height: 120, backgroundColor: C.surface,
     borderRadius: Radius.lg, marginBottom: Spacing.md,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: C.border,
   },
-})
+}) }
 
 interface ConsentRecord {
   marketing_email: boolean
@@ -53,6 +56,8 @@ interface ConsentRecord {
 }
 
 export default function PrivacySettingsScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { language } = useAuthStore()
   const insets = useSafeAreaInsets()
   const isHu = language === 'hu'
@@ -178,7 +183,7 @@ export default function PrivacySettingsScreen() {
 
           {saving && (
             <View style={styles.savingBadge}>
-              <ActivityIndicator color={Colors.primary} size="small" />
+              <ActivityIndicator color={C.primary} size="small" />
               <Text style={styles.savingText}>{isHu ? 'Mentés...' : 'Saving...'}</Text>
             </View>
           )}
@@ -202,8 +207,8 @@ export default function PrivacySettingsScreen() {
               <Switch
                 value={marketingEmail}
                 onValueChange={handleMarketingEmail}
-                trackColor={{ false: Colors.border, true: Colors.primary }}
-                thumbColor={Colors.white}
+                trackColor={{ false: C.border, true: C.primary }}
+                thumbColor={C.white}
                 accessibilityLabel={isHu ? 'Marketing e-mailek kapcsoló' : 'Marketing emails toggle'}
               />
             </View>
@@ -224,8 +229,8 @@ export default function PrivacySettingsScreen() {
               <Switch
                 value={marketingPush}
                 onValueChange={handleMarketingPush}
-                trackColor={{ false: Colors.border, true: Colors.primary }}
-                thumbColor={Colors.white}
+                trackColor={{ false: C.border, true: C.primary }}
+                thumbColor={C.white}
                 accessibilityLabel={isHu ? 'Push értesítések kapcsoló' : 'Push notifications toggle'}
               />
             </View>
@@ -250,8 +255,8 @@ export default function PrivacySettingsScreen() {
               <Switch
                 value={analytics}
                 onValueChange={handleAnalytics}
-                trackColor={{ false: Colors.border, true: Colors.primary }}
-                thumbColor={Colors.white}
+                trackColor={{ false: C.border, true: C.primary }}
+                thumbColor={C.white}
                 accessibilityLabel={isHu ? 'Analitika kapcsoló' : 'Analytics toggle'}
               />
             </View>
@@ -301,39 +306,40 @@ export default function PrivacySettingsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   center: { alignItems: 'center', justifyContent: 'center' },
   scroll: { flexGrow: 1 },
   back: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm },
-  backText: { fontSize: 16, color: Colors.primary, fontWeight: '600' },
+  backText: { fontSize: 16, color: C.primary, fontWeight: '600' },
   content: { padding: Spacing.base },
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, marginBottom: Spacing.sm },
-  subtitle: { fontSize: 15, color: Colors.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
+  title: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
+  subtitle: { fontSize: 15, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
   savingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.xs,
     alignSelf: 'flex-start',
     marginBottom: Spacing.md,
   },
-  savingText: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+  savingText: { fontSize: 12, color: C.primary, fontWeight: '600' },
   section: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     marginBottom: Spacing.md,
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     letterSpacing: 0.8,
     marginBottom: Spacing.md,
   },
@@ -344,9 +350,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
   },
   switchContent: { flex: 1, marginRight: Spacing.md },
-  switchTitle: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  switchMeta: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
-  divider: { height: 1, backgroundColor: Colors.border, marginVertical: Spacing.sm },
+  switchTitle: { fontSize: 14, fontWeight: '600', color: C.text },
+  switchMeta: { fontSize: 12, color: C.textTertiary, marginTop: 2 },
+  divider: { height: 1, backgroundColor: C.border, marginVertical: Spacing.sm },
   actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -354,14 +360,15 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     minHeight: 44,
   },
-  actionText: { fontSize: 15, color: Colors.text },
-  dangerText: { color: Colors.error },
-  chevron: { fontSize: 20, color: Colors.textTertiary },
+  actionText: { fontSize: 15, color: C.text },
+  dangerText: { color: C.error },
+  chevron: { fontSize: 20, color: C.textTertiary },
   gdprNote: {
     fontSize: 12,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textAlign: 'center',
     lineHeight: 18,
     marginTop: Spacing.base,
   },
-})
+  })
+}

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useMemo } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -8,8 +8,11 @@ import { MOCK_BOOKINGS } from '@/lib/mockData'
 import { Config } from '@/constants/config'
 import { useBooking } from '@/lib/hooks/useBookings'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
+import { useColors } from '@/lib/hooks/useColors'
 
 function BookingDetailSkeleton() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const opacity = useRef(new Animated.Value(0.4)).current
   useEffect(() => {
     Animated.loop(Animated.sequence([
@@ -20,16 +23,18 @@ function BookingDetailSkeleton() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ padding: Spacing.base, paddingTop: Spacing.xl }}>
-        <Animated.View style={[{ height: 28, width: '50%', backgroundColor: Colors.surface, borderRadius: Radius.md, marginBottom: Spacing.xl }, { opacity }]} />
-        <Animated.View style={[{ height: 120, backgroundColor: Colors.surface, borderRadius: Radius.xl, marginBottom: Spacing.md }, { opacity }]} />
-        <Animated.View style={[{ height: 80, backgroundColor: Colors.surface, borderRadius: Radius.xl, marginBottom: Spacing.md }, { opacity }]} />
-        <Animated.View style={[{ height: 80, backgroundColor: Colors.surface, borderRadius: Radius.xl, marginBottom: Spacing.md }, { opacity }]} />
+        <Animated.View style={[{ height: 28, width: '50%', backgroundColor: C.surface, borderRadius: Radius.md, marginBottom: Spacing.xl }, { opacity }]} />
+        <Animated.View style={[{ height: 120, backgroundColor: C.surface, borderRadius: Radius.xl, marginBottom: Spacing.md }, { opacity }]} />
+        <Animated.View style={[{ height: 80, backgroundColor: C.surface, borderRadius: Radius.xl, marginBottom: Spacing.md }, { opacity }]} />
+        <Animated.View style={[{ height: 80, backgroundColor: C.surface, borderRadius: Radius.xl, marginBottom: Spacing.md }, { opacity }]} />
       </View>
     </SafeAreaView>
   )
 }
 
 export default function HostBookingDetailScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { id } = useLocalSearchParams<{ id: string }>()
   const { booking: liveBooking, loading } = useBooking(Config.useMock ? null : (id ?? null))
   const booking = Config.useMock
@@ -44,7 +49,7 @@ export default function HostBookingDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: Colors.textSecondary }}>Booking not found</Text>
+          <Text style={{ color: C.textSecondary }}>Booking not found</Text>
         </View>
       </SafeAreaView>
     )
@@ -70,7 +75,7 @@ export default function HostBookingDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.text} />
+          <Ionicons name="arrow-back" size={22} color={C.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Booking details</Text>
         <View style={{ width: 22 }} />
@@ -162,7 +167,7 @@ export default function HostBookingDetailScreen() {
             style={styles.messageBtn}
             onPress={() => router.push(`/(consumer)/bookings/chat/${booking.id}`)}
           >
-            <Ionicons name="chatbubble-outline" size={18} color={Colors.primary} />
+            <Ionicons name="chatbubble-outline" size={18} color={C.primary} />
             <Text style={styles.messageBtnText}>Message guest</Text>
           </TouchableOpacity>
 
@@ -201,6 +206,8 @@ export default function HostBookingDetailScreen() {
 }
 
 function Row({ label, value }: { label: string; value: string }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -209,8 +216,9 @@ function Row({ label, value }: { label: string; value: string }) {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -218,75 +226,75 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: C.border,
   },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: C.text },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
 
   guestCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     marginBottom: Spacing.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   guestAvatar: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  guestAvatarText: { fontSize: 22, fontWeight: '700', color: Colors.primary },
+  guestAvatarText: { fontSize: 22, fontWeight: '700', color: C.primary },
   guestInfo: { flex: 1 },
   guestNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: 4 },
-  guestName: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  guestName: { fontSize: 16, fontWeight: '700', color: C.text },
   verifiedBadge: {
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
   },
-  verifiedBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.success },
-  guestMeta: { fontSize: 13, color: Colors.textSecondary, marginBottom: 2 },
+  verifiedBadgeText: { fontSize: 11, fontWeight: '700', color: C.success },
+  guestMeta: { fontSize: 13, color: C.textSecondary, marginBottom: 2 },
 
   section: { marginBottom: Spacing.xl },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
   },
   detailCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     gap: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowLabel: { fontSize: 14, color: Colors.textSecondary },
-  rowValue: { fontSize: 14, color: Colors.text, fontWeight: '500' },
+  rowLabel: { fontSize: 14, color: C.textSecondary },
+  rowValue: { fontSize: 14, color: C.text, fontWeight: '500' },
 
   earningsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: C.border,
     paddingTop: Spacing.sm,
     marginTop: Spacing.xs,
   },
-  earningsLabel: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  earningsValue: { fontSize: 18, fontWeight: '800', color: Colors.primary },
+  earningsLabel: { fontSize: 15, fontWeight: '700', color: C.text },
+  earningsValue: { fontSize: 18, fontWeight: '800', color: C.primary },
 
   actionsSection: { gap: Spacing.sm },
   messageBtn: {
@@ -297,10 +305,10 @@ const styles = StyleSheet.create({
     padding: Spacing.base,
     borderRadius: Radius.xl,
     borderWidth: 1,
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primarySurface,
+    borderColor: C.primary,
+    backgroundColor: C.primarySurface,
   },
-  messageBtnText: { fontSize: 15, fontWeight: '700', color: Colors.primary },
+  messageBtnText: { fontSize: 15, fontWeight: '700', color: C.primary },
 
   pendingActions: { flexDirection: 'row', gap: Spacing.sm },
   declineBtn: {
@@ -309,61 +317,62 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xl,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.error,
-    backgroundColor: Colors.errorSurface,
+    borderColor: C.error,
+    backgroundColor: C.errorSurface,
   },
-  declineBtnText: { fontSize: 15, fontWeight: '700', color: Colors.error },
+  declineBtnText: { fontSize: 15, fontWeight: '700', color: C.error },
   confirmBtn: {
     flex: 2,
     padding: Spacing.base,
     borderRadius: Radius.xl,
     alignItems: 'center',
-    backgroundColor: Colors.primary,
-    shadowColor: Colors.primary,
+    backgroundColor: C.primary,
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
   },
-  confirmBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textInverse },
+  confirmBtnText: { fontSize: 15, fontWeight: '700', color: C.textInverse },
 
   inspectionBtn: {
     padding: Spacing.base,
     borderRadius: Radius.xl,
     alignItems: 'center',
-    backgroundColor: Colors.primary,
-    shadowColor: Colors.primary,
+    backgroundColor: C.primary,
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
   },
-  inspectionBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textInverse },
+  inspectionBtnText: { fontSize: 15, fontWeight: '700', color: C.textInverse },
   confirmBanner: {
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.success,
+    borderBottomColor: C.success,
     padding: Spacing.base,
     gap: Spacing.sm,
   },
-  confirmBannerLabel: { fontSize: 14, fontWeight: '700', color: Colors.success },
+  confirmBannerLabel: { fontSize: 14, fontWeight: '700', color: C.success },
   confirmBannerRow: { flexDirection: 'row', gap: Spacing.sm },
   confirmBigBtn: {
     flex: 1,
-    backgroundColor: Colors.success,
+    backgroundColor: C.success,
     borderRadius: Radius.lg,
     paddingVertical: Spacing.md,
     alignItems: 'center',
   },
-  confirmBigBtnText: { fontSize: 16, fontWeight: '800', color: Colors.white },
+  confirmBigBtnText: { fontSize: 16, fontWeight: '800', color: C.white },
   declineSmallBtn: {
     paddingHorizontal: Spacing.xl,
     borderRadius: Radius.lg,
     paddingVertical: Spacing.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.error,
+    borderColor: C.error,
   },
-  declineSmallBtnText: { fontSize: 14, fontWeight: '700', color: Colors.error },
-  confirmBannerPayout: { fontSize: 12, color: Colors.textSecondary, textAlign: 'center' },
-})
+  declineSmallBtnText: { fontSize: 14, fontWeight: '700', color: C.error },
+  confirmBannerPayout: { fontSize: 12, color: C.textSecondary, textAlign: 'center' },
+  })
+}

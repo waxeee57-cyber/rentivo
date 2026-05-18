@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 import { Badge } from '@/components/ui/Badge'
@@ -6,6 +6,7 @@ import { formatDateRange } from '@/lib/utils/formatDate'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { Button } from '@/components/ui/Button'
 import type { Booking } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface BookingRowProps {
   booking: Booking
@@ -15,6 +16,8 @@ interface BookingRowProps {
 }
 
 export function BookingRow({ booking, onPress, onConfirm, onDecline }: BookingRowProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.main}>
@@ -44,12 +47,13 @@ export function BookingRow({ booking, onPress, onConfirm, onDecline }: BookingRo
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   row: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     marginBottom: Spacing.md,
     overflow: 'hidden',
   },
@@ -60,18 +64,19 @@ const styles = StyleSheet.create({
   },
   left: { flex: 1 },
   right: { alignItems: 'flex-end', marginRight: Spacing.sm },
-  guest: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  vehicle: { fontSize: 13, color: Colors.textSecondary, marginBottom: 2 },
-  dates: { fontSize: 12, color: Colors.textTertiary },
-  total: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  chevron: { fontSize: 22, color: Colors.textTertiary },
+  guest: { fontSize: 15, fontWeight: '700', color: C.text },
+  vehicle: { fontSize: 13, color: C.textSecondary, marginBottom: 2 },
+  dates: { fontSize: 12, color: C.textTertiary },
+  total: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 4 },
+  chevron: { fontSize: 22, color: C.textTertiary },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     padding: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: Colors.borderLight,
+    borderTopColor: C.borderLight,
     gap: Spacing.sm,
   },
   actionBtn: { height: 36, paddingHorizontal: Spacing.base },
-})
+  })
+}

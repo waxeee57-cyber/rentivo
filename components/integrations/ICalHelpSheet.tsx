@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Sheet } from '@/components/ui/Sheet'
+import { useColors } from '@/lib/hooks/useColors'
 
 export const ICAL_INSTRUCTIONS: Record<string, { steps: string[]; url: string }> = {
   airbnb: {
@@ -77,6 +78,8 @@ interface ICalHelpSheetProps {
 }
 
 export function ICalHelpSheet({ visible, platform, onClose }: ICalHelpSheetProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const instructions = ICAL_INSTRUCTIONS[platform] ?? ICAL_INSTRUCTIONS.other
   const label = PLATFORM_LABELS[platform] ?? platform
 
@@ -110,52 +113,54 @@ export function ICalHelpSheet({ visible, platform, onClose }: ICalHelpSheetProps
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxl },
   title: {
     fontSize: 20,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginBottom: Spacing.xl,
   },
   stepsCard: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     gap: Spacing.md,
     marginBottom: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
   stepDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     marginTop: 5,
     flexShrink: 0,
   },
-  stepText: { flex: 1, fontSize: 14, color: Colors.text, lineHeight: 20 },
+  stepText: { flex: 1, fontSize: 14, color: C.text, lineHeight: 20 },
   infoBox: {
-    backgroundColor: Colors.infoSurface,
+    backgroundColor: C.infoSurface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.info,
+    borderColor: C.info,
     marginBottom: Spacing.xl,
   },
-  infoText: { fontSize: 13, color: Colors.info, lineHeight: 18 },
+  infoText: { fontSize: 13, color: C.info, lineHeight: 18 },
   closeBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.base,
     alignItems: 'center',
   },
-  closeBtnText: { fontSize: 16, fontWeight: '700', color: Colors.textInverse },
-})
+  closeBtnText: { fontSize: 16, fontWeight: '700', color: C.textInverse },
+  })
+}

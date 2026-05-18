@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useRef, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { Image } from 'expo-image'
 import * as Haptics from 'expo-haptics'
@@ -8,21 +8,23 @@ import { formatEUR } from '@/lib/utils/formatCurrency'
 import { openAffiliateLink } from '@/lib/utils/affiliateLinks'
 import { AffiliateDisclosure } from './AffiliateDisclosure'
 import type { ExternalListing } from '@/types'
-
-const PLATFORM_INFO: Record<string, { label: string; color: string }> = {
-  airbnb: { label: 'Airbnb', color: Colors.airbnb },
-  booking: { label: 'Booking.com', color: Colors.info },
-  vrbo: { label: 'VRBO', color: Colors.vrbo },
-  turo: { label: 'Turo', color: Colors.turo },
-  holidu: { label: 'Holidu', color: Colors.primary },
-  other: { label: 'External', color: Colors.textSecondary },
-}
+import { useColors } from '@/lib/hooks/useColors'
 
 interface ExternalListingCardProps {
   listing: ExternalListing
 }
 
 export function ExternalListingCard({ listing }: ExternalListingCardProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
+  const PLATFORM_INFO: Record<string, { label: string; color: string }> = {
+    airbnb: { label: 'Airbnb', color: C.airbnb },
+    booking: { label: 'Booking.com', color: C.info },
+    vrbo: { label: 'VRBO', color: C.vrbo },
+    turo: { label: 'Turo', color: C.turo },
+    holidu: { label: 'Holidu', color: C.primary },
+    other: { label: 'External', color: C.textSecondary },
+  }
   const scale = useRef(new Animated.Value(1)).current
   const platform = PLATFORM_INFO[listing.platform] ?? PLATFORM_INFO.other
   const imageUri = listing.images?.[0] ?? listing.cover_image_url ?? null
@@ -112,20 +114,21 @@ export function ExternalListingCard({ listing }: ExternalListingCardProps) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   card: {
     width: '100%',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     overflow: 'hidden',
     marginBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   imageContainer: { position: 'relative' },
   image: { width: '100%', height: 180 },
   imagePlaceholder: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -138,7 +141,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  platformBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.white },
+  platformBadgeText: { fontSize: 11, fontWeight: '700', color: C.white },
   externalBadge: {
     position: 'absolute',
     top: Spacing.sm,
@@ -148,7 +151,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  externalBadgeText: { fontSize: 10, fontWeight: '600', color: Colors.white },
+  externalBadgeText: { fontSize: 10, fontWeight: '600', color: C.white },
   info: { padding: Spacing.base },
   titleRow: {
     flexDirection: 'row',
@@ -156,23 +159,24 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 4,
   },
-  title: { fontSize: 15, fontWeight: '700', color: Colors.text, flex: 1, marginRight: Spacing.sm },
-  location: { fontSize: 12, color: Colors.textSecondary, marginBottom: 4 },
-  description: { fontSize: 12, color: Colors.textSecondary, lineHeight: 17, marginBottom: Spacing.sm },
+  title: { fontSize: 15, fontWeight: '700', color: C.text, flex: 1, marginRight: Spacing.sm },
+  location: { fontSize: 12, color: C.textSecondary, marginBottom: 4 },
+  description: { fontSize: 12, color: C.textSecondary, lineHeight: 17, marginBottom: Spacing.sm },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
     marginTop: Spacing.sm,
   },
-  price: { fontSize: 18, fontWeight: '700', color: Colors.text },
-  priceUnit: { fontSize: 12, color: Colors.textSecondary },
-  priceUnknown: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
+  price: { fontSize: 18, fontWeight: '700', color: C.text },
+  priceUnit: { fontSize: 12, color: C.textSecondary },
+  priceUnknown: { fontSize: 13, color: C.textSecondary, flex: 1 },
   bookBtn: {
     marginLeft: 'auto',
     borderRadius: Radius.pill,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  bookBtnText: { fontSize: 12, fontWeight: '700', color: Colors.white },
-})
+  bookBtnText: { fontSize: 12, fontWeight: '700', color: C.white },
+  })
+}

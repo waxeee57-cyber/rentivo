@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -11,8 +11,11 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
 import BookingVoucher from '@/components/booking/BookingVoucher'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function BookingConfirmationScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { id } = useLocalSearchParams<{ id: string }>()
   const ref = (id ?? 'XXXXX').slice(0, 8).toUpperCase()
   const { showToast } = useToastStore()
@@ -139,8 +142,9 @@ export default function BookingConfirmationScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   scrollContent: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xl },
   successSection: {
     alignItems: 'center',
@@ -150,30 +154,30 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.xl,
     borderWidth: 3,
-    borderColor: Colors.success,
+    borderColor: C.success,
   },
-  checkMark: { fontSize: 48, color: Colors.success, fontWeight: '900' },
-  title: { fontSize: 28, fontWeight: '800', color: Colors.text, textAlign: 'center', marginBottom: Spacing.sm },
-  ref: { fontSize: 15, color: Colors.primary, fontWeight: '700', marginBottom: Spacing.md },
-  subtitle: { fontSize: 15, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  checkMark: { fontSize: 48, color: C.success, fontWeight: '900' },
+  title: { fontSize: 28, fontWeight: '800', color: C.text, textAlign: 'center', marginBottom: Spacing.sm },
+  ref: { fontSize: 15, color: C.primary, fontWeight: '700', marginBottom: Spacing.md },
+  subtitle: { fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22 },
 
   nextCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     marginBottom: Spacing.base,
     borderLeftWidth: 4,
-    borderLeftColor: Colors.primary,
+    borderLeftColor: C.primary,
   },
   nextCardTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.md,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -188,49 +192,50 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     textAlign: 'center',
     lineHeight: 24,
     fontSize: 12,
     fontWeight: '800',
-    color: Colors.textInverse,
+    color: C.textInverse,
     flexShrink: 0,
   },
-  nextStepText: { flex: 1, fontSize: 14, color: Colors.textSecondary, lineHeight: 20, paddingTop: 4 },
+  nextStepText: { flex: 1, fontSize: 14, color: C.textSecondary, lineHeight: 20, paddingTop: 4 },
 
   checklist: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     gap: Spacing.sm,
     marginBottom: Spacing.base,
   },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  checkRowIcon: { fontSize: 16, color: Colors.success },
-  checkRowLabel: { fontSize: 14, color: Colors.textSecondary, fontWeight: '500' },
+  checkRowIcon: { fontSize: 16, color: C.success },
+  checkRowLabel: { fontSize: 14, color: C.textSecondary, fontWeight: '500' },
   noFeesNote: {
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     alignItems: 'center',
     marginBottom: Spacing.base,
   },
-  noFeesText: { fontSize: 13, fontWeight: '700', color: Colors.success },
+  noFeesText: { fontSize: 13, fontWeight: '700', color: C.success },
 
   actions: {
     paddingHorizontal: Spacing.base,
     paddingBottom: Spacing.xxxl,
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: C.border,
   },
   msgBtn: {
     minHeight: 52,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  msgBtnText: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
-})
+  msgBtnText: { fontSize: 15, fontWeight: '600', color: C.textSecondary },
+  })
+}

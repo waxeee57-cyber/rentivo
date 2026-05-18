@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, ActivityIndicator,
@@ -13,6 +13,7 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import type { OperatorStaffMember } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 type StaffRole = 'admin' | 'staff' | 'viewer'
 
@@ -45,13 +46,14 @@ const MOCK_STAFF: OperatorStaffMember[] = [
   },
 ]
 
-const roleColor: Record<StaffRole, string> = {
-  admin: Colors.primary,
-  staff: Colors.success,
-  viewer: Colors.textSecondary,
-}
-
 export default function TeamScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
+  const roleColor: Record<StaffRole, string> = {
+    admin: C.primary,
+    staff: C.success,
+    viewer: C.textSecondary,
+  }
   const { operator } = useAuthStore()
   const { showToast } = useToastStore()
   const operatorId = Config.useMock ? 'op-001' : (operator?.id ?? '')
@@ -126,7 +128,7 @@ export default function TeamScreen() {
             value={inviteEmail}
             onChangeText={setInviteEmail}
             placeholder="email@example.com"
-            placeholderTextColor={Colors.textSecondary}
+            placeholderTextColor={C.textSecondary}
             keyboardType="email-address"
             autoCapitalize="none"
             accessibilityLabel="Email address to invite"
@@ -160,7 +162,7 @@ export default function TeamScreen() {
         </Card>
 
         {loading ? (
-          <ActivityIndicator color={Colors.primary} style={{ marginTop: 20 }} />
+          <ActivityIndicator color={C.primary} style={{ marginTop: 20 }} />
         ) : (
           <>
             <Text style={styles.listTitle}>Team ({staff.length})</Text>
@@ -182,11 +184,11 @@ export default function TeamScreen() {
                       </View>
                       <View style={[
                         styles.statusBadge,
-                        { backgroundColor: member.status === 'active' ? Colors.successSurface : Colors.surface },
+                        { backgroundColor: member.status === 'active' ? C.successSurface : C.surface },
                       ]}>
                         <Text style={[
                           styles.statusText,
-                          { color: member.status === 'active' ? Colors.success : Colors.textSecondary },
+                          { color: member.status === 'active' ? C.success : C.textSecondary },
                         ]}>
                           {member.status === 'active' ? '● Active' : '○ Invited'}
                         </Text>
@@ -214,22 +216,23 @@ export default function TeamScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { padding: Spacing.base, paddingBottom: 100 },
   inviteCard: { padding: Spacing.base, marginBottom: Spacing.lg },
   sectionTitle: {
-    color: Colors.text,
+    color: C.text,
     fontSize: 16,
     fontWeight: '700',
     marginBottom: Spacing.md,
   },
   emailInput: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     borderRadius: Radius.md,
-    color: Colors.text,
+    color: C.text,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     fontSize: 14,
@@ -242,22 +245,22 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     alignItems: 'center',
     minHeight: 44,
     justifyContent: 'center',
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
   },
-  roleChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  roleText: { color: Colors.textSecondary, fontSize: 13, fontWeight: '600' },
-  roleTextActive: { color: Colors.textInverse },
+  roleChipActive: { backgroundColor: C.primary, borderColor: C.primary },
+  roleText: { color: C.textSecondary, fontSize: 13, fontWeight: '600' },
+  roleTextActive: { color: C.textInverse },
   roleDesc: {
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     fontSize: 12,
     marginTop: Spacing.sm,
   },
   listTitle: {
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     fontSize: 13,
     fontWeight: '700',
     marginBottom: Spacing.sm,
@@ -270,15 +273,15 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.primaryLight,
+    borderColor: C.primaryLight,
   },
-  avatarText: { color: Colors.primaryDark, fontWeight: '700', fontSize: 18 },
+  avatarText: { color: C.primaryDark, fontWeight: '700', fontSize: 18 },
   memberInfo: { flex: 1 },
-  memberEmail: { color: Colors.text, fontSize: 14, fontWeight: '500', marginBottom: 4 },
+  memberEmail: { color: C.text, fontSize: 14, fontWeight: '500', marginBottom: 4 },
   badgeRow: { flexDirection: 'row', gap: Spacing.sm },
   roleBadge: {
     borderWidth: 1,
@@ -295,11 +298,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  removeText: { color: Colors.error, fontSize: 16, fontWeight: '700' },
+  removeText: { color: C.error, fontSize: 16, fontWeight: '700' },
   emptyText: {
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     textAlign: 'center',
     marginTop: Spacing.xl,
     fontSize: 14,
   },
-})
+  })
+}

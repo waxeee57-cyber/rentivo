@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface NotificationPrefs {
   booking_confirmed: boolean
@@ -37,6 +38,8 @@ const DEFAULT_PREFS: NotificationPrefs = {
 }
 
 export default function NotificationsScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { language } = useAuthStore()
   const insets = useSafeAreaInsets()
   const isHu = language === 'hu'
@@ -235,14 +238,14 @@ export default function NotificationsScreen() {
 
           {saving && (
             <View style={styles.savingBadge}>
-              <ActivityIndicator color={Colors.primary} size="small" />
+              <ActivityIndicator color={C.primary} size="small" />
               <Text style={styles.savingText}>{label('Mentés...', 'Guardando...', 'Saving...')}</Text>
             </View>
           )}
 
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator color={Colors.primary} size="large" />
+              <ActivityIndicator color={C.primary} size="large" />
             </View>
           ) : (
             sections.map(section => (
@@ -266,8 +269,8 @@ export default function NotificationsScreen() {
                       <Switch
                         value={prefs[item.key]}
                         onValueChange={(value) => void updatePref(item.key, value)}
-                        trackColor={{ false: Colors.border, true: Colors.primary }}
-                        thumbColor={Colors.white}
+                        trackColor={{ false: C.border, true: C.primary }}
+                        thumbColor={C.white}
                         accessibilityLabel={label(item.labelHu, item.labelEs, item.labelEn)}
                       />
                     </View>
@@ -290,21 +293,22 @@ export default function NotificationsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   scroll: { flexGrow: 1 },
   back: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm },
-  backText: { fontSize: 16, color: Colors.primary, fontWeight: '600' },
+  backText: { fontSize: 16, color: C.primary, fontWeight: '600' },
   content: { padding: Spacing.base },
   title: {
     fontSize: 26,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.sm,
   },
   subtitle: {
     fontSize: 15,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     lineHeight: 22,
     marginBottom: Spacing.xl,
   },
@@ -312,30 +316,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.xs,
     alignSelf: 'flex-start',
     marginBottom: Spacing.md,
   },
-  savingText: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+  savingText: { fontSize: 12, color: C.primary, fontWeight: '600' },
   loadingContainer: {
     paddingVertical: Spacing.xxxl,
     alignItems: 'center',
   },
   section: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     marginBottom: Spacing.md,
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     letterSpacing: 0.8,
     marginBottom: Spacing.md,
   },
@@ -347,15 +351,16 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
   },
   switchContent: { flex: 1, marginRight: Spacing.md },
-  switchTitle: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  switchDesc: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
-  divider: { height: 1, backgroundColor: Colors.border, marginVertical: Spacing.sm },
+  switchTitle: { fontSize: 14, fontWeight: '600', color: C.text },
+  switchDesc: { fontSize: 12, color: C.textTertiary, marginTop: 2 },
+  divider: { height: 1, backgroundColor: C.border, marginVertical: Spacing.sm },
   footer: {
     fontSize: 12,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textAlign: 'center',
     lineHeight: 18,
     marginTop: Spacing.base,
     paddingBottom: Spacing.xl,
   },
-})
+  })
+}

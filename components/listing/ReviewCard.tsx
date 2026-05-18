@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatDate } from '@/lib/utils/formatDate'
 import type { Review } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface ReviewCardProps {
   review: Review
@@ -11,6 +12,8 @@ interface ReviewCardProps {
 }
 
 export function ReviewCard({ review, userName }: ReviewCardProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -32,23 +35,25 @@ export function ReviewCard({ review, userName }: ReviewCardProps) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   card: {
     paddingVertical: Spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: C.border,
   },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
-  name: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  date: { fontSize: 12, color: Colors.textTertiary },
-  stars: { color: Colors.primary, fontSize: 14 },
-  comment: { fontSize: 14, color: Colors.textSecondary, lineHeight: 20 },
+  name: { fontSize: 14, fontWeight: '600', color: C.text },
+  date: { fontSize: 12, color: C.textTertiary },
+  stars: { color: C.primary, fontSize: 14 },
+  comment: { fontSize: 14, color: C.textSecondary, lineHeight: 20 },
   replyBox: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.md,
     padding: Spacing.sm,
     marginTop: Spacing.sm,
   },
-  replyLabel: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary, marginBottom: 2 },
-  reply: { fontSize: 13, color: Colors.textSecondary },
-})
+  replyLabel: { fontSize: 12, fontWeight: '600', color: C.textSecondary, marginBottom: 2 },
+  reply: { fontSize: 13, color: C.textSecondary },
+  })
+}

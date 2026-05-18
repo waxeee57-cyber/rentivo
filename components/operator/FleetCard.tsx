@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, Switch, StyleSheet } from 'react-native'
 import { Image } from 'expo-image'
 import * as Haptics from 'expo-haptics'
@@ -6,6 +6,7 @@ import { Colors, Radius, Spacing } from '@/constants/colors'
 import { StarRating } from '@/components/ui/StarRating'
 import { formatEUR } from '@/lib/utils/formatCurrency'
 import type { Listing } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface FleetCardProps {
   listing: Listing
@@ -14,6 +15,8 @@ interface FleetCardProps {
 }
 
 export function FleetCard({ listing, onEdit, onToggleAvailable }: FleetCardProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const handleToggle = (v: boolean) => {
     void Haptics.impactAsync(v ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light)
     onToggleAvailable(v)
@@ -47,13 +50,13 @@ export function FleetCard({ listing, onEdit, onToggleAvailable }: FleetCardProps
           <Switch
             value={listing.available}
             onValueChange={handleToggle}
-            trackColor={{ true: Colors.success, false: Colors.border }}
-            thumbColor={Colors.surface}
+            trackColor={{ true: C.success, false: C.border }}
+            thumbColor={C.surface}
             accessibilityLabel={`Vehicle: ${listing.available ? 'available' : 'unavailable'}`}
             accessibilityRole="switch"
             accessibilityState={{ checked: listing.available }}
           />
-          <Text style={[styles.availText, { color: listing.available ? Colors.success : Colors.textTertiary }]}>
+          <Text style={[styles.availText, { color: listing.available ? C.success : C.textTertiary }]}>
             {listing.available ? 'Available' : 'Unavailable'}
           </Text>
           <TouchableOpacity
@@ -70,36 +73,38 @@ export function FleetCard({ listing, onEdit, onToggleAvailable }: FleetCardProps
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   card: {
     flexDirection: 'row',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     overflow: 'hidden',
     marginBottom: Spacing.md,
   },
   image: { width: 120, height: 100 },
   imagePlaceholder: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   imagePlaceholderText: { fontSize: 28 },
   info: { flex: 1, padding: Spacing.md },
-  title: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  sub: { fontSize: 14, color: Colors.textSecondary, marginBottom: Spacing.xs },
+  title: { fontSize: 15, fontWeight: '700', color: C.text },
+  sub: { fontSize: 14, color: C.textSecondary, marginBottom: Spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.xs },
-  price: { fontSize: 15, fontWeight: '700', color: Colors.text },
+  price: { fontSize: 15, fontWeight: '700', color: C.text },
   bottomRow: { flexDirection: 'row', alignItems: 'center' },
   availText: { fontSize: 14, marginLeft: Spacing.xs, flex: 1 },
   editBtn: {
     minWidth: 80, height: 44,
     justifyContent: 'center', alignItems: 'center',
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.lg,
     paddingHorizontal: Spacing.md,
   },
-  editText: { fontSize: 14, color: Colors.primary, fontWeight: '700' },
-})
+  editText: { fontSize: 14, color: C.primary, fontWeight: '700' },
+  })
+}

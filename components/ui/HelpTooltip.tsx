@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView,
 } from 'react-native'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface HelpTooltipProps {
   title: string
@@ -11,6 +12,8 @@ interface HelpTooltipProps {
 }
 
 export function HelpTooltip({ title, description, faqs }: HelpTooltipProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [visible, setVisible] = useState(false)
 
   return (
@@ -61,28 +64,29 @@ export function HelpTooltip({ title, description, faqs }: HelpTooltipProps) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   trigger: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   triggerText: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
   },
   backdrop: {
     flex: 1,
-    backgroundColor: Colors.overlay,
+    backgroundColor: C.overlay,
   },
   sheet: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderTopLeftRadius: Radius.xxl,
     borderTopRightRadius: Radius.xxl,
     padding: Spacing.xl,
@@ -92,7 +96,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
     borderRadius: Radius.pill,
     alignSelf: 'center',
     marginBottom: Spacing.xl,
@@ -100,44 +104,44 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.md,
   },
   description: {
     fontSize: 15,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     lineHeight: 24,
     marginBottom: Spacing.xl,
   },
   faqHeader: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.md,
   },
   faqItem: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.primary,
+    borderLeftColor: C.primary,
   },
   faqQ: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
     marginBottom: 4,
   },
   faqA: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     lineHeight: 20,
   },
   closeBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.md,
     alignItems: 'center',
@@ -146,6 +150,7 @@ const styles = StyleSheet.create({
   closeBtnText: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.textInverse,
+    color: C.textInverse,
   },
-})
+  })
+}

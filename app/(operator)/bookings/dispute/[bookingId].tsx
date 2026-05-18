@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -10,6 +10,7 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 const DISPUTE_REASONS = [
   'Vehicle damage by guest',
@@ -21,6 +22,8 @@ const DISPUTE_REASONS = [
 ]
 
 export default function OperatorDisputeScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const { user } = useAuthStore()
   const { showToast } = useToastStore()
@@ -81,7 +84,7 @@ export default function OperatorDisputeScreen() {
             value={description}
             onChangeText={setDescription}
             placeholder="Describe the issue..."
-            placeholderTextColor={Colors.textSecondary}
+            placeholderTextColor={C.textSecondary}
             multiline
             numberOfLines={4}
             maxLength={1000}
@@ -100,14 +103,15 @@ export default function OperatorDisputeScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { padding: Spacing.base, gap: Spacing.md },
   card: { gap: Spacing.sm },
   sectionTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
@@ -116,22 +120,23 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     minHeight: 44,
     justifyContent: 'center',
   },
-  reasonBtnActive: { borderColor: Colors.primary, backgroundColor: Colors.primarySurface },
-  reasonText: { fontSize: 14, color: Colors.text },
-  reasonTextActive: { color: Colors.primaryDark, fontWeight: '600' },
+  reasonBtnActive: { borderColor: C.primary, backgroundColor: C.primarySurface },
+  reasonText: { fontSize: 14, color: C.text },
+  reasonTextActive: { color: C.primaryDark, fontWeight: '600' },
   textArea: {
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
     borderRadius: Radius.md,
     padding: Spacing.md,
-    color: Colors.text,
+    color: C.text,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     minHeight: 100,
     textAlignVertical: 'top',
   },
-})
+  })
+}

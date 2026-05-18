@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View, Text, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, Linking, ScrollView,
@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 type VerificationStatus =
   | 'loading'
@@ -28,6 +29,8 @@ interface StatusConfig {
 }
 
 export default function IdentityVerificationScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { language, user } = useAuthStore()
   const isHu = language === 'hu'
   const [status, setStatus] = useState<VerificationStatus>('loading')
@@ -99,7 +102,7 @@ export default function IdentityVerificationScreen() {
       title: isHu ? 'Betöltés...' : 'Loading...',
       desc: '',
       cta: '',
-      color: Colors.textSecondary,
+      color: C.textSecondary,
     },
     unverified: {
       icon: '📋',
@@ -108,14 +111,14 @@ export default function IdentityVerificationScreen() {
         ? 'Egyes bérlések előtt igazolnod kell a személyazonosságodat. Ez 2 percet vesz igénybe.'
         : 'Some rentals require identity verification before booking. This takes about 2 minutes.',
       cta: isHu ? 'Azonosítás megkezdése' : 'Start verification',
-      color: Colors.primary,
+      color: C.primary,
     },
     pending: {
       icon: '⏳',
       title: isHu ? 'Feldolgozás alatt' : 'Verification pending',
       desc: isHu ? 'Az azonosítás feldolgozás alatt van.' : 'Your verification is being processed.',
       cta: isHu ? 'Frissítés' : 'Refresh',
-      color: Colors.warning,
+      color: C.warning,
     },
     in_progress: {
       icon: '🔄',
@@ -124,7 +127,7 @@ export default function IdentityVerificationScreen() {
         ? 'Fejezd be az azonosítást a megnyílt oldalon, majd térj vissza és frissíts.'
         : 'Complete verification on the opened page, then return and refresh.',
       cta: isHu ? 'Frissítés' : 'Refresh status',
-      color: Colors.warning,
+      color: C.warning,
     },
     approved: {
       icon: '✅',
@@ -133,7 +136,7 @@ export default function IdentityVerificationScreen() {
         ? 'A személyazonosságod sikeresen ellenőrizve. Minden bérlés elérhető számodra.'
         : 'Your identity has been successfully verified. All rentals are available to you.',
       cta: '',
-      color: Colors.success,
+      color: C.success,
     },
     declined: {
       icon: '❌',
@@ -142,7 +145,7 @@ export default function IdentityVerificationScreen() {
         ? 'Az azonosítás sikertelen volt. Próbáld újra érvényes dokumentummal.'
         : 'Verification failed. Please try again with a valid document.',
       cta: isHu ? 'Újrapróbálás' : 'Try again',
-      color: Colors.error,
+      color: C.error,
     },
     expired: {
       icon: '⌛',
@@ -151,7 +154,7 @@ export default function IdentityVerificationScreen() {
         ? 'Az azonosítási munkamenet lejárt. Kérjük, indíts újat.'
         : 'The verification session expired. Please start a new one.',
       cta: isHu ? 'Újraindítás' : 'Start again',
-      color: Colors.warning,
+      color: C.warning,
     },
   }
 
@@ -175,7 +178,7 @@ export default function IdentityVerificationScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         {status === 'loading' ? (
-          <ActivityIndicator color={Colors.primary} size="large" style={{ marginTop: 60 }} />
+          <ActivityIndicator color={C.primary} size="large" style={{ marginTop: 60 }} />
         ) : (
           <>
             <View style={styles.statusCard}>
@@ -192,7 +195,7 @@ export default function IdentityVerificationScreen() {
                   accessibilityLabel={config.cta}
                 >
                   {loading
-                    ? <ActivityIndicator color={Colors.background} />
+                    ? <ActivityIndicator color={C.background} />
                     : <Text style={styles.ctaText}>{config.cta}</Text>}
                 </TouchableOpacity>
               ) : null}
@@ -213,7 +216,7 @@ export default function IdentityVerificationScreen() {
                 ))}
                 <View style={styles.poweredByRow}>
                   <Text style={styles.poweredBy}>Powered by </Text>
-                  <Text style={[styles.poweredBy, { color: Colors.primary }]}>Didit</Text>
+                  <Text style={[styles.poweredBy, { color: C.primary }]}>Didit</Text>
                   <Text style={styles.poweredBy}> — EU eIDAS identity verification</Text>
                 </View>
               </View>
@@ -225,8 +228,9 @@ export default function IdentityVerificationScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -234,17 +238,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: C.border,
   },
   backButton: { minWidth: 44, minHeight: 44, justifyContent: 'center' },
-  backText: { color: Colors.text, fontSize: 22 },
-  title: { color: Colors.text, fontSize: 18, fontWeight: '700', flex: 1 },
+  backText: { color: C.text, fontSize: 22 },
+  title: { color: C.text, fontSize: 18, fontWeight: '700', flex: 1 },
   content: { padding: Spacing.base, paddingBottom: 80, gap: 16 },
   statusCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     padding: Spacing.xl,
     alignItems: 'center',
     gap: 12,
@@ -252,7 +256,7 @@ const styles = StyleSheet.create({
   statusIcon: { fontSize: 52 },
   statusTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
   statusDesc: {
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
@@ -266,17 +270,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  ctaText: { color: Colors.background, fontSize: 16, fontWeight: '700' },
+  ctaText: { color: C.background, fontSize: 16, fontWeight: '700' },
   infoCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     padding: Spacing.base,
     gap: 8,
   },
-  infoTitle: { color: Colors.text, fontSize: 15, fontWeight: '700', marginBottom: 4 },
-  infoItem: { color: Colors.textSecondary, fontSize: 14, lineHeight: 22 },
+  infoTitle: { color: C.text, fontSize: 15, fontWeight: '700', marginBottom: 4 },
+  infoItem: { color: C.textSecondary, fontSize: 14, lineHeight: 22 },
   poweredByRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
-  poweredBy: { color: Colors.textTertiary, fontSize: 12 },
-})
+  poweredBy: { color: C.textTertiary, fontSize: 12 },
+  })
+}

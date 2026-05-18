@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { Colors, Spacing } from '@/constants/colors'
 import { Divider } from '@/components/ui/Divider'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import type { PriceCalculation } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface PriceBreakdownProps {
   calculation: PriceCalculation
@@ -20,6 +21,8 @@ export function PriceBreakdown({
   insurancePricePerDay,
   totalDays,
 }: PriceBreakdownProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const insuranceTotal =
     insurancePricePerDay !== undefined && insurancePricePerDay > 0 && totalDays !== undefined
       ? insurancePricePerDay * totalDays
@@ -55,6 +58,8 @@ export function PriceBreakdown({
 function Row({
   label, value, bold, note,
 }: { label: string; value: string; bold?: boolean; note?: boolean }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.row}>
       <Text style={[styles.label, note && styles.note, bold && styles.bold]}>{label}</Text>
@@ -63,11 +68,13 @@ function Row({
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {},
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
-  label: { fontSize: 14, color: Colors.textSecondary, flex: 1, paddingRight: Spacing.sm },
-  value: { fontSize: 14, color: Colors.text, fontWeight: '500' },
-  bold: { fontWeight: '700', fontSize: 16, color: Colors.text },
-  note: { fontSize: 12, color: Colors.textTertiary },
-})
+  label: { fontSize: 14, color: C.textSecondary, flex: 1, paddingRight: Spacing.sm },
+  value: { fontSize: 14, color: C.text, fontWeight: '500' },
+  bold: { fontWeight: '700', fontSize: 16, color: C.text },
+  note: { fontSize: 12, color: C.textTertiary },
+  })
+}

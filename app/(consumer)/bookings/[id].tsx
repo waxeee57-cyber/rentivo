@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking,
 } from 'react-native'
@@ -24,6 +24,7 @@ import { Config } from '@/constants/config'
 import { MOCK_REVIEWS } from '@/lib/mockData'
 import { supabase } from '@/lib/supabase'
 import type { BookingStatus, CancellationPolicy } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 const STATUS_LABELS: Record<BookingStatus, string> = {
   pending: 'Awaiting confirmation',
@@ -34,16 +35,17 @@ const STATUS_LABELS: Record<BookingStatus, string> = {
   disputed: 'Disputed',
 }
 
-const STATUS_COLORS: Record<BookingStatus, string> = {
-  pending: Colors.warning,
-  confirmed: Colors.success,
-  active: Colors.primary,
-  completed: Colors.textSecondary,
-  cancelled: Colors.error,
-  disputed: Colors.error,
-}
-
 export default function BookingDetailScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
+  const STATUS_COLORS: Record<BookingStatus, string> = {
+    pending: C.warning,
+    confirmed: C.success,
+    active: C.primary,
+    completed: C.textSecondary,
+    cancelled: C.error,
+    disputed: C.error,
+  }
   const { id } = useLocalSearchParams<{ id: string }>()
   const bookingId = Config.useMock ? (id ?? 'bk-001') : (id ?? '')
   const { booking, loading, error, refetch } = useBooking(bookingId)
@@ -249,7 +251,7 @@ export default function BookingDetailScreen() {
             accessibilityLabel="Leave a review for this booking"
             accessibilityRole="button"
           >
-            <Text style={[styles.actionBtnText, { color: Colors.primaryDark }]}>⭐ Leave a Review</Text>
+            <Text style={[styles.actionBtnText, { color: C.primaryDark }]}>⭐ Leave a Review</Text>
           </TouchableOpacity>
         )}
 
@@ -261,7 +263,7 @@ export default function BookingDetailScreen() {
             accessibilityLabel="Cancel this booking"
             accessibilityRole="button"
           >
-            <Text style={[styles.actionBtnText, { color: Colors.error }]}>✕ Cancel Booking</Text>
+            <Text style={[styles.actionBtnText, { color: C.error }]}>✕ Cancel Booking</Text>
           </TouchableOpacity>
         )}
 
@@ -285,8 +287,9 @@ export default function BookingDetailScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
   statusBanner: {
     padding: Spacing.md,
@@ -295,46 +298,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusText: { fontSize: 15, fontWeight: '700' },
-  vehicleTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  operatorName: { fontSize: 15, color: Colors.text, fontWeight: '500', marginBottom: 4 },
-  dates: { fontSize: 15, color: Colors.text },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: Colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
+  vehicleTitle: { fontSize: 18, fontWeight: '700', color: C.text, marginBottom: 4 },
+  operatorName: { fontSize: 15, color: C.text, fontWeight: '500', marginBottom: 4 },
+  dates: { fontSize: 15, color: C.text },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: C.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
-  priceLabel: { fontSize: 14, color: Colors.textSecondary },
-  priceValue: { fontSize: 16, fontWeight: '700', color: Colors.text },
-  depositInfo: { fontSize: 12, color: Colors.info, marginTop: Spacing.sm },
+  priceLabel: { fontSize: 14, color: C.textSecondary },
+  priceValue: { fontSize: 16, fontWeight: '700', color: C.text },
+  depositInfo: { fontSize: 12, color: C.info, marginTop: Spacing.sm },
   insuranceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
   insuranceIcon: { fontSize: 18 },
-  insuranceText: { flex: 1, fontSize: 13, color: Colors.textSecondary, lineHeight: 20 },
-  policyLabel: { fontSize: 14, color: Colors.text, fontWeight: '600', marginBottom: Spacing.xs },
-  refundNote: { fontSize: 14, color: Colors.textSecondary },
-  refundMessage: { fontSize: 12, color: Colors.textTertiary, marginTop: 4, lineHeight: 18 },
+  insuranceText: { flex: 1, fontSize: 13, color: C.textSecondary, lineHeight: 20 },
+  policyLabel: { fontSize: 14, color: C.text, fontWeight: '600', marginBottom: Spacing.xs },
+  refundNote: { fontSize: 14, color: C.textSecondary },
+  refundMessage: { fontSize: 12, color: C.textTertiary, marginTop: 4, lineHeight: 18 },
   inspectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  inspLabel: { fontSize: 14, color: Colors.textSecondary },
-  phoneBtn: { backgroundColor: Colors.primarySurface, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', justifyContent: 'center', minHeight: 44 },
-  phoneBtnText: { fontSize: 15, color: Colors.primaryDark, fontWeight: '600' },
+  inspLabel: { fontSize: 14, color: C.textSecondary },
+  phoneBtn: { backgroundColor: C.primarySurface, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', justifyContent: 'center', minHeight: 44 },
+  phoneBtnText: { fontSize: 15, color: C.primaryDark, fontWeight: '600' },
   actionBtn: {
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: C.border,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.sm,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     minHeight: 44,
   },
-  actionBtnGold: { borderColor: Colors.primary, backgroundColor: Colors.primarySurface },
-  actionBtnDanger: { borderColor: Colors.error + '44', backgroundColor: Colors.errorSurface },
-  actionBtnText: { fontSize: 15, color: Colors.text, fontWeight: '600' },
+  actionBtnGold: { borderColor: C.primary, backgroundColor: C.primarySurface },
+  actionBtnDanger: { borderColor: C.error + '44', backgroundColor: C.errorSurface },
+  actionBtnText: { fontSize: 15, color: C.text, fontWeight: '600' },
   disputeBtn: {
     borderWidth: 1,
-    borderColor: Colors.warning,
+    borderColor: C.warning,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     alignItems: 'center',
     marginBottom: Spacing.sm,
     minHeight: 44,
   },
-  disputeBtnText: { fontSize: 14, color: Colors.warning, fontWeight: '600' },
-})
+  disputeBtnText: { fontSize: 14, color: C.warning, fontWeight: '600' },
+  })
+}

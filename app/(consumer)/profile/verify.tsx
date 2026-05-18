@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Alert,
 } from 'react-native'
@@ -10,6 +10,7 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
+import { useColors } from '@/lib/hooks/useColors'
 
 type Step = 1 | 2 | 3
 
@@ -20,6 +21,8 @@ const STEP_LABELS: Record<Step, { title: string; subtitle: string; icon: string 
 }
 
 export default function VerifyScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [step, setStep] = useState<Step>(1)
   const [photos, setPhotos] = useState<Record<Step, string | null>>({ 1: null, 2: null, 3: null })
   const [submitted, setSubmitted] = useState(false)
@@ -193,8 +196,9 @@ export default function VerifyScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
   progressRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm },
   progressStep: { flexDirection: 'row', alignItems: 'center' },
@@ -202,60 +206,61 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  progressDotActive: { backgroundColor: Colors.primary },
-  progressDotText: { fontSize: 13, fontWeight: '700', color: Colors.textTertiary },
-  progressDotTextActive: { color: Colors.textInverse },
-  progressLine: { width: 40, height: 2, backgroundColor: Colors.border, marginHorizontal: 4 },
-  progressLineActive: { backgroundColor: Colors.primary },
-  stepLabel: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginBottom: Spacing.xl },
+  progressDotActive: { backgroundColor: C.primary },
+  progressDotText: { fontSize: 13, fontWeight: '700', color: C.textTertiary },
+  progressDotTextActive: { color: C.textInverse },
+  progressLine: { width: 40, height: 2, backgroundColor: C.border, marginHorizontal: 4 },
+  progressLineActive: { backgroundColor: C.primary },
+  stepLabel: { fontSize: 12, color: C.textTertiary, textAlign: 'center', marginBottom: Spacing.xl },
   stepHeader: { alignItems: 'center', marginBottom: Spacing.xl },
   stepIcon: { fontSize: 48, marginBottom: Spacing.md },
-  stepTitle: { fontSize: 20, fontWeight: '800', color: Colors.text, marginBottom: Spacing.sm },
-  stepSubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20 },
+  stepTitle: { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
+  stepSubtitle: { fontSize: 14, color: C.textSecondary, textAlign: 'center', lineHeight: 20 },
   photoPlaceholder: {
     height: 200,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.xl,
     borderWidth: 2,
-    borderColor: Colors.border,
+    borderColor: C.border,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.base,
   },
   photoPlaceholderIcon: { fontSize: 40, marginBottom: Spacing.sm },
-  photoPlaceholderText: { fontSize: 14, color: Colors.textTertiary },
+  photoPlaceholderText: { fontSize: 14, color: C.textTertiary },
   photoPreview: { marginBottom: Spacing.base },
   photoImage: { width: '100%', height: 200, borderRadius: Radius.xl, resizeMode: 'cover' },
   retakeBtn: { marginTop: Spacing.sm, alignSelf: 'center' },
-  retakeText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
+  retakeText: { fontSize: 14, color: C.primary, fontWeight: '600' },
   buttonRow: { flexDirection: 'row', gap: Spacing.md },
   galleryBtn: {
     flex: 1,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
-  galleryBtnText: { fontSize: 14, color: Colors.textSecondary, fontWeight: '600' },
+  galleryBtnText: { fontSize: 14, color: C.textSecondary, fontWeight: '600' },
   cameraBtn: {
     flex: 1,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: C.primary,
   },
-  cameraBtnText: { fontSize: 14, color: Colors.primaryDark, fontWeight: '600' },
+  cameraBtnText: { fontSize: 14, color: C.primaryDark, fontWeight: '600' },
   successContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xl },
   successIcon: { fontSize: 72, marginBottom: Spacing.xl },
-  successTitle: { fontSize: 26, fontWeight: '800', color: Colors.text, marginBottom: Spacing.md },
-  successSubtitle: { fontSize: 15, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
-})
+  successTitle: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.md },
+  successSubtitle: { fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22 },
+  })
+}

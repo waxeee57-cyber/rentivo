@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useMemo } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, Animated,
@@ -15,6 +15,7 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { supabase } from '@/lib/supabase'
+import { useColors } from '@/lib/hooks/useColors'
 
 const RATING_LABELS = ['', 'Terrible', 'Poor', 'OK', 'Good', 'Excellent!']
 
@@ -28,6 +29,11 @@ const REVIEW_TAGS = [
 ]
 
 function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const C = useColors()
+  const starStyles = useMemo(() => StyleSheet.create({
+    row: { flexDirection: 'row', gap: Spacing.sm, justifyContent: 'center' },
+    star: { fontSize: 44, color: C.primary },
+  }), [C])
   const scales = useRef([1, 2, 3, 4, 5].map(() => new Animated.Value(1))).current
 
   const handlePress = (star: number) => {
@@ -57,12 +63,9 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
   )
 }
 
-const starStyles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: Spacing.sm, justifyContent: 'center' },
-  star: { fontSize: 44, color: Colors.primary },
-})
-
 export default function ReviewScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const id = Config.useMock ? (bookingId ?? 'bk-004') : (bookingId ?? '')
   const { booking } = useBooking(id)
@@ -198,7 +201,7 @@ export default function ReviewScreen() {
               multiline
               numberOfLines={5}
               placeholder="Describe your experience..."
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={C.textTertiary}
               value={comment}
               onChangeText={setComment}
               maxLength={500}
@@ -222,45 +225,47 @@ export default function ReviewScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
   vehicleCard: {
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
     padding: Spacing.base, marginBottom: Spacing.xl,
   },
-  vehicleTitle: { fontSize: 17, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  vehicleOp: { fontSize: 13, color: Colors.textSecondary, marginBottom: 2 },
-  vehicleDates: { fontSize: 12, color: Colors.textTertiary },
+  vehicleTitle: { fontSize: 17, fontWeight: '700', color: C.text, marginBottom: 4 },
+  vehicleOp: { fontSize: 13, color: C.textSecondary, marginBottom: 2 },
+  vehicleDates: { fontSize: 12, color: C.textTertiary },
   sectionTitle: {
-    fontSize: 12, fontWeight: '700', color: Colors.textTertiary,
+    fontSize: 12, fontWeight: '700', color: C.textTertiary,
     textTransform: 'uppercase', letterSpacing: 0.5,
     marginBottom: Spacing.base, textAlign: 'center',
   },
   ratingLabel: {
-    fontSize: 16, fontWeight: '700', color: Colors.primary,
+    fontSize: 16, fontWeight: '700', color: C.primary,
     textAlign: 'center', marginTop: Spacing.sm,
   },
   tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'center' },
   tagChip: {
     paddingHorizontal: 14, paddingVertical: Spacing.sm,
     borderRadius: Radius.pill,
-    borderWidth: 1, borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderWidth: 1, borderColor: C.border,
+    backgroundColor: C.surface,
   },
-  tagChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  tagChipText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  tagChipTextActive: { color: Colors.textInverse },
+  tagChipActive: { backgroundColor: C.primary, borderColor: C.primary },
+  tagChipText: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
+  tagChipTextActive: { color: C.textInverse },
   reviewInput: {
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    padding: Spacing.base, fontSize: 14, color: Colors.text,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
+    padding: Spacing.base, fontSize: 14, color: C.text,
     minHeight: 120, textAlignVertical: 'top',
-    borderWidth: 1, borderColor: Colors.border, lineHeight: 22,
+    borderWidth: 1, borderColor: C.border, lineHeight: 22,
   },
-  charCount: { fontSize: 12, color: Colors.textTertiary, textAlign: 'right', marginTop: Spacing.xs },
+  charCount: { fontSize: 12, color: C.textTertiary, textAlign: 'right', marginTop: Spacing.xs },
   submitBtn: { marginTop: Spacing.xl },
   successContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xl },
   confetti: { fontSize: 72, marginBottom: Spacing.xl },
-  successTitle: { fontSize: 28, fontWeight: '800', color: Colors.text, marginBottom: Spacing.md },
-  successSubtitle: { fontSize: 15, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
-})
+  successTitle: { fontSize: 28, fontWeight: '800', color: C.text, marginBottom: Spacing.md },
+  successSubtitle: { fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22 },
+  })
+}

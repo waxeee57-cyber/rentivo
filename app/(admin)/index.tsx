@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -6,6 +6,7 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Card } from '@/components/ui/Card'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface DashboardStats {
   users: number
@@ -28,6 +29,8 @@ const sections = [
 ]
 
 export default function AdminDashboard() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [stats, setStats] = useState<DashboardStats | null>(Config.useMock ? MOCK_STATS : null)
   const [loading, setLoading] = useState(!Config.useMock)
 
@@ -74,7 +77,7 @@ export default function AdminDashboard() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Admin Panel</Text>
         {loading ? (
-          <ActivityIndicator color={Colors.primary} style={{ marginVertical: Spacing.xl }} />
+          <ActivityIndicator color={C.primary} style={{ marginVertical: Spacing.xl }} />
         ) : (
           <View style={styles.statsGrid}>
             {statItems.map((s) => (
@@ -103,15 +106,16 @@ export default function AdminDashboard() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
   },
   title: {
     fontSize: 26,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     padding: Spacing.base,
     paddingBottom: Spacing.md,
   },
@@ -130,11 +134,11 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 22,
     fontWeight: '800',
-    color: Colors.primary,
+    color: C.primary,
   },
   statLabel: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginTop: 4,
   },
   navCard: {
@@ -143,20 +147,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: Spacing.base,
     marginBottom: Spacing.sm,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     minHeight: 56,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   navTitle: {
     fontSize: 16,
-    color: Colors.text,
+    color: C.text,
     fontWeight: '600',
   },
   chevron: {
     fontSize: 22,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
   },
-})
+  })
+}

@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useMemo } from 'react'
 import {
   Modal, View, TouchableOpacity, Text,
   Animated, StyleSheet, ScrollView, ViewStyle,
 } from 'react-native'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface SheetProps {
   visible: boolean
@@ -16,6 +17,8 @@ interface SheetProps {
 }
 
 export function Sheet({ visible, onClose, title, children, snapHeight, style }: SheetProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const insets = useSafeAreaInsets()
   const slideAnim = useRef(new Animated.Value(300)).current
 
@@ -47,17 +50,18 @@ export function Sheet({ visible, onClose, title, children, snapHeight, style }: 
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.overlay,
+    backgroundColor: C.overlay,
   },
   sheet: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderTopLeftRadius: Radius.xxl,
     borderTopRightRadius: Radius.xxl,
     paddingHorizontal: Spacing.base,
@@ -68,15 +72,16 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
     alignSelf: 'center',
     marginBottom: Spacing.base,
   },
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.base,
     textAlign: 'center',
   },
-})
+  })
+}

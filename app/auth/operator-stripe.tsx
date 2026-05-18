@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -6,6 +6,7 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
+import { useColors } from '@/lib/hooks/useColors'
 
 type StepStatus = 'done' | 'pending' | 'active'
 
@@ -17,6 +18,8 @@ const STEPS: { label: string; status: StepStatus }[] = [
 ]
 
 function StepRow({ label, status }: { label: string; status: StepStatus }) {
+  const C = useColors()
+  const stepStyles = useMemo(() => makeStepStyles(C), [C])
   return (
     <View style={stepStyles.row}>
       <View style={[stepStyles.dot,
@@ -34,24 +37,26 @@ function StepRow({ label, status }: { label: string; status: StepStatus }) {
   )
 }
 
-const stepStyles = StyleSheet.create({
+function makeStepStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.md },
   dot: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dotDone: { backgroundColor: Colors.success },
-  dotActive: { backgroundColor: Colors.primary },
-  dotText: { fontSize: 12, color: Colors.textInverse, fontWeight: '700' },
-  label: { fontSize: 15, color: Colors.textSecondary },
-  labelDone: { color: Colors.text, fontWeight: '600' },
-})
+  dotDone: { backgroundColor: C.success },
+  dotActive: { backgroundColor: C.primary },
+  dotText: { fontSize: 12, color: C.textInverse, fontWeight: '700' },
+  label: { fontSize: 15, color: C.textSecondary },
+  labelDone: { color: C.text, fontWeight: '600' },
+}) }
 
 export default function OperatorStripeScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [connecting, setConnecting] = useState(false)
 
   const handleConnect = async () => {
@@ -121,8 +126,9 @@ export default function OperatorStripeScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: {
     flex: 1,
     paddingHorizontal: Spacing.xl,
@@ -133,30 +139,31 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: Radius.full,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.xl,
   },
   icon: { fontSize: 36 },
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, marginBottom: Spacing.md, textAlign: 'center' },
-  subtitle: { fontSize: 15, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: Spacing.xl },
+  title: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.md, textAlign: 'center' },
+  subtitle: { fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: Spacing.xl },
   stepsCard: {
     width: '100%',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.xl,
     marginBottom: Spacing.xl,
   },
   stripeNote: {
-    backgroundColor: Colors.infoSurface,
+    backgroundColor: C.infoSurface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     marginBottom: Spacing.xl,
     width: '100%',
   },
-  stripeNoteText: { fontSize: 13, color: Colors.info, lineHeight: 20 },
+  stripeNoteText: { fontSize: 13, color: C.info, lineHeight: 20 },
   connectBtn: { marginBottom: Spacing.md },
   skipBtn: { paddingVertical: Spacing.md },
-  skipText: { fontSize: 14, color: Colors.textTertiary },
-})
+  skipText: { fontSize: 14, color: C.textTertiary },
+  })
+}

@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { Colors, Spacing } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface StarRatingProps {
   rating: number
@@ -10,6 +11,8 @@ interface StarRatingProps {
 }
 
 export function StarRating({ rating, reviewCount, size = 14, showCount = true }: StarRatingProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.row}>
       <Text style={[styles.star, { fontSize: size }]}>★</Text>
@@ -21,9 +24,11 @@ export function StarRating({ rating, reviewCount, size = 14, showCount = true }:
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
-  star: { color: Colors.primary },
-  rating: { color: Colors.text, fontWeight: '600', marginLeft: 2 },
-  count: { color: Colors.textTertiary },
-})
+  star: { color: C.primary },
+  rating: { color: C.text, fontWeight: '600', marginLeft: 2 },
+  count: { color: C.textTertiary },
+  })
+}

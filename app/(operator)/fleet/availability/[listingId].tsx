@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Modal, Alert,
@@ -19,6 +19,7 @@ import {
   type NewBlackoutPeriod,
 } from '@/lib/api/availability'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useColors } from '@/lib/hooks/useColors'
 
 const REASONS: { value: BlackoutPeriod['reason']; label: string }[] = [
   { value: 'maintenance', label: 'Maintenance' },
@@ -35,6 +36,8 @@ const REASON_BADGE_VARIANT: Record<string, 'warning' | 'info' | 'neutral' | 'suc
 }
 
 export default function ListingAvailabilityScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { listingId } = useLocalSearchParams<{ listingId: string }>()
   const { operator } = useAuthStore()
   const { showToast } = useToastStore()
@@ -214,7 +217,7 @@ export default function ListingAvailabilityScreen() {
               value={title}
               onChangeText={setTitle}
               placeholder="e.g. Annual Service"
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={C.textSecondary}
               accessibilityLabel="Blackout period title"
             />
 
@@ -224,7 +227,7 @@ export default function ListingAvailabilityScreen() {
               value={startDate}
               onChangeText={setStartDate}
               placeholder="2026-06-01"
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={C.textSecondary}
               keyboardType="numbers-and-punctuation"
               maxLength={10}
               accessibilityLabel="Start date"
@@ -236,7 +239,7 @@ export default function ListingAvailabilityScreen() {
               value={endDate}
               onChangeText={setEndDate}
               placeholder="2026-06-07"
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={C.textSecondary}
               keyboardType="numbers-and-punctuation"
               maxLength={10}
               accessibilityLabel="End date"
@@ -266,7 +269,7 @@ export default function ListingAvailabilityScreen() {
               value={notes}
               onChangeText={setNotes}
               placeholder="Internal notes..."
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={C.textSecondary}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
@@ -288,8 +291,9 @@ export default function ListingAvailabilityScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { padding: Spacing.base, gap: Spacing.md },
   topRow: {
     flexDirection: 'row',
@@ -297,9 +301,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.sm,
   },
-  subtitle: { fontSize: 13, color: Colors.textSecondary, flex: 1, marginRight: Spacing.sm },
+  subtitle: { fontSize: 13, color: C.textSecondary, flex: 1, marginRight: Spacing.sm },
   addBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
@@ -307,44 +311,44 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  addBtnText: { fontSize: 13, fontWeight: '700', color: Colors.background },
-  loadingText: { textAlign: 'center', color: Colors.textSecondary, marginTop: Spacing.xl },
+  addBtnText: { fontSize: 13, fontWeight: '700', color: C.background },
+  loadingText: { textAlign: 'center', color: C.textSecondary, marginTop: Spacing.xl },
   emptyCard: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: Spacing.sm },
-  emptyText: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: Spacing.sm },
+  emptyText: { fontSize: 14, color: C.textSecondary, textAlign: 'center' },
   periodCard: { gap: Spacing.sm },
   periodHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  periodTitle: { fontSize: 15, fontWeight: '700', color: Colors.text, flex: 1 },
-  deleteBtn: { fontSize: 13, color: Colors.error, fontWeight: '600', paddingVertical: Spacing.xs, paddingLeft: Spacing.sm, minHeight: 44, textAlignVertical: 'center' },
-  periodDates: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
-  notes: { fontSize: 13, color: Colors.textSecondary },
-  modal: { flex: 1, backgroundColor: Colors.background },
+  periodTitle: { fontSize: 15, fontWeight: '700', color: C.text, flex: 1 },
+  deleteBtn: { fontSize: 13, color: C.error, fontWeight: '600', paddingVertical: Spacing.xs, paddingLeft: Spacing.sm, minHeight: 44, textAlignVertical: 'center' },
+  periodDates: { fontSize: 14, color: C.primary, fontWeight: '600' },
+  notes: { fontSize: 13, color: C.textSecondary },
+  modal: { flex: 1, backgroundColor: C.background },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: C.border,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
-  closeBtn: { fontSize: 14, color: Colors.textSecondary, fontWeight: '600', minHeight: 44, textAlignVertical: 'center', paddingVertical: Spacing.sm },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: C.text },
+  closeBtn: { fontSize: 14, color: C.textSecondary, fontWeight: '600', minHeight: 44, textAlignVertical: 'center', paddingVertical: Spacing.sm },
   modalContent: { padding: Spacing.base },
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginBottom: Spacing.xs,
     marginTop: Spacing.md,
   },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.md,
     padding: Spacing.md,
-    color: Colors.text,
+    color: C.text,
     fontSize: 15,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     minHeight: 44,
   },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
@@ -354,12 +358,13 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  reasonChipActive: { backgroundColor: Colors.primarySurface, borderColor: Colors.primary },
-  reasonChipText: { fontSize: 13, color: Colors.textSecondary },
-  reasonChipTextActive: { color: Colors.primaryDark, fontWeight: '600' },
-})
+  reasonChipActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
+  reasonChipText: { fontSize: 13, color: C.textSecondary },
+  reasonChipTextActive: { color: C.primaryDark, fontWeight: '600' },
+  })
+}

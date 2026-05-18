@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -15,6 +15,7 @@ import { useHostBookings } from '@/lib/hooks/useBookings'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { updateBookingStatus } from '@/lib/api/bookings'
 import type { Booking, BookingStatus } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 type Tab = 'pending' | 'confirmed' | 'past'
 const TABS: { key: Tab; label: string }[] = [
@@ -32,6 +33,8 @@ function BookingCard({
   onConfirm?: () => void
   onDecline?: () => void
 }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <TouchableOpacity
       style={styles.card}
@@ -103,6 +106,8 @@ const EMPTY_MESSAGES: Record<Tab, { emoji: string; title: string; subtitle: stri
 }
 
 export default function HostBookingsScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [activeTab, setActiveTab] = useState<Tab>('pending')
   const [decliningId, setDecliningId] = useState<string | null>(null)
   const { showToast } = useToastStore()
@@ -222,12 +227,13 @@ export default function HostBookingsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   title: {
     fontSize: 26,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.md,
     marginBottom: Spacing.md,
@@ -244,48 +250,48 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderColor: C.border,
+    backgroundColor: C.surface,
   },
-  tabActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  tabText: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
-  tabTextActive: { color: Colors.textInverse },
+  tabActive: { backgroundColor: C.primary, borderColor: C.primary },
+  tabText: { fontSize: 12, fontWeight: '600', color: C.textSecondary },
+  tabTextActive: { color: C.textInverse },
   list: { paddingHorizontal: Spacing.base, paddingBottom: 100 },
 
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     marginBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 20, fontWeight: '700', color: Colors.primary },
+  avatarText: { fontSize: 20, fontWeight: '700', color: C.primary },
   guestInfo: { flex: 1 },
-  guestName: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  dates: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  price: { fontSize: 12, color: Colors.primary, fontWeight: '600', marginTop: 2 },
-  payout: { fontSize: 11, color: Colors.success, fontWeight: '600', marginTop: 1 },
+  guestName: { fontSize: 15, fontWeight: '700', color: C.text },
+  dates: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
+  price: { fontSize: 12, color: C.primary, fontWeight: '600', marginTop: 2 },
+  payout: { fontSize: 11, color: C.success, fontWeight: '600', marginTop: 1 },
   statusBadge: {
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
   },
-  statusConfirmed: { backgroundColor: Colors.successSurface },
-  statusPending: { backgroundColor: Colors.warningSurface },
-  statusActive: { backgroundColor: Colors.infoSurface },
-  statusCompleted: { backgroundColor: Colors.surfaceWarm },
-  statusText: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary },
+  statusConfirmed: { backgroundColor: C.successSurface },
+  statusPending: { backgroundColor: C.warningSurface },
+  statusActive: { backgroundColor: C.infoSurface },
+  statusCompleted: { backgroundColor: C.surfaceWarm },
+  statusText: { fontSize: 11, fontWeight: '700', color: C.textSecondary },
 
   actions: {
     flexDirection: 'row',
@@ -293,7 +299,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: C.border,
   },
   declineBtn: {
     flex: 1,
@@ -302,20 +308,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.error,
-    backgroundColor: Colors.errorSurface,
+    borderColor: C.error,
+    backgroundColor: C.errorSurface,
     minHeight: 44,
   },
-  declineBtnText: { fontSize: 14, fontWeight: '700', color: Colors.error },
+  declineBtnText: { fontSize: 14, fontWeight: '700', color: C.error },
   confirmBtn: {
     flex: 2,
     padding: Spacing.sm,
     borderRadius: Radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     minHeight: 44,
   },
-  confirmBtnText: { fontSize: 14, fontWeight: '700', color: Colors.textInverse },
+  confirmBtnText: { fontSize: 14, fontWeight: '700', color: C.textInverse },
 
-})
+  })
+}

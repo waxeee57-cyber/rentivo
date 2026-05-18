@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -13,8 +13,11 @@ import { Config } from '@/constants/config'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { t } from '@/constants/i18n'
 import { supabase } from '@/lib/supabase'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function HostProfileScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { host, signOut, setRole, language, setLanguage } = useAuthStore()
   const hostData = Config.useMock ? MOCK_HOST : host
 
@@ -178,6 +181,8 @@ export default function HostProfileScreen() {
 }
 
 function MenuItem({ label, onPress }: { label: string; onPress: () => void }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <TouchableOpacity
       style={styles.menuItem}
@@ -191,65 +196,66 @@ function MenuItem({ label, onPress }: { label: string; onPress: () => void }) {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   title: {
     fontSize: 26,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.md,
     marginBottom: Spacing.lg,
   },
   profileSection: { alignItems: 'center', paddingBottom: Spacing.xl },
-  name: { fontSize: 22, fontWeight: '700', color: Colors.text, marginTop: Spacing.md },
-  location: { fontSize: 14, color: Colors.textSecondary, marginTop: 4 },
+  name: { fontSize: 22, fontWeight: '700', color: C.text, marginTop: Spacing.md },
+  location: { fontSize: 14, color: C.textSecondary, marginTop: 4 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: Spacing.sm },
-  ratingText: { fontSize: 15, fontWeight: '700', color: Colors.primary },
-  ratingDot: { fontSize: 15, color: Colors.textTertiary },
-  reviewCount: { fontSize: 14, color: Colors.textSecondary },
-  memberSince: { fontSize: 13, color: Colors.textTertiary, marginTop: 4 },
+  ratingText: { fontSize: 15, fontWeight: '700', color: C.primary },
+  ratingDot: { fontSize: 15, color: C.textTertiary },
+  reviewCount: { fontSize: 14, color: C.textSecondary },
+  memberSince: { fontSize: 13, color: C.textTertiary, marginTop: 4 },
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.md,
     paddingVertical: 4,
     marginTop: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.success,
+    borderColor: C.success,
   },
-  verifiedText: { fontSize: 13, fontWeight: '700', color: Colors.success },
+  verifiedText: { fontSize: 13, fontWeight: '700', color: C.success },
 
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: Spacing.base,
     marginBottom: Spacing.xl,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xl,
   },
   statItem: { flex: 1, alignItems: 'center' },
-  statNum: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: 2 },
-  statLabel: { fontSize: 11, color: Colors.textTertiary, fontWeight: '600', textTransform: 'uppercase' },
-  statDivider: { width: 1, height: 32, backgroundColor: Colors.border },
+  statNum: { fontSize: 18, fontWeight: '800', color: C.text, marginBottom: 2 },
+  statLabel: { fontSize: 11, color: C.textTertiary, fontWeight: '600', textTransform: 'uppercase' },
+  statDivider: { width: 1, height: 32, backgroundColor: C.border },
 
   card: { marginHorizontal: Spacing.base, marginBottom: Spacing.md },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.md,
   },
   menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.sm, minHeight: 44 },
-  menuLabel: { fontSize: 15, color: Colors.text },
-  menuChevron: { fontSize: 20, color: Colors.textTertiary },
+  menuLabel: { fontSize: 15, color: C.text },
+  menuChevron: { fontSize: 20, color: C.textTertiary },
 
   switchRoleBtn: {
     flexDirection: 'row',
@@ -259,13 +265,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderColor: C.border,
+    backgroundColor: C.surface,
     minHeight: 44,
   },
   switchRoleIcon: { fontSize: 18 },
-  switchRoleText: { flex: 1, fontSize: 15, color: Colors.text, fontWeight: '600' },
-  switchRoleChevron: { fontSize: 20, color: Colors.textTertiary },
+  switchRoleText: { flex: 1, fontSize: 15, color: C.text, fontWeight: '600' },
+  switchRoleChevron: { fontSize: 20, color: C.textTertiary },
 
   langRow: { flexDirection: 'row', gap: Spacing.sm },
   langBtn: {
@@ -274,14 +280,15 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderColor: C.border,
+    backgroundColor: C.surface,
   },
-  langBtnActive: { backgroundColor: Colors.primarySurface, borderColor: Colors.primary },
-  langText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  langTextActive: { color: Colors.primary },
+  langBtnActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
+  langText: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
+  langTextActive: { color: C.primary },
 
   signOutBtn: { marginHorizontal: Spacing.base, marginTop: Spacing.base, padding: Spacing.base, alignItems: 'center', minHeight: 44 },
-  signOutText: { fontSize: 16, color: Colors.error, fontWeight: '600' },
-  appVersion: { textAlign: 'center', fontSize: 12, color: Colors.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
-})
+  signOutText: { fontSize: 16, color: C.error, fontWeight: '600' },
+  appVersion: { textAlign: 'center', fontSize: 12, color: C.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
+  })
+}

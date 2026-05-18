@@ -1,15 +1,18 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView } from 'react-native'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 import { formatDate, formatDateRange } from '@/lib/utils/formatDate'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import type { Booking } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface ContractViewProps {
   booking: Booking
 }
 
 export function ContractView({ booking }: ContractViewProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Rental Agreement</Text>
@@ -52,6 +55,8 @@ export function ContractView({ booking }: ContractViewProps) {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -61,6 +66,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -69,14 +76,15 @@ function Row({ label, value, bold }: { label: string; value: string; bold?: bool
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.surface },
-  title: { fontSize: 22, fontWeight: '800', color: Colors.primary, marginBottom: 4 },
-  ref: { fontSize: 13, color: Colors.textTertiary, marginBottom: Spacing.xl },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.surface },
+  title: { fontSize: 22, fontWeight: '800', color: C.primary, marginBottom: 4 },
+  ref: { fontSize: 13, color: C.textTertiary, marginBottom: Spacing.xl },
   section: {
     marginBottom: Spacing.xl,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: C.border,
     paddingTop: Spacing.md,
   },
   sectionTitle: {
@@ -84,12 +92,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     marginBottom: Spacing.sm,
   },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
-  rowLabel: { fontSize: 14, color: Colors.textSecondary, flex: 1 },
-  rowValue: { fontSize: 14, color: Colors.text, fontWeight: '500', textAlign: 'right' },
+  rowLabel: { fontSize: 14, color: C.textSecondary, flex: 1 },
+  rowValue: { fontSize: 14, color: C.text, fontWeight: '500', textAlign: 'right' },
   bold: { fontWeight: '700' },
-  terms: { fontSize: 13, color: Colors.textSecondary, lineHeight: 20 },
-})
+  terms: { fontSize: 13, color: C.textSecondary, lineHeight: 20 },
+  })
+}

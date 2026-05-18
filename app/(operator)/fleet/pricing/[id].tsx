@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Switch, TextInput,
@@ -14,11 +14,14 @@ import { useListing } from '@/lib/hooks/useListing'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import type { DynamicPricingRules } from '@/lib/utils/pricing'
+import { useColors } from '@/lib/hooks/useColors'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const MULTIPLIERS = [1.0, 1.2, 1.3, 1.5, 2.0]
 
 export default function PricingRulesScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { id } = useLocalSearchParams<{ id: string }>()
   const { listing } = useListing(id ?? '')
   const { showToast } = useToastStore()
@@ -107,8 +110,8 @@ export default function PricingRulesScreen() {
             <Switch
               value={peakEnabled}
               onValueChange={setPeakEnabled}
-              trackColor={{ false: Colors.border, true: Colors.primary }}
-              thumbColor={Colors.text}
+              trackColor={{ false: C.border, true: C.primary }}
+              thumbColor={C.text}
               accessibilityLabel="Enable peak season pricing"
             />
           </View>
@@ -168,7 +171,7 @@ export default function PricingRulesScreen() {
               onChangeText={v => setWeeklyDiscount((parseFloat(v) || 0) / 100)}
               keyboardType="numeric"
               placeholder="10"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={C.textTertiary}
               accessibilityLabel="Weekly discount percentage"
             />
             <Text style={styles.inputSuffix}>%</Text>
@@ -181,7 +184,7 @@ export default function PricingRulesScreen() {
               onChangeText={v => setMonthlyDiscount((parseFloat(v) || 0) / 100)}
               keyboardType="numeric"
               placeholder="20"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={C.textTertiary}
               accessibilityLabel="Monthly discount percentage"
             />
             <Text style={styles.inputSuffix}>%</Text>
@@ -218,12 +221,13 @@ export default function PricingRulesScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { padding: Spacing.base, paddingBottom: 100 },
   section: { marginBottom: Spacing.base, padding: Spacing.base },
-  sectionTitle: { color: Colors.text, fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  sectionDesc: { color: Colors.textSecondary, fontSize: 13, marginBottom: 12 },
+  sectionTitle: { color: C.text, fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  sectionDesc: { color: C.textSecondary, fontSize: 13, marginBottom: 12 },
   row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   chip: {
@@ -231,22 +235,22 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: Radius.pill,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  chipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  chipText: { color: Colors.textSecondary, fontSize: 13, fontWeight: '600' },
-  chipTextActive: { color: Colors.background },
+  chipActive: { backgroundColor: C.primary, borderColor: C.primary },
+  chipText: { color: C.textSecondary, fontSize: 13, fontWeight: '600' },
+  chipTextActive: { color: C.background },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  inputLabel: { color: Colors.textSecondary, fontSize: 14, flex: 1 },
+  inputLabel: { color: C.textSecondary, fontSize: 14, flex: 1 },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     borderRadius: Radius.sm,
-    color: Colors.text,
+    color: C.text,
     paddingHorizontal: 12,
     paddingVertical: 8,
     width: 70,
@@ -254,6 +258,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     minHeight: 44,
   },
-  inputSuffix: { color: Colors.textSecondary, fontSize: 14 },
-  previewText: { color: Colors.text, fontSize: 14, marginBottom: 4 },
-})
+  inputSuffix: { color: C.textSecondary, fontSize: 14 },
+  previewText: { color: C.text, fontSize: 14, marginBottom: 4 },
+  })
+}

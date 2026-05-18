@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useRef, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -6,6 +6,7 @@ import { router } from 'expo-router'
 import { Colors, Spacing, Radius, Typography, Shadow } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 function RoleCard({
   emoji,
@@ -20,6 +21,8 @@ function RoleCard({
   variant?: 'traveler' | 'host' | 'operator'
   onPress: () => void
 }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const scale = useRef(new Animated.Value(1)).current
 
   const cardStyle = [
@@ -54,6 +57,8 @@ function RoleCard({
 }
 
 export default function RoleSelectionScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { setRole } = useAuthStore()
 
   const handleSelect = (role: 'consumer' | 'operator' | 'host') => {
@@ -124,7 +129,8 @@ export default function RoleSelectionScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: { flex: 1 },
   safeArea: {
     flex: 1,
@@ -144,13 +150,13 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 48,
     fontWeight: '900',
-    color: Colors.primary,
+    color: C.primary,
     letterSpacing: -1,
     marginBottom: Spacing.sm,
   },
   tagline: {
     ...Typography.h3,
-    color: Colors.text,
+    color: C.text,
     textAlign: 'center',
     marginBottom: Spacing.lg,
   },
@@ -161,11 +167,11 @@ const styles = StyleSheet.create({
   },
   trustBadge: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     fontWeight: '500',
   },
   trustDot: {
-    color: Colors.textTertiary,
+    color: C.textTertiary,
   },
 
   cards: {
@@ -179,53 +185,54 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     paddingHorizontal: Spacing.base,
     gap: Spacing.md,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     ...Shadow.sm,
   },
   cardTraveler: {
     borderLeftWidth: 4,
-    borderLeftColor: Colors.primary,
-    borderTopColor: Colors.border,
-    borderRightColor: Colors.border,
-    borderBottomColor: Colors.border,
+    borderLeftColor: C.primary,
+    borderTopColor: C.border,
+    borderRightColor: C.border,
+    borderBottomColor: C.border,
   },
   cardHost: {
     borderLeftWidth: 4,
-    borderLeftColor: Colors.white,
-    borderTopColor: Colors.border,
-    borderRightColor: Colors.border,
-    borderBottomColor: Colors.border,
+    borderLeftColor: C.white,
+    borderTopColor: C.border,
+    borderRightColor: C.border,
+    borderBottomColor: C.border,
   },
   cardOperator: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: C.primary,
+    borderColor: C.primary,
   },
 
   cardEmoji: { fontSize: 32 },
   cardBody: { flex: 1 },
   cardTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: C.text,
     marginBottom: 2,
   },
-  cardTitleDark: { color: Colors.textInverse },
+  cardTitleDark: { color: C.textInverse },
   cardDesc: {
     ...Typography.bodyS,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
   },
   cardDescDark: { color: 'rgba(10,22,40,0.65)' },
   cardArrow: {
     fontSize: 22,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     fontWeight: '300',
   },
-  cardArrowDark: { color: Colors.textInverse },
+  cardArrowDark: { color: C.textInverse },
 
   footer: {
     fontSize: 13,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textAlign: 'center',
   },
-})
+  })
+}

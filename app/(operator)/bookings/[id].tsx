@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking,
 } from 'react-native'
@@ -22,8 +22,11 @@ import { updateBookingStatus } from '@/lib/api/bookings'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import type { BookingStatus } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function OperatorBookingDetailScreen() {
+  const C = useColors()
+  const { styles, flightStyles } = useMemo(() => makeStyles(C), [C])
   const { id } = useLocalSearchParams<{ id: string }>()
   const bookingId = Config.useMock ? (id ?? 'bk-001') : (id ?? '')
   const { booking, loading, error } = useBooking(bookingId)
@@ -198,8 +201,8 @@ export default function OperatorBookingDetailScreen() {
                 Arrival: {new Date(booking.flight_arrival_time).toLocaleTimeString()}
               </Text>
             )}
-            <View style={[flightStyles.statusBadge, { backgroundColor: booking.flight_status === 'on_time' ? Colors.successSurface : Colors.warningSurface }]}>
-              <Text style={[flightStyles.statusText, { color: booking.flight_status === 'on_time' ? Colors.success : Colors.warning }]}>
+            <View style={[flightStyles.statusBadge, { backgroundColor: booking.flight_status === 'on_time' ? C.successSurface : C.warningSurface }]}>
+              <Text style={[flightStyles.statusText, { color: booking.flight_status === 'on_time' ? C.success : C.warning }]}>
                 {booking.flight_status === 'on_time' ? '✅ On Time' : booking.flight_status === 'delayed' ? '⚠️ Delayed' : '⏳ Tracking...'}
               </Text>
             </View>
@@ -213,7 +216,7 @@ export default function OperatorBookingDetailScreen() {
           accessibilityLabel="Message guest"
           accessibilityRole="button"
         >
-          <Ionicons name="chatbubble-outline" size={16} color={Colors.primary} />
+          <Ionicons name="chatbubble-outline" size={16} color={C.primary} />
           <Text style={styles.messageBtnText}>💬 Message Guest</Text>
         </TouchableOpacity>
 
@@ -260,98 +263,99 @@ export default function OperatorBookingDetailScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
   statusRow: { flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.base, marginBottom: Spacing.base },
-  sectionTitle: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, color: Colors.textTertiary, marginBottom: Spacing.sm },
-  guestName: { fontSize: 18, fontWeight: '700', color: Colors.text, marginBottom: Spacing.sm },
-  detail: { fontSize: 14, color: Colors.textSecondary, marginBottom: 4 },
-  callBtn: { backgroundColor: Colors.primarySurface, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', justifyContent: 'center', marginTop: Spacing.sm, minHeight: 44 },
-  callBtnText: { fontSize: 14, color: Colors.primaryDark, fontWeight: '600' },
+  sectionTitle: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, color: C.textTertiary, marginBottom: Spacing.sm },
+  guestName: { fontSize: 18, fontWeight: '700', color: C.text, marginBottom: Spacing.sm },
+  detail: { fontSize: 14, color: C.textSecondary, marginBottom: 4 },
+  callBtn: { backgroundColor: C.primarySurface, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', justifyContent: 'center', marginTop: Spacing.sm, minHeight: 44 },
+  callBtnText: { fontSize: 14, color: C.primaryDark, fontWeight: '600' },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  priceLabel: { fontSize: 14, color: Colors.textSecondary },
-  priceVal: { fontSize: 18, fontWeight: '700', color: Colors.text },
-  payoutLabel: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  payoutVal: { fontSize: 20, fontWeight: '800', color: Colors.success },
-  payoutNote: { fontSize: 12, color: Colors.textTertiary, marginTop: 4 },
+  priceLabel: { fontSize: 14, color: C.textSecondary },
+  priceVal: { fontSize: 18, fontWeight: '700', color: C.text },
+  payoutLabel: { fontSize: 15, fontWeight: '700', color: C.text },
+  payoutVal: { fontSize: 20, fontWeight: '800', color: C.success },
+  payoutNote: { fontSize: 12, color: C.textTertiary, marginTop: 4 },
   inspRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   actions: { marginTop: Spacing.md },
 
   // Action banner (always first visible for pending bookings)
   actionBanner: {
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.success,
+    borderBottomColor: C.success,
     padding: Spacing.base,
     gap: Spacing.sm,
   },
-  actionTitle: { fontSize: 16, fontWeight: '800', color: Colors.success },
-  actionSubtitle: { fontSize: 13, color: Colors.textSecondary },
+  actionTitle: { fontSize: 16, fontWeight: '800', color: C.success },
+  actionSubtitle: { fontSize: 13, color: C.textSecondary },
   actionButtons: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs },
   declineBtn: {
     paddingHorizontal: Spacing.xl, borderRadius: Radius.lg,
     paddingVertical: Spacing.md, alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1, borderColor: Colors.error,
+    borderWidth: 1, borderColor: C.error,
     minHeight: 44,
   },
-  declineBtnText: { fontSize: 14, fontWeight: '700', color: Colors.error },
+  declineBtnText: { fontSize: 14, fontWeight: '700', color: C.error },
   confirmBtn: {
-    flex: 1, backgroundColor: Colors.success,
+    flex: 1, backgroundColor: C.success,
     borderRadius: Radius.lg, paddingVertical: Spacing.md,
     alignItems: 'center', justifyContent: 'center',
     minHeight: 44,
   },
   confirmBtnDisabled: { opacity: 0.6 },
-  confirmBtnText: { fontSize: 16, fontWeight: '800', color: Colors.white },
-  payoutPreview: { fontSize: 12, color: Colors.textSecondary, textAlign: 'center' },
+  confirmBtnText: { fontSize: 16, fontWeight: '800', color: C.white },
+  payoutPreview: { fontSize: 12, color: C.textSecondary, textAlign: 'center' },
 
   messageBtn: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    borderWidth: 1.5, borderColor: Colors.primary,
-    backgroundColor: Colors.primarySurface,
+    borderWidth: 1.5, borderColor: C.primary,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.lg, padding: Spacing.md,
     marginTop: Spacing.sm, marginBottom: Spacing.sm,
     justifyContent: 'center',
     minHeight: 44,
   },
-  messageBtnText: { fontSize: 15, color: Colors.primaryDark, fontWeight: '600' },
+  messageBtnText: { fontSize: 15, color: C.primaryDark, fontWeight: '600' },
   disputeBtn: {
     borderWidth: 1,
-    borderColor: Colors.warning,
+    borderColor: C.warning,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     alignItems: 'center',
     marginTop: Spacing.sm,
     minHeight: 44,
   },
-  disputeBtnText: { fontSize: 14, color: Colors.warning, fontWeight: '600' },
-})
+  disputeBtnText: { fontSize: 14, color: C.warning, fontWeight: '600' },
+  })
 
-const flightStyles = StyleSheet.create({
+  const flightStyles = StyleSheet.create({
   flightCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   flightTitle: {
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 4,
   },
   flightNum: {
-    color: Colors.text,
+    color: C.text,
     fontSize: 22,
     fontWeight: '800',
     marginBottom: 4,
   },
   flightArrival: {
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     fontSize: 14,
     marginBottom: 8,
   },
@@ -365,4 +369,6 @@ const flightStyles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-})
+  })
+  return { styles, flightStyles }
+}

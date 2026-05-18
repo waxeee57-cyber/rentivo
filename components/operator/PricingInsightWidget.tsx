@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { getPricingSuggestions, type PricingSuggestion } from '@/lib/api/pricingSuggestions'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface Props {
   listingId: string
@@ -12,6 +13,8 @@ interface Props {
 }
 
 export function PricingInsightWidget({ listingId, city, category, currentPrice }: Props) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [data, setData] = useState<PricingSuggestion | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,7 +52,7 @@ export function PricingInsightWidget({ listingId, city, category, currentPrice }
   if (loading) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator color={Colors.primary} size="small" />
+        <ActivityIndicator color={C.primary} size="small" />
         <Text style={styles.loadingText}>Analyzing market data...</Text>
       </View>
     )
@@ -91,33 +94,35 @@ export function PricingInsightWidget({ listingId, city, category, currentPrice }
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   trigger: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: Spacing.md,
-    borderWidth: 1, borderColor: Colors.border, minHeight: 44,
+    backgroundColor: C.surface, borderRadius: Radius.lg, padding: Spacing.md,
+    borderWidth: 1, borderColor: C.border, minHeight: 44,
   },
-  triggerIcon: { fontSize: 12, fontWeight: '700', color: Colors.primary },
-  triggerText: { flex: 1, fontSize: 14, color: Colors.primary, fontWeight: '600' },
-  triggerChevron: { fontSize: 20, color: Colors.textSecondary },
+  triggerIcon: { fontSize: 12, fontWeight: '700', color: C.primary },
+  triggerText: { flex: 1, fontSize: 14, color: C.primary, fontWeight: '600' },
+  triggerChevron: { fontSize: 20, color: C.textSecondary },
   loading: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, padding: Spacing.md },
-  loadingText: { fontSize: 14, color: Colors.textSecondary },
+  loadingText: { fontSize: 14, color: C.textSecondary },
   error: { padding: Spacing.md, alignItems: 'center' },
-  errorText: { fontSize: 14, color: Colors.error },
-  retry: { fontSize: 14, color: Colors.primary, fontWeight: '600', marginTop: Spacing.sm },
+  errorText: { fontSize: 14, color: C.error },
+  retry: { fontSize: 14, color: C.primary, fontWeight: '600', marginTop: Spacing.sm },
   container: {
-    backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: Spacing.base,
-    borderWidth: 1, borderColor: Colors.border, gap: Spacing.sm,
+    backgroundColor: C.surface, borderRadius: Radius.lg, padding: Spacing.base,
+    borderWidth: 1, borderColor: C.border, gap: Spacing.sm,
   },
-  title: { fontSize: 13, fontWeight: '700', color: Colors.primary },
+  title: { fontSize: 13, fontWeight: '700', color: C.primary },
   priceRow: { flexDirection: 'row', marginVertical: Spacing.sm },
   priceCell: { flex: 1, alignItems: 'center' },
   priceCellMid: {
-    borderLeftWidth: 1, borderRightWidth: 1, borderColor: Colors.border,
+    borderLeftWidth: 1, borderRightWidth: 1, borderColor: C.border,
   },
-  priceLabel: { fontSize: 11, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
-  priceVal: { fontSize: 16, fontWeight: '700', color: Colors.text, marginTop: 2 },
-  priceValAvg: { color: Colors.primary },
-  insight: { fontSize: 13, color: Colors.text, lineHeight: 20 },
-  meta: { fontSize: 11, color: Colors.textSecondary },
-})
+  priceLabel: { fontSize: 11, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  priceVal: { fontSize: 16, fontWeight: '700', color: C.text, marginTop: 2 },
+  priceValAvg: { color: C.primary },
+  insight: { fontSize: 13, color: C.text, lineHeight: 20 },
+  meta: { fontSize: 11, color: C.textSecondary },
+  })
+}

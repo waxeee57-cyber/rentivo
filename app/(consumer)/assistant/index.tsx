@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useMemo } from 'react'
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
@@ -11,6 +11,7 @@ import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface ChatMessage {
   id: string
@@ -34,6 +35,8 @@ function getMockReply(text: string): string {
 }
 
 export default function AssistantScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { language } = useAuthStore()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputText, setInputText] = useState('')
@@ -124,10 +127,10 @@ export default function AssistantScreen() {
           accessibilityLabel="Go back"
           accessibilityRole="button"
         >
-          <Ionicons name="arrow-back" size={22} color={Colors.text} />
+          <Ionicons name="arrow-back" size={22} color={C.text} />
         </TouchableOpacity>
         <View style={styles.headerIcon}>
-          <Ionicons name="chatbubble-ellipses" size={20} color={Colors.primary} />
+          <Ionicons name="chatbubble-ellipses" size={20} color={C.primary} />
         </View>
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>{t('assistantTitle', language)}</Text>
@@ -152,7 +155,7 @@ export default function AssistantScreen() {
           {messages.length === 0 && (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconWrap}>
-                <Ionicons name="chatbubble-ellipses" size={40} color={Colors.primary} />
+                <Ionicons name="chatbubble-ellipses" size={40} color={C.primary} />
               </View>
               <Text style={styles.emptyText}>{t('assistantEmpty', language)}</Text>
 
@@ -164,7 +167,7 @@ export default function AssistantScreen() {
                   accessibilityLabel={t('assistantSuggest1', language)}
                   accessibilityRole="button"
                 >
-                  <Ionicons name="car-outline" size={14} color={Colors.primary} />
+                  <Ionicons name="car-outline" size={14} color={C.primary} />
                   <Text style={styles.chipText}>{t('assistantSuggest1', language)}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -173,7 +176,7 @@ export default function AssistantScreen() {
                   accessibilityLabel={t('assistantSuggest2', language)}
                   accessibilityRole="button"
                 >
-                  <Ionicons name="boat-outline" size={14} color={Colors.primary} />
+                  <Ionicons name="boat-outline" size={14} color={C.primary} />
                   <Text style={styles.chipText}>{t('assistantSuggest2', language)}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -182,7 +185,7 @@ export default function AssistantScreen() {
                   accessibilityLabel={t('assistantSuggest3', language)}
                   accessibilityRole="button"
                 >
-                  <Ionicons name="calendar-outline" size={14} color={Colors.primary} />
+                  <Ionicons name="calendar-outline" size={14} color={C.primary} />
                   <Text style={styles.chipText}>{t('assistantSuggest3', language)}</Text>
                 </TouchableOpacity>
               </View>
@@ -230,7 +233,7 @@ export default function AssistantScreen() {
             >
               {msg.role === 'assistant' && (
                 <View style={styles.avatarDot}>
-                  <Ionicons name="chatbubble-ellipses" size={12} color={Colors.primary} />
+                  <Ionicons name="chatbubble-ellipses" size={12} color={C.primary} />
                 </View>
               )}
               <View
@@ -255,10 +258,10 @@ export default function AssistantScreen() {
           {isTyping && (
             <View style={[styles.bubbleWrap, styles.bubbleWrapAssistant]}>
               <View style={styles.avatarDot}>
-                <Ionicons name="chatbubble-ellipses" size={12} color={Colors.primary} />
+                <Ionicons name="chatbubble-ellipses" size={12} color={C.primary} />
               </View>
               <View style={[styles.bubble, styles.bubbleAssistant, styles.typingBubble]}>
-                <ActivityIndicator size="small" color={Colors.primary} />
+                <ActivityIndicator size="small" color={C.primary} />
                 <Text style={styles.typingText}>{t('assistantTyping', language)}</Text>
               </View>
             </View>
@@ -274,7 +277,7 @@ export default function AssistantScreen() {
             value={inputText}
             onChangeText={setInputText}
             placeholder={t('assistantPlaceholder', language)}
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={C.textTertiary}
             multiline
             maxLength={500}
             returnKeyType="send"
@@ -288,7 +291,7 @@ export default function AssistantScreen() {
             accessibilityLabel={t('assistantSend', language)}
             accessibilityRole="button"
           >
-            <Ionicons name="send" size={18} color={Colors.textInverse} />
+            <Ionicons name="send" size={18} color={C.textInverse} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -296,9 +299,10 @@ export default function AssistantScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   flex: { flex: 1 },
-  container: { flex: 1, backgroundColor: Colors.background },
+  container: { flex: 1, backgroundColor: C.background },
 
   // Header
   header: {
@@ -307,7 +311,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: C.border,
     gap: Spacing.sm,
   },
   headerBack: {
@@ -321,18 +325,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.full,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerText: { flex: 1 },
   headerTitle: {
     ...Typography.h4,
-    color: Colors.text,
+    color: C.text,
   },
   headerSubtitle: {
     ...Typography.caption,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     marginTop: 2,
   },
 
@@ -357,14 +361,14 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: Radius.full,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.base,
   },
   emptyText: {
     ...Typography.body,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: Spacing.xl,
@@ -382,15 +386,15 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.full,
     borderWidth: 1,
-    borderColor: Colors.borderGold,
+    borderColor: C.borderGold,
     minHeight: 44,
   },
   chipText: {
     ...Typography.bodyS,
-    color: Colors.primary,
+    color: C.primary,
     fontWeight: '600',
   },
 
@@ -404,16 +408,16 @@ const styles = StyleSheet.create({
   chipSmall: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.full,
     borderWidth: 1,
-    borderColor: Colors.borderGold,
+    borderColor: C.borderGold,
     minHeight: 44,
     justifyContent: 'center',
   },
   chipSmallText: {
     ...Typography.caption,
-    color: Colors.primary,
+    color: C.primary,
     fontWeight: '600',
   },
 
@@ -431,7 +435,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: Radius.full,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -443,22 +447,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bubbleUser: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderBottomRightRadius: 4,
   },
   bubbleAssistant: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   bubbleText: {
     ...Typography.body,
-    color: Colors.text,
+    color: C.text,
     lineHeight: 20,
   },
   bubbleTextUser: {
-    color: Colors.textInverse,
+    color: C.textInverse,
   },
 
   // Typing indicator
@@ -470,7 +474,7 @@ const styles = StyleSheet.create({
   },
   typingText: {
     ...Typography.bodyS,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     fontStyle: 'italic',
   },
 
@@ -480,32 +484,33 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: C.border,
     gap: Spacing.sm,
   },
   textInput: {
     flex: 1,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.xxl,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
     fontSize: 14,
-    color: Colors.text,
+    color: C.text,
     maxHeight: 100,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   sendBtn: {
     width: 44,
     height: 44,
     borderRadius: Radius.full,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sendBtnDisabled: {
-    backgroundColor: Colors.textTertiary,
+    backgroundColor: C.textTertiary,
   },
-})
+  })
+}

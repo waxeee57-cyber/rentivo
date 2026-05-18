@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, ScrollView, StyleSheet, Switch } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -6,8 +6,11 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function CookiePolicyScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [analytics, setAnalytics] = useState(false)
   const [marketing, setMarketing] = useState(false)
 
@@ -30,7 +33,7 @@ export default function CookiePolicyScreen() {
               <Text style={styles.cookieName}>Essential Cookies</Text>
               <Text style={styles.cookieDesc}>Required for authentication and core app functionality. Cannot be disabled.</Text>
             </View>
-            <Switch value={true} disabled trackColor={{ true: Colors.success }} />
+            <Switch value={true} disabled trackColor={{ true: C.success }} />
           </View>
         </View>
 
@@ -43,7 +46,7 @@ export default function CookiePolicyScreen() {
             <Switch
               value={analytics}
               onValueChange={setAnalytics}
-              trackColor={{ true: Colors.primary }}
+              trackColor={{ true: C.primary }}
             />
           </View>
         </View>
@@ -57,7 +60,7 @@ export default function CookiePolicyScreen() {
             <Switch
               value={marketing}
               onValueChange={setMarketing}
-              trackColor={{ true: Colors.primary }}
+              trackColor={{ true: C.primary }}
             />
           </View>
         </View>
@@ -73,19 +76,21 @@ export default function CookiePolicyScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
-  intro: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
+  intro: { fontSize: 14, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
   cookieCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     marginBottom: Spacing.md,
   },
   cookieRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   cookieInfo: { flex: 1 },
-  cookieName: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  cookieDesc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 19 },
-  note: { fontSize: 12, color: Colors.textTertiary, lineHeight: 18, marginTop: Spacing.md },
-})
+  cookieName: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 4 },
+  cookieDesc: { fontSize: 13, color: C.textSecondary, lineHeight: 19 },
+  note: { fontSize: 12, color: C.textTertiary, lineHeight: 18, marginTop: Spacing.md },
+  })
+}

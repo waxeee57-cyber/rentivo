@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, TextInput, ActivityIndicator, Alert,
@@ -6,7 +6,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { ICalHelpSheet } from '@/components/integrations/ICalHelpSheet'
@@ -42,6 +43,7 @@ const CATEGORIES = [
 ]
 
 export default function AddExternalListingScreen() {
+  const C = useColors()
   const { language } = useAuthStore()
   const [step, setStep] = useState<Step>(1)
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformType | null>(null)
@@ -84,6 +86,8 @@ export default function AddExternalListingScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     setStep(s => (s + 1) as Step)
   }
+
+  const styles = useMemo(() => makeStyles(C), [C])
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -142,7 +146,7 @@ export default function AddExternalListingScreen() {
               value={listingUrl}
               onChangeText={setListingUrl}
               placeholder="https://www.airbnb.com/rooms/..."
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={C.textTertiary}
               autoCapitalize="none"
               keyboardType="url"
             />
@@ -153,7 +157,7 @@ export default function AddExternalListingScreen() {
               value={title}
               onChangeText={setTitle}
               placeholder="pl. Cozy Villa in Marbella"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={C.textTertiary}
             />
 
             <Text style={styles.fieldLabel}>Category</Text>
@@ -179,7 +183,7 @@ export default function AddExternalListingScreen() {
               value={price}
               onChangeText={setPrice}
               placeholder="e.g. 85"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={C.textTertiary}
               keyboardType="numeric"
             />
 
@@ -189,7 +193,7 @@ export default function AddExternalListingScreen() {
               value={city}
               onChangeText={setCity}
               placeholder="e.g. Marbella"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={C.textTertiary}
             />
           </View>
         )}
@@ -240,7 +244,7 @@ export default function AddExternalListingScreen() {
                   value={icalUrl}
                   onChangeText={v => { setIcalUrl(v); setIcalResult(null) }}
                   placeholder="https://www.airbnb.com/calendar/ical/..."
-                  placeholderTextColor={Colors.textTertiary}
+                  placeholderTextColor={C.textTertiary}
                   autoCapitalize="none"
                   keyboardType="url"
                 />
@@ -250,7 +254,7 @@ export default function AddExternalListingScreen() {
                   disabled={!icalUrl.trim() || icalTesting}
                 >
                   {icalTesting
-                    ? <ActivityIndicator size="small" color={Colors.textInverse} />
+                    ? <ActivityIndicator size="small" color={C.textInverse} />
                     : <Text style={styles.testBtnText}>Test connection</Text>}
                 </TouchableOpacity>
 
@@ -330,7 +334,7 @@ export default function AddExternalListingScreen() {
                 onPress={() => { void handleSave() }}
               >
                 {saving
-                  ? <ActivityIndicator size="small" color={Colors.textInverse} />
+                  ? <ActivityIndicator size="small" color={C.textInverse} />
                   : <Text style={styles.nextBtnText}>Save and publish</Text>}
               </TouchableOpacity>
             </View>
@@ -347,14 +351,15 @@ export default function AddExternalListingScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   scroll: { flex: 1 },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
 
-  stepTitle: { fontSize: 22, fontWeight: '800', color: Colors.text, marginBottom: Spacing.sm },
+  stepTitle: { fontSize: 22, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
   stepSubtitle: {
-    fontSize: 14, color: Colors.textSecondary, lineHeight: 20, marginBottom: Spacing.xl,
+    fontSize: 14, color: C.textSecondary, lineHeight: 20, marginBottom: Spacing.xl,
   },
 
   platformGrid: {
@@ -365,129 +370,130 @@ const styles = StyleSheet.create({
     minWidth: 95,
     maxWidth: 120,
     height: 100,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.md,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: C.border,
     gap: Spacing.xs,
   },
-  platformCardActive: { borderColor: Colors.primary, borderWidth: 2, backgroundColor: Colors.primarySubtle },
+  platformCardActive: { borderColor: C.primary, borderWidth: 2, backgroundColor: C.primarySubtle },
   platformEmoji: { fontSize: 36 },
-  platformLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, textAlign: 'center' },
-  platformLabelActive: { color: Colors.primary },
+  platformLabel: { fontSize: 13, fontWeight: '600', color: C.textSecondary, textAlign: 'center' },
+  platformLabelActive: { color: C.primary },
 
   fieldLabel: {
-    fontSize: 13, fontWeight: '600', color: Colors.textSecondary,
+    fontSize: 13, fontWeight: '600', color: C.textSecondary,
     marginBottom: Spacing.sm, marginTop: Spacing.base,
   },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     fontSize: 14,
-    color: Colors.text,
+    color: C.text,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
 
   categoryScroll: { marginBottom: Spacing.sm },
   categoryRow: { flexDirection: 'row', gap: Spacing.sm, paddingVertical: Spacing.xs },
   categoryPill: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.pill,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
-  categoryPillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  categoryPillText: { fontSize: 13, fontWeight: '600', color: Colors.text },
-  categoryPillTextActive: { color: Colors.textInverse },
+  categoryPillActive: { backgroundColor: C.primary, borderColor: C.primary },
+  categoryPillText: { fontSize: 13, fontWeight: '600', color: C.text },
+  categoryPillTextActive: { color: C.textInverse },
 
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.base,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     marginBottom: Spacing.md,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
-  optionCardActive: { borderColor: Colors.primary, backgroundColor: Colors.primarySurface },
+  optionCardActive: { borderColor: C.primary, backgroundColor: C.primarySurface },
   optionEmoji: { fontSize: 28 },
   optionText: { flex: 1 },
-  optionTitle: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  optionDesc: { fontSize: 12, color: Colors.textSecondary },
+  optionTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 2 },
+  optionDesc: { fontSize: 12, color: C.textSecondary },
 
   icalSection: { marginTop: Spacing.base },
   icalLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  helpLink: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+  helpLink: { fontSize: 12, color: C.primary, fontWeight: '600' },
   testBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.md,
     alignItems: 'center',
     marginTop: Spacing.md,
   },
   testBtnDisabled: { opacity: 0.5 },
-  testBtnText: { fontSize: 14, fontWeight: '700', color: Colors.textInverse },
+  testBtnText: { fontSize: 14, fontWeight: '700', color: C.textInverse },
   icalResult: {
     borderRadius: Radius.lg, padding: Spacing.md, marginTop: Spacing.md,
   },
-  icalResultSuccess: { backgroundColor: Colors.successSurface, borderWidth: 1, borderColor: Colors.success },
-  icalResultError: { backgroundColor: Colors.errorSurface, borderWidth: 1, borderColor: Colors.error },
+  icalResultSuccess: { backgroundColor: C.successSurface, borderWidth: 1, borderColor: C.success },
+  icalResultError: { backgroundColor: C.errorSurface, borderWidth: 1, borderColor: C.error },
   icalResultText: { fontSize: 13 },
-  icalResultTextSuccess: { color: Colors.success },
-  icalResultTextError: { color: Colors.error },
+  icalResultTextSuccess: { color: C.success },
+  icalResultTextError: { color: C.error },
 
   successContainer: { alignItems: 'center', paddingTop: Spacing.xxl },
   successEmoji: { fontSize: 64, marginBottom: Spacing.md },
-  successTitle: { fontSize: 26, fontWeight: '900', color: Colors.text, marginBottom: Spacing.sm },
+  successTitle: { fontSize: 26, fontWeight: '900', color: C.text, marginBottom: Spacing.sm },
   successSubtitle: {
-    fontSize: 15, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22,
+    fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22,
     marginBottom: Spacing.xl, paddingHorizontal: Spacing.md,
   },
   infoBox: {
     width: '100%',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     marginBottom: Spacing.xl,
     gap: Spacing.sm,
   },
-  infoTitle: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: Spacing.xs },
-  infoItem: { fontSize: 13, color: Colors.textSecondary },
+  infoTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: Spacing.xs },
+  infoItem: { fontSize: 13, color: C.textSecondary },
   doneBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.base,
     paddingHorizontal: Spacing.xxl,
   },
-  doneBtnText: { fontSize: 15, fontWeight: '800', color: Colors.textInverse },
+  doneBtnText: { fontSize: 15, fontWeight: '800', color: C.textInverse },
 
   footer: {
     padding: Spacing.base,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.background,
+    borderTopColor: C.border,
+    backgroundColor: C.background,
   },
   gdprText: {
-    fontSize: 11, color: Colors.textTertiary, textAlign: 'center',
+    fontSize: 11, color: C.textTertiary, textAlign: 'center',
     marginBottom: Spacing.sm, lineHeight: 16,
   },
   nextBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.base,
     alignItems: 'center',
   },
   nextBtnDisabled: { opacity: 0.45 },
-  nextBtnText: { fontSize: 16, fontWeight: '800', color: Colors.textInverse },
-})
+  nextBtnText: { fontSize: 16, fontWeight: '800', color: C.textInverse },
+  })
+}

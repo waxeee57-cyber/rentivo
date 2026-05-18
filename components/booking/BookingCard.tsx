@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react'
+import React, { useEffect, useRef, useCallback, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
@@ -7,6 +7,7 @@ import { Colors, Radius, Spacing, Shadow, Typography } from '@/constants/colors'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import type { Booking } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface BookingCardProps {
   booking: Booking
@@ -15,41 +16,9 @@ interface BookingCardProps {
 
 type StatusKey = 'confirmed' | 'pending' | 'active' | 'completed' | 'cancelled'
 
-const STATUS_CONFIG: Record<StatusKey, { bg: string; border: string; text: string; label: string; showPulse?: boolean }> = {
-  confirmed: {
-    bg: Colors.successSurface,
-    border: Colors.success,
-    text: Colors.success,
-    label: 'Confirmed',
-  },
-  pending: {
-    bg: Colors.transparent,
-    border: Colors.warning,
-    text: Colors.warning,
-    label: 'Pending',
-  },
-  active: {
-    bg: Colors.successSurface,
-    border: Colors.success,
-    text: Colors.success,
-    label: 'Active',
-    showPulse: true,
-  },
-  completed: {
-    bg: Colors.surfaceWarm,
-    border: Colors.border,
-    text: Colors.textSecondary,
-    label: 'Completed',
-  },
-  cancelled: {
-    bg: Colors.errorSurface,
-    border: Colors.error,
-    text: Colors.error,
-    label: 'Cancelled',
-  },
-}
-
 function PulsingDot() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const anim = useRef(new Animated.Value(1)).current
   useEffect(() => {
     Animated.loop(
@@ -63,6 +32,15 @@ function PulsingDot() {
 }
 
 function BookingCardComponent({ booking, onPress }: BookingCardProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
+  const STATUS_CONFIG: Record<StatusKey, { bg: string; border: string; text: string; label: string; showPulse?: boolean }> = {
+    confirmed: { bg: C.successSurface, border: C.success, text: C.success, label: 'Confirmed' },
+    pending: { bg: C.transparent, border: C.warning, text: C.warning, label: 'Pending' },
+    active: { bg: C.successSurface, border: C.success, text: C.success, label: 'Active', showPulse: true },
+    completed: { bg: C.surfaceWarm, border: C.border, text: C.textSecondary, label: 'Completed' },
+    cancelled: { bg: C.errorSurface, border: C.error, text: C.error, label: 'Cancelled' },
+  }
   const statusKey = (booking.status in STATUS_CONFIG ? booking.status : 'pending') as StatusKey
   const config = STATUS_CONFIG[statusKey]
   const imageUri = booking.listing?.images?.[0] ?? booking.listing?.cover_image_url ?? null
@@ -129,13 +107,14 @@ function BookingCardComponent({ booking, onPress }: BookingCardProps) {
 export const BookingCard = React.memo(BookingCardComponent)
 export default BookingCard
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   card: {
     flexDirection: 'row',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     overflow: 'hidden',
     marginBottom: Spacing.md,
     ...Shadow.sm,
@@ -147,7 +126,7 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   imagePlaceholder: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -165,7 +144,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h4,
-    color: Colors.text,
+    color: C.text,
     flex: 1,
   },
   badge: {
@@ -181,7 +160,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.success,
+    backgroundColor: C.success,
   },
   badgeText: {
     fontSize: 13,
@@ -189,12 +168,12 @@ const styles = StyleSheet.create({
   },
   operatorText: {
     fontSize: 14,
-    color: Colors.text,
+    color: C.text,
     marginBottom: 2,
   },
   dates: {
     fontSize: 15,
-    color: Colors.text,
+    color: C.text,
     lineHeight: 20,
     marginBottom: 6,
   },
@@ -206,25 +185,26 @@ const styles = StyleSheet.create({
   total: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.primary,
+    color: C.primary,
   },
   inspectBtn: {
-    backgroundColor: Colors.primarySubtle,
+    backgroundColor: C.primarySubtle,
     borderRadius: Radius.full,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: Colors.borderGold,
+    borderColor: C.borderGold,
   },
   inspectBtnText: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.primaryDark,
+    color: C.primaryDark,
   },
   countdown: {
     fontSize: 12,
-    color: Colors.primary,
+    color: C.primary,
     fontWeight: '600',
     marginTop: 4,
   },
-})
+  })
+}

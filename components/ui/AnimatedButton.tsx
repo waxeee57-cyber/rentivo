@@ -1,10 +1,11 @@
-import React, { useRef } from 'react'
+import React, { useRef, useMemo } from 'react'
 import {
   Pressable, Text, ActivityIndicator, Animated,
   StyleSheet, ViewStyle, TextStyle,
 } from 'react-native'
 import { impactAsync, ImpactFeedbackStyle } from 'expo-haptics'
 import { Colors, Radius, Spacing } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
@@ -27,6 +28,8 @@ export function AnimatedButton({
   style, textStyle, fullWidth = false,
   accessibilityLabel, haptic = true,
 }: AnimatedButtonProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const scale = useRef(new Animated.Value(1)).current
   const isDisabled = disabled || loading
 
@@ -57,7 +60,7 @@ export function AnimatedButton({
       ]}>
         {loading
           ? <ActivityIndicator
-              color={variant === 'primary' ? Colors.textInverse : Colors.primary}
+              color={variant === 'primary' ? C.textInverse : C.primary}
               size="small"
             />
           : <Text style={[
@@ -76,7 +79,8 @@ export function AnimatedButton({
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   base: {
     minHeight: 52,
     borderRadius: Radius.lg,
@@ -85,14 +89,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   fullWidth: { alignSelf: 'stretch' },
-  primary: { backgroundColor: Colors.primary },
-  secondary: { backgroundColor: Colors.primarySurface, borderWidth: 1, borderColor: Colors.primary },
-  ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.border },
-  danger: { backgroundColor: Colors.errorSurface, borderWidth: 1, borderColor: Colors.error },
+  primary: { backgroundColor: C.primary },
+  secondary: { backgroundColor: C.primarySurface, borderWidth: 1, borderColor: C.primary },
+  ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: C.border },
+  danger: { backgroundColor: C.errorSurface, borderWidth: 1, borderColor: C.error },
   disabled: { opacity: 0.5 },
   text: { fontSize: 15, fontWeight: '600' },
-  primaryText: { color: Colors.textInverse },
-  secondaryText: { color: Colors.primary },
-  ghostText: { color: Colors.textSecondary },
-  dangerText: { color: Colors.error },
-})
+  primaryText: { color: C.textInverse },
+  secondaryText: { color: C.primary },
+  ghostText: { color: C.textSecondary },
+  dangerText: { color: C.error },
+  })
+}

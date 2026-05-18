@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView,
 } from 'react-native'
@@ -6,6 +6,7 @@ import { addDays, addMonths, differenceInDays, startOfWeek, isSameDay, parseISO,
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { AvailabilityCalendar } from '@/components/listing/AvailabilityCalendar'
 import { formatDate } from '@/lib/utils/formatDate'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface DatePickerSheetProps {
   visible: boolean
@@ -21,6 +22,8 @@ export function DatePickerSheet({
   visible, startDate, endDate, onApply, onClose,
   blockedDates = [], pricePerDay,
 }: DatePickerSheetProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [localStart, setLocalStart] = useState<Date | null>(startDate)
   const [localEnd, setLocalEnd] = useState<Date | null>(endDate)
 
@@ -157,56 +160,58 @@ export function DatePickerSheet({
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     paddingTop: Spacing.md, paddingHorizontal: Spacing.base,
     maxHeight: '90%',
   },
   handle: {
-    width: 40, height: 4, backgroundColor: Colors.border,
+    width: 40, height: 4, backgroundColor: C.border,
     borderRadius: Radius.pill, alignSelf: 'center', marginBottom: Spacing.base,
   },
-  title: { fontSize: 18, fontWeight: '700', color: Colors.text, marginBottom: Spacing.xs },
-  subtitle: { fontSize: 14, color: Colors.textSecondary, marginBottom: Spacing.base },
+  title: { fontSize: 18, fontWeight: '700', color: C.text, marginBottom: Spacing.xs },
+  subtitle: { fontSize: 14, color: C.textSecondary, marginBottom: Spacing.base },
   blockedNotice: {
-    backgroundColor: Colors.warningSurface,
+    backgroundColor: C.warningSurface,
     borderRadius: Radius.lg, padding: Spacing.md,
     marginBottom: Spacing.sm,
-    borderWidth: 1, borderColor: Colors.warning,
+    borderWidth: 1, borderColor: C.warning,
   },
-  blockedNoticeText: { fontSize: 13, color: Colors.warning, fontWeight: '600' },
+  blockedNoticeText: { fontSize: 13, color: C.warning, fontWeight: '600' },
   quickChips: { paddingVertical: Spacing.base, gap: Spacing.sm, paddingHorizontal: 2 },
   chip: {
-    backgroundColor: Colors.surfaceWarm, borderRadius: Radius.pill,
+    backgroundColor: C.surfaceWarm, borderRadius: Radius.pill,
     paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: C.border,
   },
-  chipText: { fontSize: 13, fontWeight: '600', color: Colors.text },
+  chipText: { fontSize: 13, fontWeight: '600', color: C.text },
   summary: {
-    backgroundColor: Colors.primarySurface, borderRadius: Radius.lg,
+    backgroundColor: C.primarySurface, borderRadius: Radius.lg,
     padding: Spacing.md, alignItems: 'center',
     marginBottom: Spacing.base,
-    borderWidth: 1, borderColor: Colors.primaryLight,
+    borderWidth: 1, borderColor: C.primaryLight,
   },
   summaryError: {
-    backgroundColor: Colors.errorSurface,
-    borderColor: Colors.error,
+    backgroundColor: C.errorSurface,
+    borderColor: C.error,
   },
-  summaryText: { fontSize: 14, fontWeight: '600', color: Colors.primaryDark },
-  summaryErrorText: { fontSize: 14, fontWeight: '600', color: Colors.error },
-  pricePreview: { fontSize: 13, color: Colors.primary, marginTop: 4, fontWeight: '500' },
-  minNote: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginBottom: Spacing.base },
+  summaryText: { fontSize: 14, fontWeight: '600', color: C.primaryDark },
+  summaryErrorText: { fontSize: 14, fontWeight: '600', color: C.error },
+  pricePreview: { fontSize: 13, color: C.primary, marginTop: 4, fontWeight: '500' },
+  minNote: { fontSize: 12, color: C.textTertiary, textAlign: 'center', marginBottom: Spacing.base },
   applyBtn: {
-    backgroundColor: Colors.primary, borderRadius: Radius.pill,
+    backgroundColor: C.primary, borderRadius: Radius.pill,
     paddingVertical: Spacing.base, alignItems: 'center',
     marginBottom: Spacing.sm,
-    shadowColor: Colors.primary,
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
   },
   applyBtnDisabled: { opacity: 0.4 },
-  applyBtnText: { color: Colors.textInverse, fontWeight: '700', fontSize: 16 },
-})
+  applyBtnText: { color: C.textInverse, fontWeight: '700', fontSize: 16 },
+  })
+}

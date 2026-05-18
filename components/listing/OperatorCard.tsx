@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 import { Avatar } from '@/components/ui/Avatar'
@@ -6,6 +6,7 @@ import { StarRating } from '@/components/ui/StarRating'
 import { TierBadge } from '@/components/operator/TierBadge'
 import { calculateTier } from '@/lib/operator-tier'
 import type { Operator } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface OperatorCardProps {
   operator: Operator
@@ -13,6 +14,8 @@ interface OperatorCardProps {
 }
 
 export function OperatorCard({ operator, onViewListings }: OperatorCardProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.card}>
       <View style={styles.row}>
@@ -40,21 +43,23 @@ export function OperatorCard({ operator, onViewListings }: OperatorCardProps) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
   nameRow: { flexDirection: 'row', alignItems: 'center' },
-  name: { fontSize: 16, fontWeight: '700', color: Colors.text },
-  verified: { color: Colors.success, fontWeight: '700', fontSize: 16 },
-  city: { fontSize: 13, color: Colors.textSecondary, marginBottom: 4 },
-  desc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18, marginBottom: Spacing.sm },
+  name: { fontSize: 16, fontWeight: '700', color: C.text },
+  verified: { color: C.success, fontWeight: '700', fontSize: 16 },
+  city: { fontSize: 13, color: C.textSecondary, marginBottom: 4 },
+  desc: { fontSize: 13, color: C.textSecondary, lineHeight: 18, marginBottom: Spacing.sm },
   link: { alignSelf: 'flex-start' },
-  linkText: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
-  responseTime: { fontSize: 12, color: Colors.success, marginTop: 2 },
-})
+  linkText: { fontSize: 13, color: C.primary, fontWeight: '600' },
+  responseTime: { fontSize: 12, color: C.success, marginTop: 2 },
+  })
+}

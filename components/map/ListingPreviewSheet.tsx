@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
@@ -7,6 +7,7 @@ import { StarRating } from '@/components/ui/StarRating'
 import { formatEUR } from '@/lib/utils/formatCurrency'
 import { getCategoryLabel } from '@/constants/categories'
 import type { Listing } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface ListingPreviewSheetProps {
   listing: Listing | null
@@ -14,6 +15,8 @@ interface ListingPreviewSheetProps {
 }
 
 export function ListingPreviewSheet({ listing, onClose }: ListingPreviewSheetProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   if (!listing) return null
 
   const imageUri = listing.images?.[0] ?? listing.cover_image_url ?? null
@@ -62,13 +65,14 @@ export function ListingPreviewSheet({ listing, onClose }: ListingPreviewSheetPro
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   sheet: {
     position: 'absolute',
     bottom: 16,
     left: Spacing.base,
     right: Spacing.base,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: 20,
     padding: Spacing.base,
     shadowColor: '#000',
@@ -85,51 +89,52 @@ const styles = StyleSheet.create({
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: 14,
     zIndex: 1,
   },
-  closeText: { color: Colors.textSecondary, fontSize: 13, fontWeight: '700' },
+  closeText: { color: C.textSecondary, fontSize: 13, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
   image: { width: 100, height: 120, borderRadius: 12 },
   imagePlaceholder: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   imagePlaceholderText: { fontSize: 32 },
   info: { flex: 1, paddingTop: 2 },
   catPill: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
     alignSelf: 'flex-start',
     marginBottom: Spacing.xs,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
-  catText: { fontSize: 10, fontWeight: '700', color: Colors.textSecondary, textTransform: 'uppercase' },
-  title: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  operator: { fontSize: 13, color: Colors.textSecondary, marginBottom: 4 },
+  catText: { fontSize: 10, fontWeight: '700', color: C.textSecondary, textTransform: 'uppercase' },
+  title: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: 2 },
+  operator: { fontSize: 13, color: C.textSecondary, marginBottom: 4 },
   priceBookRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 6,
   },
-  price: { fontSize: 18, fontWeight: '700', color: Colors.primary },
-  priceUnit: { fontSize: 13, fontWeight: '400', color: Colors.textSecondary },
+  price: { fontSize: 18, fontWeight: '700', color: C.primary },
+  priceUnit: { fontSize: 13, fontWeight: '400', color: C.textSecondary },
   bookBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
-    shadowColor: Colors.primary,
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 4,
   },
-  bookBtnText: { color: Colors.textInverse, fontWeight: '700', fontSize: 13 },
-})
+  bookBtnText: { color: C.textInverse, fontWeight: '700', fontSize: 13 },
+  })
+}

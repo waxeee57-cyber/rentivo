@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useMemo } from 'react'
 import { View, Text, Animated, StyleSheet } from 'react-native'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface StepIndicatorProps {
   totalSteps: number
@@ -9,6 +10,8 @@ interface StepIndicatorProps {
 }
 
 function PulsingDot({ children }: { children: React.ReactNode }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const scale = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
@@ -30,6 +33,8 @@ function PulsingDot({ children }: { children: React.ReactNode }) {
 }
 
 export function StepIndicator({ totalSteps, currentStep, labels }: StepIndicatorProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.container}>
       <View style={styles.row}>
@@ -78,7 +83,8 @@ export function StepIndicator({ totalSteps, currentStep, labels }: StepIndicator
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
@@ -95,57 +101,58 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderWidth: 2,
-    borderColor: Colors.border,
+    borderColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   dotCurrent: {
-    backgroundColor: Colors.primarySurface,
-    borderColor: Colors.primary,
+    backgroundColor: C.primarySurface,
+    borderColor: C.primary,
   },
   dotDone: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: C.primary,
+    borderColor: C.primary,
   },
   stepNum: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.textTertiary,
+    color: C.textTertiary,
   },
   stepNumCurrent: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.primary,
+    color: C.primary,
   },
   checkmark: {
     fontSize: 12,
     fontWeight: '800',
-    color: Colors.textInverse,
+    color: C.textInverse,
   },
   connector: {
     flex: 1,
     height: 2,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
     marginHorizontal: 4,
     marginTop: 13,
   },
   connectorDone: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
   },
   label: {
     fontSize: 10,
     fontWeight: '500',
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textAlign: 'center',
     maxWidth: 60,
   },
   labelCurrent: {
-    color: Colors.primary,
+    color: C.primary,
     fontWeight: '700',
   },
   labelDone: {
-    color: Colors.success,
+    color: C.success,
   },
-})
+  })
+}

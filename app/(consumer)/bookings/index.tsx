@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'
+import React, { useState, useRef, useCallback, useMemo } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Dimensions, Animated, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -12,6 +12,7 @@ import { useBookings } from '@/lib/hooks/useBookings'
 import { Config } from '@/constants/config'
 import { t, type TranslationKey } from '@/constants/i18n'
 import type { Booking, BookingStatus } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 type TabKey = 'upcoming' | 'active' | 'past'
 
@@ -63,6 +64,8 @@ const EMPTY_MESSAGES: Record<TabKey, {
 }
 
 export default function BookingsScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { user, language } = useAuthStore()
   const userId = Config.useMock ? 'usr-001' : (user?.id ?? null)
   const { bookings, loading, error, refetch } = useBookings(userId)
@@ -173,8 +176,8 @@ export default function BookingsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={Colors.primary}
-              colors={[Colors.primary]}
+              tintColor={C.primary}
+              colors={[C.primary]}
             />
           }
           renderItem={({ item }) => (
@@ -211,12 +214,13 @@ export default function BookingsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   title: {
     fontSize: 26,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.md,
     marginBottom: Spacing.base,
@@ -224,7 +228,7 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: C.border,
     position: 'relative',
     marginBottom: Spacing.base,
   },
@@ -237,11 +241,11 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.textTertiary,
+    color: C.textTertiary,
   },
-  tabLabelActive: { color: Colors.primary },
+  tabLabelActive: { color: C.primary },
   tabBadge: {
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
     borderRadius: 10,
     minWidth: 18,
     height: 18,
@@ -249,14 +253,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 5,
   },
-  tabBadgeActive: { backgroundColor: Colors.primarySurface },
-  tabBadgeText: { fontSize: 10, fontWeight: '700', color: Colors.textTertiary },
-  tabBadgeTextActive: { color: Colors.primaryDark },
+  tabBadgeActive: { backgroundColor: C.primarySurface },
+  tabBadgeText: { fontSize: 10, fontWeight: '700', color: C.textTertiary },
+  tabBadgeTextActive: { color: C.primaryDark },
   tabIndicator: {
     position: 'absolute',
     bottom: -1,
     height: 2,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
   },
   list: { paddingHorizontal: Spacing.base, paddingBottom: 100 },
@@ -269,14 +273,15 @@ const styles = StyleSheet.create({
   },
   activeActionBtn: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     paddingVertical: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     minHeight: 44,
     justifyContent: 'center',
   },
-  activeActionText: { fontSize: 13, fontWeight: '600', color: Colors.text },
-})
+  activeActionText: { fontSize: 13, fontWeight: '600', color: C.text },
+  })
+}

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   View, Text, FlatList, TextInput, TouchableOpacity,
   StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator,
@@ -18,6 +18,7 @@ import { translateMessage } from '@/lib/api/translate'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import type { Message, Conversation } from '@/types'
 import { format } from 'date-fns'
+import { useColors } from '@/lib/hooks/useColors'
 
 const MOCK_OPERATOR_REPLIES = [
   'Hi! The vehicle will be ready at 10:00.',
@@ -51,6 +52,8 @@ type MessageBubbleProps = {
 }
 
 function MessageBubble({ msg, isConsumer, translation, onTranslate }: MessageBubbleProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   if (msg.sender_role === 'system') {
     return (
       <View style={styles.systemMsg}>
@@ -88,7 +91,7 @@ function MessageBubble({ msg, isConsumer, translation, onTranslate }: MessageBub
           accessibilityRole="button"
         >
           {translation.loading ? (
-            <ActivityIndicator size="small" color={Colors.primary} style={styles.translateSpinner} />
+            <ActivityIndicator size="small" color={C.primary} style={styles.translateSpinner} />
           ) : (
             <Text style={styles.translateBtnText}>
               {translation.text !== null ? 'Hide translation' : '🌐 Translate'}
@@ -101,6 +104,8 @@ function MessageBubble({ msg, isConsumer, translation, onTranslate }: MessageBub
 }
 
 export default function ConsumerChatScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const id = Config.useMock ? (bookingId ?? 'bk-001') : (bookingId ?? '')
   const { booking } = useBooking(id)
@@ -311,7 +316,7 @@ export default function ConsumerChatScreen() {
             value={inputText}
             onChangeText={setInputText}
             placeholder="Type a message..."
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={C.textTertiary}
             multiline
             maxLength={500}
             returnKeyType="send"
@@ -325,7 +330,7 @@ export default function ConsumerChatScreen() {
             accessibilityLabel="Send message"
             accessibilityRole="button"
           >
-            <Ionicons name="send" size={18} color={Colors.textInverse} />
+            <Ionicons name="send" size={18} color={C.textInverse} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -333,32 +338,33 @@ export default function ConsumerChatScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   messageList: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.md },
   emptyChat: { flex: 1, alignItems: 'center', paddingTop: Spacing.xxxl },
-  emptyChatText: { fontSize: 14, color: Colors.textTertiary },
+  emptyChatText: { fontSize: 14, color: C.textTertiary },
   bubbleWrapper: { marginBottom: Spacing.xs, maxWidth: '80%' },
   bubbleWrapperRight: { alignSelf: 'flex-end', alignItems: 'flex-end' },
   bubbleWrapperLeft: { alignSelf: 'flex-start', alignItems: 'flex-start' },
   consumerBubble: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: 18, borderBottomRightRadius: 4,
     paddingHorizontal: 14, paddingVertical: 10,
   },
   operatorBubble: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: 18, borderBottomLeftRadius: 4,
     paddingHorizontal: 14, paddingVertical: 10,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: C.border,
   },
-  bubbleText: { fontSize: 14, color: Colors.text, lineHeight: 20 },
-  bubbleTextConsumer: { color: Colors.textInverse },
-  bubbleTime: { fontSize: 10, color: Colors.textTertiary, marginTop: 2 },
+  bubbleText: { fontSize: 14, color: C.text, lineHeight: 20 },
+  bubbleTextConsumer: { color: C.textInverse },
+  bubbleTime: { fontSize: 10, color: C.textTertiary, marginTop: 2 },
   bubbleTimeRight: { textAlign: 'right' },
   translationContainer: { marginTop: 6 },
   translationDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginBottom: 6 },
-  translationText: { fontSize: 13, color: Colors.text, lineHeight: 18, fontStyle: 'italic' },
+  translationText: { fontSize: 13, color: C.text, lineHeight: 18, fontStyle: 'italic' },
   translationTextConsumer: { color: 'rgba(255,255,255,0.85)' },
   translateBtn: {
     marginTop: 4,
@@ -366,7 +372,7 @@ const styles = StyleSheet.create({
   },
   translateBtnText: {
     fontSize: 11,
-    color: Colors.primary,
+    color: C.primary,
     fontWeight: '500',
   },
   translateSpinner: {
@@ -374,29 +380,30 @@ const styles = StyleSheet.create({
   },
   systemMsg: { alignSelf: 'center', marginVertical: Spacing.sm, maxWidth: '70%' },
   systemMsgText: {
-    fontSize: 12, color: Colors.textTertiary,
+    fontSize: 12, color: C.textTertiary,
     fontStyle: 'italic', textAlign: 'center', lineHeight: 18,
   },
   tsLabel: {
-    fontSize: 11, color: Colors.textTertiary,
+    fontSize: 11, color: C.textTertiary,
     textAlign: 'center', marginVertical: Spacing.sm,
   },
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end',
     paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
-    backgroundColor: Colors.surface,
-    borderTopWidth: 1, borderTopColor: Colors.border, gap: Spacing.sm,
+    backgroundColor: C.surface,
+    borderTopWidth: 1, borderTopColor: C.border, gap: Spacing.sm,
   },
   textInput: {
-    flex: 1, backgroundColor: Colors.surfaceWarm,
+    flex: 1, backgroundColor: C.surfaceWarm,
     borderRadius: Radius.xxl, paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.sm, fontSize: 14, color: Colors.text,
-    maxHeight: 100, borderWidth: 1, borderColor: Colors.border,
+    paddingVertical: Spacing.sm, fontSize: 14, color: C.text,
+    maxHeight: 100, borderWidth: 1, borderColor: C.border,
   },
   sendBtn: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     alignItems: 'center', justifyContent: 'center',
   },
-  sendBtnDisabled: { backgroundColor: Colors.textTertiary },
-})
+  sendBtnDisabled: { backgroundColor: C.textTertiary },
+  })
+}

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import {
   View, Text, TouchableOpacity, StyleSheet, Dimensions,
   Animated, ScrollView,
@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import type { UserRole } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 const { width } = Dimensions.get('window')
 
@@ -16,6 +17,8 @@ interface OnboardingFlowProps {
 }
 
 function WaveEmoji() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const float = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
@@ -35,9 +38,11 @@ function WaveEmoji() {
 }
 
 function Screen1({ onNext, onSkip }: { onNext: () => void; onSkip: () => void }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <LinearGradient
-      colors={[Colors.background, Colors.surfaceWarm, Colors.background]}
+      colors={[C.background, C.surfaceWarm, C.background]}
       style={styles.screen}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -73,6 +78,8 @@ const HOW_STEPS = [
 ]
 
 function Screen2({ onNext }: { onNext: () => void }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const anims = useRef(HOW_STEPS.map(() => new Animated.Value(0))).current
 
   useEffect(() => {
@@ -88,7 +95,7 @@ function Screen2({ onNext }: { onNext: () => void }) {
   }, [])
 
   return (
-    <View style={[styles.screen, { backgroundColor: Colors.background }]}>
+    <View style={[styles.screen, { backgroundColor: C.background }]}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.screenContent}>
           <Text style={styles.howTitle}>How it works</Text>
@@ -163,8 +170,10 @@ const ROLE_OPTIONS: {
 ]
 
 function Screen3({ onSelectRole }: { onSelectRole: (role: UserRole) => void }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
-    <View style={[styles.screen, { backgroundColor: Colors.background }]}>
+    <View style={[styles.screen, { backgroundColor: C.background }]}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.screenContent} showsVerticalScrollIndicator={false}>
           <Text style={styles.roleTitle}>How will you use{'\n'}Rentivo?</Text>
@@ -195,6 +204,8 @@ function Screen3({ onSelectRole }: { onSelectRole: (role: UserRole) => void }) {
 }
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [screen, setScreen] = useState(0)
   const slideAnim = useRef(new Animated.Value(0)).current
 
@@ -241,10 +252,11 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
     overflow: 'hidden',
   },
   slider: {
@@ -270,19 +282,19 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: 42,
     fontWeight: '900',
-    color: Colors.text,
+    color: C.text,
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
   heroSubtitle: {
     fontSize: 20,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     textAlign: 'center',
     marginBottom: Spacing.base,
   },
   heroCats: {
     fontSize: 15,
-    color: Colors.primary,
+    color: C.primary,
     fontWeight: '600',
     textAlign: 'center',
     letterSpacing: 0.5,
@@ -291,7 +303,7 @@ const styles = StyleSheet.create({
   howTitle: {
     fontSize: 30,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     textAlign: 'center',
     marginBottom: Spacing.xxxl,
   },
@@ -303,17 +315,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.base,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   howStepIconWrap: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -322,18 +334,18 @@ const styles = StyleSheet.create({
   howStepLabel: {
     fontSize: 18,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     marginBottom: 2,
   },
   howStepDesc: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
   },
 
   roleTitle: {
     fontSize: 30,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     textAlign: 'center',
     marginBottom: Spacing.xxxl,
     paddingTop: Spacing.xl,
@@ -345,12 +357,12 @@ const styles = StyleSheet.create({
   roleCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     gap: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     minHeight: 80,
   },
   roleCardEmoji: { fontSize: 36, width: 48, textAlign: 'center' },
@@ -358,16 +370,16 @@ const styles = StyleSheet.create({
   roleCardTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     marginBottom: 2,
   },
   roleCardSub: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
   },
   roleCardArrow: {
     fontSize: 24,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     fontWeight: '300',
   },
 
@@ -377,11 +389,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   primaryBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.base,
     alignItems: 'center',
-    shadowColor: Colors.primary,
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -390,7 +402,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontSize: 17,
     fontWeight: '800',
-    color: Colors.textInverse,
+    color: C.textInverse,
   },
   skipBtn: {
     alignItems: 'center',
@@ -398,7 +410,7 @@ const styles = StyleSheet.create({
   },
   skipBtnText: {
     fontSize: 14,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     fontWeight: '500',
   },
 
@@ -408,16 +420,17 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingBottom: 32,
     paddingTop: 8,
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
   },
   dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
   },
   dotActive: {
     width: 20,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
   },
-})
+  })
+}

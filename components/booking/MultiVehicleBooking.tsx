@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
 import { router } from 'expo-router'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { formatEUR, formatEURDecimal } from '@/lib/utils/formatCurrency'
 import type { Listing } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface MultiVehicleBookingProps {
   primaryListing: Listing
@@ -13,6 +14,8 @@ interface MultiVehicleBookingProps {
 const BUNDLE_DISCOUNT = 0.10 // 10%
 
 export function MultiVehicleBooking({ primaryListing, onDismiss }: MultiVehicleBookingProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [selectedListings, setSelectedListings] = useState<Listing[]>([primaryListing])
 
   const totalPerDay = selectedListings.reduce((sum, l) => sum + l.price_per_day, 0)
@@ -92,47 +95,49 @@ export function MultiVehicleBooking({ primaryListing, onDismiss }: MultiVehicleB
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: { padding: Spacing.base },
   header: { marginBottom: Spacing.base },
-  title: { fontSize: 18, fontWeight: '800', color: Colors.text },
-  subtitle: { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
+  title: { fontSize: 18, fontWeight: '800', color: C.text },
+  subtitle: { fontSize: 13, color: C.textSecondary, marginTop: 4 },
   selectedList: { gap: Spacing.sm, marginBottom: Spacing.base },
   selectedRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surfaceWarm, borderRadius: Radius.lg,
-    padding: Spacing.md, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: C.surfaceWarm, borderRadius: Radius.lg,
+    padding: Spacing.md, borderWidth: 1, borderColor: C.border,
   },
   vehicleInfo: { flex: 1 },
-  vehicleName: { fontSize: 14, fontWeight: '700', color: Colors.text },
-  vehiclePrice: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  vehicleName: { fontSize: 14, fontWeight: '700', color: C.text },
+  vehiclePrice: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
   removeVehicle: {
     width: 24, height: 24, borderRadius: 12,
-    backgroundColor: Colors.errorSurface,
+    backgroundColor: C.errorSurface,
     alignItems: 'center', justifyContent: 'center',
   },
-  removeText: { fontSize: 11, color: Colors.error, fontWeight: '700' },
+  removeText: { fontSize: 11, color: C.error, fontWeight: '700' },
   discountBanner: {
-    backgroundColor: Colors.primarySurface, borderRadius: Radius.lg,
+    backgroundColor: C.primarySurface, borderRadius: Radius.lg,
     padding: Spacing.base, marginBottom: Spacing.base,
-    borderWidth: 1, borderColor: Colors.primaryLight,
+    borderWidth: 1, borderColor: C.primaryLight,
   },
-  discountTitle: { fontSize: 14, fontWeight: '700', color: Colors.primaryDark, marginBottom: Spacing.sm },
+  discountTitle: { fontSize: 14, fontWeight: '700', color: C.primaryDark, marginBottom: Spacing.sm },
   discountRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  discountLabel: { fontSize: 13, color: Colors.textSecondary },
-  discountOriginal: { fontSize: 13, color: Colors.textTertiary, textDecorationLine: 'line-through' },
-  discountSavings: { fontSize: 13, color: Colors.success, fontWeight: '600' },
+  discountLabel: { fontSize: 13, color: C.textSecondary },
+  discountOriginal: { fontSize: 13, color: C.textTertiary, textDecorationLine: 'line-through' },
+  discountSavings: { fontSize: 13, color: C.success, fontWeight: '600' },
   discountTotal: {
-    borderTopWidth: 1, borderTopColor: Colors.primaryLight,
+    borderTopWidth: 1, borderTopColor: C.primaryLight,
     paddingTop: Spacing.sm, marginTop: 4,
   },
-  discountTotalLabel: { fontSize: 14, fontWeight: '700', color: Colors.text },
-  discountTotalValue: { fontSize: 16, fontWeight: '800', color: Colors.primary },
+  discountTotalLabel: { fontSize: 14, fontWeight: '700', color: C.text },
+  discountTotalValue: { fontSize: 16, fontWeight: '800', color: C.primary },
   bookBtn: {
-    backgroundColor: Colors.primary, borderRadius: Radius.pill,
+    backgroundColor: C.primary, borderRadius: Radius.pill,
     paddingVertical: Spacing.base, alignItems: 'center',
-    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
+    shadowColor: C.primary, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
   },
-  bookBtnText: { fontSize: 16, fontWeight: '800', color: Colors.textInverse },
-})
+  bookBtnText: { fontSize: 16, fontWeight: '800', color: C.textInverse },
+  })
+}

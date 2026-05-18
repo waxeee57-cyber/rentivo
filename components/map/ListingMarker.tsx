@@ -1,8 +1,9 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useMemo } from 'react'
 import { View, Text, StyleSheet, Animated } from 'react-native'
 import { Marker } from 'react-native-maps'
 import { Colors, Radius, Shadow } from '@/constants/colors'
 import type { Listing } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface ListingMarkerProps {
   listing: Listing
@@ -11,6 +12,8 @@ interface ListingMarkerProps {
 }
 
 export function ListingMarker({ listing, selected, onPress }: ListingMarkerProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const scale = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
@@ -43,27 +46,29 @@ export function ListingMarker({ listing, selected, onPress }: ListingMarkerProps
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   bubble: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.full,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: C.border,
     ...Shadow.sm,
   },
   bubbleSelected: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: C.primary,
+    borderColor: C.primary,
     ...Shadow.gold,
   },
   label: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
   },
   labelSelected: {
-    color: Colors.textInverse,
+    color: C.textInverse,
   },
-})
+  })
+}

@@ -105,7 +105,7 @@ export default function ConsumerLayout() {
         options={{
           title: t('bookings', language),
           tabBarBadge: bookingsBadge > 0 ? bookingsBadge : undefined,
-          tabBarBadgeStyle: { backgroundColor: Colors.error, fontSize: 10 },
+          tabBarBadgeStyle: { backgroundColor: C.error, fontSize: 10 },
           tabBarIcon: ({ focused }) => (
             <TabIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} />
           ),

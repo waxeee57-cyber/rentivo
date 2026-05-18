@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -12,6 +12,7 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface ApiKey {
   id: string
@@ -62,6 +63,8 @@ const WEBHOOK_EVENTS = [
 ]
 
 export default function ApiSettingsScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { operator } = useAuthStore()
   const { showToast } = useToastStore()
   const [apiKeys, setApiKeys] = useState<ApiKey[]>(MOCK_API_KEYS)
@@ -214,7 +217,7 @@ export default function ApiSettingsScreen() {
                 value={newWebhookUrl}
                 onChangeText={setNewWebhookUrl}
                 placeholder="https://your-server.com/webhook"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={C.textSecondary}
                 autoCapitalize="none"
                 keyboardType="url"
               />
@@ -261,14 +264,15 @@ export default function ApiSettingsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { padding: Spacing.base, gap: Spacing.md },
   card: { gap: Spacing.sm },
   sectionTitle: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
@@ -281,56 +285,56 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   keyInfo: { flex: 1 },
-  keyName: { fontSize: 14, fontWeight: '700', color: Colors.text },
-  keyPrefix: { fontSize: 13, color: Colors.primary, fontFamily: 'monospace', marginTop: 2 },
-  meta: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  keyName: { fontSize: 14, fontWeight: '700', color: C.text },
+  keyPrefix: { fontSize: 13, color: C.primary, fontFamily: 'monospace', marginTop: 2 },
+  meta: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
   keyActions: { alignItems: 'flex-end', gap: Spacing.xs },
   revokeBtn: {
     borderWidth: 1,
-    borderColor: Colors.error,
+    borderColor: C.error,
     borderRadius: Radius.sm,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
     minHeight: 28,
     justifyContent: 'center',
   },
-  revokeBtnText: { fontSize: 12, color: Colors.error, fontWeight: '600' },
-  infoText: { fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' },
+  revokeBtnText: { fontSize: 12, color: C.error, fontWeight: '600' },
+  infoText: { fontSize: 12, color: C.textSecondary, fontStyle: 'italic' },
   webhookRow: {
     paddingVertical: Spacing.sm,
     gap: 4,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: C.border,
   },
-  webhookUrl: { fontSize: 13, color: Colors.text, fontWeight: '600' },
-  webhookEvents: { fontSize: 12, color: Colors.textSecondary },
+  webhookUrl: { fontSize: 13, color: C.text, fontWeight: '600' },
+  webhookEvents: { fontSize: 12, color: C.textSecondary },
   webhookMeta: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', marginTop: 4 },
-  failCount: { fontSize: 12, color: Colors.error },
+  failCount: { fontSize: 12, color: C.error },
   addWebhook: { marginTop: Spacing.md, gap: Spacing.sm },
   urlInput: {
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
     borderRadius: Radius.md,
     padding: Spacing.md,
-    color: Colors.text,
+    color: C.text,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     minHeight: 44,
   },
-  eventsLabel: { fontSize: 13, color: Colors.text, fontWeight: '600' },
+  eventsLabel: { fontSize: 13, color: C.text, fontWeight: '600' },
   eventsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
   eventChip: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
     borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     minHeight: 28,
     justifyContent: 'center',
   },
-  eventChipActive: { backgroundColor: Colors.primarySurface, borderColor: Colors.primary },
-  eventChipText: { fontSize: 11, color: Colors.textSecondary },
-  eventChipTextActive: { color: Colors.primaryDark },
+  eventChipActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
+  eventChipText: { fontSize: 11, color: C.textSecondary },
+  eventChipTextActive: { color: C.primaryDark },
   addBtns: { flexDirection: 'row', gap: Spacing.sm, justifyContent: 'flex-end' },
   addWebhookBtn: {
     padding: Spacing.md,
@@ -338,5 +342,6 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
   },
-  addWebhookBtnText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
-})
+  addWebhookBtnText: { fontSize: 14, color: C.primary, fontWeight: '600' },
+  })
+}

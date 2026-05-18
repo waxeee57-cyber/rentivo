@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 const { width, height } = Dimensions.get('window')
 
@@ -36,6 +37,8 @@ interface CoachmarksProps {
 }
 
 export function Coachmarks({ screen }: CoachmarksProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [visible, setVisible] = useState(false)
   const [step, setStep] = useState(0)
 
@@ -94,34 +97,36 @@ export function Coachmarks({ screen }: CoachmarksProps) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: Colors.overlay,
+    backgroundColor: C.overlay,
     justifyContent: 'flex-end',
     paddingBottom: 160,
     paddingHorizontal: Spacing.base,
   },
   tooltip: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   stepRow: { flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.md },
   stepDot: {
     width: 8, height: 8, borderRadius: 4,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
   },
-  stepDotActive: { backgroundColor: Colors.primary, width: 20 },
-  title: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: Spacing.sm },
-  body: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
+  stepDotActive: { backgroundColor: C.primary, width: 20 },
+  title: { fontSize: 18, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
+  body: { fontSize: 14, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
   actions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  skip: { fontSize: 14, color: Colors.textTertiary, fontWeight: '600' },
+  skip: { fontSize: 14, color: C.textTertiary, fontWeight: '600' },
   nextBtn: {
-    backgroundColor: Colors.primary, borderRadius: Radius.pill,
+    backgroundColor: C.primary, borderRadius: Radius.pill,
     paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
   },
-  nextText: { fontSize: 14, fontWeight: '800', color: Colors.textInverse },
-})
+  nextText: { fontSize: 14, fontWeight: '800', color: C.textInverse },
+  })
+}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -9,8 +9,11 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { useWishlistStore, syncWishlistFromSupabase } from '@/lib/store/useWishlistStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function WishlistScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { items } = useWishlistStore()
   const { language, user } = useAuthStore()
   const [syncing, setSyncing] = useState(false)
@@ -28,7 +31,7 @@ export default function WishlistScreen() {
 
       {syncing && items.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <ActivityIndicator size="large" color={C.primary} />
         </View>
       ) : items.length === 0 ? (
         <EmptyState
@@ -56,9 +59,11 @@ export default function WishlistScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   grid: { padding: Spacing.base, paddingBottom: 100 },
   columnWrapper: { justifyContent: 'space-between' },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-})
+  })
+}

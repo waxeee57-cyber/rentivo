@@ -1,4 +1,4 @@
-import { useEffect, useState, Fragment, useCallback } from 'react'
+import { useEffect, useState, Fragment, useCallback, useMemo } from 'react'
 import { useFonts } from 'expo-font'
 import * as SplashScreen from 'expo-splash-screen'
 import { Ionicons } from '@expo/vector-icons'
@@ -26,6 +26,7 @@ SplashScreen.preventAutoHideAsync()
 import { t } from '@/constants/i18n'
 import { Toast } from '@/components/ui/Toast'
 import { OfflineBanner } from '@/components/ui/OfflineBanner'
+import { useColors } from '@/lib/hooks/useColors'
 
 function GdprModal({ visible, onAccept, onManage, language }: {
   visible: boolean
@@ -33,6 +34,8 @@ function GdprModal({ visible, onAccept, onManage, language }: {
   onManage: () => void
   language: 'en' | 'es' | 'hu'
 }) {
+  const C = useColors()
+  const gdprStyles = useMemo(() => makeGdprStyles(C), [C])
   return (
     <Modal transparent visible={visible} animationType="fade">
       <View style={gdprStyles.backdrop}>
@@ -62,16 +65,17 @@ function GdprModal({ visible, onAccept, onManage, language }: {
   )
 }
 
-const gdprStyles = StyleSheet.create({
+function makeGdprStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: Colors.overlay,
+    backgroundColor: C.overlay,
     alignItems: 'center',
     justifyContent: 'flex-end',
     padding: Spacing.base,
   },
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xxl,
     padding: Spacing.xl,
     width: '100%',
@@ -79,14 +83,14 @@ const gdprStyles = StyleSheet.create({
     marginBottom: Spacing.base,
   },
   logo: { fontSize: 40, marginBottom: Spacing.sm },
-  appName: { fontSize: 20, fontWeight: '800', color: Colors.text, marginBottom: Spacing.md },
-  title: { fontSize: 18, fontWeight: '700', color: Colors.text, marginBottom: Spacing.sm, textAlign: 'center' },
-  body: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: Spacing.md },
+  appName: { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: Spacing.md },
+  title: { fontSize: 18, fontWeight: '700', color: C.text, marginBottom: Spacing.sm, textAlign: 'center' },
+  body: { fontSize: 14, color: C.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: Spacing.md },
   links: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.xl },
-  link: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
-  linkSep: { fontSize: 13, color: Colors.textTertiary },
+  link: { fontSize: 13, color: C.primary, fontWeight: '600' },
+  linkSep: { fontSize: 13, color: C.textTertiary },
   acceptBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xxl,
@@ -94,10 +98,13 @@ const gdprStyles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.sm,
   },
-  acceptBtnText: { fontSize: 16, fontWeight: '700', color: Colors.textInverse },
+  acceptBtnText: { fontSize: 16, fontWeight: '700', color: C.textInverse },
   manageBtn: { paddingVertical: Spacing.sm },
-  manageBtnText: { fontSize: 14, color: Colors.textSecondary },
-})
+  manageBtnText: { fontSize: 14, color: C.textSecondary },
+  })
+}
+
+
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({ ...Ionicons.font })

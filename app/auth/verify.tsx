@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity, Alert,
 } from 'react-native'
@@ -9,8 +9,11 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function VerifyScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
@@ -125,19 +128,21 @@ export default function VerifyScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   back: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
-  backText: { fontSize: 16, color: Colors.primary, fontWeight: '600' },
+  backText: { fontSize: 16, color: C.primary, fontWeight: '600' },
   content: { flex: 1, padding: Spacing.xl, justifyContent: 'center' },
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, marginBottom: Spacing.sm },
-  subtitle: { fontSize: 15, color: Colors.textSecondary, marginBottom: Spacing.xl },
+  title: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
+  subtitle: { fontSize: 15, color: C.textSecondary, marginBottom: Spacing.xl },
   codeRow: { flexDirection: 'row', justifyContent: 'space-between' },
   codeBox: {
     width: 46, height: 56, borderRadius: Radius.lg,
-    borderWidth: 1.5, borderColor: Colors.border,
+    borderWidth: 1.5, borderColor: C.border,
     textAlign: 'center', fontSize: 22, fontWeight: '700',
-    color: Colors.text, backgroundColor: Colors.surface,
+    color: C.text, backgroundColor: C.surface,
   },
-  codeBoxFilled: { borderColor: Colors.primary, backgroundColor: Colors.primarySurface },
-})
+  codeBoxFilled: { borderColor: C.primary, backgroundColor: C.primarySurface },
+  })
+}

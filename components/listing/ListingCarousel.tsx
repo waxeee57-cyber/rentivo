@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useMemo } from 'react'
 import { View, ScrollView, Dimensions, Text, StyleSheet } from 'react-native'
 import { Image } from 'expo-image'
-import { Colors, Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 const { width } = Dimensions.get('window')
 
@@ -11,6 +12,8 @@ interface ListingCarouselProps {
 }
 
 export function ListingCarousel({ images, height = 300 }: ListingCarouselProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [currentIndex, setCurrentIndex] = useState(0)
   const scrollRef = useRef<ScrollView>(null)
 
@@ -63,9 +66,10 @@ export function ListingCarousel({ images, height = 300 }: ListingCarouselProps) 
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   placeholder: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -81,17 +85,18 @@ const styles = StyleSheet.create({
   },
   dot: {
     width: 6, height: 6, borderRadius: 3,
-    backgroundColor: Colors.overlayLight,
+    backgroundColor: C.overlayLight,
   },
-  dotActive: { backgroundColor: Colors.surface, width: 18 },
+  dotActive: { backgroundColor: C.surface, width: 18 },
   counter: {
     position: 'absolute',
     top: Spacing.base,
     right: Spacing.base,
-    backgroundColor: Colors.overlay,
+    backgroundColor: C.overlay,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
   },
-  counterText: { color: Colors.textInverse, fontSize: 12, fontWeight: '600' },
-})
+  counterText: { color: C.textInverse, fontSize: 12, fontWeight: '600' },
+  })
+}

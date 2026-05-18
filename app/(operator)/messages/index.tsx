@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, RefreshControl,
@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
 import type { Conversation } from '@/types'
 import { format } from 'date-fns'
+import { useColors } from '@/lib/hooks/useColors'
 
 function formatTime(iso: string): string {
   try {
@@ -26,6 +27,8 @@ function formatTime(iso: string): string {
 }
 
 export default function OperatorMessagesScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const router = useRouter()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [refreshing, setRefreshing] = useState(false)
@@ -73,7 +76,7 @@ export default function OperatorMessagesScreen() {
         keyExtractor={c => c.id}
         contentContainerStyle={conversations.length === 0 ? styles.emptyContainer : styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.primary} />
         }
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.row} onPress={() => handlePress(item)} activeOpacity={0.7} accessibilityLabel={`Message from ${item.guest_name ?? 'Guest'}${item.unread_operator > 0 ? `, ${item.unread_operator} unread` : ''}`} accessibilityRole="button">
@@ -121,15 +124,16 @@ export default function OperatorMessagesScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   listContent: { paddingVertical: Spacing.sm, paddingBottom: 100 },
   emptyContainer: { flex: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 120, paddingHorizontal: Spacing.xl },
   emptyIcon: { fontSize: 48, marginBottom: Spacing.base },
-  emptyTitle: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: Spacing.xs },
-  emptySubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
-  separator: { height: 1, backgroundColor: Colors.border, marginLeft: 72 },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: C.text, marginBottom: Spacing.xs },
+  emptySubtitle: { fontSize: 14, color: C.textSecondary, textAlign: 'center' },
+  separator: { height: 1, backgroundColor: C.border, marginLeft: 72 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -141,11 +145,11 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 20, color: Colors.primary, fontWeight: '700' },
+  avatarText: { fontSize: 20, color: C.primary, fontWeight: '700' },
   rowContent: { flex: 1, gap: 4 },
   rowTop: {
     flexDirection: 'row',
@@ -157,13 +161,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  guestName: { fontSize: 15, fontWeight: '600', color: Colors.text, flex: 1, marginRight: 8 },
+  guestName: { fontSize: 15, fontWeight: '600', color: C.text, flex: 1, marginRight: 8 },
   guestNameUnread: { fontWeight: '700' },
-  time: { fontSize: 12, color: Colors.textTertiary },
-  lastMsg: { fontSize: 14, color: Colors.textSecondary, flex: 1, marginRight: 8 },
-  lastMsgUnread: { color: Colors.text, fontWeight: '500' },
+  time: { fontSize: 12, color: C.textTertiary },
+  lastMsg: { fontSize: 14, color: C.textSecondary, flex: 1, marginRight: 8 },
+  lastMsgUnread: { color: C.text, fontWeight: '500' },
   badge: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     minWidth: 20,
     height: 20,
@@ -171,5 +175,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 6,
   },
-  badgeText: { fontSize: 11, fontWeight: '700', color: Colors.textInverse },
-})
+  badgeText: { fontSize: 11, fontWeight: '700', color: C.textInverse },
+  })
+}

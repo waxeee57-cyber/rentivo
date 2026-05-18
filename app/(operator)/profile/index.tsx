@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -11,8 +11,11 @@ import { Divider } from '@/components/ui/Divider'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function OperatorProfileScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { operator, setRole, signOut, language, setLanguage } = useAuthStore()
   const op = Config.useMock ? MOCK_OPERATOR : operator
 
@@ -112,6 +115,8 @@ export default function OperatorProfileScreen() {
 }
 
 function MenuItem({ label, onPress }: { label: string; onPress: () => void }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <TouchableOpacity
       style={styles.menuItem}
@@ -125,29 +130,30 @@ function MenuItem({ label, onPress }: { label: string; onPress: () => void }) {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md, marginBottom: Spacing.lg },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
+  title: { fontSize: 26, fontWeight: '800', color: C.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md, marginBottom: Spacing.lg },
   profileSection: { alignItems: 'center', marginBottom: Spacing.xl },
-  name: { fontSize: 20, fontWeight: '700', color: Colors.text, marginTop: Spacing.md },
-  city: { fontSize: 14, color: Colors.textSecondary, marginTop: 4 },
-  verified: { fontSize: 13, color: Colors.success, fontWeight: '600', marginTop: 4 },
+  name: { fontSize: 20, fontWeight: '700', color: C.text, marginTop: Spacing.md },
+  city: { fontSize: 14, color: C.textSecondary, marginTop: 4 },
+  verified: { fontSize: 13, color: C.success, fontWeight: '600', marginTop: 4 },
   card: { marginHorizontal: Spacing.base, marginBottom: Spacing.md },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: Colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: C.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
   langRow: { flexDirection: 'row', gap: Spacing.sm },
   langBtn: {
     flex: 1,
     padding: Spacing.sm,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     alignItems: 'center',
     minHeight: 44,
     justifyContent: 'center',
   },
-  langBtnActive: { backgroundColor: Colors.primarySurface, borderColor: Colors.primary },
-  langText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600' },
-  langTextActive: { color: Colors.primaryDark },
+  langBtnActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
+  langText: { fontSize: 13, color: C.textSecondary, fontWeight: '600' },
+  langTextActive: { color: C.primaryDark },
   switchRoleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -156,13 +162,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderColor: C.border,
+    backgroundColor: C.surface,
     minHeight: 44,
   },
   switchRoleIcon: { fontSize: 18 },
-  switchRoleText: { flex: 1, fontSize: 15, color: Colors.text, fontWeight: '600' },
-  switchRoleChevron: { fontSize: 20, color: Colors.textTertiary },
+  switchRoleText: { flex: 1, fontSize: 15, color: C.text, fontWeight: '600' },
+  switchRoleChevron: { fontSize: 20, color: C.textTertiary },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -170,9 +176,10 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     minHeight: 44,
   },
-  menuLabel: { fontSize: 15, color: Colors.text },
-  menuChevron: { fontSize: 20, color: Colors.textTertiary },
+  menuLabel: { fontSize: 15, color: C.text },
+  menuChevron: { fontSize: 20, color: C.textTertiary },
   signOutBtn: { marginHorizontal: Spacing.base, marginTop: Spacing.base, padding: Spacing.base, alignItems: 'center', minHeight: 44 },
-  signOutText: { fontSize: 16, color: Colors.error, fontWeight: '600' },
-  appVersion: { textAlign: 'center', fontSize: 12, color: Colors.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
-})
+  signOutText: { fontSize: 16, color: C.error, fontWeight: '600' },
+  appVersion: { textAlign: 'center', fontSize: 12, color: C.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
+  })
+}

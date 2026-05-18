@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, StyleSheet, ViewStyle } from 'react-native'
 import { Colors, Radius, Spacing } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface CardProps {
   children: React.ReactNode
@@ -9,6 +10,8 @@ interface CardProps {
 }
 
 export function Card({ children, style, padding = Spacing.base }: CardProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={[styles.card, { padding }, style]}>
       {children}
@@ -16,16 +19,18 @@ export function Card({ children, style, padding = Spacing.base }: CardProps) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: Colors.surfaceCard,
+    backgroundColor: C.surfaceCard,
     borderRadius: Radius.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 2,
   },
-})
+  })
+}

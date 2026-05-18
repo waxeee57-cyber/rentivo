@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Linking, Animated, Share, Switch } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -22,6 +22,7 @@ export default function ProfileScreen() {
   const { showToast } = useToastStore()
   const { isDark, toggleTheme } = useThemeStore()
   const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [referralCode] = useState(
     Config.useMock ? 'ROLI2026' : `REF${(user?.id ?? 'GUEST').slice(0, 6).toUpperCase()}`,
   )
@@ -497,6 +498,8 @@ function MenuItem({
   textColor?: string
   chevronColor?: string
 }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <TouchableOpacity
       style={styles.menuItem}
@@ -504,75 +507,76 @@ function MenuItem({
       accessibilityLabel={label}
       accessibilityRole="button"
     >
-      <Text style={[styles.menuLabel, { color: textColor ?? Colors.text }, danger && styles.menuLabelDanger]}>{label}</Text>
-      <Text style={[styles.menuChevron, { color: chevronColor ?? Colors.textTertiary }]}>›</Text>
+      <Text style={[styles.menuLabel, { color: textColor ?? C.text }, danger && styles.menuLabelDanger]}>{label}</Text>
+      <Text style={[styles.menuChevron, { color: chevronColor ?? C.textTertiary }]}>›</Text>
     </TouchableOpacity>
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md, marginBottom: Spacing.lg },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
+  title: { fontSize: 26, fontWeight: '800', color: C.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md, marginBottom: Spacing.lg },
   profileSection: { alignItems: 'center', marginBottom: Spacing.xl },
-  name: { fontSize: 20, fontWeight: '700', color: Colors.text, marginTop: Spacing.md },
-  email: { fontSize: 14, color: Colors.textSecondary, marginTop: 4 },
-  memberSince: { fontSize: 12, color: Colors.textTertiary, marginTop: 4 },
+  name: { fontSize: 20, fontWeight: '700', color: C.text, marginTop: Spacing.md },
+  email: { fontSize: 14, color: C.textSecondary, marginTop: 4 },
+  memberSince: { fontSize: 12, color: C.textTertiary, marginTop: 4 },
   verifyBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
     marginTop: Spacing.md,
-    backgroundColor: Colors.warningSurface,
+    backgroundColor: C.warningSurface,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.xs,
     borderWidth: 1,
-    borderColor: Colors.warning,
+    borderColor: C.warning,
     minHeight: 44,
   },
-  verifyBannerText: { fontSize: 12, color: Colors.primaryDark, fontWeight: '600' },
-  verifyBannerArrow: { fontSize: 12, color: Colors.primaryDark },
+  verifyBannerText: { fontSize: 12, color: C.primaryDark, fontWeight: '600' },
+  verifyBannerArrow: { fontSize: 12, color: C.primaryDark },
   card: { marginHorizontal: Spacing.base, marginBottom: Spacing.md },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: Colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: C.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
   quickRow: { flexDirection: 'row', gap: Spacing.sm },
   quickBtn: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: Spacing.md,
     borderRadius: Radius.lg,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     minHeight: 44,
   },
   quickIcon: { fontSize: 22, marginBottom: 4 },
-  quickLabel: { fontSize: 11, color: Colors.textSecondary, fontWeight: '600', textAlign: 'center' },
+  quickLabel: { fontSize: 11, color: C.textSecondary, fontWeight: '600', textAlign: 'center' },
   langRow: { flexDirection: 'row', gap: Spacing.sm },
   langBtn: {
     flex: 1,
     padding: Spacing.sm,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     alignItems: 'center',
     minHeight: 44,
     justifyContent: 'center',
   },
-  langBtnActive: { backgroundColor: Colors.primarySurface, borderColor: Colors.primary },
-  langText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600' },
-  langTextActive: { color: Colors.primaryDark },
+  langBtnActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
+  langText: { fontSize: 13, color: C.textSecondary, fontWeight: '600' },
+  langTextActive: { color: C.primaryDark },
   menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.sm, minHeight: 44 },
-  menuLabel: { fontSize: 15, color: Colors.text },
-  menuLabelDanger: { color: Colors.error },
-  menuChevron: { fontSize: 20, color: Colors.textTertiary },
+  menuLabel: { fontSize: 15, color: C.text },
+  menuLabelDanger: { color: C.error },
+  menuChevron: { fontSize: 20, color: C.textTertiary },
   signOutBtn: { marginHorizontal: Spacing.base, marginTop: Spacing.base, padding: Spacing.base, alignItems: 'center', minHeight: 44 },
-  signOutText: { fontSize: 16, color: Colors.error, fontWeight: '600' },
-  appVersion: { textAlign: 'center', fontSize: 12, color: Colors.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
+  signOutText: { fontSize: 16, color: C.error, fontWeight: '600' },
+  appVersion: { textAlign: 'center', fontSize: 12, color: C.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: Spacing.lg,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xl,
@@ -583,9 +587,9 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   statItem: { flex: 1, alignItems: 'center' },
-  statNum: { fontSize: 20, fontWeight: '800', color: Colors.text, marginBottom: 2 },
-  statLabel: { fontSize: 11, color: Colors.textTertiary, fontWeight: '600', textTransform: 'uppercase' },
-  statDivider: { width: 1, height: 32, backgroundColor: Colors.border },
+  statNum: { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: 2 },
+  statLabel: { fontSize: 11, color: C.textTertiary, fontWeight: '600', textTransform: 'uppercase' },
+  statDivider: { width: 1, height: 32, backgroundColor: C.border },
   switchRoleColumn: { gap: Spacing.sm },
   switchRoleBtn: {
     flexDirection: 'row',
@@ -595,28 +599,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderColor: C.border,
+    backgroundColor: C.surface,
     minHeight: 44,
   },
   switchRoleIcon: { fontSize: 18 },
-  switchRoleText: { flex: 1, fontSize: 15, color: Colors.text, fontWeight: '600' },
-  switchRoleTextAccent: { color: Colors.primary },
-  switchRoleBtnAccent: { borderColor: Colors.primary, borderStyle: 'dashed' },
-  switchRoleChevron: { fontSize: 20, color: Colors.textTertiary },
+  switchRoleText: { flex: 1, fontSize: 15, color: C.text, fontWeight: '600' },
+  switchRoleTextAccent: { color: C.primary },
+  switchRoleBtnAccent: { borderColor: C.primary, borderStyle: 'dashed' },
+  switchRoleChevron: { fontSize: 20, color: C.textTertiary },
   // Referral
   referralCard: {
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
     borderRadius: Radius.md,
     padding: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.borderGold,
+    borderColor: C.borderGold,
   },
-  referralDesc: { color: Colors.textSecondary, fontSize: 13, marginBottom: Spacing.md, lineHeight: 20 },
+  referralDesc: { color: C.textSecondary, fontSize: 13, marginBottom: Spacing.md, lineHeight: 20 },
   referralCodeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  referralCode: { color: Colors.primary, fontSize: 20, fontWeight: '800', letterSpacing: 2, flex: 1 },
+  referralCode: { color: C.primary, fontSize: 20, fontWeight: '800', letterSpacing: 2, flex: 1 },
   shareBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.sm,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
@@ -624,7 +628,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  shareBtnText: { color: Colors.background, fontWeight: '700', fontSize: 14 },
+  shareBtnText: { color: C.background, fontWeight: '700', fontSize: 14 },
   // Loyalty
   loyaltyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
   tierBadge: {
@@ -635,17 +639,18 @@ const styles = StyleSheet.create({
   },
   tierBadgeText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8 },
   loyaltyPoints: { fontSize: 28, fontWeight: '800', marginBottom: Spacing.sm },
-  loyaltyPointsLabel: { fontSize: 14, fontWeight: '400', color: Colors.textSecondary },
+  loyaltyPointsLabel: { fontSize: 14, fontWeight: '400', color: C.textSecondary },
   progressTrack: {
     height: 8,
     borderRadius: Radius.pill,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
     overflow: 'hidden',
     marginBottom: Spacing.sm,
   },
   progressFill: { height: '100%', borderRadius: Radius.pill },
-  loyaltyNextText: { fontSize: 13, color: Colors.textSecondary, marginBottom: Spacing.xs },
+  loyaltyNextText: { fontSize: 13, color: C.textSecondary, marginBottom: Spacing.xs },
   perkRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: 4 },
   perkDot: { fontSize: 8 },
-  perkText: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
-})
+  perkText: { fontSize: 13, color: C.textSecondary, flex: 1 },
+  })
+}

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ListRenderItemInfo, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface AdminUser {
   id: string
@@ -24,6 +25,8 @@ const MOCK_USERS: AdminUser[] = [
 ]
 
 export default function AdminUsersScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [users, setUsers] = useState<AdminUser[]>(Config.useMock ? MOCK_USERS : [])
   const [loadingList, setLoadingList] = useState(!Config.useMock)
   const { showToast } = useToastStore()
@@ -103,7 +106,7 @@ export default function AdminUsersScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScreenHeader title="Users" onBack={() => router.back()} />
-        <ActivityIndicator style={{ marginTop: 40 }} color={Colors.primary} />
+        <ActivityIndicator style={{ marginTop: 40 }} color={C.primary} />
       </SafeAreaView>
     )
   }
@@ -121,24 +124,25 @@ export default function AdminUsersScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
   },
   list: {
     padding: Spacing.base,
     gap: Spacing.sm,
   },
   row: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   info: {
     flex: 1,
@@ -146,11 +150,11 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
   },
   email: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginTop: 2,
   },
   actionBtn: {
@@ -158,19 +162,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.error,
+    borderColor: C.error,
     minHeight: 44,
     justifyContent: 'center',
   },
   actionBtnUnban: {
-    borderColor: Colors.success,
+    borderColor: C.success,
   },
   actionBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.error,
+    color: C.error,
   },
   actionBtnTextUnban: {
-    color: Colors.success,
+    color: C.success,
   },
-})
+  })
+}

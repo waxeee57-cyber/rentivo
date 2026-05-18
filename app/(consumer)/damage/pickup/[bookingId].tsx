@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, ScrollView, Switch, TextInput, StyleSheet, TouchableOpacity,
 } from 'react-native'
@@ -21,6 +21,7 @@ import { getError } from '@/lib/errors'
 import { Config } from '@/constants/config'
 import type { PhotoSlot } from '@/components/damage/DamagePhotoGrid'
 import type { FuelLevel } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 const FUEL_LEVELS: { key: FuelLevel; label: string }[] = [
   { key: 'empty', label: 'Empty' },
@@ -42,15 +43,14 @@ interface ValidationErrors {
 }
 
 function FieldError({ message }: { message: string | undefined }) {
+  const C = useColors()
   if (!message) return null
-  return <Text style={fieldErrorStyles.text}>⚠ {message}</Text>
+  return <Text style={{ fontSize: 12, color: C.error, fontWeight: '600', marginTop: 4, marginBottom: 4 }}>⚠ {message}</Text>
 }
 
-const fieldErrorStyles = StyleSheet.create({
-  text: { fontSize: 12, color: Colors.error, fontWeight: '600', marginTop: 4, marginBottom: 4 },
-})
-
 export default function PickupDamageScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const bkId = Config.useMock ? 'bk-003' : (bookingId ?? '')
   const { showToast } = useToastStore()
@@ -220,7 +220,7 @@ export default function PickupDamageScreen() {
                 value={mileage}
                 onChangeText={v => { setMileage(v); setErrors(prev => ({ ...prev, mileage: undefined })) }}
                 keyboardType="numeric"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={C.textTertiary}
                 accessibilityLabel="Current mileage"
               />
               <FieldError message={errors.mileage} />
@@ -248,7 +248,7 @@ export default function PickupDamageScreen() {
                 <Switch
                   value={damageFound}
                   onValueChange={v => { setDamageFound(v); setErrors(prev => ({ ...prev, damageDescription: undefined })) }}
-                  trackColor={{ true: Colors.error, false: Colors.border }}
+                  trackColor={{ true: C.error, false: C.border }}
                   accessibilityLabel="Damage found toggle"
                 />
               </View>
@@ -261,7 +261,7 @@ export default function PickupDamageScreen() {
                     onChangeText={v => { setDamageNotes(v); setErrors(prev => ({ ...prev, damageDescription: undefined })) }}
                     multiline
                     numberOfLines={4}
-                    placeholderTextColor={Colors.textTertiary}
+                    placeholderTextColor={C.textTertiary}
                     accessibilityLabel="Damage description"
                   />
                   <FieldError message={errors.damageDescription} />
@@ -278,7 +278,7 @@ export default function PickupDamageScreen() {
                 onChangeText={setNotes}
                 multiline
                 numberOfLines={3}
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={C.textTertiary}
               />
             </Card>
           </>
@@ -332,38 +332,40 @@ export default function PickupDamageScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { paddingBottom: Spacing.xxxl },
   stepHint: {
-    fontSize: 14, color: Colors.textSecondary,
+    fontSize: 14, color: C.textSecondary,
     paddingHorizontal: Spacing.base, marginBottom: Spacing.base, lineHeight: 20,
   },
   sectionTitle: {
-    fontSize: 13, fontWeight: '700', color: Colors.text,
+    fontSize: 13, fontWeight: '700', color: C.text,
     marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 0.5,
   },
   card: { marginHorizontal: Spacing.base, marginBottom: Spacing.base },
   mileageInput: {
-    borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg,
-    padding: Spacing.md, fontSize: 15, color: Colors.text, marginBottom: Spacing.sm,
+    borderWidth: 1, borderColor: C.border, borderRadius: Radius.lg,
+    padding: Spacing.md, fontSize: 15, color: C.text, marginBottom: Spacing.sm,
   },
-  inputError: { borderColor: Colors.error },
+  inputError: { borderColor: C.error },
   fuelRow: { flexDirection: 'row', gap: Spacing.xs },
   fuelBtn: {
     flex: 1, padding: Spacing.sm, borderRadius: Radius.lg,
-    borderWidth: 1, borderColor: Colors.border, alignItems: 'center',
+    borderWidth: 1, borderColor: C.border, alignItems: 'center',
   },
-  fuelBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  fuelText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '600' },
-  fuelTextActive: { color: Colors.textInverse },
+  fuelBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
+  fuelText: { fontSize: 12, color: C.textSecondary, fontWeight: '600' },
+  fuelTextActive: { color: C.textInverse },
   damageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  damageLabel: { fontSize: 15, color: Colors.text, fontWeight: '500' },
+  damageLabel: { fontSize: 15, color: C.text, fontWeight: '500' },
   textArea: {
-    borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg,
-    padding: Spacing.md, fontSize: 14, color: Colors.text, minHeight: 80,
+    borderWidth: 1, borderColor: C.border, borderRadius: Radius.lg,
+    padding: Spacing.md, fontSize: 14, color: C.text, minHeight: 80,
     textAlignVertical: 'top',
   },
-  sigSubtitle: { fontSize: 13, color: Colors.textSecondary, marginBottom: Spacing.md },
-  sigConfirm: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', lineHeight: 18 },
-})
+  sigSubtitle: { fontSize: 13, color: C.textSecondary, marginBottom: Spacing.md },
+  sigConfirm: { fontSize: 12, color: C.textTertiary, textAlign: 'center', lineHeight: 18 },
+  })
+}

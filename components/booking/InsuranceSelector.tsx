@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { INSURANCE_PACKAGES } from '@/types'
 import type { InsuranceId } from '@/types'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface InsuranceSelectorProps {
   selected: InsuranceId
@@ -13,6 +14,8 @@ interface InsuranceSelectorProps {
 }
 
 export function InsuranceSelector({ selected, onSelect, language }: InsuranceSelectorProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>{t('insuranceTitle', language)}</Text>
@@ -73,22 +76,23 @@ export function InsuranceSelector({ selected, onSelect, language }: InsuranceSel
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     marginBottom: Spacing.xl,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.base,
     marginTop: Spacing.xl,
   },
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: C.border,
     padding: Spacing.base,
     marginBottom: Spacing.sm,
     minHeight: 72,
@@ -97,8 +101,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   cardSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primarySurface,
+    borderColor: C.primary,
+    backgroundColor: C.primarySurface,
   },
   cardRow: {
     flex: 1,
@@ -110,7 +114,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.sm,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -130,13 +134,13 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
   },
   nameSelected: {
-    color: Colors.primary,
+    color: C.primary,
   },
   recommendedBadge: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -144,13 +148,13 @@ const styles = StyleSheet.create({
   recommendedText: {
     fontSize: 10,
     fontWeight: '700',
-    color: Colors.textInverse,
+    color: C.textInverse,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   desc: {
     fontSize: 12,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     lineHeight: 16,
   },
   priceBlock: {
@@ -160,19 +164,19 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
   },
   priceSelected: {
-    color: Colors.primary,
+    color: C.primary,
   },
   priceFree: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.success,
+    color: C.success,
   },
   priceUnit: {
     fontSize: 10,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     fontWeight: '500',
   },
   radioOuter: {
@@ -180,18 +184,19 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: Colors.border,
+    borderColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: Spacing.xs,
   },
   radioOuterSelected: {
-    borderColor: Colors.primary,
+    borderColor: C.primary,
   },
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
   },
-})
+  })
+}

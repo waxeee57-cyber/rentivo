@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import { Image } from 'expo-image'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 import { useCamera } from '@/lib/hooks/useCamera'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface PhotoCaptureProps {
   label: string
@@ -11,6 +12,8 @@ interface PhotoCaptureProps {
 }
 
 export function PhotoCapture({ label, uri, onCapture }: PhotoCaptureProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { takePicture, pickFromGallery, loading } = useCamera()
 
   const handlePress = () => {
@@ -54,7 +57,8 @@ export function PhotoCapture({ label, uri, onCapture }: PhotoCaptureProps) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   slot: {
     width: '47%',
     aspectRatio: 1,
@@ -62,13 +66,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: Colors.borderWarm,
-    backgroundColor: Colors.surfaceWarm,
+    borderColor: C.borderWarm,
+    backgroundColor: C.surfaceWarm,
     marginBottom: Spacing.md,
   },
   slotFilled: {
     borderStyle: 'solid',
-    borderColor: Colors.success,
+    borderColor: C.success,
   },
   image: { width: '100%', height: '100%' },
   placeholder: {
@@ -78,7 +82,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   cameraIcon: { fontSize: 28, marginBottom: 6 },
-  label: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', fontWeight: '600' },
+  label: { fontSize: 12, color: C.textTertiary, textAlign: 'center', fontWeight: '600' },
   checkOverlay: {
     position: 'absolute',
     bottom: 6,
@@ -86,18 +90,19 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: Colors.success,
+    backgroundColor: C.success,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkIcon: { fontSize: 12, color: Colors.white, fontWeight: '800' },
+  checkIcon: { fontSize: 12, color: C.white, fontWeight: '800' },
   retakeOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.overlayLight,
+    backgroundColor: C.overlayLight,
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingBottom: 6,
     opacity: 0,
   },
-  retakeText: { fontSize: 11, color: Colors.white, fontWeight: '700' },
-})
+  retakeText: { fontSize: 11, color: C.white, fontWeight: '700' },
+  })
+}

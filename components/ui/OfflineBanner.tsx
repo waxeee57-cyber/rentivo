@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { View, Text, StyleSheet, AppState, AppStateStatus } from 'react-native'
 import { Colors, Spacing } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 function checkConnection(setOnline: (v: boolean) => void) {
   fetch('https://captive.apple.com/hotspot-detect.html', {
@@ -12,6 +13,8 @@ function checkConnection(setOnline: (v: boolean) => void) {
 }
 
 export function OfflineBanner() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [isOnline, setIsOnline] = useState(true)
   const [dismissed, setDismissed] = useState(false)
   const appState = useRef(AppState.currentState)
@@ -35,17 +38,19 @@ export function OfflineBanner() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   banner: {
-    backgroundColor: Colors.warningSurface,
+    backgroundColor: C.warningSurface,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.warning,
+    borderBottomColor: C.warning,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
   },
-  text: { fontSize: 13, fontWeight: '600', color: Colors.text, flex: 1 },
-  dismiss: { fontSize: 16, color: Colors.textSecondary, fontWeight: '700', paddingLeft: Spacing.sm },
-})
+  text: { fontSize: 13, fontWeight: '600', color: C.text, flex: 1 },
+  dismiss: { fontSize: 16, color: C.textSecondary, fontWeight: '700', paddingLeft: Spacing.sm },
+  })
+}

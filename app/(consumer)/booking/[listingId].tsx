@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -6,7 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { differenceInDays, format } from 'date-fns'
 import * as Haptics from 'expo-haptics'
 import { CardField, useStripe } from '@stripe/stripe-react-native'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
@@ -29,6 +29,7 @@ import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { INSURANCE_PACKAGES } from '@/types'
 import type { InsuranceId } from '@/types'
 import { validatePromoCode } from '@/lib/api/promo'
+import { useColors } from '@/lib/hooks/useColors'
 
 const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
   const hour = 8 + Math.floor(i / 2)
@@ -75,13 +76,9 @@ export default function BookingFlowScreen() {
   const [identityLoading, setIdentityLoading] = useState(true)
   const { showToast } = useToastStore()
 
-  const startDate = startDateParam
-    ? new Date(startDateParam)
-    : (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d })()
-  const endDate = endDateParam
-    ? new Date(endDateParam)
-    : (() => { const d = new Date(); d.setDate(d.getDate() + 4); return d })()
-  const totalDays = Math.max(1, differenceInDays(endDate, startDate))
+  // Theme — must be before early returns
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
 
   useEffect(() => {
     if (Config.useMock) {
@@ -114,36 +111,44 @@ export default function BookingFlowScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <ScreenHeader title="Booking" />
-        <View style={verGateStyles.container}>
-          <Text style={verGateStyles.icon}>🔐</Text>
-          <Text style={verGateStyles.title}>Identity verification required</Text>
-          <Text style={verGateStyles.desc}>
+        <View style={styles.vgContainer}>
+          <Text style={styles.vgIcon}>🔐</Text>
+          <Text style={styles.vgTitle}>Identity verification required</Text>
+          <Text style={styles.vgDesc}>
             {identityStatus === 'pending' || identityStatus === 'in_progress'
               ? 'Your verification is being processed. Please check back shortly.'
               : 'This operator requires verified identity before booking.'}
           </Text>
           {(identityStatus === 'unverified' || identityStatus === 'declined' || identityStatus == null) && (
             <TouchableOpacity
-              style={verGateStyles.button}
+              style={styles.vgButton}
               onPress={() => router.push('/(consumer)/profile/identity-verification' as any)}
               accessibilityLabel="Verify identity"
             >
-              <Text style={verGateStyles.buttonText}>Verify my identity →</Text>
+              <Text style={styles.vgButtonText}>Verify my identity →</Text>
             </TouchableOpacity>
           )}
           {(identityStatus === 'pending' || identityStatus === 'in_progress') && (
             <TouchableOpacity
-              style={[verGateStyles.button, { backgroundColor: Colors.warning }]}
+              style={[styles.vgButton, { backgroundColor: C.warning }]}
               onPress={() => router.back()}
               accessibilityLabel="Go back"
             >
-              <Text style={verGateStyles.buttonText}>Go back</Text>
+              <Text style={styles.vgButtonText}>Go back</Text>
             </TouchableOpacity>
           )}
         </View>
       </SafeAreaView>
     )
   }
+
+  const startDate = startDateParam
+    ? new Date(startDateParam)
+    : (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d })()
+  const endDate = endDateParam
+    ? new Date(endDateParam)
+    : (() => { const d = new Date(); d.setDate(d.getDate() + 4); return d })()
+  const totalDays = Math.max(1, differenceInDays(endDate, startDate))
 
   const priceCalc = calculatePrice(
     listing.price_per_day,
@@ -204,7 +209,6 @@ export default function BookingFlowScreen() {
           return
         }
 
-        // Step 1: Create booking (pending — no payment yet)
         const booking = await createBooking({
           listing_id: listing.id,
           operator_id: listing.operator_id,
@@ -241,7 +245,6 @@ export default function BookingFlowScreen() {
         })
         bookingId = booking.id
 
-        // Step 2: Create PaymentIntent via Edge Function
         const { clientSecret } = await createPaymentIntent({
           bookingId,
           amountEur: grandTotal,
@@ -250,7 +253,6 @@ export default function BookingFlowScreen() {
           accessToken: session.access_token,
         })
 
-        // Step 3: Confirm payment with CardField input
         const { error: stripeError } = await confirmPayment(clientSecret, {
           paymentMethodType: 'Card',
         })
@@ -272,8 +274,6 @@ export default function BookingFlowScreen() {
   }
 
   const steps = [t('tripDetails', language), t('reviewAndPay', language)]
-
-  // Platform fee breakdown
   const platformFeeLabel = `Service fee (${(Config.platformCut * 100).toFixed(1)}%)`
   const refundableDeposit = listing.deposit_amount
 
@@ -479,7 +479,6 @@ export default function BookingFlowScreen() {
 
         {step === 2 && (
           <>
-            {/* Transparent price breakdown */}
             <View style={styles.priceCard}>
               <Text style={styles.priceCardTitle}>Your total</Text>
               <View style={styles.priceRow}>
@@ -500,10 +499,10 @@ export default function BookingFlowScreen() {
               )}
               {promoApplied && promoDiscount > 0 && (
                 <View style={styles.priceRow}>
-                  <Text style={[styles.priceLabel, { color: Colors.success }]}>
+                  <Text style={[styles.priceLabel, { color: C.success }]}>
                     Promo ({promoCode})
                   </Text>
-                  <Text style={[styles.priceValue, { color: Colors.success }]}>
+                  <Text style={[styles.priceValue, { color: C.success }]}>
                     -{formatEURDecimal(promoDiscount)}
                   </Text>
                 </View>
@@ -515,7 +514,7 @@ export default function BookingFlowScreen() {
               {selectedInsurance.price > 0 ? (
                 <View style={styles.depositRow}>
                   <Text style={styles.depositLabel}>✓ No deposit required</Text>
-                  <Text style={[styles.depositValue, { color: Colors.success }]}>Included</Text>
+                  <Text style={[styles.depositValue, { color: C.success }]}>Included</Text>
                 </View>
               ) : (
                 <View style={styles.depositRow}>
@@ -529,7 +528,7 @@ export default function BookingFlowScreen() {
               </View>
             </View>
 
-            {/* Promo code input */}
+            {/* Promo code */}
             <View style={styles.promoRow}>
               <TextInput
                 style={styles.promoInput}
@@ -548,7 +547,7 @@ export default function BookingFlowScreen() {
                       ? 'Código promo (ej. WELCOME10)'
                       : 'Promo code (e.g. WELCOME10)'
                 }
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={C.textTertiary}
                 autoCapitalize="characters"
                 accessibilityLabel="Promo code input"
               />
@@ -560,7 +559,7 @@ export default function BookingFlowScreen() {
                 accessibilityRole="button"
               >
                 {promoLoading ? (
-                  <ActivityIndicator color={Colors.background} size="small" />
+                  <ActivityIndicator color={C.background} size="small" />
                 ) : (
                   <Text style={styles.promoBtnText}>{promoApplied ? '✓' : 'Apply'}</Text>
                 )}
@@ -576,7 +575,6 @@ export default function BookingFlowScreen() {
               </Text>
             )}
 
-            {/* Guest recap */}
             <View style={styles.guestRecap}>
               <Text style={styles.guestRecapTitle}>Booked as</Text>
               <Text style={styles.guestRecapName}>{guestName}</Text>
@@ -594,10 +592,10 @@ export default function BookingFlowScreen() {
                   onCardChange={(details) => setCardComplete(details.complete)}
                   style={styles.cardField}
                   cardStyle={{
-                    backgroundColor: Colors.surface,
-                    textColor: Colors.text,
-                    placeholderColor: Colors.textSecondary,
-                    borderColor: Colors.border,
+                    backgroundColor: C.surface,
+                    textColor: C.text,
+                    placeholderColor: C.textSecondary,
+                    borderColor: C.border,
                     borderWidth: 1,
                     borderRadius: 8,
                   }}
@@ -605,7 +603,6 @@ export default function BookingFlowScreen() {
               </View>
             )}
 
-            {/* Trust signals */}
             <View style={styles.trustGrid}>
               {[
                 { icon: '🔒', text: 'Stripe secure' },
@@ -620,7 +617,6 @@ export default function BookingFlowScreen() {
               ))}
             </View>
 
-            {/* Pay button with anti-double-submit */}
             <TouchableOpacity
               style={[
                 styles.payBtn,
@@ -632,7 +628,7 @@ export default function BookingFlowScreen() {
               accessibilityRole="button"
             >
               {submitting ? (
-                <ActivityIndicator color={Colors.textInverse} size="small" />
+                <ActivityIndicator color={C.textInverse} size="small" />
               ) : (
                 <Text style={styles.payBtnText}>
                   Pay {formatEURDecimal(grandTotal)} →
@@ -647,172 +643,170 @@ export default function BookingFlowScreen() {
   )
 }
 
-const verGateStyles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-  icon: { fontSize: 56, marginBottom: 16 },
-  title: { color: Colors.text, fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 12 },
-  desc: { color: Colors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
-  button: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    minHeight: 52,
-    alignItems: 'center',
-    width: '100%',
-  },
-  buttonText: { color: Colors.background, fontSize: 16, fontWeight: '700' },
-})
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: C.background },
+    content: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
+    // Identity verification gate
+    vgContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+    vgIcon: { fontSize: 56, marginBottom: 16 },
+    vgTitle: { color: C.text, fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 12 },
+    vgDesc: { color: C.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+    vgButton: {
+      backgroundColor: C.primary,
+      borderRadius: 12,
+      paddingHorizontal: 24,
+      paddingVertical: 14,
+      minHeight: 52,
+      alignItems: 'center',
+      width: '100%',
+    },
+    vgButtonText: { color: C.background, fontSize: 16, fontWeight: '700' },
 
-  summaryCard: {
-    backgroundColor: Colors.surface, borderRadius: Radius.xl,
-    overflow: 'hidden', marginBottom: Spacing.xl,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
-  },
-  summaryImage: { width: '100%', height: 140 },
-  summaryImagePlaceholder: {
-    backgroundColor: Colors.surfaceWarm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  summaryImagePlaceholderText: { fontSize: 48 },
-  summaryBody: { padding: Spacing.base },
-  summaryTitle: { fontSize: 17, fontWeight: '800', color: Colors.text, marginBottom: 2 },
-  summaryOp: { fontSize: 12, color: Colors.textSecondary, marginBottom: Spacing.md },
-  summaryDatesRow: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    backgroundColor: Colors.surfaceWarm, borderRadius: Radius.lg, padding: Spacing.sm,
-  },
-  summaryDateBlock: { flex: 1 },
-  summaryDateLabel: { fontSize: 10, color: Colors.textTertiary, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
-  summaryDateValue: { fontSize: 13, fontWeight: '700', color: Colors.text },
-  summaryArrow: { paddingHorizontal: Spacing.xs },
-  summaryArrowText: { fontSize: 16, color: Colors.textTertiary },
-  summaryDaysBlock: { alignItems: 'center', paddingLeft: Spacing.sm, borderLeftWidth: 1, borderLeftColor: Colors.border },
-  summaryDaysNum: { fontSize: 20, fontWeight: '800', color: Colors.primary },
-  summaryDaysLabel: { fontSize: 10, color: Colors.textTertiary, fontWeight: '600' },
+    summaryCard: {
+      backgroundColor: C.surface, borderRadius: Radius.xl,
+      overflow: 'hidden', marginBottom: Spacing.xl,
+      shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
+    },
+    summaryImage: { width: '100%', height: 140 },
+    summaryImagePlaceholder: {
+      backgroundColor: C.surfaceWarm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    summaryImagePlaceholderText: { fontSize: 48 },
+    summaryBody: { padding: Spacing.base },
+    summaryTitle: { fontSize: 17, fontWeight: '800', color: C.text, marginBottom: 2 },
+    summaryOp: { fontSize: 12, color: C.textSecondary, marginBottom: Spacing.md },
+    summaryDatesRow: {
+      flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
+      backgroundColor: C.surfaceWarm, borderRadius: Radius.lg, padding: Spacing.sm,
+    },
+    summaryDateBlock: { flex: 1 },
+    summaryDateLabel: { fontSize: 10, color: C.textTertiary, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
+    summaryDateValue: { fontSize: 13, fontWeight: '700', color: C.text },
+    summaryArrow: { paddingHorizontal: Spacing.xs },
+    summaryArrowText: { fontSize: 16, color: C.textTertiary },
+    summaryDaysBlock: { alignItems: 'center', paddingLeft: Spacing.sm, borderLeftWidth: 1, borderLeftColor: C.border },
+    summaryDaysNum: { fontSize: 20, fontWeight: '800', color: C.primary },
+    summaryDaysLabel: { fontSize: 10, color: C.textTertiary, fontWeight: '600' },
 
-  formTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: Spacing.base, marginTop: Spacing.xl },
-  timeSlots: { gap: Spacing.sm, paddingVertical: Spacing.xs },
-  timeSlot: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.pill,
-    borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surface,
-  },
-  timeSlotActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  timeSlotText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  timeSlotTextActive: { color: Colors.textInverse },
+    formTitle: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: Spacing.base, marginTop: Spacing.xl },
+    timeSlots: { gap: Spacing.sm, paddingVertical: Spacing.xs },
+    timeSlot: {
+      paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.pill,
+      borderWidth: 1, borderColor: C.border, backgroundColor: C.surface,
+    },
+    timeSlotActive: { backgroundColor: C.primary, borderColor: C.primary },
+    timeSlotText: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
+    timeSlotTextActive: { color: C.textInverse },
 
-  // Transparent price card
-  priceCard: {
-    backgroundColor: Colors.surface, borderRadius: Radius.xl,
-    padding: Spacing.base, marginBottom: Spacing.base,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  priceCardTitle: { fontSize: 13, fontWeight: '700', color: Colors.textTertiary, textTransform: 'uppercase', marginBottom: Spacing.md },
-  priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
-  priceLabel: { fontSize: 14, color: Colors.textSecondary },
-  priceValue: { fontSize: 14, color: Colors.text, fontWeight: '600' },
-  priceTotal: {
-    borderTopWidth: 1, borderTopColor: Colors.border,
-    paddingTop: Spacing.sm, marginTop: Spacing.xs,
-  },
-  priceTotalLabel: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  priceTotalValue: { fontSize: 18, fontWeight: '800', color: Colors.primary },
-  depositRow: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    marginTop: Spacing.sm, paddingTop: Spacing.sm,
-    borderTopWidth: 1, borderTopColor: Colors.border,
-  },
-  depositLabel: { fontSize: 13, color: Colors.textSecondary },
-  depositValue: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600' },
-  trustRow: { marginTop: Spacing.md, gap: 4 },
-  trustItem: { fontSize: 12, color: Colors.success, fontWeight: '500' },
+    priceCard: {
+      backgroundColor: C.surface, borderRadius: Radius.xl,
+      padding: Spacing.base, marginBottom: Spacing.base,
+      borderWidth: 1, borderColor: C.border,
+    },
+    priceCardTitle: { fontSize: 13, fontWeight: '700', color: C.textTertiary, textTransform: 'uppercase', marginBottom: Spacing.md },
+    priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
+    priceLabel: { fontSize: 14, color: C.textSecondary },
+    priceValue: { fontSize: 14, color: C.text, fontWeight: '600' },
+    priceTotal: {
+      borderTopWidth: 1, borderTopColor: C.border,
+      paddingTop: Spacing.sm, marginTop: Spacing.xs,
+    },
+    priceTotalLabel: { fontSize: 15, fontWeight: '700', color: C.text },
+    priceTotalValue: { fontSize: 18, fontWeight: '800', color: C.primary },
+    depositRow: {
+      flexDirection: 'row', justifyContent: 'space-between',
+      marginTop: Spacing.sm, paddingTop: Spacing.sm,
+      borderTopWidth: 1, borderTopColor: C.border,
+    },
+    depositLabel: { fontSize: 13, color: C.textSecondary },
+    depositValue: { fontSize: 13, color: C.textSecondary, fontWeight: '600' },
+    trustRow: { marginTop: Spacing.md, gap: 4 },
+    trustItem: { fontSize: 12, color: C.success, fontWeight: '500' },
 
-  // Promo code
-  promoRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm },
-  promoInput: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.sm,
-    color: Colors.text,
-    paddingHorizontal: Spacing.md,
-    fontSize: 14,
-    minHeight: 44,
-  },
-  promoBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.base,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  promoBtnApplied: { backgroundColor: Colors.success },
-  promoBtnText: { color: Colors.background, fontWeight: '700', fontSize: 14 },
-  promoSaved: { color: Colors.success, fontSize: 13, marginBottom: Spacing.sm, fontWeight: '600' },
+    promoRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm },
+    promoInput: {
+      flex: 1,
+      backgroundColor: C.surface,
+      borderWidth: 1,
+      borderColor: C.border,
+      borderRadius: Radius.sm,
+      color: C.text,
+      paddingHorizontal: Spacing.md,
+      fontSize: 14,
+      minHeight: 44,
+    },
+    promoBtn: {
+      backgroundColor: C.primary,
+      borderRadius: Radius.sm,
+      paddingHorizontal: Spacing.base,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    promoBtnApplied: { backgroundColor: C.success },
+    promoBtnText: { color: C.background, fontWeight: '700', fontSize: 14 },
+    promoSaved: { color: C.success, fontSize: 13, marginBottom: Spacing.sm, fontWeight: '600' },
 
-  guestRecap: {
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    padding: Spacing.base, marginBottom: Spacing.base,
-    borderLeftWidth: 3, borderLeftColor: Colors.primary,
-  },
-  guestRecapTitle: { fontSize: 11, fontWeight: '700', color: Colors.textTertiary, textTransform: 'uppercase', marginBottom: 4 },
-  guestRecapName: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  guestRecapContact: { fontSize: 13, color: Colors.textSecondary },
+    guestRecap: {
+      backgroundColor: C.surface, borderRadius: Radius.lg,
+      padding: Spacing.base, marginBottom: Spacing.base,
+      borderLeftWidth: 3, borderLeftColor: C.primary,
+    },
+    guestRecapTitle: { fontSize: 11, fontWeight: '700', color: C.textTertiary, textTransform: 'uppercase', marginBottom: 4 },
+    guestRecapName: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 2 },
+    guestRecapContact: { fontSize: 13, color: C.textSecondary },
 
-  trustGrid: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
-    marginBottom: Spacing.xl,
-    backgroundColor: Colors.surfaceWarm, borderRadius: Radius.lg,
-    padding: Spacing.base, borderWidth: 1, borderColor: Colors.borderWarm,
-  },
-  trustGridItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  trustGridIcon: { fontSize: 14, width: 20, textAlign: 'center' },
-  trustGridText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500' },
+    trustGrid: {
+      flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
+      marginBottom: Spacing.xl,
+      backgroundColor: C.surfaceWarm, borderRadius: Radius.lg,
+      padding: Spacing.base, borderWidth: 1, borderColor: C.borderWarm,
+    },
+    trustGridItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+    trustGridIcon: { fontSize: 14, width: 20, textAlign: 'center' },
+    trustGridText: { fontSize: 12, color: C.textSecondary, fontWeight: '500' },
 
-  cardFieldWrapper: { marginBottom: Spacing.base },
-  cardLabel: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: Spacing.sm },
-  cardField: { height: 50, marginBottom: 4 },
+    cardFieldWrapper: { marginBottom: Spacing.base },
+    cardLabel: { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: Spacing.sm },
+    cardField: { height: 50, marginBottom: 4 },
 
-  payBtn: {
-    backgroundColor: Colors.primary, borderRadius: Radius.pill,
-    paddingVertical: Spacing.base, alignItems: 'center',
-    marginBottom: Spacing.sm,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35, shadowRadius: 8, elevation: 4,
-    minHeight: 52, justifyContent: 'center',
-  },
-  payBtnDisabled: { opacity: 0.5, shadowOpacity: 0 },
-  payBtnText: { color: Colors.textInverse, fontWeight: '800', fontSize: 17 },
-  secureNote: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', marginTop: Spacing.sm },
+    payBtn: {
+      backgroundColor: C.primary, borderRadius: Radius.pill,
+      paddingVertical: Spacing.base, alignItems: 'center',
+      marginBottom: Spacing.sm,
+      shadowColor: C.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35, shadowRadius: 8, elevation: 4,
+      minHeight: 52, justifyContent: 'center',
+    },
+    payBtnDisabled: { opacity: 0.5, shadowOpacity: 0 },
+    payBtnText: { color: C.textInverse, fontWeight: '800', fontSize: 17 },
+    secureNote: { fontSize: 12, color: C.textTertiary, textAlign: 'center', marginTop: Spacing.sm },
 
-  // Hourly rental styles
-  rentalTypeRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base },
-  typeChip: {
-    flex: 1, padding: Spacing.md, borderRadius: Radius.sm,
-    borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center', minHeight: 44, justifyContent: 'center',
-  },
-  typeChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  typeChipText: { color: Colors.textSecondary, fontSize: 14, fontWeight: '600' },
-  typeChipTextActive: { color: Colors.background },
-  hourlySection: { marginBottom: Spacing.base },
-  slotBtn: {
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: Radius.sm,
-    borderWidth: 1, borderColor: Colors.border,
-    marginRight: Spacing.sm, minHeight: 44, justifyContent: 'center',
-  },
-  slotBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  slotText: { color: Colors.textSecondary, fontSize: 13, fontWeight: '600' },
-  slotTextActive: { color: Colors.background },
-  hoursRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  hourlyTotal: { color: Colors.primary, fontSize: 18, fontWeight: '700', marginTop: Spacing.md },
-})
+    rentalTypeRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base },
+    typeChip: {
+      flex: 1, padding: Spacing.md, borderRadius: Radius.sm,
+      borderWidth: 1, borderColor: C.border,
+      alignItems: 'center', minHeight: 44, justifyContent: 'center',
+    },
+    typeChipActive: { backgroundColor: C.primary, borderColor: C.primary },
+    typeChipText: { color: C.textSecondary, fontSize: 14, fontWeight: '600' },
+    typeChipTextActive: { color: C.background },
+    hourlySection: { marginBottom: Spacing.base },
+    slotBtn: {
+      paddingHorizontal: 12, paddingVertical: 8, borderRadius: Radius.sm,
+      borderWidth: 1, borderColor: C.border,
+      marginRight: Spacing.sm, minHeight: 44, justifyContent: 'center',
+    },
+    slotBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
+    slotText: { color: C.textSecondary, fontSize: 13, fontWeight: '600' },
+    slotTextActive: { color: C.background },
+    hoursRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+    hourlyTotal: { color: C.primary, fontSize: 18, fontWeight: '700', marginTop: Spacing.md },
+  })
+}

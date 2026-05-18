@@ -82,7 +82,7 @@ export default function OperatorLayout() {
         options={{
           title: t('bookings', language),
           tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
-          tabBarBadgeStyle: { backgroundColor: Colors.error, fontSize: 10 },
+          tabBarBadgeStyle: { backgroundColor: C.error, fontSize: 10 },
           tabBarIcon: ({ focused }) => (
             <TabIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} />
           ),
@@ -104,7 +104,7 @@ export default function OperatorLayout() {
         options={{
           title: t('messages', language),
           tabBarBadge: operatorUnreadCount > 0 ? operatorUnreadCount : undefined,
-          tabBarBadgeStyle: { backgroundColor: Colors.error, fontSize: 10 },
+          tabBarBadgeStyle: { backgroundColor: C.error, fontSize: 10 },
           tabBarIcon: ({ focused }) => (
             <TabIcon name={focused ? 'chatbubbles' : 'chatbubbles-outline'} focused={focused} />
           ),

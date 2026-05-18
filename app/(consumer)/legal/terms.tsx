@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, ScrollView, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 const SECTIONS = [
   {
@@ -36,6 +37,8 @@ const SECTIONS = [
 ]
 
 export default function TermsOfServiceScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader title="Terms of Service" />
@@ -56,17 +59,19 @@ export default function TermsOfServiceScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
-  lastUpdated: { fontSize: 12, color: Colors.textTertiary, marginBottom: Spacing.md },
-  intro: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
+  lastUpdated: { fontSize: 12, color: C.textTertiary, marginBottom: Spacing.md },
+  intro: { fontSize: 14, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
   section: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     marginBottom: Spacing.md,
   },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: Spacing.sm },
-  sectionBody: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22 },
-})
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: Spacing.sm },
+  sectionBody: { fontSize: 14, color: C.textSecondary, lineHeight: 22 },
+  })
+}

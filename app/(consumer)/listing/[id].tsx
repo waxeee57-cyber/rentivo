@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import {
   View, Text, ScrollView, Animated, TouchableOpacity, StyleSheet, Dimensions, Share, Platform, Linking, Alert,
 } from 'react-native'
@@ -32,6 +32,7 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useWishlistStore, toggleWishlistItem } from '@/lib/store/useWishlistStore'
 import { useRecentlyViewedStore } from '@/lib/store/useRecentlyViewedStore'
 import { useAvailability } from '@/lib/hooks/useAvailability'
+import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
 import type { CancellationPolicy, Listing } from '@/types'
 
@@ -39,6 +40,8 @@ const { height: screenHeight } = Dimensions.get('window')
 const HERO_HEIGHT = Math.round(screenHeight * 0.52)
 
 export default function ListingDetailScreen() {
+  // All hooks must be before any early returns — Rules of Hooks
+  const C = useColors()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { listing, loading, error, refetch } = useListing(id ?? '')
   const { reviews: listingReviews } = useReviews(id ?? '')
@@ -98,6 +101,9 @@ export default function ListingDetailScreen() {
       .then(({ data }) => setSimilarListings((data as Listing[]) ?? []))
   }, [listing?.id, listing?.owner_type, listing?.host_id, listing?.operator_id])
 
+  // Theme-reactive styles — recreated only when theme changes
+  const styles = useMemo(() => makeStyles(C), [C])
+
   if (loading) return <View style={styles.container}><SkeletonCard /></View>
   if (error || !listing) return <ErrorState message={error ?? 'Listing not found'} onRetry={refetch} />
 
@@ -119,8 +125,6 @@ export default function ListingDetailScreen() {
 
   const isHostListing = listing.owner_type === 'host'
 
-  // Contact is available for logged-in users. At the listing-detail stage there is no
-  // booking yet, so the button navigates to the booking flow instead of an existing chat.
   const canContact = Boolean(user?.id)
 
   const handleContactHost = () => {
@@ -133,7 +137,6 @@ export default function ListingDetailScreen() {
       )
       return
     }
-    // Navigate to booking flow — user initiates a booking to open chat
     router.push({
       pathname: '/(consumer)/booking/[listingId]',
       params: { listingId: listing.id },
@@ -227,7 +230,7 @@ export default function ListingDetailScreen() {
               accessibilityRole="button"
               style={styles.backBtnInner}
             >
-              <Ionicons name="arrow-back" size={20} color={Colors.text} />
+              <Ionicons name="arrow-back" size={20} color={Colors.white} />
             </TouchableOpacity>
           </View>
 
@@ -245,7 +248,7 @@ export default function ListingDetailScreen() {
                 accessibilityRole="button"
                 style={styles.backBtnInner}
               >
-                <Ionicons name="share-outline" size={18} color={Colors.text} />
+                <Ionicons name="share-outline" size={18} color={Colors.white} />
               </TouchableOpacity>
             </View>
             <View style={styles.actionBtn}>
@@ -262,7 +265,7 @@ export default function ListingDetailScreen() {
                 <Ionicons
                   name={isWishlisted(listing.id) ? 'heart' : 'heart-outline'}
                   size={18}
-                  color={isWishlisted(listing.id) ? Colors.error : Colors.text}
+                  color={isWishlisted(listing.id) ? C.error : Colors.white}
                 />
               </TouchableOpacity>
             </View>
@@ -274,7 +277,7 @@ export default function ListingDetailScreen() {
                 accessibilityRole="button"
                 style={styles.backBtnInner}
               >
-                <Ionicons name="flag-outline" size={18} color={Colors.text} />
+                <Ionicons name="flag-outline" size={18} color={Colors.white} />
               </TouchableOpacity>
             </View>
           </View>
@@ -404,7 +407,7 @@ export default function ListingDetailScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('selectYourDates', language)}</Text>
-              <Ionicons name="calendar-outline" size={16} color={Colors.textTertiary} />
+              <Ionicons name="calendar-outline" size={16} color={C.textTertiary} />
             </View>
             <TouchableOpacity
               style={[styles.datePicker, startDate && styles.datePickerActive]}
@@ -480,14 +483,13 @@ export default function ListingDetailScreen() {
             </>
           )}
 
-          {/* Ratings & Reviews section — always render (shows empty state if 0 reviews) */}
+          {/* Ratings & Reviews */}
           <>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('ratingsAndReviews', language)}</Text>
 
               {listing.review_count > 0 ? (
                 <>
-                  {/* Rating summary hero */}
                   <View style={styles.ratingSummaryRow}>
                     <View style={styles.ratingHero}>
                       <Text style={styles.ratingBig}>
@@ -499,7 +501,6 @@ export default function ListingDetailScreen() {
                       </Text>
                     </View>
 
-                    {/* Category breakdown */}
                     <View style={styles.breakdownCategories}>
                       {(
                         [
@@ -525,7 +526,6 @@ export default function ListingDetailScreen() {
                     </View>
                   </View>
 
-                  {/* Top 2 review snippets */}
                   {(Config.useMock ? MOCK_REVIEWS.slice(0, 2) : listingReviews.slice(0, 2)).map((r, i) => {
                     const names = ['James K.', 'Sophie L.', 'Carlos M.']
                     return (
@@ -537,7 +537,6 @@ export default function ListingDetailScreen() {
                     )
                   })}
 
-                  {/* See all reviews link */}
                   {listing.review_count > 2 && (
                     <TouchableOpacity
                       style={styles.seeAllReviews}
@@ -603,7 +602,7 @@ export default function ListingDetailScreen() {
                   accessibilityLabel={canContact ? t('messageHost', language) : t('loginToContact', language)}
                   accessibilityRole="button"
                 >
-                  <Ionicons name="chatbubble-outline" size={16} color={canContact ? Colors.primary : Colors.textTertiary} />
+                  <Ionicons name="chatbubble-outline" size={16} color={canContact ? C.primary : C.textTertiary} />
                   <Text style={[styles.askQuestionText, !canContact && styles.askQuestionTextDisabled]}>
                     {canContact ? t('messageHost', language) : t('loginToContact', language)}
                   </Text>
@@ -624,7 +623,7 @@ export default function ListingDetailScreen() {
                     accessibilityLabel={canContact ? t('contactOperator', language) : t('loginToContact', language)}
                     accessibilityRole="button"
                   >
-                    <Ionicons name="chatbubble-outline" size={16} color={canContact ? Colors.primary : Colors.textTertiary} />
+                    <Ionicons name="chatbubble-outline" size={16} color={canContact ? C.primary : C.textTertiary} />
                     <Text style={[styles.askQuestionText, !canContact && styles.askQuestionTextDisabled]}>
                       {canContact ? t('askQuestion', language) : t('loginToContact', language)}
                     </Text>
@@ -636,7 +635,7 @@ export default function ListingDetailScreen() {
                       accessibilityLabel={`Call ${listing.operator.name}`}
                       accessibilityRole="button"
                     >
-                      <Ionicons name="call-outline" size={16} color={Colors.success} />
+                      <Ionicons name="call-outline" size={16} color={C.success} />
                       <Text style={styles.callBtnText}>Call</Text>
                     </TouchableOpacity>
                   ) : null}
@@ -763,392 +762,393 @@ export default function ListingDetailScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: C.background },
 
-  heroGradient: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0, height: '55%',
-    backgroundColor: 'transparent',
-  },
-  heroBottom: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    padding: Spacing.base,
-    paddingBottom: Spacing.xl,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  catBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: Radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-    marginBottom: Spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  catBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.white },
-  heroTitle: { fontSize: 24, fontWeight: '800', color: Colors.white, marginBottom: 6 },
-  heroLocation: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  heroLocationText: { fontSize: 13, color: 'rgba(255,255,255,0.85)' },
+    heroGradient: {
+      position: 'absolute',
+      bottom: 0, left: 0, right: 0, height: '55%',
+      backgroundColor: 'transparent',
+    },
+    heroBottom: {
+      position: 'absolute',
+      bottom: 0, left: 0, right: 0,
+      padding: Spacing.base,
+      paddingBottom: Spacing.xl,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+    },
+    catBadge: {
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      borderRadius: Radius.pill,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      alignSelf: 'flex-start',
+      marginBottom: Spacing.sm,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.3)',
+    },
+    catBadgeText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
+    heroTitle: { fontSize: 24, fontWeight: '800', color: '#FFFFFF', marginBottom: 6 },
+    heroLocation: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    heroLocationText: { fontSize: 13, color: 'rgba(255,255,255,0.85)' },
 
-  backBtn: {
-    position: 'absolute',
-    left: Spacing.base,
-    width: 40, height: 40,
-    borderRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  backBtnInner: {
-    width: '100%', height: '100%',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  actionBtns: {
-    position: 'absolute',
-    right: Spacing.base,
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  actionBtn: {
-    width: 40, height: 40,
-    borderRadius: 20,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 4,
-  },
+    backBtn: {
+      position: 'absolute',
+      left: Spacing.base,
+      width: 40, height: 40,
+      borderRadius: 20,
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 6,
+      elevation: 4,
+    },
+    backBtnInner: {
+      width: '100%', height: '100%',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    actionBtns: {
+      position: 'absolute',
+      right: Spacing.base,
+      flexDirection: 'row',
+      gap: Spacing.sm,
+    },
+    actionBtn: {
+      width: 40, height: 40,
+      borderRadius: 20,
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 6,
+      elevation: 4,
+    },
 
-  contentCard: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    marginTop: -20,
-    padding: Spacing.xl,
-  },
+    contentCard: {
+      backgroundColor: C.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      marginTop: -20,
+      padding: Spacing.xl,
+    },
 
-  opRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md },
-  opInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  opName: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
-  verifiedPill: { backgroundColor: Colors.successSurface, borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
-  verifiedText: { fontSize: 11, fontWeight: '700', color: Colors.success },
-  hostPill: { backgroundColor: Colors.primarySurface, borderWidth: 1, borderColor: Colors.primaryLight },
-  hostPillText: { color: Colors.primaryDark },
-  bizPill: { backgroundColor: Colors.infoSurface, borderWidth: 1, borderColor: Colors.info },
-  bizPillText: { color: Colors.info },
+    opRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md },
+    opInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    opName: { fontSize: 14, fontWeight: '600', color: C.textSecondary },
+    verifiedPill: { backgroundColor: C.successSurface, borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
+    verifiedText: { fontSize: 11, fontWeight: '700', color: C.success },
+    hostPill: { backgroundColor: C.primarySurface, borderWidth: 1, borderColor: C.primaryLight },
+    hostPillText: { color: C.primaryDark },
+    bizPill: { backgroundColor: C.infoSurface, borderWidth: 1, borderColor: C.info },
+    bizPillText: { color: C.info },
 
-  hostCard: {
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.xl,
-    padding: Spacing.base,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  hostCardTop: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.md },
-  hostAvatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: Colors.primarySurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hostAvatarText: { fontSize: 22, fontWeight: '700', color: Colors.primary },
-  hostName: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  hostVerifiedBadge: { fontSize: 12, fontWeight: '700', color: Colors.success },
-  hostMeta: { fontSize: 12, color: Colors.textSecondary, marginBottom: 2 },
-  hostBio: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    fontStyle: 'italic',
-    lineHeight: 20,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingTop: Spacing.sm,
-  },
+    hostCard: {
+      backgroundColor: C.surfaceWarm,
+      borderRadius: Radius.xl,
+      padding: Spacing.base,
+      borderWidth: 1,
+      borderColor: C.border,
+    },
+    hostCardTop: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.md },
+    hostAvatar: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      backgroundColor: C.primarySurface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    hostAvatarText: { fontSize: 22, fontWeight: '700', color: C.primary },
+    hostName: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: 2 },
+    hostVerifiedBadge: { fontSize: 12, fontWeight: '700', color: C.success },
+    hostMeta: { fontSize: 12, color: C.textSecondary, marginBottom: 2 },
+    hostBio: {
+      fontSize: 13,
+      color: C.textSecondary,
+      fontStyle: 'italic',
+      lineHeight: 20,
+      borderTopWidth: 1,
+      borderTopColor: C.border,
+      paddingTop: Spacing.sm,
+    },
 
-  priceSection: { marginBottom: Spacing.base },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
-  priceMain: { fontSize: 28, fontWeight: '800', color: Colors.primary },
-  priceUnit: { fontSize: 14, color: Colors.textSecondary },
-  weeklyPrice: { fontSize: 13, color: Colors.success, marginTop: 4 },
-  instantBadge: {
-    backgroundColor: Colors.successSurface,
-    borderRadius: Radius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: Colors.success,
-  },
-  instantBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.success },
+    priceSection: { marginBottom: Spacing.base },
+    priceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
+    priceMain: { fontSize: 28, fontWeight: '800', color: C.primary },
+    priceUnit: { fontSize: 14, color: C.textSecondary },
+    weeklyPrice: { fontSize: 13, color: C.success, marginTop: 4 },
+    instantBadge: {
+      backgroundColor: C.successSurface,
+      borderRadius: Radius.full,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 3,
+      borderWidth: 1,
+      borderColor: C.success,
+    },
+    instantBadgeText: { fontSize: 11, fontWeight: '700', color: C.success },
 
-  infoChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
-  infoChip: {
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  infoChipText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500' },
+    infoChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
+    infoChip: {
+      backgroundColor: C.surfaceWarm,
+      borderRadius: Radius.md,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: Spacing.xs,
+      borderWidth: 1,
+      borderColor: C.border,
+    },
+    infoChipText: { fontSize: 12, color: C.textSecondary, fontWeight: '500' },
 
-  section: { marginVertical: Spacing.base },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md },
-  seeAllReviews: { marginTop: Spacing.sm, alignSelf: 'flex-start' },
-  seeAllReviewsText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
-  sectionTitle: {
-    fontSize: 12, fontWeight: '700',
-    textTransform: 'uppercase', letterSpacing: 0.8,
-    color: Colors.textTertiary,
-    marginBottom: Spacing.sm,
-  },
+    section: { marginVertical: Spacing.base },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md },
+    seeAllReviews: { marginTop: Spacing.sm, alignSelf: 'flex-start' },
+    seeAllReviewsText: { fontSize: 14, fontWeight: '600', color: C.primary },
+    sectionTitle: {
+      fontSize: 12, fontWeight: '700',
+      textTransform: 'uppercase', letterSpacing: 0.8,
+      color: C.textTertiary,
+      marginBottom: Spacing.sm,
+    },
 
-  insuranceBox: { flexDirection: 'row', gap: Spacing.md, backgroundColor: Colors.successSurface, borderRadius: Radius.lg, padding: Spacing.md },
-  insuranceIcon: { fontSize: 22 },
-  insuranceInfo: { flex: 1 },
-  insuranceTitle: { fontSize: 14, fontWeight: '700', color: Colors.success, marginBottom: 4 },
-  insuranceText: { fontSize: 13, color: Colors.textSecondary, lineHeight: 19 },
+    insuranceBox: { flexDirection: 'row', gap: Spacing.md, backgroundColor: C.successSurface, borderRadius: Radius.lg, padding: Spacing.md },
+    insuranceIcon: { fontSize: 22 },
+    insuranceInfo: { flex: 1 },
+    insuranceTitle: { fontSize: 14, fontWeight: '700', color: C.success, marginBottom: 4 },
+    insuranceText: { fontSize: 13, color: C.textSecondary, lineHeight: 19 },
 
-  policyBadge: { backgroundColor: Colors.surfaceWarm, borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border },
-  policyBadgeText: { fontSize: 14, color: Colors.text, fontWeight: '600' },
+    policyBadge: { backgroundColor: C.surfaceWarm, borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: C.border },
+    policyBadgeText: { fontSize: 14, color: C.text, fontWeight: '600' },
 
-  datePicker: {
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.xl,
-    padding: Spacing.base,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-  },
-  datePickerActive: { borderColor: Colors.primary, backgroundColor: Colors.primarySurface },
-  datePickerText: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center' },
-  datePickerTextActive: { color: Colors.primaryDark, fontWeight: '600' },
+    datePicker: {
+      backgroundColor: C.surfaceWarm,
+      borderRadius: Radius.xl,
+      padding: Spacing.base,
+      borderWidth: 1.5,
+      borderColor: C.border,
+    },
+    datePickerActive: { borderColor: C.primary, backgroundColor: C.primarySurface },
+    datePickerText: { fontSize: 14, color: C.textSecondary, textAlign: 'center' },
+    datePickerTextActive: { color: C.primaryDark, fontWeight: '600' },
 
-  priceBreakdown: {
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.lg,
-    padding: Spacing.base,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
-  breakdownLabel: { fontSize: 14, color: Colors.textSecondary },
-  breakdownValue: { fontSize: 14, color: Colors.text, fontWeight: '500' },
-  breakdownTotal: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingTop: Spacing.sm,
-    marginBottom: 0,
-  },
-  breakdownTotalLabel: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  breakdownTotalValue: { fontSize: 15, fontWeight: '800', color: Colors.text },
-  depositNote: { marginTop: Spacing.sm, backgroundColor: Colors.infoSurface, borderRadius: Radius.md, padding: Spacing.sm },
-  depositNoteText: { fontSize: 12, color: Colors.info, fontWeight: '600' },
-  depositNoteSubtext: { fontSize: 11, color: Colors.textTertiary, marginTop: 2 },
+    priceBreakdown: {
+      backgroundColor: C.surfaceWarm,
+      borderRadius: Radius.lg,
+      padding: Spacing.base,
+      borderWidth: 1,
+      borderColor: C.border,
+    },
+    breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
+    breakdownLabel: { fontSize: 14, color: C.textSecondary },
+    breakdownValue: { fontSize: 14, color: C.text, fontWeight: '500' },
+    breakdownTotal: {
+      borderTopWidth: 1,
+      borderTopColor: C.border,
+      paddingTop: Spacing.sm,
+      marginBottom: 0,
+    },
+    breakdownTotalLabel: { fontSize: 15, fontWeight: '700', color: C.text },
+    breakdownTotalValue: { fontSize: 15, fontWeight: '800', color: C.text },
+    depositNote: { marginTop: Spacing.sm, backgroundColor: C.infoSurface, borderRadius: Radius.md, padding: Spacing.sm },
+    depositNoteText: { fontSize: 12, color: C.info, fontWeight: '600' },
+    depositNoteSubtext: { fontSize: 11, color: C.textTertiary, marginTop: 2 },
 
-  desc: { fontSize: 14, color: Colors.textSecondary, lineHeight: 22 },
-  showMore: { color: Colors.primary, fontWeight: '600', marginTop: Spacing.sm, fontSize: 14 },
-  rulesBox: { backgroundColor: Colors.warningSurface, borderRadius: Radius.lg, padding: Spacing.md },
-  rulesText: { fontSize: 13, color: Colors.textSecondary, lineHeight: 20 },
+    desc: { fontSize: 14, color: C.textSecondary, lineHeight: 22 },
+    showMore: { color: C.primary, fontWeight: '600', marginTop: Spacing.sm, fontSize: 14 },
+    rulesBox: { backgroundColor: C.warningSurface, borderRadius: Radius.lg, padding: Spacing.md },
+    rulesText: { fontSize: 13, color: C.textSecondary, lineHeight: 20 },
 
-  operatorActions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.md,
-    flexWrap: 'wrap',
-  },
-  askQuestionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    padding: Spacing.md,
-    backgroundColor: Colors.primarySurface,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.primary,
-  },
-  askQuestionText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
-  askQuestionBtnDisabled: { backgroundColor: Colors.surfaceWarm, borderColor: Colors.border, opacity: 0.6 },
-  askQuestionTextDisabled: { color: Colors.textTertiary },
-  callBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    padding: Spacing.md,
-    backgroundColor: Colors.successSurface,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    borderColor: Colors.success,
-  },
-  callBtnText: { fontSize: 14, color: Colors.success, fontWeight: '600' },
+    operatorActions: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+      marginTop: Spacing.md,
+      flexWrap: 'wrap',
+    },
+    askQuestionBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      padding: Spacing.md,
+      backgroundColor: C.primarySurface,
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: C.primary,
+    },
+    askQuestionText: { fontSize: 14, color: C.primary, fontWeight: '600' },
+    askQuestionBtnDisabled: { backgroundColor: C.surfaceWarm, borderColor: C.border, opacity: 0.6 },
+    askQuestionTextDisabled: { color: C.textTertiary },
+    callBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      padding: Spacing.md,
+      backgroundColor: C.successSurface,
+      borderRadius: Radius.lg,
+      borderWidth: 1,
+      borderColor: C.success,
+    },
+    callBtnText: { fontSize: 14, color: C.success, fontWeight: '600' },
 
-  locationCard: {
-    flexDirection: 'row',
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.xl,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  locationMapPreview: {
-    width: 90,
-    backgroundColor: Colors.surfaceWarm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  locationMapIcon: { fontSize: 36 },
-  locationInfo: { flex: 1, padding: Spacing.md, justifyContent: 'center' },
-  locationAddress: { fontSize: 13, color: Colors.text, fontWeight: '500', lineHeight: 19, marginBottom: Spacing.xs },
-  locationDirections: { fontSize: 13, color: Colors.primary, fontWeight: '700' },
+    locationCard: {
+      flexDirection: 'row',
+      backgroundColor: C.surfaceWarm,
+      borderRadius: Radius.xl,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: C.border,
+    },
+    locationMapPreview: {
+      width: 90,
+      backgroundColor: C.surfaceWarm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    locationMapIcon: { fontSize: 36 },
+    locationInfo: { flex: 1, padding: Spacing.md, justifyContent: 'center' },
+    locationAddress: { fontSize: 13, color: C.text, fontWeight: '500', lineHeight: 19, marginBottom: Spacing.xs },
+    locationDirections: { fontSize: 13, color: C.primary, fontWeight: '700' },
 
-  similarScroll: { marginTop: Spacing.sm },
-  similarCard: {
-    width: 140,
-    marginRight: Spacing.md,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  similarImgPlaceholder: {
-    height: 90,
-    backgroundColor: Colors.surfaceWarm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  similarEmoji: { fontSize: 36 },
-  similarTitle: { fontSize: 13, fontWeight: '600', color: Colors.text, padding: Spacing.sm, paddingBottom: 2 },
-  similarPrice: { fontSize: 12, color: Colors.primary, fontWeight: '700', paddingHorizontal: Spacing.sm, paddingBottom: Spacing.sm },
+    similarScroll: { marginTop: Spacing.sm },
+    similarCard: {
+      width: 140,
+      marginRight: Spacing.md,
+      backgroundColor: C.surface,
+      borderRadius: Radius.lg,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: C.border,
+    },
+    similarImgPlaceholder: {
+      height: 90,
+      backgroundColor: C.surfaceWarm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    similarEmoji: { fontSize: 36 },
+    similarTitle: { fontSize: 13, fontWeight: '600', color: C.text, padding: Spacing.sm, paddingBottom: 2 },
+    similarPrice: { fontSize: 12, color: C.primary, fontWeight: '700', paddingHorizontal: Spacing.sm, paddingBottom: Spacing.sm },
 
-  typeSelector: { flexDirection: 'row', gap: 8, marginBottom: Spacing.base },
-  typeBtn: {
-    flex: 1, padding: 12, borderRadius: Radius.sm, borderWidth: 1,
-    borderColor: Colors.border, alignItems: 'center',
-    minHeight: 44, justifyContent: 'center',
-  },
-  typeBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  typeBtnText: { color: Colors.textSecondary, fontSize: 14, fontWeight: '600' },
-  typeBtnTextActive: { color: Colors.background },
-  hourlyPrice: { color: Colors.primary, fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: Spacing.base },
+    typeSelector: { flexDirection: 'row', gap: 8, marginBottom: Spacing.base },
+    typeBtn: {
+      flex: 1, padding: 12, borderRadius: Radius.sm, borderWidth: 1,
+      borderColor: C.border, alignItems: 'center',
+      minHeight: 44, justifyContent: 'center',
+    },
+    typeBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
+    typeBtnText: { color: C.textSecondary, fontSize: 14, fontWeight: '600' },
+    typeBtnTextActive: { color: C.background },
+    hourlyPrice: { color: C.primary, fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: Spacing.base },
 
-  bookingBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.base,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-    overflow: 'hidden',
-  },
-  bookingBarLeft: { flex: 1 },
-  bookingBarPrice: { fontSize: 18, fontWeight: '700', color: Colors.text },
-  bookingBarUnit: { fontSize: 13, fontWeight: '400', color: Colors.textSecondary },
-  bookingBarSub: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
-  bookingBarTrust: { fontSize: 11, color: Colors.success, marginTop: 2, fontWeight: '600' },
-  bookNowBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  bookNowBtnDimmed: { backgroundColor: Colors.textTertiary, shadowOpacity: 0, elevation: 0 },
-  bookNowBtnText: { color: Colors.textInverse, fontWeight: '700', fontSize: 15 },
+    bookingBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.xl,
+      paddingTop: Spacing.base,
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(255,255,255,0.08)',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 8,
+      overflow: 'hidden',
+    },
+    bookingBarLeft: { flex: 1 },
+    bookingBarPrice: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
+    bookingBarUnit: { fontSize: 13, fontWeight: '400', color: 'rgba(255,255,255,0.7)' },
+    bookingBarSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
+    bookingBarTrust: { fontSize: 11, color: C.success, marginTop: 2, fontWeight: '600' },
+    bookNowBtn: {
+      backgroundColor: C.primary,
+      borderRadius: Radius.pill,
+      paddingHorizontal: Spacing.xl,
+      paddingVertical: Spacing.md,
+      shadowColor: C.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.4,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    bookNowBtnDimmed: { backgroundColor: C.textTertiary, shadowOpacity: 0, elevation: 0 },
+    bookNowBtnText: { color: C.textInverse, fontWeight: '700', fontSize: 15 },
 
-  // Review section styles
-  ratingSummaryRow: {
-    flexDirection: 'row',
-    gap: Spacing.base,
-    marginBottom: Spacing.base,
-  },
-  ratingHero: {
-    width: 88,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xs,
-  },
-  ratingBig: {
-    fontSize: 40,
-    fontWeight: '800',
-    color: Colors.text,
-    lineHeight: 44,
-  },
-  reviewCountLabel: {
-    fontSize: 12,
-    color: Colors.textTertiary,
-    marginTop: 2,
-  },
-  breakdownCategories: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: Spacing.sm,
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  categoryLabel: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    width: 88,
-  },
-  progressTrack: {
-    flex: 1,
-    height: 4,
-    backgroundColor: Colors.border,
-    borderRadius: Radius.full,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.full,
-  },
-  categoryScore: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-    width: 28,
-    textAlign: 'right',
-  },
-  noReviewsBox: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
-    gap: Spacing.sm,
-  },
-  noReviewsIcon: {
-    fontSize: 32,
-    color: Colors.textTertiary,
-  },
-  noReviewsTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-  },
-  noReviewsSub: {
-    fontSize: 13,
-    color: Colors.textTertiary,
-    textAlign: 'center',
-  },
-})
+    ratingSummaryRow: {
+      flexDirection: 'row',
+      gap: Spacing.base,
+      marginBottom: Spacing.base,
+    },
+    ratingHero: {
+      width: 88,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.xs,
+    },
+    ratingBig: {
+      fontSize: 40,
+      fontWeight: '800',
+      color: C.text,
+      lineHeight: 44,
+    },
+    reviewCountLabel: {
+      fontSize: 12,
+      color: C.textTertiary,
+      marginTop: 2,
+    },
+    breakdownCategories: {
+      flex: 1,
+      justifyContent: 'center',
+      gap: Spacing.sm,
+    },
+    categoryRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+    },
+    categoryLabel: {
+      fontSize: 12,
+      color: C.textSecondary,
+      width: 88,
+    },
+    progressTrack: {
+      flex: 1,
+      height: 4,
+      backgroundColor: C.border,
+      borderRadius: Radius.full,
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      backgroundColor: C.primary,
+      borderRadius: Radius.full,
+    },
+    categoryScore: {
+      fontSize: 12,
+      color: C.textSecondary,
+      fontWeight: '600',
+      width: 28,
+      textAlign: 'right',
+    },
+    noReviewsBox: {
+      alignItems: 'center',
+      paddingVertical: Spacing.xl,
+      gap: Spacing.sm,
+    },
+    noReviewsIcon: {
+      fontSize: 32,
+      color: C.textTertiary,
+    },
+    noReviewsTitle: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: C.textSecondary,
+    },
+    noReviewsSub: {
+      fontSize: 13,
+      color: C.textTertiary,
+      textAlign: 'center',
+    },
+  })
+}

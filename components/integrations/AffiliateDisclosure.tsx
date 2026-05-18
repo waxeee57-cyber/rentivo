@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 const PLATFORM_LABELS: Record<string, string> = {
   airbnb: 'Airbnb',
@@ -17,6 +18,8 @@ interface AffiliateDisclosureProps {
 }
 
 export function AffiliateDisclosure({ platform, compact = false }: AffiliateDisclosureProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const label = PLATFORM_LABELS[platform] ?? platform
 
   return (
@@ -32,6 +35,8 @@ export function AffiliateDisclosure({ platform, compact = false }: AffiliateDisc
 }
 
 export function AffiliateSearchDisclosure() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.searchBanner}>
       <Text style={styles.searchBannerText}>
@@ -41,16 +46,17 @@ export function AffiliateSearchDisclosure() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.xs,
-    backgroundColor: Colors.infoSurface,
+    backgroundColor: C.infoSurface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.info,
+    borderColor: C.info,
     marginTop: Spacing.md,
   },
   containerCompact: {
@@ -61,19 +67,20 @@ const styles = StyleSheet.create({
   text: {
     flex: 1,
     fontSize: 12,
-    color: Colors.info,
+    color: C.info,
     lineHeight: 17,
   },
   searchBanner: {
-    backgroundColor: Colors.infoSurface,
+    backgroundColor: C.infoSurface,
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.base,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.info,
+    borderBottomColor: C.info,
   },
   searchBannerText: {
     fontSize: 12,
-    color: Colors.info,
+    color: C.info,
     textAlign: 'center',
   },
-})
+  })
+}

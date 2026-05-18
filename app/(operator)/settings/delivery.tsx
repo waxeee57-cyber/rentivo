@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   View,
   Text,
@@ -18,11 +18,14 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
+import { useColors } from '@/lib/hooks/useColors'
 
 const RADIUS_OPTIONS = [5, 10, 20, 50] as const
 type RadiusOption = typeof RADIUS_OPTIONS[number]
 
 export default function DeliverySettingsScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { operator } = useAuthStore()
   const { showToast } = useToastStore()
 
@@ -133,7 +136,7 @@ export default function DeliverySettingsScreen() {
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <ScreenHeader title="Delivery Settings" />
         <View style={styles.centered}>
-          <ActivityIndicator color={Colors.primary} size="large" />
+          <ActivityIndicator color={C.primary} size="large" />
         </View>
       </SafeAreaView>
     )
@@ -160,8 +163,8 @@ export default function DeliverySettingsScreen() {
             <Switch
               value={deliveryEnabled}
               onValueChange={setDeliveryEnabled}
-              trackColor={{ false: Colors.border, true: Colors.primary }}
-              thumbColor={Colors.white}
+              trackColor={{ false: C.border, true: C.primary }}
+              thumbColor={C.white}
               accessibilityLabel="Enable delivery"
             />
           </View>
@@ -207,7 +210,7 @@ export default function DeliverySettingsScreen() {
                   onChangeText={setFeeEur}
                   keyboardType="decimal-pad"
                   placeholder="0.00"
-                  placeholderTextColor={Colors.textTertiary}
+                  placeholderTextColor={C.textTertiary}
                   accessibilityLabel="Delivery fee in EUR"
                 />
               </View>
@@ -227,7 +230,7 @@ export default function DeliverySettingsScreen() {
                   value={newZone}
                   onChangeText={setNewZone}
                   placeholder="e.g. Marbella Airport"
-                  placeholderTextColor={Colors.textTertiary}
+                  placeholderTextColor={C.textTertiary}
                   accessibilityLabel="New delivery zone"
                   returnKeyType="done"
                   onSubmitEditing={handleAddZone}
@@ -282,10 +285,11 @@ export default function DeliverySettingsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
   },
   centered: {
     flex: 1,
@@ -312,23 +316,23 @@ const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
     marginBottom: 2,
   },
   toggleSub: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     lineHeight: 18,
   },
   sectionLabel: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
     marginBottom: 4,
   },
   sectionSub: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginBottom: Spacing.base,
   },
   radiusRow: {
@@ -340,43 +344,43 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderColor: C.border,
+    backgroundColor: C.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   radiusBtnActive: {
-    backgroundColor: Colors.primarySurface,
-    borderColor: Colors.primary,
+    backgroundColor: C.primarySurface,
+    borderColor: C.primary,
   },
   radiusBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
   },
   radiusBtnTextActive: {
-    color: Colors.primary,
+    color: C.primary,
   },
   feeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     paddingHorizontal: Spacing.base,
     minHeight: 44,
   },
   feePrefix: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginRight: Spacing.xs,
   },
   feeInput: {
     flex: 1,
     fontSize: 16,
-    color: Colors.text,
+    color: C.text,
     paddingVertical: Spacing.sm,
   },
   addZoneRow: {
@@ -386,18 +390,18 @@ const styles = StyleSheet.create({
   },
   zoneInput: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
     fontSize: 14,
-    color: Colors.text,
+    color: C.text,
     minHeight: 44,
   },
   addBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.md,
     paddingHorizontal: Spacing.base,
     alignItems: 'center',
@@ -408,11 +412,11 @@ const styles = StyleSheet.create({
   addBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.textInverse,
+    color: C.textInverse,
   },
   emptyZones: {
     fontSize: 13,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: Spacing.base,
@@ -423,10 +427,10 @@ const styles = StyleSheet.create({
   zoneItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
     minHeight: 44,
@@ -434,22 +438,23 @@ const styles = StyleSheet.create({
   zoneText: {
     flex: 1,
     fontSize: 14,
-    color: Colors.text,
+    color: C.text,
   },
   removeBtn: {
     width: 28,
     height: 28,
     borderRadius: Radius.full,
-    backgroundColor: Colors.errorSurface,
+    backgroundColor: C.errorSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   removeBtnText: {
     fontSize: 12,
-    color: Colors.error,
+    color: C.error,
     fontWeight: '700',
   },
   saveBtn: {
     marginTop: Spacing.base,
   },
-})
+  })
+}

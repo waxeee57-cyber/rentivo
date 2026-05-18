@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, TextInput,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { Button } from '@/components/ui/Button'
@@ -30,6 +31,7 @@ const POLICIES: { key: CancellationPolicy; label: string; desc: string }[] = [
 ]
 
 export default function EditVehicleScreen() {
+  const C = useColors()
   const { id } = useLocalSearchParams<{ id: string }>()
   const { listing, loading } = useListing(id ?? '')
   const { showToast } = useToastStore()
@@ -156,6 +158,8 @@ export default function EditVehicleScreen() {
     }
   }
 
+  const styles = useMemo(() => makeStyles(C), [C])
+
   if (loading || !listing) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -203,7 +207,7 @@ export default function EditVehicleScreen() {
           value={title}
           onChangeText={setTitle}
           placeholder="e.g. Mercedes-Benz E-Class"
-          placeholderTextColor={Colors.textTertiary}
+          placeholderTextColor={C.textTertiary}
           accessibilityLabel="Vehicle name"
         />
 
@@ -234,7 +238,7 @@ export default function EditVehicleScreen() {
           value={pricePerDay}
           onChangeText={setPricePerDay}
           placeholder="e.g. 75"
-          placeholderTextColor={Colors.textTertiary}
+          placeholderTextColor={C.textTertiary}
           keyboardType="numeric"
           accessibilityLabel="Price per day"
         />
@@ -254,7 +258,7 @@ export default function EditVehicleScreen() {
           value={description}
           onChangeText={setDescription}
           placeholder="Describe your vehicle, features, included extras…"
-          placeholderTextColor={Colors.textTertiary}
+          placeholderTextColor={C.textTertiary}
           multiline
           numberOfLines={4}
           textAlignVertical="top"
@@ -276,8 +280,8 @@ export default function EditVehicleScreen() {
                 setAvailable(v)
                 void Haptics.impactAsync(v ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light)
               }}
-              trackColor={{ true: Colors.success, false: Colors.border }}
-              thumbColor={Colors.surface}
+              trackColor={{ true: C.success, false: C.border }}
+              thumbColor={C.surface}
               accessibilityLabel={`Vehicle: ${available ? 'available' : 'unavailable'}`}
               accessibilityRole="switch"
               accessibilityState={{ checked: available }}
@@ -341,8 +345,8 @@ export default function EditVehicleScreen() {
                 setHourlyEnabled(v)
                 void Haptics.impactAsync(v ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light)
               }}
-              trackColor={{ false: Colors.border, true: Colors.primary }}
-              thumbColor={Colors.surface}
+              trackColor={{ false: C.border, true: C.primary }}
+              thumbColor={C.surface}
               accessibilityLabel={`Hourly rental: ${hourlyEnabled ? 'enabled' : 'disabled'}`}
               accessibilityRole="switch"
               accessibilityState={{ checked: hourlyEnabled }}
@@ -357,7 +361,7 @@ export default function EditVehicleScreen() {
                 onChangeText={setPricePerHour}
                 keyboardType="decimal-pad"
                 placeholder="25.00"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={C.textTertiary}
                 accessibilityLabel="Price per hour in euros"
               />
               <Text style={[styles.hourlyFieldLabel, { marginTop: Spacing.md }]}>Minimum hours</Text>
@@ -395,8 +399,8 @@ export default function EditVehicleScreen() {
                 setRequiresKyc(v)
                 void Haptics.impactAsync(v ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light)
               }}
-              trackColor={{ false: Colors.border, true: Colors.primary }}
-              thumbColor={Colors.surface}
+              trackColor={{ false: C.border, true: C.primary }}
+              thumbColor={C.surface}
               accessibilityLabel={`Require identity verification: ${requiresKyc ? 'enabled' : 'disabled'}`}
               accessibilityRole="switch"
               accessibilityState={{ checked: requiresKyc }}
@@ -464,13 +468,14 @@ export default function EditVehicleScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { fontSize: 15, color: Colors.textSecondary },
+  loadingText: { fontSize: 15, color: C.textSecondary },
   sectionTitle: {
-    fontSize: 13, fontWeight: '700', color: Colors.textTertiary,
+    fontSize: 13, fontWeight: '700', color: C.textTertiary,
     textTransform: 'uppercase', letterSpacing: 0.5,
     marginTop: Spacing.xl, marginBottom: Spacing.sm,
   },
@@ -479,95 +484,96 @@ const styles = StyleSheet.create({
   },
   photoSlot: {
     width: '31%', aspectRatio: 1,
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    borderWidth: 1, borderColor: Colors.border, overflow: 'hidden',
+    backgroundColor: C.surface, borderRadius: Radius.lg,
+    borderWidth: 1, borderColor: C.border, overflow: 'hidden',
   },
   photoImg: { width: '100%', height: '100%' },
   photoPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 },
   photoPlaceholderIcon: { fontSize: 24 },
-  photoPlaceholderText: { fontSize: 11, color: Colors.textTertiary, fontWeight: '600' },
+  photoPlaceholderText: { fontSize: 11, color: C.textTertiary, fontWeight: '600' },
   input: {
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
+    borderWidth: 1, borderColor: C.border,
     paddingHorizontal: Spacing.base, paddingVertical: Spacing.md,
-    fontSize: 15, color: Colors.text,
+    fontSize: 15, color: C.text,
   },
   textArea: { minHeight: 100, textAlignVertical: 'top', paddingTop: Spacing.md },
   categoryScroll: { marginBottom: Spacing.xs },
   catChip: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.xs,
-    backgroundColor: Colors.surface, borderRadius: Radius.pill,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: C.surface, borderRadius: Radius.pill,
+    borderWidth: 1, borderColor: C.border,
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
     marginRight: Spacing.sm,
   },
-  catChipActive: { backgroundColor: Colors.primarySurface, borderColor: Colors.primary },
+  catChipActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
   catEmoji: { fontSize: 16 },
-  catLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  catLabelActive: { color: Colors.primaryDark },
+  catLabel: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
+  catLabelActive: { color: C.primaryDark },
   card: { marginTop: Spacing.xl },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   toggleLeft: { flex: 1, marginRight: Spacing.md },
-  toggleTitle: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  toggleSub: { fontSize: 13, color: Colors.textSecondary },
+  toggleTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 2 },
+  toggleSub: { fontSize: 13, color: C.textSecondary },
   minDaysRow: { flexDirection: 'row', gap: Spacing.sm },
   dayChip: {
     flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.lg,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
     alignItems: 'center',
   },
-  dayChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  dayChipText: { fontSize: 14, fontWeight: '700', color: Colors.textSecondary },
-  dayChipTextActive: { color: Colors.textInverse },
+  dayChipActive: { backgroundColor: C.primary, borderColor: C.primary },
+  dayChipText: { fontSize: 14, fontWeight: '700', color: C.textSecondary },
+  dayChipTextActive: { color: C.textInverse },
   policyRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
+    borderWidth: 1, borderColor: C.border,
     padding: Spacing.md, marginBottom: Spacing.sm,
   },
-  policyRowActive: { borderColor: Colors.primary, backgroundColor: Colors.primarySurface },
+  policyRowActive: { borderColor: C.primary, backgroundColor: C.primarySurface },
   radio: {
     width: 22, height: 22, borderRadius: 11,
-    borderWidth: 2, borderColor: Colors.border,
+    borderWidth: 2, borderColor: C.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  radioActive: { borderColor: Colors.primary },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.primary },
+  radioActive: { borderColor: C.primary },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary },
   policyText: { flex: 1 },
-  policyLabel: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  policyDesc: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
+  policyLabel: { fontSize: 15, fontWeight: '700', color: C.text },
+  policyDesc: { fontSize: 13, color: C.textSecondary, marginTop: 2 },
   icalBtn: {
     marginTop: Spacing.sm, padding: Spacing.md, alignItems: 'center',
-    borderWidth: 1.5, borderColor: Colors.primary,
-    borderRadius: Radius.lg, backgroundColor: Colors.primarySurface,
+    borderWidth: 1.5, borderColor: C.primary,
+    borderRadius: Radius.lg, backgroundColor: C.primarySurface,
     minHeight: 48,
   },
-  icalBtnText: { fontSize: 15, fontWeight: '700', color: Colors.primary },
+  icalBtnText: { fontSize: 15, fontWeight: '700', color: C.primary },
   pricingBtn: {
     marginTop: Spacing.sm, padding: Spacing.md, alignItems: 'center',
-    borderWidth: 1, borderColor: Colors.borderGold,
-    borderRadius: Radius.lg, backgroundColor: Colors.surface,
+    borderWidth: 1, borderColor: C.borderGold,
+    borderRadius: Radius.lg, backgroundColor: C.surface,
     minHeight: 44,
   },
-  pricingBtnText: { color: Colors.primary, fontWeight: '600', fontSize: 14 },
+  pricingBtnText: { color: C.primary, fontWeight: '600', fontSize: 14 },
   availabilityBtn: {
     marginTop: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: C.primary,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     alignItems: 'center',
     minHeight: 44,
     justifyContent: 'center',
   },
-  availabilityBtnText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
+  availabilityBtnText: { fontSize: 14, color: C.primary, fontWeight: '600' },
   deleteBtn: {
     marginTop: Spacing.base, padding: Spacing.md, alignItems: 'center',
-    borderWidth: 1.5, borderColor: Colors.error + '55',
-    borderRadius: Radius.lg, backgroundColor: Colors.errorSurface,
+    borderWidth: 1.5, borderColor: C.error + '55',
+    borderRadius: Radius.lg, backgroundColor: C.errorSurface,
   },
-  deleteBtnText: { fontSize: 15, fontWeight: '700', color: Colors.error },
+  deleteBtnText: { fontSize: 15, fontWeight: '700', color: C.error },
   hourlyFields: { marginTop: Spacing.base, gap: Spacing.xs },
-  hourlyFieldLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: Spacing.xs },
+  hourlyFieldLabel: { fontSize: 13, fontWeight: '600', color: C.textSecondary, marginBottom: Spacing.xs },
   minHoursRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
-})
+  })
+}

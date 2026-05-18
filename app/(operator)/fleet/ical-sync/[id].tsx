@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View,
   Text,
@@ -14,8 +14,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
 import { Colors, Spacing, Radius } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function ICalSyncScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { id } = useLocalSearchParams<{ id: string }>()
   const { language } = useAuthStore()
   const isHu = language === 'hu'
@@ -115,7 +118,7 @@ export default function ICalSyncScreen() {
             value={icalUrl}
             onChangeText={setIcalUrl}
             placeholder="https://www.airbnb.com/calendar/ical/..."
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={C.textTertiary}
             style={styles.input}
             autoCapitalize="none"
             autoCorrect={false}
@@ -137,7 +140,7 @@ export default function ICalSyncScreen() {
             accessibilityRole="button"
           >
             {syncing ? (
-              <ActivityIndicator color={Colors.textInverse} />
+              <ActivityIndicator color={C.textInverse} />
             ) : (
               <Text style={styles.buttonText}>
                 {isHu ? 'Szinkronizálás' : 'Sync now'}
@@ -185,10 +188,11 @@ export default function ICalSyncScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
   },
   content: {
     paddingHorizontal: Spacing.base,
@@ -208,39 +212,39 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   backText: {
     fontSize: 20,
-    color: Colors.text,
+    color: C.text,
   },
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
   },
 
   // Section
   section: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     marginBottom: Spacing.base,
   },
   sectionTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.sm,
   },
   sectionDesc: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     lineHeight: 18,
     marginBottom: Spacing.base,
   },
@@ -249,32 +253,32 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.xs,
   },
   input: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     fontSize: 14,
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.sm,
   },
 
   lastSync: {
     fontSize: 12,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     marginBottom: Spacing.md,
   },
 
   // Primary button
   button: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.lg,
     paddingVertical: Spacing.md,
     alignItems: 'center',
@@ -287,7 +291,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.textInverse,
+    color: C.textInverse,
   },
 
   // Secondary button
@@ -298,33 +302,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 48,
     borderWidth: 1.5,
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primarySurface,
+    borderColor: C.primary,
+    backgroundColor: C.primarySurface,
   },
   buttonSecondaryText: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.primary,
+    color: C.primary,
   },
 
   // Info card
   infoCard: {
-    backgroundColor: Colors.infoSurface,
+    backgroundColor: C.infoSurface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.info + '44',
+    borderColor: C.info + '44',
     marginBottom: Spacing.base,
   },
   infoTitle: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.info,
+    color: C.info,
     marginBottom: Spacing.sm,
   },
   infoText: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     lineHeight: 20,
   },
-})
+  })
+}

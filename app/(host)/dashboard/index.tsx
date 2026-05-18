@@ -2,7 +2,8 @@ import React, { useMemo, useEffect, useRef } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { MOCK_HOST, MOCK_HOST_LISTING, MOCK_BOOKINGS } from '@/lib/mockData'
 import { useHostBookings } from '@/lib/hooks/useBookings'
@@ -11,6 +12,7 @@ import { formatDateRange } from '@/lib/utils/formatDate'
 import { Config } from '@/constants/config'
 
 function DashboardSkeleton() {
+  const C = useColors()
   const opacity = useRef(new Animated.Value(0.4)).current
   useEffect(() => {
     Animated.loop(Animated.sequence([
@@ -18,6 +20,7 @@ function DashboardSkeleton() {
       Animated.timing(opacity, { toValue: 0.4, duration: 1000, useNativeDriver: true }),
     ])).start()
   }, [opacity])
+  const skStyles = useMemo(() => makeSkStyles(C), [C])
   return (
     <SafeAreaView style={skStyles.container} edges={['top']}>
       <View style={{ padding: Spacing.base }}>
@@ -35,16 +38,19 @@ function DashboardSkeleton() {
   )
 }
 
-const skStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  title: { height: 30, width: '60%', backgroundColor: Colors.surface, borderRadius: Radius.md, marginBottom: Spacing.xl },
+function makeSkStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
+  title: { height: 30, width: '60%', backgroundColor: C.surface, borderRadius: Radius.md, marginBottom: Spacing.xl },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl },
-  statCard: { flex: 1, minWidth: '45%', height: 70, backgroundColor: Colors.surface, borderRadius: Radius.xl },
-  card: { height: 100, backgroundColor: Colors.surface, borderRadius: Radius.xl, marginBottom: Spacing.md },
-  cardShort: { height: 64, backgroundColor: Colors.surface, borderRadius: Radius.xl, marginBottom: Spacing.sm },
-})
+  statCard: { flex: 1, minWidth: '45%', height: 70, backgroundColor: C.surface, borderRadius: Radius.xl },
+  card: { height: 100, backgroundColor: C.surface, borderRadius: Radius.xl, marginBottom: Spacing.md },
+  cardShort: { height: 64, backgroundColor: C.surface, borderRadius: Radius.xl, marginBottom: Spacing.sm },
+  })
+}
 
 export default function HostDashboardScreen() {
+  const C = useColors()
   const { host, language } = useAuthStore()
   const hostId = Config.useMock ? MOCK_HOST.id : (host?.id ?? null)
   const { bookings, loading } = useHostBookings(hostId)
@@ -74,6 +80,8 @@ export default function HostDashboardScreen() {
   const rating = Config.useMock ? MOCK_HOST.rating : (host?.rating ?? 0)
 
   const recentBookings = Config.useMock ? MOCK_BOOKINGS.slice(0, 3) : bookings.slice(0, 3)
+
+  const styles = useMemo(() => makeStyles(C), [C])
 
   if (loading) {
     return <DashboardSkeleton />
@@ -240,14 +248,15 @@ export default function HostDashboardScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
 
   greeting: {
     fontSize: 26,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.xl,
   },
 
@@ -260,21 +269,21 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   statCardPrimary: {
-    backgroundColor: Colors.primarySubtle,
+    backgroundColor: C.primarySubtle,
     borderWidth: 1.5,
-    borderColor: Colors.primary,
+    borderColor: C.primary,
   },
-  statValue: { fontSize: 20, fontWeight: '800', color: Colors.text, marginBottom: 4 },
-  statValuePrimary: { fontSize: 24, fontWeight: '800', color: Colors.primary, marginBottom: 4 },
-  statLabel: { fontSize: 12, color: Colors.textSecondary },
-  statLabelLight: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+  statValue: { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: 4 },
+  statValuePrimary: { fontSize: 24, fontWeight: '800', color: C.primary, marginBottom: 4 },
+  statLabel: { fontSize: 12, color: C.textSecondary },
+  statLabelLight: { fontSize: 12, color: C.primary, fontWeight: '600' },
 
   section: { marginBottom: Spacing.xl },
   sectionHeader: {
@@ -286,59 +295,59 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  seeAll: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
+  seeAll: { fontSize: 13, color: C.primary, fontWeight: '600' },
 
   listingCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     gap: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     marginBottom: Spacing.sm,
   },
   listingEmoji: {
     width: 64,
     height: 64,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   listingInfo: { flex: 1 },
-  listingTitle: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  listingPrice: { fontSize: 13, color: Colors.primary, fontWeight: '600', marginBottom: 4 },
+  listingTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 2 },
+  listingPrice: { fontSize: 13, color: C.primary, fontWeight: '600', marginBottom: 4 },
   listingStats: { flexDirection: 'row', gap: Spacing.md },
-  listingStatText: { fontSize: 12, color: Colors.textSecondary },
+  listingStatText: { fontSize: 12, color: C.textSecondary },
   listingBadge: {
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
   },
-  listingBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.success },
+  listingBadgeText: { fontSize: 11, fontWeight: '700', color: C.success },
 
   emptyListings: {
     alignItems: 'center',
     paddingVertical: Spacing.xl,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     marginBottom: Spacing.sm,
   },
   emptyEmoji: { fontSize: 32, marginBottom: Spacing.sm },
-  emptyText: { fontSize: 14, color: Colors.textTertiary },
+  emptyText: { fontSize: 14, color: C.textTertiary },
 
   addBtn: {
     borderWidth: 1.5,
-    borderColor: Colors.primary,
+    borderColor: C.primary,
     borderStyle: 'dashed',
     borderRadius: Radius.xl,
     padding: Spacing.base,
@@ -347,60 +356,61 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     minHeight: 44,
   },
-  addBtnText: { fontSize: 14, color: Colors.primary, fontWeight: '700' },
+  addBtnText: { fontSize: 14, color: C.primary, fontWeight: '700' },
 
   bookingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     gap: Spacing.md,
     marginBottom: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   bookingAvatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bookingAvatarText: { fontSize: 16, fontWeight: '700', color: Colors.primary },
+  bookingAvatarText: { fontSize: 16, fontWeight: '700', color: C.primary },
   bookingInfo: { flex: 1 },
-  bookingGuest: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  bookingDates: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  bookingGuest: { fontSize: 14, fontWeight: '600', color: C.text },
+  bookingDates: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
   bookingStatusBadge: {
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
   },
-  statusConfirmed: { backgroundColor: Colors.successSurface },
-  statusPending: { backgroundColor: Colors.warningSurface },
-  statusActive: { backgroundColor: Colors.infoSurface },
-  statusCompleted: { backgroundColor: Colors.surfaceWarm },
-  bookingStatusText: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary },
+  statusConfirmed: { backgroundColor: C.successSurface },
+  statusPending: { backgroundColor: C.warningSurface },
+  statusActive: { backgroundColor: C.infoSurface },
+  statusCompleted: { backgroundColor: C.surfaceWarm },
+  bookingStatusText: { fontSize: 11, fontWeight: '700', color: C.textSecondary },
 
   tipsBox: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     gap: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   tipRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   tipEmoji: { fontSize: 20, width: 28 },
-  tipText: { flex: 1, fontSize: 13, color: Colors.textSecondary, lineHeight: 20 },
+  tipText: { flex: 1, fontSize: 13, color: C.textSecondary, lineHeight: 20 },
 
-  earningsCard: { backgroundColor: Colors.surface, borderRadius: Radius.xl, padding: Spacing.base, marginBottom: Spacing.xl, borderWidth: 1, borderColor: Colors.border },
-  earningsTitle: { fontSize: 12, fontWeight: '700', color: Colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
+  earningsCard: { backgroundColor: C.surface, borderRadius: Radius.xl, padding: Spacing.base, marginBottom: Spacing.xl, borderWidth: 1, borderColor: C.border },
+  earningsTitle: { fontSize: 12, fontWeight: '700', color: C.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
   earningsRow: { flexDirection: 'row', alignItems: 'center' },
   earningsItem: { flex: 1, alignItems: 'center' },
-  earningsAmount: { fontSize: 16, fontWeight: '800', color: Colors.text, marginBottom: 2 },
-  earningsLabel: { fontSize: 11, color: Colors.textTertiary, fontWeight: '600' },
-  earningsDivider: { width: 1, height: 36, backgroundColor: Colors.border },
-})
+  earningsAmount: { fontSize: 16, fontWeight: '800', color: C.text, marginBottom: 2 },
+  earningsLabel: { fontSize: 11, color: C.textTertiary, fontWeight: '600' },
+  earningsDivider: { width: 1, height: 36, backgroundColor: C.border },
+  })
+}

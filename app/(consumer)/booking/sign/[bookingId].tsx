@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useMemo } from 'react'
 import {
   View,
   Text,
@@ -17,8 +17,11 @@ import { Card } from '@/components/ui/Card'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function ConsumerSignScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const { showToast } = useToastStore()
   const [paths, setPaths] = useState<string[]>([])
@@ -111,7 +114,7 @@ export default function ConsumerSignScreen() {
                 <Path
                   key={i}
                   d={p}
-                  stroke={Colors.primary}
+                  stroke={C.primary}
                   strokeWidth={2}
                   fill="none"
                 />
@@ -119,7 +122,7 @@ export default function ConsumerSignScreen() {
               {currentPath ? (
                 <Path
                   d={currentPath}
-                  stroke={Colors.primary}
+                  stroke={C.primary}
                   strokeWidth={2}
                   fill="none"
                 />
@@ -154,10 +157,11 @@ export default function ConsumerSignScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
   },
   content: {
     padding: Spacing.base,
@@ -167,13 +171,13 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.base,
   },
   infoTitle: {
-    color: Colors.text,
+    color: C.text,
     fontSize: 16,
     fontWeight: '700',
     marginBottom: 8,
   },
   infoText: {
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     fontSize: 13,
     lineHeight: 20,
   },
@@ -181,16 +185,16 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.base,
   },
   padLabel: {
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     fontSize: 13,
     marginBottom: 8,
   },
   signaturePad: {
     height: 160,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     borderRadius: Radius.sm,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     overflow: 'hidden',
   },
   placeholderContainer: {
@@ -203,7 +207,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   placeholder: {
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     fontSize: 14,
   },
   clearBtn: {
@@ -214,7 +218,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   clearText: {
-    color: Colors.error,
+    color: C.error,
     fontSize: 14,
   },
-})
+  })
+}

@@ -13,18 +13,10 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useOperatorBookings } from '@/lib/hooks/useOperatorBookings'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import type { Booking, BookingStatus } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CELL_SIZE = (SCREEN_WIDTH - Spacing.base * 2) / 7
-
-const STATUS_COLORS: Record<BookingStatus, string> = {
-  pending: Colors.warning,
-  confirmed: Colors.success,
-  active: Colors.info,
-  completed: Colors.textTertiary,
-  cancelled: Colors.error,
-  disputed: Colors.error,
-}
 
 const STATUS_ICONS: Record<BookingStatus, string> = {
   pending: '⏳',
@@ -37,23 +29,26 @@ const STATUS_ICONS: Record<BookingStatus, string> = {
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-function StatusDot({ status }: { status: BookingStatus }) {
+function StatusDot({ status, color }: { status: BookingStatus; color: string }) {
+  const C = useColors()
   return (
-    <View style={[dotStyles.dot, { backgroundColor: STATUS_COLORS[status] }]}>
-      <Text style={dotStyles.text}>{STATUS_ICONS[status]}</Text>
+    <View style={[{ width: 14, height: 14, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: 1 }, { backgroundColor: color }]}>
+      <Text style={{ fontSize: 7, color: C.white, fontWeight: '800' }}>{STATUS_ICONS[status]}</Text>
     </View>
   )
 }
 
-const dotStyles = StyleSheet.create({
-  dot: {
-    width: 14, height: 14, borderRadius: 7,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 1,
-  },
-  text: { fontSize: 7, color: Colors.white, fontWeight: '800' },
-})
-
 export default function OperatorCalendarScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
+  const STATUS_COLORS: Record<BookingStatus, string> = useMemo(() => ({
+    pending: C.warning,
+    confirmed: C.success,
+    active: C.info,
+    completed: C.textTertiary,
+    cancelled: C.error,
+    disputed: C.error,
+  }), [C])
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const { operator } = useAuthStore()
   const { bookings } = useOperatorBookings(operator?.id ?? 'op-001')
@@ -150,7 +145,7 @@ export default function OperatorCalendarScreen() {
                   {format(day, 'd')}
                 </Text>
                 {dayBookings.slice(0, 3).map((b, idx) => (
-                  <StatusDot key={`${b.id}-${idx}`} status={b.status} />
+                  <StatusDot key={`${b.id}-${idx}`} status={b.status} color={STATUS_COLORS[b.status]} />
                 ))}
                 {dayBookings.length > 3 && (
                   <Text style={styles.more}>+{dayBookings.length - 3}</Text>
@@ -196,55 +191,57 @@ export default function OperatorCalendarScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   monthNav: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
   },
   navBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: Colors.surface, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: C.border,
   },
-  navArrow: { fontSize: 22, color: Colors.text, fontWeight: '700' },
-  monthTitle: { fontSize: 18, fontWeight: '800', color: Colors.text },
+  navArrow: { fontSize: 22, color: C.text, fontWeight: '700' },
+  monthTitle: { fontSize: 18, fontWeight: '800', color: C.text },
   legend: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm, gap: Spacing.md },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendLabel: { fontSize: 12, color: Colors.textSecondary },
+  legendLabel: { fontSize: 12, color: C.textSecondary },
   calBody: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
   dayHeaderRow: { flexDirection: 'row' },
   dayHeader: {
     width: CELL_SIZE, textAlign: 'center',
-    fontSize: 11, fontWeight: '700', color: Colors.textTertiary,
+    fontSize: 11, fontWeight: '700', color: C.textTertiary,
     paddingVertical: Spacing.sm,
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
   dayCell: {
     width: CELL_SIZE, minHeight: 60,
-    borderWidth: 0.5, borderColor: Colors.border,
+    borderWidth: 0.5, borderColor: C.border,
     padding: 3, alignItems: 'center',
   },
-  dayCellToday: { backgroundColor: Colors.primarySurface },
-  dayNum: { fontSize: 12, fontWeight: '600', color: Colors.text, marginBottom: 2 },
-  dayNumToday: { color: Colors.primary, fontWeight: '800' },
-  more: { fontSize: 8, color: Colors.textTertiary },
+  dayCellToday: { backgroundColor: C.primarySurface },
+  dayNum: { fontSize: 12, fontWeight: '600', color: C.text, marginBottom: 2 },
+  dayNumToday: { color: C.primary, fontWeight: '800' },
+  more: { fontSize: 8, color: C.textTertiary },
   listTitle: {
-    fontSize: 12, fontWeight: '700', color: Colors.textTertiary,
+    fontSize: 12, fontWeight: '700', color: C.textTertiary,
     textTransform: 'uppercase', letterSpacing: 0.5,
     marginTop: Spacing.xl, marginBottom: Spacing.md,
   },
   bookingRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
     padding: Spacing.base, marginBottom: Spacing.sm, gap: Spacing.md,
-    borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1, borderColor: C.border,
   },
   statusBar: { width: 4, height: 36, borderRadius: 2 },
   bookingInfo: { flex: 1 },
-  bookingGuest: { fontSize: 14, fontWeight: '700', color: Colors.text },
-  bookingDates: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  bookingStatus: { fontSize: 12, color: Colors.textTertiary, textTransform: 'capitalize' },
-  emptyMonth: { fontSize: 14, color: Colors.textTertiary, textAlign: 'center', marginTop: Spacing.xl },
-})
+  bookingGuest: { fontSize: 14, fontWeight: '700', color: C.text },
+  bookingDates: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
+  bookingStatus: { fontSize: 12, color: C.textTertiary, textTransform: 'capitalize' },
+  emptyMonth: { fontSize: 14, color: C.textTertiary, textAlign: 'center', marginTop: Spacing.xl },
+  })
+}

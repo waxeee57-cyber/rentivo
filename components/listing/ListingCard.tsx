@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react'
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Modal } from 'react-native'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -74,6 +74,7 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
   const language = useAuthStore((s) => s.language)
   const isDark = useThemeStore(s => s.isDark)
   const C = useColors()
+  const { styles, contextStyles } = useMemo(() => makeStyles(C), [C])
   const wishlisted = isWishlisted(listing.id)
   const scale = useRef(new Animated.Value(1)).current
   const [showContext, setShowContext] = useState(false)
@@ -286,6 +287,7 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
 export const ListingCard = React.memo(ListingCardComponent)
 export default ListingCard
 
+function makeStyles(C: ReturnType<typeof useColors>) {
 const styles = StyleSheet.create({
   cardFull: {
     width: '100%',
@@ -327,17 +329,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  categoryText: { fontSize: 11, fontWeight: '700', color: Colors.white },
+  categoryText: { fontSize: 11, fontWeight: '700', color: C.white },
   availableBadge: {
     position: 'absolute',
     bottom: Spacing.sm,
     left: Spacing.sm,
-    backgroundColor: Colors.success,
+    backgroundColor: C.success,
     borderRadius: Radius.full,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  availableBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.white },
+  availableBadgeText: { fontSize: 11, fontWeight: '700', color: C.white },
   heartBtn: {
     position: 'absolute',
     top: Spacing.sm,
@@ -358,7 +360,7 @@ const styles = StyleSheet.create({
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   rentalCount: { fontSize: 12 },
   policyRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  policyDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.success },
+  policyDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.success },
   policyText: { fontSize: 12 },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 4 },
   price: { ...Typography.priceS },
@@ -386,7 +388,7 @@ const contextStyles = StyleSheet.create({
   },
   menuItemLast: { borderBottomWidth: 0 },
   menuItemText: { fontSize: 16, fontWeight: '500' },
-  menuItemTextDanger: { color: Colors.error },
+  menuItemTextDanger: { color: C.error },
   cancelBtn: {
     marginHorizontal: Spacing.xl, marginTop: Spacing.md,
     borderRadius: Radius.pill,
@@ -394,6 +396,8 @@ const contextStyles = StyleSheet.create({
   },
   cancelText: { fontSize: 16, fontWeight: '700' },
 })
+return { styles, contextStyles }
+}
 
 // ---------------------------------------------------------------------------
 // ListingCardSkeleton — animated placeholder while listings are loading
@@ -401,6 +405,7 @@ const contextStyles = StyleSheet.create({
 
 export function ListingCardSkeleton({ variant = 'grid' }: { variant?: 'full' | 'grid' }) {
   const C = useColors()
+  const { styles } = useMemo(() => makeStyles(C), [C])
   const opacity = useRef(new Animated.Value(0.3)).current
   const isFull = variant === 'full'
 

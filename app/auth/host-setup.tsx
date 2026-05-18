@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, Animated,
@@ -9,6 +9,7 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { MOCK_HOST } from '@/lib/mockData'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 const CATEGORY_CHIPS = [
   { key: 'car', emoji: '🚗', label: 'Car' },
@@ -22,6 +23,8 @@ const CATEGORY_CHIPS = [
 type Step = 1 | 2 | 3
 
 export default function HostSetupScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { setHost, setRole } = useAuthStore()
   const [step, setStep] = useState<Step>(1)
   const [name, setName] = useState('')
@@ -103,7 +106,7 @@ export default function HostSetupScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Full name"
-                    placeholderTextColor={Colors.textTertiary}
+                    placeholderTextColor={C.textTertiary}
                     value={name}
                     onChangeText={setName}
                   />
@@ -114,7 +117,7 @@ export default function HostSetupScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Where are your rentals located?"
-                    placeholderTextColor={Colors.textTertiary}
+                    placeholderTextColor={C.textTertiary}
                     value={city}
                     onChangeText={setCity}
                   />
@@ -125,7 +128,7 @@ export default function HostSetupScreen() {
                   <TextInput
                     style={[styles.input, styles.inputMulti]}
                     placeholder="Tell guests a bit about yourself..."
-                    placeholderTextColor={Colors.textTertiary}
+                    placeholderTextColor={C.textTertiary}
                     value={bio}
                     onChangeText={setBio}
                     multiline
@@ -251,8 +254,9 @@ export default function HostSetupScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
 
   progressBar: {
     flexDirection: 'row',
@@ -264,9 +268,9 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
   },
-  progressDotActive: { backgroundColor: Colors.primary, width: 24 },
+  progressDotActive: { backgroundColor: C.primary, width: 24 },
 
   content: {
     paddingHorizontal: Spacing.xl,
@@ -276,7 +280,7 @@ const styles = StyleSheet.create({
   stepLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.primary,
+    color: C.primary,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: Spacing.sm,
@@ -285,13 +289,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '900',
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.sm,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 15,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginBottom: Spacing.xl,
     lineHeight: 22,
   },
@@ -300,20 +304,20 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginBottom: Spacing.xs,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     fontSize: 15,
-    color: Colors.text,
+    color: C.text,
   },
   inputMulti: {
     height: 88,
@@ -333,24 +337,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: Radius.pill,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   chipActive: {
-    backgroundColor: Colors.primarySurface,
-    borderColor: Colors.primary,
+    backgroundColor: C.primarySurface,
+    borderColor: C.primary,
   },
   chipEmoji: { fontSize: 16 },
-  chipLabel: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  chipLabelActive: { color: Colors.primaryDark },
+  chipLabel: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
+  chipLabelActive: { color: C.primaryDark },
 
   primaryBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.base,
     alignItems: 'center',
-    shadowColor: Colors.primary,
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -358,14 +362,14 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   primaryBtnDisabled: {
-    backgroundColor: Colors.textTertiary,
+    backgroundColor: C.textTertiary,
     shadowOpacity: 0,
     elevation: 0,
   },
   primaryBtnText: {
     fontSize: 16,
     fontWeight: '800',
-    color: Colors.textInverse,
+    color: C.textInverse,
   },
   skipBtn: {
     alignItems: 'center',
@@ -374,56 +378,57 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     fontWeight: '500',
   },
 
   verifyBox: {
-    backgroundColor: Colors.infoSurface,
+    backgroundColor: C.infoSurface,
     borderRadius: Radius.xl,
     padding: Spacing.xl,
     alignItems: 'center',
     marginBottom: Spacing.xl,
     borderWidth: 1,
-    borderColor: Colors.info,
+    borderColor: C.info,
   },
   verifyIcon: { fontSize: 40, marginBottom: Spacing.md },
-  verifyTitle: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: Spacing.sm },
-  verifyText: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20 },
+  verifyTitle: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: Spacing.sm },
+  verifyText: { fontSize: 13, color: C.textSecondary, textAlign: 'center', lineHeight: 20 },
 
   verifiedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     marginBottom: Spacing.base,
   },
   verifiedIcon: { fontSize: 24 },
-  verifiedText: { fontSize: 15, fontWeight: '700', color: Colors.success },
+  verifiedText: { fontSize: 15, fontWeight: '700', color: C.success },
 
   stripeBox: {
     flexDirection: 'row',
     gap: Spacing.md,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.xl,
     padding: Spacing.xl,
     marginBottom: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   stripeIcon: { fontSize: 36 },
-  stripeTitle: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 4 },
-  stripeText: { fontSize: 13, color: Colors.textSecondary, lineHeight: 20 },
+  stripeTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 4 },
+  stripeText: { fontSize: 13, color: C.textSecondary, lineHeight: 20 },
 
   feeNote: {
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     marginBottom: Spacing.xl,
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: C.primary,
   },
-  feeNoteText: { fontSize: 13, color: Colors.primaryDark, lineHeight: 20 },
-})
+  feeNoteText: { fontSize: 13, color: C.primaryDark, lineHeight: 20 },
+  })
+}

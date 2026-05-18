@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useMemo } from 'react'
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Dimensions, Animated,
@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Colors, Spacing, Radius, Typography, Shadow } from '@/constants/colors'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 const { width, height } = Dimensions.get('window')
 
@@ -41,6 +42,8 @@ async function markOnboardingDone() {
 }
 
 export default function OnboardingScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [activeIndex, setActiveIndex] = useState(0)
   const listRef = useRef<FlatList>(null)
   const scrollX = useRef(new Animated.Value(0)).current
@@ -172,8 +175,9 @@ export default function OnboardingScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
 
   slide: {
     width,
@@ -192,7 +196,7 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     backgroundColor: 'rgba(232,164,74,0.12)',
     borderWidth: 1,
-    borderColor: Colors.borderGold,
+    borderColor: C.borderGold,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.xl,
@@ -200,7 +204,7 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 64 },
   title: {
     ...Typography.h1,
-    color: Colors.white,
+    color: C.white,
     textAlign: 'center',
     marginBottom: Spacing.base,
   },
@@ -223,11 +227,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: Colors.borderGold,
+    borderColor: C.borderGold,
   },
   trustBadgeText: {
     fontSize: 13,
-    color: Colors.primary,
+    color: C.primary,
     fontWeight: '600',
   },
 
@@ -245,11 +249,11 @@ const styles = StyleSheet.create({
   dot: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
   },
   primaryBtn: {
     width: '100%',
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.full,
     paddingVertical: Spacing.md,
     alignItems: 'center',
@@ -259,12 +263,13 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     ...Typography.h4,
-    color: Colors.textInverse,
+    color: C.textInverse,
   },
   skipBtn: { paddingVertical: Spacing.sm, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   skipBtnText: {
     fontSize: 15,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     fontWeight: '500',
   },
-})
+  })
+}

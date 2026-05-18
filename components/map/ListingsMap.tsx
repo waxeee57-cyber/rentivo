@@ -5,6 +5,7 @@ import { Colors } from '@/constants/colors'
 import { ListingMarker } from '@/components/map/ListingMarker'
 import { ListingPreviewSheet } from '@/components/map/ListingPreviewSheet'
 import type { Listing } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface Props {
   listings: Listing[]
@@ -19,6 +20,8 @@ const DEFAULT_REGION: Region = {
 }
 
 export default function ListingsMap({ listings, initialRegion }: Props) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const selectedListing = useMemo(
@@ -62,12 +65,14 @@ export default function ListingsMap({ listings, initialRegion }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
   },
   map: {
     flex: 1,
   },
-})
+  })
+}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ListRenderItemInfo } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface PromoCodeAdmin {
   id: string
@@ -25,6 +26,8 @@ const MOCK_PROMOS: PromoCodeAdmin[] = [
 ]
 
 export default function AdminPromoCodesScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [promos, setPromos] = useState<PromoCodeAdmin[]>(Config.useMock ? MOCK_PROMOS : [])
   const { showToast } = useToastStore()
 
@@ -102,24 +105,25 @@ export default function AdminPromoCodesScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
   },
   list: {
     padding: Spacing.base,
     gap: Spacing.sm,
   },
   row: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   info: {
     flex: 1,
@@ -127,12 +131,12 @@ const styles = StyleSheet.create({
   code: {
     fontSize: 16,
     fontWeight: '800',
-    color: Colors.primary,
+    color: C.primary,
     letterSpacing: 1,
   },
   detail: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginTop: 2,
     marginBottom: 6,
   },
@@ -141,13 +145,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: C.primary,
     minHeight: 44,
     justifyContent: 'center',
   },
   actionBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.primary,
+    color: C.primary,
   },
-})
+  })
+}

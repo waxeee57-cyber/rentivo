@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import {
   View, Text, Modal, TouchableOpacity, StyleSheet,
 } from 'react-native'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface Detail {
   label: string
@@ -30,6 +31,8 @@ export function ConfirmSheet({
   onCancel,
   details,
 }: ConfirmSheetProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <Modal
       transparent
@@ -83,13 +86,14 @@ export function ConfirmSheet({
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: Colors.overlay,
+    backgroundColor: C.overlay,
   },
   sheet: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderTopLeftRadius: Radius.xxl,
     borderTopRightRadius: Radius.xxl,
     padding: Spacing.xl,
@@ -98,7 +102,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
     borderRadius: Radius.pill,
     alignSelf: 'center',
     marginBottom: Spacing.xl,
@@ -106,17 +110,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.sm,
   },
   message: {
     fontSize: 15,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     lineHeight: 22,
     marginBottom: Spacing.xl,
   },
   detailsBox: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     marginBottom: Spacing.xl,
     overflow: 'hidden',
@@ -130,16 +134,16 @@ const styles = StyleSheet.create({
   },
   detailRowBorder: {
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: C.border,
   },
   detailLabel: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
   },
   detailValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
   },
   actions: {
     flexDirection: 'row',
@@ -150,34 +154,35 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
   },
   confirmBtn: {
     flex: 2,
     height: 50,
     borderRadius: Radius.lg,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   confirmBtnDanger: {
-    backgroundColor: Colors.errorSurface,
+    backgroundColor: C.errorSurface,
     borderWidth: 1,
-    borderColor: Colors.error,
+    borderColor: C.error,
   },
   confirmText: {
     fontSize: 15,
     fontWeight: '700',
-    color: Colors.textInverse,
+    color: C.textInverse,
   },
   confirmTextDanger: {
-    color: Colors.error,
+    color: C.error,
   },
-})
+  })
+}

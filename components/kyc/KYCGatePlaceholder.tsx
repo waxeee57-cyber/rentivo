@@ -29,10 +29,11 @@
  * 3. Jogi tanácsadás lezárva
  */
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface KYCGatePlaceholderProps {
   userType: 'consumer' | 'host' | 'operator'
@@ -41,10 +42,12 @@ interface KYCGatePlaceholderProps {
 }
 
 export function KYCGatePlaceholder({ userType, isVerified, onPress }: KYCGatePlaceholderProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   if (isVerified) {
     return (
       <View style={styles.verified}>
-        <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+        <Ionicons name="checkmark-circle" size={20} color={C.success} />
         <Text style={styles.verifiedText}>Személyazonosság igazolva</Text>
       </View>
     )
@@ -52,7 +55,7 @@ export function KYCGatePlaceholder({ userType, isVerified, onPress }: KYCGatePla
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
-      <Ionicons name="shield-outline" size={20} color={Colors.primary} />
+      <Ionicons name="shield-outline" size={20} color={C.primary} />
       <View style={styles.content}>
         <Text style={styles.title}>Személyazonosság igazolás</Text>
         <Text style={styles.subtitle}>
@@ -61,31 +64,33 @@ export function KYCGatePlaceholder({ userType, isVerified, onPress }: KYCGatePla
             : 'Szükséges a foglaláshoz'}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+      <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
     </TouchableOpacity>
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.base,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     gap: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     minHeight: 44,
   },
   content: { flex: 1 },
-  title: { color: Colors.text, fontSize: 15, fontWeight: '600' },
-  subtitle: { color: Colors.textSecondary, fontSize: 13, marginTop: 2 },
+  title: { color: C.text, fontSize: 15, fontWeight: '600' },
+  subtitle: { color: C.textSecondary, fontSize: 13, marginTop: 2 },
   verified: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
     padding: Spacing.md,
   },
-  verifiedText: { color: Colors.success, fontSize: 14, fontWeight: '600' },
-})
+  verifiedText: { color: C.success, fontSize: 14, fontWeight: '600' },
+  })
+}

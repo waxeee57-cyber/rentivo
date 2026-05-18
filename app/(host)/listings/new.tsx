@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, Alert,
@@ -8,7 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { WhatNextScreen } from '@/components/ui/WhatNextScreen'
 import { useCamera } from '@/lib/hooks/useCamera'
@@ -38,6 +39,7 @@ const POLICIES = [
 type Step = 1 | 2 | 3 | 4 | 5
 
 export default function NewHostListingScreen() {
+  const C = useColors()
   const { showPhotoOptions } = useCamera()
   const { showToast } = useToastStore()
   const { language } = useAuthStore()
@@ -148,6 +150,8 @@ export default function NewHostListingScreen() {
     }
   }
 
+  const styles = useMemo(() => makeStyles(C), [C])
+
   if (published) {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: 'center' }]}>
@@ -183,7 +187,7 @@ export default function NewHostListingScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => step > 1 ? setStep((step - 1) as Step) : router.back()}>
-            <Ionicons name="arrow-back" size={22} color={Colors.text} />
+            <Ionicons name="arrow-back" size={22} color={C.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>List your vehicle</Text>
           <View style={{ width: 22 }} />
@@ -214,7 +218,7 @@ export default function NewHostListingScreen() {
                     <Ionicons
                       name={cat.icon}
                       size={32}
-                      color={category === cat.key ? Colors.primaryDark : Colors.textSecondary}
+                      color={category === cat.key ? C.primaryDark : C.textSecondary}
                     />
                     <Text style={[styles.catLabel, category === cat.key && styles.catLabelActive]}>
                       {cat.label}
@@ -237,7 +241,7 @@ export default function NewHostListingScreen() {
                       <TextInput
                         style={styles.input}
                         placeholder="e.g. Toyota"
-                        placeholderTextColor={Colors.textTertiary}
+                        placeholderTextColor={C.textTertiary}
                         value={make}
                         onChangeText={setMake}
                       />
@@ -247,7 +251,7 @@ export default function NewHostListingScreen() {
                       <TextInput
                         style={styles.input}
                         placeholder="e.g. RAV4"
-                        placeholderTextColor={Colors.textTertiary}
+                        placeholderTextColor={C.textTertiary}
                         value={model}
                         onChangeText={setModel}
                       />
@@ -259,7 +263,7 @@ export default function NewHostListingScreen() {
                       <TextInput
                         style={styles.input}
                         placeholder="2023"
-                        placeholderTextColor={Colors.textTertiary}
+                        placeholderTextColor={C.textTertiary}
                         value={year}
                         onChangeText={setYear}
                         keyboardType="numeric"
@@ -270,7 +274,7 @@ export default function NewHostListingScreen() {
                       <TextInput
                         style={styles.input}
                         placeholder="White"
-                        placeholderTextColor={Colors.textTertiary}
+                        placeholderTextColor={C.textTertiary}
                         value={color}
                         onChangeText={setColor}
                       />
@@ -284,11 +288,11 @@ export default function NewHostListingScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="e.g. VUT/MAD/2024/12345 (required by local law)"
-                    placeholderTextColor={Colors.textTertiary}
+                    placeholderTextColor={C.textTertiary}
                     value={strRegistration}
                     onChangeText={setStrRegistration}
                   />
-                  <Text style={{ color: Colors.textTertiary, fontSize: 11, marginBottom: Spacing.md }}>
+                  <Text style={{ color: C.textTertiary, fontSize: 11, marginBottom: Spacing.md }}>
                     Many EU cities require a short-term rental licence number on all listings.
                   </Text>
                 </View>
@@ -297,7 +301,7 @@ export default function NewHostListingScreen() {
               <TextInput
                 style={[styles.input, styles.inputMulti]}
                 placeholder="What makes your rental special?"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={C.textTertiary}
                 value={description}
                 onChangeText={setDescription}
                 multiline
@@ -334,7 +338,7 @@ export default function NewHostListingScreen() {
                       <Image source={{ uri: photos[i]! }} style={styles.photoSlotImage} contentFit="cover" />
                     ) : (
                       <>
-                        <Ionicons name="camera-outline" size={28} color={Colors.textTertiary} />
+                        <Ionicons name="camera-outline" size={28} color={C.textTertiary} />
                         {i === 0 && <Text style={styles.photoSlotLabel}>Cover</Text>}
                       </>
                     )}
@@ -356,7 +360,7 @@ export default function NewHostListingScreen() {
                 <TextInput
                   style={styles.priceInput}
                   placeholder="0"
-                  placeholderTextColor={Colors.textTertiary}
+                  placeholderTextColor={C.textTertiary}
                   value={pricePerDay}
                   onChangeText={setPricePerDay}
                   keyboardType="numeric"
@@ -405,7 +409,7 @@ export default function NewHostListingScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="City where your rental is located"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={C.textTertiary}
                 value={city}
                 onChangeText={setCity}
               />
@@ -414,7 +418,7 @@ export default function NewHostListingScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Street address or area"
-                placeholderTextColor={Colors.textTertiary}
+                placeholderTextColor={C.textTertiary}
                 value={address}
                 onChangeText={setAddress}
               />
@@ -463,8 +467,9 @@ export default function NewHostListingScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
 
   header: {
     flexDirection: 'row',
@@ -473,7 +478,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
   },
-  headerTitle: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
+  headerTitle: { fontSize: 14, fontWeight: '600', color: C.textSecondary },
 
   content: {
     paddingHorizontal: Spacing.xl,
@@ -482,13 +487,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '900',
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.xl,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginTop: -Spacing.md,
     marginBottom: Spacing.xl,
     lineHeight: 20,
@@ -502,41 +507,41 @@ const styles = StyleSheet.create({
   catCard: {
     width: '30%',
     aspectRatio: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: Colors.border,
+    borderColor: C.border,
     gap: Spacing.xs,
   },
   catCardActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primarySurface,
+    borderColor: C.primary,
+    backgroundColor: C.primarySurface,
   },
   catEmoji: { fontSize: 32 },
-  catLabel: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary },
-  catLabelActive: { color: Colors.primaryDark },
+  catLabel: { fontSize: 12, fontWeight: '600', color: C.textSecondary },
+  catLabelActive: { color: C.primaryDark },
 
   row: { flexDirection: 'row', gap: Spacing.sm },
   label: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.xs,
     marginTop: Spacing.base,
   },
   input: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     fontSize: 15,
-    color: Colors.text,
+    color: C.text,
   },
   inputMulti: {
     height: 100,
@@ -553,16 +558,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: Radius.pill,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   featureChipActive: {
-    backgroundColor: Colors.primarySurface,
-    borderColor: Colors.primary,
+    backgroundColor: C.primarySurface,
+    borderColor: C.primary,
   },
-  featureChipText: { fontSize: 13, fontWeight: '500', color: Colors.textSecondary },
-  featureChipTextActive: { color: Colors.primaryDark },
+  featureChipText: { fontSize: 13, fontWeight: '500', color: C.textSecondary },
+  featureChipTextActive: { color: C.primaryDark },
 
   photoGrid: {
     flexDirection: 'row',
@@ -573,21 +578,21 @@ const styles = StyleSheet.create({
   photoSlot: {
     width: '31%',
     aspectRatio: 1,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: C.border,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
   },
-  photoSlotLabel: { fontSize: 10, color: Colors.textTertiary, fontWeight: '600' },
+  photoSlotLabel: { fontSize: 10, color: C.textTertiary, fontWeight: '600' },
   photoSlotImage: { width: '100%', height: '100%', borderRadius: Radius.lg },
   photoTip: {
     fontSize: 13,
-    color: Colors.textSecondary,
-    backgroundColor: Colors.primarySurface,
+    color: C.textSecondary,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     lineHeight: 20,
@@ -596,19 +601,19 @@ const styles = StyleSheet.create({
   priceInputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.xl,
     borderWidth: 2,
-    borderColor: Colors.primary,
+    borderColor: C.primary,
     paddingHorizontal: Spacing.xl,
     marginBottom: Spacing.md,
   },
-  currencySymbol: { fontSize: 28, fontWeight: '700', color: Colors.primary, marginRight: Spacing.sm },
-  priceInput: { flex: 1, fontSize: 48, fontWeight: '900', color: Colors.text, paddingVertical: Spacing.xl },
-  priceUnit: { fontSize: 18, color: Colors.textSecondary, fontWeight: '600' },
+  currencySymbol: { fontSize: 28, fontWeight: '700', color: C.primary, marginRight: Spacing.sm },
+  priceInput: { flex: 1, fontSize: 48, fontWeight: '900', color: C.text, paddingVertical: Spacing.xl },
+  priceUnit: { fontSize: 18, color: C.textSecondary, fontWeight: '600' },
   priceSuggestion: {
     fontSize: 13,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginBottom: Spacing.xl,
     lineHeight: 20,
   },
@@ -617,23 +622,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     marginBottom: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   policyCardActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primarySurface,
+    borderColor: C.primary,
+    backgroundColor: C.primarySurface,
   },
   policyRadio: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: Colors.primary,
+    borderColor: C.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -641,107 +646,108 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
   },
-  policyLabel: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  policyDesc: { fontSize: 12, color: Colors.textSecondary },
+  policyLabel: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 2 },
+  policyDesc: { fontSize: 12, color: C.textSecondary },
 
   instantBookRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     marginTop: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     gap: Spacing.md,
   },
-  instantBookTitle: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  instantBookDesc: { fontSize: 13, color: Colors.textSecondary },
+  instantBookTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 2 },
+  instantBookDesc: { fontSize: 13, color: C.textSecondary },
   toggleBtn: {
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
     borderRadius: Radius.pill,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
-  toggleBtnActive: { backgroundColor: Colors.primarySurface, borderColor: Colors.primary },
-  toggleBtnText: { fontSize: 13, fontWeight: '800', color: Colors.textSecondary },
-  toggleBtnTextActive: { color: Colors.primaryDark },
+  toggleBtnActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
+  toggleBtnText: { fontSize: 13, fontWeight: '800', color: C.textSecondary },
+  toggleBtnTextActive: { color: C.primaryDark },
 
   publishNote: {
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     marginTop: Spacing.xl,
     borderWidth: 1,
-    borderColor: Colors.success,
+    borderColor: C.success,
   },
-  publishNoteText: { fontSize: 13, color: Colors.success, lineHeight: 20 },
+  publishNoteText: { fontSize: 13, color: C.success, lineHeight: 20 },
 
   footer: {
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.base,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.background,
+    borderTopColor: C.border,
+    backgroundColor: C.background,
   },
   nextBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.base,
     alignItems: 'center',
-    shadowColor: Colors.primary,
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 6,
   },
   nextBtnDisabled: {
-    backgroundColor: Colors.textTertiary,
+    backgroundColor: C.textTertiary,
     shadowOpacity: 0,
     elevation: 0,
   },
-  nextBtnText: { fontSize: 16, fontWeight: '800', color: Colors.textInverse },
+  nextBtnText: { fontSize: 16, fontWeight: '800', color: C.textInverse },
   publishedCircle: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
     marginBottom: Spacing.xl,
     borderWidth: 3,
-    borderColor: Colors.success,
+    borderColor: C.success,
   },
-  publishedCheck: { fontSize: 48, color: Colors.success },
+  publishedCheck: { fontSize: 48, color: C.success },
   publishedTitle: {
     fontSize: 28,
     fontWeight: '900',
-    color: Colors.text,
+    color: C.text,
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
   publishedSubtitle: {
     fontSize: 15,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     textAlign: 'center',
     marginBottom: Spacing.xl,
     lineHeight: 22,
   },
   earningsCard: {
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     marginBottom: Spacing.xl,
     borderWidth: 1,
-    borderColor: Colors.success,
+    borderColor: C.success,
     alignItems: 'center',
   },
-  earningsTitle: { fontSize: 13, fontWeight: '700', color: Colors.success, marginBottom: Spacing.xs },
-  earningsValue: { fontSize: 32, fontWeight: '900', color: Colors.success },
-  earningsNote: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
-})
+  earningsTitle: { fontSize: 13, fontWeight: '700', color: C.success, marginBottom: Spacing.xs },
+  earningsValue: { fontSize: 32, fontWeight: '900', color: C.success },
+  earningsNote: { fontSize: 12, color: C.textSecondary, marginTop: 4 },
+  })
+}

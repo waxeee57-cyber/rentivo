@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { Image } from 'expo-image'
 import { Colors, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface AvatarProps {
   name?: string | null
@@ -10,6 +11,8 @@ interface AvatarProps {
 }
 
 export function Avatar({ name, imageUrl, size = 40 }: AvatarProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const initials = name
     ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
     : '?'
@@ -31,11 +34,13 @@ export function Avatar({ name, imageUrl, size = 40 }: AvatarProps) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   placeholder: {
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  initials: { color: Colors.primaryDark, fontWeight: '700' },
-})
+  initials: { color: C.primaryDark, fontWeight: '700' },
+  })
+}

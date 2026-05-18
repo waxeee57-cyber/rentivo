@@ -1,6 +1,7 @@
-import React, { useRef } from 'react'
+import React, { useRef, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { Colors, Radius, Spacing } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface SignatureCanvasProps {
   label?: string
@@ -9,6 +10,8 @@ interface SignatureCanvasProps {
 }
 
 export function SignatureCanvas({ label, onSave, saved }: SignatureCanvasProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const SignatureComponent = require('react-native-signature-canvas').default
 
   const sigRef = useRef<{ readSignature: () => void; clearSignature: () => void } | null>(null)
@@ -46,10 +49,11 @@ export function SignatureCanvas({ label, onSave, saved }: SignatureCanvasProps) 
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     borderRadius: Radius.xl,
     overflow: 'hidden',
     marginBottom: Spacing.base,
@@ -57,18 +61,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '700',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     padding: Spacing.md,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
   },
   savedContainer: {
     height: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.successSurface,
-    borderColor: Colors.success,
+    backgroundColor: C.successSurface,
+    borderColor: C.success,
   },
-  savedText: { color: Colors.success, fontWeight: '700', fontSize: 16 },
-})
+  savedText: { color: C.success, fontWeight: '700', fontSize: 16 },
+  })
+}

@@ -1,6 +1,7 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface WhatNextStep {
   icon: string
@@ -22,6 +23,8 @@ export function WhatNextScreen({
   primaryAction,
   secondaryAction,
 }: WhatNextProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.card}>
       {emoji ? <Text style={styles.emoji}>{emoji}</Text> : null}
@@ -50,13 +53,14 @@ export function WhatNextScreen({
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.xl,
     borderLeftWidth: 4,
-    borderLeftColor: Colors.primary,
+    borderLeftColor: C.primary,
     marginBottom: Spacing.base,
   },
   emoji: {
@@ -67,7 +71,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 15,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.base,
@@ -82,7 +86,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -91,12 +95,12 @@ const styles = StyleSheet.create({
   stepText: {
     flex: 1,
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     lineHeight: 20,
     paddingTop: 6,
   },
   primaryBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.md,
     alignItems: 'center',
@@ -105,7 +109,7 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     fontSize: 15,
     fontWeight: '800',
-    color: Colors.textInverse,
+    color: C.textInverse,
   },
   secondaryBtn: {
     paddingVertical: Spacing.sm,
@@ -114,7 +118,8 @@ const styles = StyleSheet.create({
   },
   secondaryBtnText: {
     fontSize: 14,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     fontWeight: '600',
   },
-})
+  })
+}

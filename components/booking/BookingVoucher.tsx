@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
 import { WebView } from 'react-native-webview'
 import * as Sharing from 'expo-sharing'
 import { Colors, Spacing, Radius, Typography, Shadow } from '@/constants/colors'
 import { t } from '@/constants/i18n'
+import { useColors } from '@/lib/hooks/useColors'
 
 export interface VoucherData {
   /** Booking UUID */
@@ -40,6 +41,8 @@ function QRCodeView({ value, size }: { value: string; size: number }): React.JSX
 }
 
 export default function BookingVoucher({ voucher, language = 'en' }: Props) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const qrPayload = JSON.stringify({
     id: voucher.id,
     listing: voucher.listingTitle ?? '',
@@ -110,25 +113,26 @@ export default function BookingVoucher({ voucher, language = 'en' }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   voucher: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.xl,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     marginVertical: Spacing.md,
     ...Shadow.md,
   },
   title: {
     ...Typography.h3,
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.lg,
     textAlign: 'center',
   },
   qrContainer: {
-    backgroundColor: Colors.white,
+    backgroundColor: C.white,
     padding: Spacing.base,
     borderRadius: Radius.md,
     marginBottom: Spacing.lg,
@@ -136,29 +140,29 @@ const styles = StyleSheet.create({
   },
   bookingId: {
     ...Typography.h2,
-    color: Colors.primary,
+    color: C.primary,
     letterSpacing: 2,
     marginBottom: Spacing.sm,
   },
   details: {
     fontSize: 16,
-    color: Colors.text,
+    color: C.text,
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
   dates: {
     fontSize: 14,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginBottom: Spacing.sm,
   },
   guest: {
     fontSize: 13,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     marginBottom: Spacing.md,
   },
   offlineHint: {
     fontSize: 12,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textAlign: 'center',
     fontStyle: 'italic',
     marginBottom: Spacing.lg,
@@ -169,14 +173,15 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.borderGold,
-    backgroundColor: Colors.primarySurface,
+    borderColor: C.borderGold,
+    backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   shareBtnText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.primary,
+    color: C.primary,
   },
-})
+  })
+}

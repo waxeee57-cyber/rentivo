@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import {
   View, Text, FlatList, StyleSheet, ActivityIndicator,
 } from 'react-native'
@@ -11,8 +11,11 @@ import { useReviews } from '@/lib/hooks/useReviews'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
 import type { Review } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function AllReviewsScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { id } = useLocalSearchParams<{ id: string }>()
   const { language } = useAuthStore()
   const { reviews, loading, error } = useReviews(id ?? '')
@@ -43,7 +46,7 @@ export default function AllReviewsScreen() {
 
       {loading && (
         <View style={styles.loadingBox}>
-          <ActivityIndicator color={Colors.primary} size="large" />
+          <ActivityIndicator color={C.primary} size="large" />
         </View>
       )}
 
@@ -67,10 +70,11 @@ export default function AllReviewsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: C.background,
   },
   list: {
     paddingHorizontal: Spacing.base,
@@ -89,7 +93,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
-    color: Colors.error,
+    color: C.error,
     textAlign: 'center',
   },
   emptyBox: {
@@ -99,17 +103,18 @@ const styles = StyleSheet.create({
   },
   emptyIcon: {
     fontSize: 40,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
   },
   emptyTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
   },
   emptySub: {
     fontSize: 14,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textAlign: 'center',
     paddingHorizontal: Spacing.xl,
   },
-})
+  })
+}

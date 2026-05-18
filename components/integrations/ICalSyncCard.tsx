@@ -1,7 +1,8 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import { formatDistanceToNow } from 'date-fns'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface ICalSyncCardProps {
   url: string
@@ -12,6 +13,8 @@ interface ICalSyncCardProps {
 type SyncStatus = 'idle' | 'syncing' | 'success' | 'error'
 
 export function ICalSyncCard({ url, onBlockedDatesChange, autoSync = true }: ICalSyncCardProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [status, setStatus] = useState<SyncStatus>('idle')
   const [lastSynced, setLastSynced] = useState<Date | null>(null)
   const [blockedCount, setBlockedCount] = useState(0)
@@ -53,9 +56,9 @@ export function ICalSyncCard({ url, onBlockedDatesChange, autoSync = true }: ICa
   }
 
   const statusColor = () => {
-    if (status === 'success') return Colors.success
-    if (status === 'error') return Colors.error
-    return Colors.textSecondary
+    if (status === 'success') return C.success
+    if (status === 'error') return C.error
+    return C.textSecondary
   }
 
   return (
@@ -79,9 +82,9 @@ export function ICalSyncCard({ url, onBlockedDatesChange, autoSync = true }: ICa
           accessibilityRole="button"
         >
           {status === 'syncing' ? (
-            <ActivityIndicator size="small" color={Colors.primary} />
+            <ActivityIndicator size="small" color={C.primary} />
           ) : (
-            <Text style={[styles.syncText, status === 'error' && { color: Colors.error }]}>
+            <Text style={[styles.syncText, status === 'error' && { color: C.error }]}>
               {status === 'error' ? 'Retry' : 'Sync'}
             </Text>
           )}
@@ -91,36 +94,38 @@ export function ICalSyncCard({ url, onBlockedDatesChange, autoSync = true }: ICa
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     marginBottom: Spacing.md,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   iconWrap: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center', justifyContent: 'center',
   },
   icon: { fontSize: 20 },
   info: { flex: 1 },
-  title: { fontSize: 14, fontWeight: '700', color: Colors.text },
-  url: { fontSize: 11, color: Colors.textTertiary, marginTop: 1 },
+  title: { fontSize: 14, fontWeight: '700', color: C.text },
+  url: { fontSize: 11, color: C.textTertiary, marginTop: 1 },
   statusText: { fontSize: 12, marginTop: 3, fontWeight: '500' },
   syncBtn: {
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.pill,
     paddingHorizontal: 14,
     paddingVertical: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.primaryLight,
+    borderColor: C.primaryLight,
     minWidth: 58,
     alignItems: 'center',
   },
   syncBtnDisabled: { opacity: 0.6 },
-  syncText: { fontSize: 13, fontWeight: '700', color: Colors.primaryDark },
-})
+  syncText: { fontSize: 13, fontWeight: '700', color: C.primaryDark },
+  })
+}

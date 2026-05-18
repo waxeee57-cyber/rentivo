@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   View, Text, FlatList, TouchableOpacity, ScrollView,
   StyleSheet, Dimensions, Platform, Animated, Modal, RefreshControl,
@@ -6,7 +6,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors, Spacing, Radius, Shadow } from '@/constants/colors'
+import { Spacing, Radius, Shadow } from '@/constants/colors'
 import { useListings } from '@/lib/hooks/useListings'
 import { useLocation } from '@/lib/hooks/useLocation'
 import { ListingCard, ListingCardSkeleton } from '@/components/listing/ListingCard'
@@ -112,7 +112,9 @@ export default function ExploreScreen() {
   const recentlyViewed = useRecentlyViewedStore(s => s.items)
   const mapRef = useRef<typeof MapView extends null ? never : InstanceType<NonNullable<typeof MapView>>>(null)
 
-  useLocation() // initializes device location tracking
+  const { styles, filterStyles, heroStyles, hStyles } = useMemo(() => makeStyles(C), [C])
+
+  useLocation()
   const filters: SearchFilters = selectedCategory ? { category: selectedCategory } : {}
   const { listings: rawListings, loading, error } = useListings(filters)
 
@@ -125,7 +127,6 @@ export default function ExploreScreen() {
     return arr
   }, [rawListings, sortBy, minCapacity])
 
-  // Fit map to filtered listings when they change
   useEffect(() => {
     if (listings.length > 0 && mapRef.current && viewMode === 'map') {
       const coords = listings
@@ -141,7 +142,6 @@ export default function ExploreScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listings.length, viewMode])
 
-  // Fetch all-source listings when source=all
   useEffect(() => {
     if (source !== 'all') {
       setAllSourceListings([])
@@ -159,7 +159,6 @@ export default function ExploreScreen() {
     }).catch(() => setAllSourceLoading(false))
   }, [source, selectedCategory, cityName, startDate, endDate])
 
-  // Load horizontal section data on mount
   useEffect(() => {
     getAvailableTodayListings()
       .then(setAvailableTodayListings)
@@ -213,7 +212,6 @@ export default function ExploreScreen() {
 
   const renderListItem = useCallback<ListRenderItem<AnyListing>>(({ item }) => {
     if (item.sourceType === 'native') {
-      // grid variant in 2-col (rentivo-only), full variant in single-col (all-sources)
       return <ListingCard listing={item as Listing} variant={source === 'rentivo' ? 'grid' : 'full'} showAvailableBadge />
     }
     return <ExternalListingCard listing={item as ExternalListing} />
@@ -234,7 +232,7 @@ export default function ExploreScreen() {
         </View>
       )}
       <View style={hStyles.hCardInfo}>
-        <Text style={[hStyles.hCardTitle, { color: C.text }]} numberOfLines={1}>{item.title}</Text>
+        <Text style={hStyles.hCardTitle} numberOfLines={1}>{item.title}</Text>
         <Text style={hStyles.hCardPrice}>{formatPricePerDay(item.price_per_day, language)}</Text>
         {item.instant_book === true && (
           <View style={hStyles.instantBadge}>
@@ -243,7 +241,7 @@ export default function ExploreScreen() {
         )}
       </View>
     </TouchableOpacity>
-  ), [language, C.text])
+  ), [language, hStyles])
 
   const renderLastMinuteItem = useCallback<ListRenderItem<Listing>>(({ item }) => (
     <TouchableOpacity
@@ -260,16 +258,15 @@ export default function ExploreScreen() {
         </View>
       )}
       <View style={hStyles.hCardInfo}>
-        <Text style={[hStyles.hCardTitle, { color: C.text }]} numberOfLines={1}>{item.title}</Text>
+        <Text style={hStyles.hCardTitle} numberOfLines={1}>{item.title}</Text>
         <Text style={hStyles.hCardPrice}>{formatPricePerDay(item.price_per_day, language)}</Text>
         <View style={hStyles.dealBadge}>
           <Text style={hStyles.dealBadgeText}>🔥 Last minute</Text>
         </View>
       </View>
     </TouchableOpacity>
-  ), [language, C.text])
+  ), [language, hStyles])
 
-  // Navigate from map preview to listing detail
   const handleViewListing = useCallback((listing: AnyListing) => {
     if (listing.sourceType === 'external') {
       openAffiliateLink(
@@ -291,7 +288,7 @@ export default function ExploreScreen() {
   const showDiscovery = displayListings.length === 0 && !isLoading && !error
 
   return (
-    <View style={[styles.container, { backgroundColor: C.background }]}>
+    <View style={styles.container}>
       {/* Map layer */}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: mapOpacity }]}>
         {Platform.OS !== 'web' && MapView ? (
@@ -318,25 +315,25 @@ export default function ExploreScreen() {
             ))}
           </MapView>
         ) : (
-          <View style={[StyleSheet.absoluteFill, styles.webMapPlaceholder, { backgroundColor: C.surfaceWarm }]}>
+          <View style={[StyleSheet.absoluteFill, styles.webMapPlaceholder]}>
             <Text style={styles.webMapText}>🗺️</Text>
-            <Text style={[styles.webMapLabel, { color: C.textTertiary }]}>Map view (native only)</Text>
+            <Text style={styles.webMapLabel}>Map view (native only)</Text>
           </View>
         )}
       </Animated.View>
 
       {/* Floating search bar */}
-      <View style={[styles.searchBar, { top: searchBarTop, backgroundColor: C.surface, borderColor: C.borderWarm }]}>
+      <View style={[styles.searchBar, { top: searchBarTop }]}>
         <TouchableOpacity style={styles.searchSection} onPress={() => setShowCityPicker(true)} accessibilityLabel={`Location: ${cityName}`} accessibilityRole="button">
           <Ionicons name="location" size={16} color={C.primary} />
-          <Text style={[styles.searchCity, { color: C.text }]}>{cityName}</Text>
+          <Text style={styles.searchCity}>{cityName}</Text>
         </TouchableOpacity>
         <View style={styles.searchDivider} />
         <TouchableOpacity style={styles.searchSection} onPress={() => setShowDatePicker(true)} accessibilityLabel={`Dates: ${dateLabel}`} accessibilityRole="button">
           <Ionicons name="calendar-outline" size={16} color={C.textSecondary} />
-          <Text style={[styles.searchDates, { color: C.textSecondary }, startDate != null && styles.searchDatesActive]}>{dateLabel}</Text>
+          <Text style={[styles.searchDates, startDate != null && styles.searchDatesActive]}>{dateLabel}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.filterBtn, { backgroundColor: C.primarySurface }]} onPress={() => setShowFilterSheet(true)} accessibilityLabel="Sort and filter" accessibilityRole="button">
+        <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilterSheet(true)} accessibilityLabel="Sort and filter" accessibilityRole="button">
           <Ionicons name="options-outline" size={16} color={C.primary} />
         </TouchableOpacity>
       </View>
@@ -349,19 +346,19 @@ export default function ExploreScreen() {
           contentContainerStyle={styles.categoryContent}
         >
           <TouchableOpacity
-            style={[styles.categoryPill, { backgroundColor: C.surface, borderColor: C.border }, selectedCategory === null && styles.categoryPillActive]}
+            style={[styles.categoryPill, selectedCategory === null && styles.categoryPillActive]}
             onPress={() => setSelectedCategory(null)}
             accessibilityLabel={t('catAll', language)}
             accessibilityRole="button"
           >
-            <Text style={[styles.categoryPillText, { color: C.text }, selectedCategory === null && styles.categoryPillTextActive]}>
+            <Text style={[styles.categoryPillText, selectedCategory === null && styles.categoryPillTextActive]}>
               {t('catAll', language)}
             </Text>
           </TouchableOpacity>
           {CATEGORIES.map(c => (
             <TouchableOpacity
               key={c.key}
-              style={[styles.categoryPill, { backgroundColor: C.surface, borderColor: C.border }, selectedCategory === c.key && styles.categoryPillActive]}
+              style={[styles.categoryPill, selectedCategory === c.key && styles.categoryPillActive]}
               onPress={() => setSelectedCategory(prev => prev === c.key ? null : c.key)}
               accessibilityLabel={t(CAT_I18N_KEYS[c.key], language)}
               accessibilityRole="button"
@@ -369,10 +366,10 @@ export default function ExploreScreen() {
               <Ionicons
                 name={c.icon}
                 size={14}
-                color={selectedCategory === c.key ? Colors.textInverse : C.textSecondary}
+                color={selectedCategory === c.key ? C.textInverse : C.textSecondary}
                 style={{ marginRight: 4 }}
               />
-              <Text style={[styles.categoryPillText, { color: C.text }, selectedCategory === c.key && styles.categoryPillTextActive]}>
+              <Text style={[styles.categoryPillText, selectedCategory === c.key && styles.categoryPillTextActive]}>
                 {t(CAT_I18N_KEYS[c.key], language)}
               </Text>
             </TouchableOpacity>
@@ -382,7 +379,7 @@ export default function ExploreScreen() {
 
       {/* Map/List toggle */}
       <TouchableOpacity
-        style={[styles.toggleBtn, { bottom: insets.bottom + 142, backgroundColor: C.background, borderColor: C.border }]}
+        style={[styles.toggleBtn, { bottom: insets.bottom + 142 }]}
         onPress={() => {
           setViewMode(v => v === 'map' ? 'list' : 'map')
           setSelectedListing(null)
@@ -390,7 +387,7 @@ export default function ExploreScreen() {
         accessibilityLabel={viewMode === 'map' ? 'Switch to list view' : 'Switch to map view'}
         accessibilityRole="button"
       >
-        <Text style={[styles.toggleText, { color: C.text }]}>
+        <Text style={styles.toggleText}>
           {viewMode === 'map' ? '≡ List' : '⊕ Map'}
         </Text>
       </TouchableOpacity>
@@ -404,12 +401,11 @@ export default function ExploreScreen() {
       )}
 
       {/* List mode overlay */}
-      <Animated.View style={[styles.listOverlay, { backgroundColor: C.background, transform: [{ translateY: listOverlayY }], paddingTop: insets.top + 80 }]}>
-        <View style={[styles.listHandle, { backgroundColor: C.border }]} />
+      <Animated.View style={[styles.listOverlay, { transform: [{ translateY: listOverlayY }], paddingTop: insets.top + 80 }]}>
+        <View style={styles.listHandle} />
 
-        {/* Rotating hero headline */}
         <View style={heroStyles.row}>
-          <Text style={[heroStyles.prefix, { color: C.text }]}>Rent a </Text>
+          <Text style={heroStyles.prefix}>Rent a </Text>
           <RotatingText
             words={['car', 'boat', 'villa', 'scooter', 'drone']}
             style={heroStyles.rotating}
@@ -418,7 +414,7 @@ export default function ExploreScreen() {
         </View>
 
         {/* Source toggle */}
-        <View style={[styles.sourceToggleRow, { backgroundColor: C.surfaceWarm, borderColor: C.border }]}>
+        <View style={styles.sourceToggleRow}>
           <TouchableOpacity
             style={[styles.sourceBtn, source === 'rentivo' && styles.sourceBtnActive]}
             onPress={() => setSource('rentivo')}
@@ -458,17 +454,17 @@ export default function ExploreScreen() {
           ]).map(opt => (
             <TouchableOpacity
               key={opt.key}
-              style={[styles.sortPill, { backgroundColor: C.surfaceWarm, borderColor: C.border }, sortBy === opt.key && styles.sortPillActive]}
+              style={[styles.sortPill, sortBy === opt.key && styles.sortPillActive]}
               onPress={() => setSortBy(opt.key)}
               accessibilityLabel={`Sort by: ${opt.label}`}
               accessibilityRole="button"
             >
-              <Text style={[styles.sortPillText, { color: C.text }, sortBy === opt.key && styles.sortPillTextActive]}>
+              <Text style={[styles.sortPillText, sortBy === opt.key && styles.sortPillTextActive]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
           ))}
-          <View style={[styles.sortDivider, { backgroundColor: C.border }]} />
+          <View style={styles.sortDivider} />
           {([
             { cap: null as number | null, label: t('filterAnySize', language) },
             { cap: 4 as number | null, label: t('seats4Plus', language) },
@@ -476,12 +472,12 @@ export default function ExploreScreen() {
           ]).map(opt => (
             <TouchableOpacity
               key={String(opt.cap)}
-              style={[styles.sortPill, { backgroundColor: C.surfaceWarm, borderColor: C.border }, minCapacity === opt.cap && styles.sortPillActive]}
+              style={[styles.sortPill, minCapacity === opt.cap && styles.sortPillActive]}
               onPress={() => setMinCapacity(opt.cap)}
               accessibilityLabel={`Capacity: ${opt.label}`}
               accessibilityRole="button"
             >
-              <Text style={[styles.sortPillText, { color: C.text }, minCapacity === opt.cap && styles.sortPillTextActive]}>
+              <Text style={[styles.sortPillText, minCapacity === opt.cap && styles.sortPillTextActive]}>
                 👥 {opt.label}
               </Text>
             </TouchableOpacity>
@@ -497,12 +493,11 @@ export default function ExploreScreen() {
           </View>
         ) : showDiscovery ? (
           <ScrollView contentContainerStyle={styles.discoveryContainer}>
-            {/* Inspire me */}
-            <Text style={[styles.discoverySectionTitle, { color: C.text }]}>💡 {t('discoverIdeas', language)}</Text>
+            <Text style={styles.discoverySectionTitle}>💡 {t('discoverIdeas', language)}</Text>
             {INSPIRE_THEMES.map(theme => (
               <TouchableOpacity
                 key={theme.title}
-                style={[styles.inspireCard, { backgroundColor: C.surface, borderColor: C.border }]}
+                style={styles.inspireCard}
                 onPress={() => {
                   setSelectedCategory(theme.category)
                   if (theme.city) setCityName(theme.city)
@@ -513,28 +508,27 @@ export default function ExploreScreen() {
               >
                 <Text style={styles.inspireEmoji}>{theme.emoji}</Text>
                 <View style={styles.inspireInfo}>
-                  <Text style={[styles.inspireTitle, { color: C.text }]}>{theme.title}</Text>
+                  <Text style={styles.inspireTitle}>{theme.title}</Text>
                   <Text style={styles.inspireSubtitle}>{theme.subtitle}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={C.textTertiary} />
               </TouchableOpacity>
             ))}
 
-            {/* Browse by mood */}
-            <Text style={[styles.discoverySectionTitle, { color: C.text, marginTop: Spacing.xl }]}>
+            <Text style={[styles.discoverySectionTitle, { marginTop: Spacing.xl }]}>
               🎭 {t('browseByMood', language)}
             </Text>
             <View style={styles.moodGrid}>
               {MOODS.map(mood => (
                 <TouchableOpacity
                   key={mood.label}
-                  style={[styles.moodCard, { backgroundColor: C.surface, borderColor: C.border }]}
+                  style={styles.moodCard}
                   onPress={() => setSelectedCategory(mood.category)}
                   accessibilityLabel={mood.label}
                   accessibilityRole="button"
                 >
                   <Text style={styles.moodEmoji}>{mood.emoji}</Text>
-                  <Text style={[styles.moodLabel, { color: C.text }]}>{mood.label}</Text>
+                  <Text style={styles.moodLabel}>{mood.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -556,8 +550,8 @@ export default function ExploreScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                tintColor={Colors.primary}
-                colors={[Colors.primary]}
+                tintColor={C.primary}
+                colors={[C.primary]}
               />
             }
             renderItem={renderListItem}
@@ -566,7 +560,7 @@ export default function ExploreScreen() {
                 {availableTodayListings.length > 0 && (
                   <View style={hStyles.section}>
                     <View style={hStyles.sectionHeader}>
-                      <Text style={[hStyles.sectionTitle, { color: C.text }]}>
+                      <Text style={hStyles.sectionTitle}>
                         {`⚡ ${t('availableTodayTitle', language)}`}
                       </Text>
                       <TouchableOpacity
@@ -591,7 +585,7 @@ export default function ExploreScreen() {
                 {lastMinuteListings.length > 0 && (
                   <View style={hStyles.section}>
                     <View style={hStyles.sectionHeader}>
-                      <Text style={[hStyles.sectionTitle, { color: C.text }]}>
+                      <Text style={hStyles.sectionTitle}>
                         {`🔥 ${t('lastMinuteTitle', language)}`}
                       </Text>
                       <TouchableOpacity
@@ -616,7 +610,7 @@ export default function ExploreScreen() {
                 {recentlyViewed.length > 0 && (
                   <View style={hStyles.section}>
                     <View style={hStyles.sectionHeader}>
-                      <Text style={[hStyles.sectionTitle, { color: C.text }]}>🕒 {t('recentlyViewed', language)}</Text>
+                      <Text style={hStyles.sectionTitle}>🕒 {t('recentlyViewed', language)}</Text>
                     </View>
                     <FlatList
                       horizontal
@@ -634,7 +628,6 @@ export default function ExploreScreen() {
         )}
       </Animated.View>
 
-      {/* Sheets */}
       <CityPickerSheet
         visible={showCityPicker}
         selectedCity={cityName}
@@ -656,12 +649,12 @@ export default function ExploreScreen() {
         animationType="slide"
         onRequestClose={() => setShowFilterSheet(false)}
       >
-        <TouchableOpacity style={filterStyles.backdrop} activeOpacity={1} onPress={() => setShowFilterSheet(false)} />
-        <View style={[filterStyles.sheet, { backgroundColor: C.surface }]}>
-          <View style={[filterStyles.handle, { backgroundColor: C.border }]} />
-          <Text style={[filterStyles.title, { color: C.text }]}>{t('sortAndFilter', language)}</Text>
+        <TouchableOpacity style={filterStyles.backdrop} activeOpacity={1} onPress={() => setShowFilterSheet(false)} accessibilityLabel="Close filter" accessibilityRole="button" />
+        <View style={filterStyles.sheet}>
+          <View style={filterStyles.handle} />
+          <Text style={filterStyles.title}>{t('sortAndFilter', language)}</Text>
 
-          <Text style={[filterStyles.sectionLabel, { color: C.textTertiary }]}>{t('sortByLabel', language)}</Text>
+          <Text style={filterStyles.sectionLabel}>{t('sortByLabel', language)}</Text>
           <View style={filterStyles.pillRow}>
             {([
               { key: 'default' as typeof sortBy, label: t('sortRelevance', language) },
@@ -671,19 +664,19 @@ export default function ExploreScreen() {
             ]).map(opt => (
               <TouchableOpacity
                 key={opt.key}
-                style={[filterStyles.pill, { backgroundColor: C.surfaceWarm, borderColor: C.border }, sortBy === opt.key && filterStyles.pillActive]}
+                style={[filterStyles.pill, sortBy === opt.key && filterStyles.pillActive]}
                 onPress={() => setSortBy(opt.key)}
                 accessibilityLabel={`Sort by: ${opt.label}`}
                 accessibilityRole="button"
               >
-                <Text style={[filterStyles.pillText, { color: C.text }, sortBy === opt.key && filterStyles.pillTextActive]}>
+                <Text style={[filterStyles.pillText, sortBy === opt.key && filterStyles.pillTextActive]}>
                   {opt.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={[filterStyles.sectionLabel, { color: C.textTertiary }]}>{t('capacityLabel', language)}</Text>
+          <Text style={filterStyles.sectionLabel}>{t('capacityLabel', language)}</Text>
           <View style={filterStyles.pillRow}>
             {([
               { cap: null as number | null, label: t('filterAnySize', language) },
@@ -692,12 +685,12 @@ export default function ExploreScreen() {
             ]).map(opt => (
               <TouchableOpacity
                 key={opt.label}
-                style={[filterStyles.pill, { backgroundColor: C.surfaceWarm, borderColor: C.border }, minCapacity === opt.cap && filterStyles.pillActive]}
+                style={[filterStyles.pill, minCapacity === opt.cap && filterStyles.pillActive]}
                 onPress={() => setMinCapacity(opt.cap)}
                 accessibilityLabel={`Capacity: ${opt.label}`}
                 accessibilityRole="button"
               >
-                <Text style={[filterStyles.pillText, { color: C.text }, minCapacity === opt.cap && filterStyles.pillTextActive]}>
+                <Text style={[filterStyles.pillText, minCapacity === opt.cap && filterStyles.pillTextActive]}>
                   {opt.label}
                 </Text>
               </TouchableOpacity>
@@ -721,325 +714,328 @@ export default function ExploreScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: C.background },
 
-  webMapPlaceholder: {
-    backgroundColor: Colors.surfaceWarm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  webMapText: { fontSize: 64, marginBottom: Spacing.base },
-  webMapLabel: { fontSize: 16, color: Colors.textTertiary },
+    webMapPlaceholder: {
+      backgroundColor: C.surfaceWarm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    webMapText: { fontSize: 64, marginBottom: Spacing.base },
+    webMapLabel: { fontSize: 16, color: C.textTertiary },
 
-  searchBar: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    height: 56,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.full,
-    borderWidth: 1,
-    borderColor: Colors.borderWarm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-    zIndex: 10,
-  },
-  searchSection: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  searchCity: { fontSize: 14, fontWeight: '700', color: Colors.text },
-  searchDivider: {
-    width: 1, height: 20,
-    backgroundColor: Colors.border,
-    marginHorizontal: Spacing.sm,
-  },
-  searchDates: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
-  searchDatesActive: { color: Colors.primaryDark, fontWeight: '700' },
-  filterBtn: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: Colors.primarySurface,
-    alignItems: 'center', justifyContent: 'center',
-    marginLeft: Spacing.sm,
-  },
+    searchBar: {
+      position: 'absolute',
+      left: 16,
+      right: 16,
+      height: 56,
+      backgroundColor: C.surface,
+      borderRadius: Radius.full,
+      borderWidth: 1,
+      borderColor: C.borderWarm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.base,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 8,
+      zIndex: 10,
+    },
+    searchSection: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
+    },
+    searchCity: { fontSize: 14, fontWeight: '700', color: C.text },
+    searchDivider: {
+      width: 1, height: 20,
+      backgroundColor: C.border,
+      marginHorizontal: Spacing.sm,
+    },
+    searchDates: { fontSize: 13, color: C.textSecondary, fontWeight: '500' },
+    searchDatesActive: { color: C.primaryDark, fontWeight: '700' },
+    filterBtn: {
+      width: 32, height: 32, borderRadius: 16,
+      backgroundColor: C.primarySurface,
+      alignItems: 'center', justifyContent: 'center',
+      marginLeft: Spacing.sm,
+    },
 
-  categoryBar: {
-    position: 'absolute',
-    left: 0, right: 0,
-    zIndex: 5,
-  },
-  categoryContent: { paddingHorizontal: Spacing.base, gap: Spacing.sm },
-  categoryPill: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.full,
-    minHeight: 44, paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12, shadowRadius: 6,
-    elevation: 3,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  categoryPillActive: {
-    backgroundColor: Colors.primary, borderColor: Colors.primary,
-    shadowColor: Colors.primary, shadowOpacity: 0.3,
-  },
-  categoryPillText: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  categoryPillTextActive: { color: Colors.textInverse },
+    categoryBar: {
+      position: 'absolute',
+      left: 0, right: 0,
+      zIndex: 5,
+    },
+    categoryContent: { paddingHorizontal: Spacing.base, gap: Spacing.sm },
+    categoryPill: {
+      backgroundColor: C.surface,
+      borderRadius: Radius.full,
+      minHeight: 44, paddingHorizontal: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12, shadowRadius: 6,
+      elevation: 3,
+      borderWidth: 1, borderColor: C.border,
+    },
+    categoryPillActive: {
+      backgroundColor: C.primary, borderColor: C.primary,
+      shadowColor: C.primary, shadowOpacity: 0.3,
+    },
+    categoryPillText: { fontSize: 14, fontWeight: '600', color: C.text },
+    categoryPillTextActive: { color: C.textInverse },
 
-  toggleBtn: {
-    position: 'absolute',
-    right: 16,
-    backgroundColor: Colors.background,
-    borderRadius: Radius.full,
-    paddingHorizontal: 16, paddingVertical: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3, shadowRadius: 8,
-    elevation: 8, zIndex: 6,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  toggleText: { color: Colors.text, fontWeight: '700', fontSize: 14 },
+    toggleBtn: {
+      position: 'absolute',
+      right: 16,
+      backgroundColor: C.background,
+      borderRadius: Radius.full,
+      paddingHorizontal: 16, paddingVertical: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3, shadowRadius: 8,
+      elevation: 8, zIndex: 6,
+      borderWidth: 1, borderColor: C.border,
+    },
+    toggleText: { color: C.text, fontWeight: '700', fontSize: 14 },
 
-  listOverlay: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: Colors.background,
-    zIndex: 8,
-  },
-  listHandle: {
-    width: 40, height: 4, backgroundColor: Colors.border,
-    borderRadius: Radius.pill,
-    alignSelf: 'center', marginTop: Spacing.md, marginBottom: Spacing.sm,
-  },
+    listOverlay: {
+      position: 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: C.background,
+      zIndex: 8,
+    },
+    listHandle: {
+      width: 40, height: 4, backgroundColor: C.border,
+      borderRadius: Radius.pill,
+      alignSelf: 'center', marginTop: Spacing.md, marginBottom: Spacing.sm,
+    },
 
-  sourceToggleRow: {
-    flexDirection: 'row',
-    marginHorizontal: Spacing.base, marginBottom: Spacing.sm,
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.pill, padding: 3,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  sourceBtn: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: Radius.pill },
-  sourceBtnActive: { backgroundColor: Colors.primary },
-  sourceBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-  sourceBtnTextActive: { color: Colors.textInverse },
+    sourceToggleRow: {
+      flexDirection: 'row',
+      marginHorizontal: Spacing.base, marginBottom: Spacing.sm,
+      backgroundColor: C.surfaceWarm,
+      borderRadius: Radius.pill, padding: 3,
+      borderWidth: 1, borderColor: C.border,
+    },
+    sourceBtn: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: Radius.pill },
+    sourceBtnActive: { backgroundColor: C.primary },
+    sourceBtnText: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
+    sourceBtnTextActive: { color: C.textInverse },
 
-  skeletonGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: Spacing.base,
-    gap: Spacing.base,
-  },
-  listContent: { padding: Spacing.base, paddingTop: Spacing.sm, paddingBottom: 100 },
-  columnWrapper: { gap: Spacing.base },
-  sortBar: { flexGrow: 0 },
-  sortContent: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm, gap: Spacing.sm },
-  sortDivider: {
-    width: 1, height: 24, backgroundColor: Colors.border,
-    marginHorizontal: Spacing.sm, alignSelf: 'center',
-  },
-  sortPill: {
-    borderRadius: Radius.pill, paddingHorizontal: 14, paddingVertical: 6,
-    backgroundColor: Colors.surfaceWarm,
-    borderWidth: 1, borderColor: Colors.border,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  sortPillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  sortPillText: { fontSize: 13, fontWeight: '600', color: Colors.text },
-  sortPillTextActive: { color: Colors.textInverse },
+    skeletonGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      padding: Spacing.base,
+      gap: Spacing.base,
+    },
+    listContent: { padding: Spacing.base, paddingTop: Spacing.sm, paddingBottom: 100 },
+    columnWrapper: { gap: Spacing.base },
+    sortBar: { flexGrow: 0 },
+    sortContent: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm, gap: Spacing.sm },
+    sortDivider: {
+      width: 1, height: 24, backgroundColor: C.border,
+      marginHorizontal: Spacing.sm, alignSelf: 'center',
+    },
+    sortPill: {
+      borderRadius: Radius.pill, paddingHorizontal: 14, paddingVertical: 6,
+      backgroundColor: C.surfaceWarm,
+      borderWidth: 1, borderColor: C.border,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    sortPillActive: { backgroundColor: C.primary, borderColor: C.primary },
+    sortPillText: { fontSize: 13, fontWeight: '600', color: C.text },
+    sortPillTextActive: { color: C.textInverse },
 
-  // Discovery styles
-  discoveryContainer: { padding: Spacing.base, paddingBottom: 100 },
-  discoverySectionTitle: {
-    fontSize: 18, fontWeight: '800', color: Colors.text,
-    marginBottom: Spacing.md,
-  },
-  inspireCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg, padding: Spacing.base,
-    marginBottom: Spacing.sm,
-    borderWidth: 1, borderColor: Colors.border,
-    gap: Spacing.md,
-  },
-  inspireEmoji: { fontSize: 32 },
-  inspireInfo: { flex: 1 },
-  inspireTitle: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  inspireSubtitle: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  moodGrid: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
-  },
-  moodCard: {
-    width: '48%',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    padding: Spacing.base,
-    alignItems: 'center',
-    borderWidth: 1, borderColor: Colors.border,
-    gap: Spacing.sm,
-  },
-  moodEmoji: { fontSize: 28 },
-  moodLabel: { fontSize: 13, fontWeight: '600', color: Colors.text, textAlign: 'center' },
-})
+    discoveryContainer: { padding: Spacing.base, paddingBottom: 100 },
+    discoverySectionTitle: {
+      fontSize: 18, fontWeight: '800', color: C.text,
+      marginBottom: Spacing.md,
+    },
+    inspireCard: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: C.surface,
+      borderRadius: Radius.lg, padding: Spacing.base,
+      marginBottom: Spacing.sm,
+      borderWidth: 1, borderColor: C.border,
+      gap: Spacing.md,
+    },
+    inspireEmoji: { fontSize: 32 },
+    inspireInfo: { flex: 1 },
+    inspireTitle: { fontSize: 15, fontWeight: '700', color: C.text },
+    inspireSubtitle: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
+    moodGrid: {
+      flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
+    },
+    moodCard: {
+      width: '48%',
+      backgroundColor: C.surface,
+      borderRadius: Radius.lg,
+      padding: Spacing.base,
+      alignItems: 'center',
+      borderWidth: 1, borderColor: C.border,
+      gap: Spacing.sm,
+    },
+    moodEmoji: { fontSize: 28 },
+    moodLabel: { fontSize: 13, fontWeight: '600', color: C.text, textAlign: 'center' },
+  })
 
-const filterStyles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: Colors.overlay },
-  sheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: Spacing.xl, paddingBottom: Spacing.xxxl,
-  },
-  handle: {
-    width: 40, height: 4, borderRadius: 2,
-    backgroundColor: Colors.border,
-    alignSelf: 'center', marginBottom: Spacing.xl,
-  },
-  title: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: Spacing.xl },
-  sectionLabel: {
-    fontSize: 12, fontWeight: '700', color: Colors.textTertiary,
-    textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md,
-  },
-  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl },
-  pill: {
-    paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: Radius.pill,
-    borderWidth: 1, borderColor: Colors.border,
-    backgroundColor: Colors.surfaceWarm,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  pillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  pillText: { fontSize: 13, fontWeight: '600', color: Colors.text },
-  pillTextActive: { color: Colors.textInverse },
-  applyBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.pill, paddingVertical: Spacing.base,
-    alignItems: 'center', marginTop: Spacing.sm,
-  },
-  applyBtnText: { fontSize: 16, fontWeight: '800', color: Colors.textInverse },
-})
+  const filterStyles = StyleSheet.create({
+    backdrop: { flex: 1, backgroundColor: C.overlay },
+    sheet: {
+      backgroundColor: C.surface,
+      borderTopLeftRadius: 24, borderTopRightRadius: 24,
+      padding: Spacing.xl, paddingBottom: Spacing.xxxl,
+    },
+    handle: {
+      width: 40, height: 4, borderRadius: 2,
+      backgroundColor: C.border,
+      alignSelf: 'center', marginBottom: Spacing.xl,
+    },
+    title: { fontSize: 18, fontWeight: '800', color: C.text, marginBottom: Spacing.xl },
+    sectionLabel: {
+      fontSize: 12, fontWeight: '700', color: C.textTertiary,
+      textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md,
+    },
+    pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl },
+    pill: {
+      paddingHorizontal: 14, paddingVertical: 8,
+      borderRadius: Radius.pill,
+      borderWidth: 1, borderColor: C.border,
+      backgroundColor: C.surfaceWarm,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    pillActive: { backgroundColor: C.primary, borderColor: C.primary },
+    pillText: { fontSize: 13, fontWeight: '600', color: C.text },
+    pillTextActive: { color: C.textInverse },
+    applyBtn: {
+      backgroundColor: C.primary,
+      borderRadius: Radius.pill, paddingVertical: Spacing.base,
+      alignItems: 'center', marginTop: Spacing.sm,
+    },
+    applyBtnText: { fontSize: 16, fontWeight: '800', color: C.textInverse },
+  })
 
-const heroStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingBottom: Spacing.sm,
-  },
-  prefix: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  rotating: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.primary,
-  },
-})
+  const heroStyles = StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.base,
+      paddingBottom: Spacing.sm,
+    },
+    prefix: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: C.text,
+    },
+    rotating: {
+      fontSize: 22,
+      fontWeight: '800',
+      color: C.primary,
+    },
+  })
 
-const hStyles = StyleSheet.create({
-  section: {
-    marginBottom: Spacing.lg,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.base,
-    marginBottom: Spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  seeAllBtn: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.sm,
-  },
-  seeAllText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.primary,
-  },
-  hList: {
-    paddingHorizontal: Spacing.base,
-    gap: Spacing.md,
-  },
-  hCard: {
-    width: 220,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadow.sm,
-  },
-  hCardImage: {
-    width: '100%',
-    height: 130,
-  },
-  hCardImagePlaceholder: {
-    backgroundColor: Colors.surfaceWarm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hCardPlaceholderText: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: Colors.textTertiary,
-  },
-  hCardInfo: {
-    padding: Spacing.sm,
-    gap: 4,
-  },
-  hCardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  hCardPrice: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.primary,
-  },
-  instantBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.successSurface,
-    borderRadius: Radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  instantBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.success,
-  },
-  dealBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.warningSurface,
-    borderRadius: Radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  dealBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.warning,
-  },
-})
+  const hStyles = StyleSheet.create({
+    section: {
+      marginBottom: Spacing.lg,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.base,
+      marginBottom: Spacing.sm,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: C.text,
+    },
+    seeAllBtn: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: Spacing.sm,
+    },
+    seeAllText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: C.primary,
+    },
+    hList: {
+      paddingHorizontal: Spacing.base,
+      gap: Spacing.md,
+    },
+    hCard: {
+      width: 220,
+      backgroundColor: C.surface,
+      borderRadius: Radius.lg,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: C.border,
+      ...Shadow.sm,
+    },
+    hCardImage: {
+      width: '100%',
+      height: 130,
+    },
+    hCardImagePlaceholder: {
+      backgroundColor: C.surfaceWarm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    hCardPlaceholderText: {
+      fontSize: 36,
+      fontWeight: '700',
+      color: C.textTertiary,
+    },
+    hCardInfo: {
+      padding: Spacing.sm,
+      gap: 4,
+    },
+    hCardTitle: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: C.text,
+    },
+    hCardPrice: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: C.primary,
+    },
+    instantBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: C.successSurface,
+      borderRadius: Radius.pill,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    instantBadgeText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: C.success,
+    },
+    dealBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: C.warningSurface,
+      borderRadius: Radius.pill,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    dealBadgeText: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: C.warning,
+    },
+  })
+
+  return { styles, filterStyles, heroStyles, hStyles }
+}

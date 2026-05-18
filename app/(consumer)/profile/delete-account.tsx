@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView,
 } from 'react-native'
@@ -9,8 +9,11 @@ import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function DeleteAccountScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { language, signOut } = useAuthStore()
   const insets = useSafeAreaInsets()
   const [loading, setLoading] = useState(false)
@@ -150,36 +153,38 @@ export default function DeleteAccountScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   scroll: { flexGrow: 1 },
   back: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm },
-  backText: { fontSize: 16, color: Colors.primary, fontWeight: '600' },
+  backText: { fontSize: 16, color: C.primary, fontWeight: '600' },
   content: { flex: 1, padding: Spacing.base },
   icon: { fontSize: 48, marginBottom: Spacing.base },
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, marginBottom: Spacing.sm },
-  subtitle: { fontSize: 15, color: Colors.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
+  title: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
+  subtitle: { fontSize: 15, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
   infoCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     marginBottom: Spacing.md,
     gap: Spacing.xs,
   },
-  infoTitle: { fontSize: 14, fontWeight: '700', color: Colors.text, marginBottom: Spacing.sm },
-  infoItem: { fontSize: 13, color: Colors.textSecondary, lineHeight: 20 },
+  infoTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: Spacing.sm },
+  infoItem: { fontSize: 13, color: C.textSecondary, lineHeight: 20 },
   warningCard: {
-    backgroundColor: Colors.errorSurface,
+    backgroundColor: C.errorSurface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.error,
+    borderColor: C.error,
     marginBottom: Spacing.xl,
   },
-  warningText: { fontSize: 13, color: Colors.error, lineHeight: 20 },
+  warningText: { fontSize: 13, color: C.error, lineHeight: 20 },
   deleteBtn: { marginBottom: Spacing.md },
   cancelLink: { alignItems: 'center', padding: Spacing.md, minHeight: 44, justifyContent: 'center' },
-  cancelLinkText: { fontSize: 15, color: Colors.textSecondary, fontWeight: '500' },
-})
+  cancelLinkText: { fontSize: 15, color: C.textSecondary, fontWeight: '500' },
+  })
+}

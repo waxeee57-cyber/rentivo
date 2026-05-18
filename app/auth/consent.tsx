@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert, Linking,
 } from 'react-native'
@@ -8,6 +8,7 @@ import { Colors, Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useColors } from '@/lib/hooks/useColors'
 
 const TERMS_URL = 'https://rentivo.domrol.com/legal/terms'
 const PRIVACY_URL = 'https://rentivo.domrol.com/legal/privacy'
@@ -15,6 +16,8 @@ const TERMS_VERSION = '1.0'
 const PRIVACY_VERSION = '1.0'
 
 export default function ConsentScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { language } = useAuthStore()
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [privacyAccepted, setPrivacyAccepted] = useState(false)
@@ -170,8 +173,8 @@ export default function ConsentScreen() {
             <Switch
               value={marketingEmail}
               onValueChange={setMarketingEmail}
-              trackColor={{ false: Colors.border, true: Colors.primary }}
-              thumbColor={Colors.white}
+              trackColor={{ false: C.border, true: C.primary }}
+              thumbColor={C.white}
               accessibilityLabel={isHu ? 'Marketing e-mailek kapcsoló' : 'Marketing emails toggle'}
             />
           </View>
@@ -192,8 +195,8 @@ export default function ConsentScreen() {
             <Switch
               value={marketingPush}
               onValueChange={setMarketingPush}
-              trackColor={{ false: Colors.border, true: Colors.primary }}
-              thumbColor={Colors.white}
+              trackColor={{ false: C.border, true: C.primary }}
+              thumbColor={C.white}
               accessibilityLabel={isHu ? 'Push értesítések kapcsoló' : 'Push notifications toggle'}
             />
           </View>
@@ -214,8 +217,8 @@ export default function ConsentScreen() {
             <Switch
               value={analytics}
               onValueChange={setAnalytics}
-              trackColor={{ false: Colors.border, true: Colors.primary }}
-              thumbColor={Colors.white}
+              trackColor={{ false: C.border, true: C.primary }}
+              thumbColor={C.white}
               accessibilityLabel={isHu ? 'Analitika kapcsoló' : 'Analytics toggle'}
             />
           </View>
@@ -240,45 +243,46 @@ export default function ConsentScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   scroll: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
-  title: { fontSize: 26, fontWeight: '800', color: Colors.text, marginBottom: Spacing.sm },
-  subtitle: { fontSize: 15, color: Colors.textSecondary, marginBottom: Spacing.xl, lineHeight: 22 },
+  title: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
+  subtitle: { fontSize: 15, color: C.textSecondary, marginBottom: Spacing.xl, lineHeight: 22 },
   section: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     marginBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     letterSpacing: 0.8,
     marginBottom: Spacing.md,
   },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, paddingVertical: Spacing.sm },
   rowContent: { flex: 1 },
-  rowText: { fontSize: 14, color: Colors.text, lineHeight: 20 },
-  rowMeta: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
-  link: { color: Colors.primary, fontWeight: '600' },
+  rowText: { fontSize: 14, color: C.text, lineHeight: 20 },
+  rowMeta: { fontSize: 12, color: C.textTertiary, marginTop: 2 },
+  link: { color: C.primary, fontWeight: '600' },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: Radius.sm,
     borderWidth: 2,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surfaceWarm,
+    borderColor: C.border,
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
   },
-  checkboxChecked: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  checkMark: { fontSize: 14, fontWeight: '800', color: Colors.textInverse },
-  divider: { height: 1, backgroundColor: Colors.border, marginVertical: Spacing.sm },
+  checkboxChecked: { backgroundColor: C.primary, borderColor: C.primary },
+  checkMark: { fontSize: 14, fontWeight: '800', color: C.textInverse },
+  divider: { height: 1, backgroundColor: C.border, marginVertical: Spacing.sm },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -286,14 +290,15 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
   },
   switchContent: { flex: 1, marginRight: Spacing.md },
-  switchTitle: { fontSize: 14, fontWeight: '600', color: Colors.text },
-  switchMeta: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
+  switchTitle: { fontSize: 14, fontWeight: '600', color: C.text },
+  switchMeta: { fontSize: 12, color: C.textTertiary, marginTop: 2 },
   confirmBtn: { marginTop: Spacing.lg },
   gdprNote: {
     fontSize: 12,
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textAlign: 'center',
     marginTop: Spacing.base,
     lineHeight: 18,
   },
-})
+  })
+}

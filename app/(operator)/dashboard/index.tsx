@@ -18,6 +18,7 @@ import { formatEUR, formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { t } from '@/constants/i18n'
 import { getTierProgress } from '@/lib/operator-tier'
 import { TierBadge } from '@/components/operator/TierBadge'
+import { useColors } from '@/lib/hooks/useColors'
 
 const MOCK_REVENUE_BARS = [
   { label: 'Fri', revenue: 85 },
@@ -30,6 +31,8 @@ const MOCK_REVENUE_BARS = [
 ]
 
 function RevenueSparkline({ bookings }: { bookings: { total_amount: number; start_date: string }[] }) {
+  const C = useColors()
+  const sparkStyles = useMemo(() => makeSparkStyles(C), [C])
   const bars = useMemo(() => {
     if (Config.useMock) return MOCK_REVENUE_BARS
     const today = new Date()
@@ -69,22 +72,22 @@ function RevenueSparkline({ bookings }: { bookings: { total_amount: number; star
   )
 }
 
-const sparkStyles = StyleSheet.create({
+function makeSparkStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create({
   container: { marginTop: Spacing.sm },
   bars: { flexDirection: 'row', alignItems: 'flex-end', height: 80, gap: 6 },
   barCol: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
   barTrack: {
     width: '100%',
     flex: 1,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: 4,
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
-  barFill: { width: '100%', backgroundColor: Colors.primary, borderRadius: 4, minHeight: 0 },
-  barValue: { fontSize: 8, color: Colors.textTertiary, marginTop: 2 },
-  barLabel: { fontSize: 9, color: Colors.textTertiary, fontWeight: '600', marginTop: 1 },
-})
+  barFill: { width: '100%', backgroundColor: C.primary, borderRadius: 4, minHeight: 0 },
+  barValue: { fontSize: 8, color: C.textTertiary, marginTop: 2 },
+  barLabel: { fontSize: 9, color: C.textTertiary, fontWeight: '600', marginTop: 1 },
+}) }
 
 interface QuickActionCardProps {
   icon: string
@@ -95,6 +98,8 @@ interface QuickActionCardProps {
 }
 
 function QuickActionCard({ icon, label, route, externalUrl, badge }: QuickActionCardProps) {
+  const C = useColors()
+  const qaStyles = useMemo(() => makeQaStyles(C), [C])
   const pulseAnim = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
@@ -138,15 +143,15 @@ function QuickActionCard({ icon, label, route, externalUrl, badge }: QuickAction
   )
 }
 
-const qaStyles = StyleSheet.create({
+function makeQaStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     minHeight: 80,
     justifyContent: 'center',
     gap: Spacing.xs,
@@ -164,7 +169,7 @@ const qaStyles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -8,
-    backgroundColor: Colors.error,
+    backgroundColor: C.error,
     borderRadius: 9,
     minWidth: 18,
     height: 18,
@@ -172,11 +177,13 @@ const qaStyles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
-  badgeText: { fontSize: 10, fontWeight: '800', color: Colors.textInverse },
-  label: { fontSize: 12, fontWeight: '600', color: Colors.textSecondary, textAlign: 'center' },
-})
+  badgeText: { fontSize: 10, fontWeight: '800', color: C.textInverse },
+  label: { fontSize: 12, fontWeight: '600', color: C.textSecondary, textAlign: 'center' },
+}) }
 
 export default function DashboardScreen() {
+  const C = useColors()
+  const { styles, tierStyles } = useMemo(() => makeStyles(C), [C])
   const { operator, language } = useAuthStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? null)
   const { bookings, loading, error } = useOperatorBookings(opId)
@@ -391,14 +398,15 @@ export default function DashboardScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
-  greeting: { fontSize: 24, fontWeight: '800', color: Colors.text, marginBottom: Spacing.xl },
+  greeting: { fontSize: 24, fontWeight: '800', color: C.text, marginBottom: Spacing.xl },
 
   // Stripe onboarding banner
   stripeBanner: {
-    backgroundColor: Colors.warning,
+    backgroundColor: C.warning,
     paddingVertical: 12,
     paddingHorizontal: Spacing.base,
     alignItems: 'center',
@@ -406,7 +414,7 @@ const styles = StyleSheet.create({
   stripeBannerText: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.background,
+    color: C.background,
   },
 
   // Monthly stats row
@@ -417,33 +425,33 @@ const styles = StyleSheet.create({
   },
   monthlyStatCard: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   monthlyStatPrimary: {
-    backgroundColor: Colors.primarySubtle,
-    borderColor: Colors.primary,
+    backgroundColor: C.primarySubtle,
+    borderColor: C.primary,
     borderWidth: 1.5,
   },
   monthlyStatValue: {
     fontSize: 18,
     fontWeight: '800',
-    color: Colors.primary,
+    color: C.primary,
     marginBottom: 4,
   },
   monthlyStatValueAlt: {
     fontSize: 22,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     marginBottom: 4,
   },
   monthlyStatLabel: {
     fontSize: 11,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
   },
 
   quickActionsGrid: {
@@ -457,10 +465,10 @@ const styles = StyleSheet.create({
   section: { marginTop: Spacing.xl },
   sectionTitle: {
     fontSize: 13, fontWeight: '700', textTransform: 'uppercase',
-    letterSpacing: 0.5, color: Colors.textSecondary, marginBottom: Spacing.md,
+    letterSpacing: 0.5, color: C.textSecondary, marginBottom: Spacing.md,
   },
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     shadowColor: '#000',
@@ -470,34 +478,36 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   scheduleLabel: { marginBottom: Spacing.sm },
-  scheduleLabelText: { fontSize: 13, fontWeight: '700', color: Colors.text },
+  scheduleLabelText: { fontSize: 13, fontWeight: '700', color: C.text },
   emptySchedule: { alignItems: 'center', paddingVertical: Spacing.xl },
   emptyScheduleEmoji: { fontSize: 32, marginBottom: Spacing.sm },
-  emptyScheduleText: { fontSize: 14, color: Colors.textTertiary },
+  emptyScheduleText: { fontSize: 14, color: C.textTertiary },
   emptyAction: {
     marginTop: Spacing.md,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: C.primary,
   },
-  emptyActionText: { fontSize: 14, fontWeight: '600', color: Colors.primary },
-})
+  emptyActionText: { fontSize: 14, fontWeight: '600', color: C.primary },
+  })
 
-const tierStyles = StyleSheet.create({
+  const tierStyles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: Spacing.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  nextLabel: { color: Colors.textSecondary, fontSize: 13 },
-  progressBar: { height: 4, backgroundColor: Colors.border, borderRadius: 2, marginBottom: 6 },
-  progressFill: { height: 4, backgroundColor: Colors.primary, borderRadius: 2 },
-  hint: { color: Colors.textSecondary, fontSize: 12 },
-})
+  nextLabel: { color: C.textSecondary, fontSize: 13 },
+  progressBar: { height: 4, backgroundColor: C.border, borderRadius: 2, marginBottom: 6 },
+  progressFill: { height: 4, backgroundColor: C.primary, borderRadius: 2 },
+  hint: { color: C.textSecondary, fontSize: 12 },
+  })
+  return { styles, tierStyles }
+}

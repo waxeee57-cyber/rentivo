@@ -48,6 +48,7 @@ const POPULAR_SUGGESTIONS = ['BMW', 'Vespa', 'Marbella', 'Yacht', 'Villa', 'Conv
 export default function SearchScreen() {
   const { language } = useAuthStore()
   const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<RentalCategory | null>(null)
   const [sortBy, setSortBy] = useState<SortKey>('relevance')
@@ -273,8 +274,8 @@ export default function SearchScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -283,14 +284,14 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
   },
   title: {
-    fontSize: 26, fontWeight: '800', color: Colors.text,
+    fontSize: 26, fontWeight: '800', color: C.text,
   },
   viewToggle: {
     flexDirection: 'row',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.pill,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     padding: 3,
     gap: 2,
   },
@@ -305,12 +306,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   toggleBtnActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
   },
   toggleText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
   },
   searchRow: {
     paddingHorizontal: Spacing.base,
@@ -319,10 +320,10 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.pill,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
     gap: Spacing.sm,
@@ -331,16 +332,16 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    color: Colors.text,
+    color: C.text,
     paddingVertical: 0,
   },
   suggestions: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.lg,
     marginHorizontal: Spacing.base,
     marginTop: 4,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     paddingVertical: Spacing.sm,
     zIndex: 50,
   },
@@ -352,32 +353,32 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   suggestionsLabel: {
-    fontSize: 11, fontWeight: '700', color: Colors.textTertiary,
+    fontSize: 11, fontWeight: '700', color: C.textTertiary,
     textTransform: 'uppercase', letterSpacing: 0.5,
   },
-  clearText: { fontSize: 12, color: Colors.primary, fontWeight: '600' },
+  clearText: { fontSize: 12, color: C.primary, fontWeight: '600' },
   suggestionRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
     paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
   },
-  suggestionText: { fontSize: 14, color: Colors.text },
+  suggestionText: { fontSize: 14, color: C.text },
   trendingChips: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, gap: Spacing.sm },
   trendingChip: {
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.pill,
     paddingHorizontal: 12, paddingVertical: 6,
-    borderWidth: 1, borderColor: Colors.primaryLight,
+    borderWidth: 1, borderColor: C.primaryLight,
   },
-  trendingChipText: { fontSize: 13, fontWeight: '600', color: Colors.primaryDark },
+  trendingChipText: { fontSize: 13, fontWeight: '600', color: C.primaryDark },
   categories: { paddingHorizontal: 16, paddingVertical: Spacing.sm, alignItems: 'center' },
   sortBar: { paddingHorizontal: 16, paddingVertical: Spacing.sm, alignItems: 'center' },
   trendingLabel: {
     paddingHorizontal: Spacing.base, paddingTop: Spacing.sm,
-    fontSize: 11, fontWeight: '700', color: Colors.textTertiary,
+    fontSize: 11, fontWeight: '700', color: C.textTertiary,
     textTransform: 'uppercase', letterSpacing: 0.5,
   },
   sortDivider: {
-    width: 1, height: 24, backgroundColor: Colors.border,
+    width: 1, height: 24, backgroundColor: C.border,
     marginHorizontal: Spacing.xs, alignSelf: 'center',
   },
   skeletonGrid: {
@@ -389,4 +390,4 @@ const styles = StyleSheet.create({
   list: { flex: 1 },
   grid: { padding: Spacing.base, paddingBottom: 100 },
   columnWrapper: { justifyContent: 'space-between' },
-})
+}) }

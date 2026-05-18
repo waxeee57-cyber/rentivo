@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
 import { getOperatorAnalytics } from '@/lib/api/analytics'
 import type { OperatorAnalytics } from '@/lib/api/analytics'
+import { useColors } from '@/lib/hooks/useColors'
 
 type Period = 'week' | 'month' | 'quarter' | 'year'
 
@@ -28,6 +29,8 @@ const PERIODS: { key: Period; label: string }[] = [
 ]
 
 export default function AnalyticsScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { operator } = useAuthStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? '')
 
@@ -61,7 +64,7 @@ export default function AnalyticsScreen() {
           accessibilityLabel="Go back"
           accessibilityRole="button"
         >
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
+          <Ionicons name="chevron-back" size={24} color={C.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Analytics</Text>
         <View style={styles.headerSpacer} />
@@ -87,7 +90,7 @@ export default function AnalyticsScreen() {
       {/* Content */}
       {loading ? (
         <View style={styles.centered}>
-          <ActivityIndicator color={Colors.primary} size="large" />
+          <ActivityIndicator color={C.primary} size="large" />
           <Text style={styles.loadingText}>Loading analytics...</Text>
         </View>
       ) : error != null ? (
@@ -189,8 +192,9 @@ export default function AnalyticsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
 
   // Header
   header: {
@@ -208,7 +212,7 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    color: Colors.text,
+    color: C.text,
     fontSize: 20,
     fontWeight: '800',
     textAlign: 'center',
@@ -227,17 +231,17 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: Radius.full,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 44,
   },
   periodBtnActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: C.primary,
+    borderColor: C.primary,
   },
-  periodText: { color: Colors.textSecondary, fontSize: 13, fontWeight: '600' },
-  periodTextActive: { color: Colors.background },
+  periodText: { color: C.textSecondary, fontSize: 13, fontWeight: '600' },
+  periodTextActive: { color: C.background },
 
   // States
   centered: {
@@ -248,33 +252,33 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
   loadingText: {
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     fontSize: 14,
     marginTop: Spacing.md,
   },
   errorEmoji: { fontSize: 40, marginBottom: Spacing.md },
   errorText: {
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     fontSize: 14,
     textAlign: 'center',
     marginBottom: Spacing.lg,
   },
   retryBtn: {
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: C.primary,
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  retryText: { color: Colors.primary, fontSize: 14, fontWeight: '600' },
+  retryText: { color: C.primary, fontSize: 14, fontWeight: '600' },
   emptyEmoji: { fontSize: 48, marginBottom: Spacing.md },
-  emptyTitle: { color: Colors.text, fontSize: 18, fontWeight: '700', marginBottom: Spacing.sm },
+  emptyTitle: { color: C.text, fontSize: 18, fontWeight: '700', marginBottom: Spacing.sm },
   emptySubtitle: {
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
@@ -286,8 +290,8 @@ const styles = StyleSheet.create({
   // KPI cards
   kpiRow: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.md },
   kpi: { flex: 1, alignItems: 'center', padding: Spacing.base },
-  kpiValue: { color: Colors.primary, fontSize: 22, fontWeight: '800' },
-  kpiLabel: { color: Colors.textSecondary, fontSize: 12, marginTop: 4, fontWeight: '600' },
+  kpiValue: { color: C.primary, fontSize: 22, fontWeight: '800' },
+  kpiLabel: { color: C.textSecondary, fontSize: 12, marginTop: 4, fontWeight: '600' },
 
   // Best performer
   bestCard: { padding: Spacing.base, marginBottom: Spacing.md },
@@ -295,16 +299,16 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1,
-    color: Colors.primary,
+    color: C.primary,
     marginBottom: Spacing.xs,
   },
-  bestTitle: { color: Colors.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  bestRevenue: { color: Colors.textSecondary, fontSize: 13 },
+  bestTitle: { color: C.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  bestRevenue: { color: C.textSecondary, fontSize: 13 },
 
   // Bar chart
   chartCard: { padding: Spacing.base },
   chartTitle: {
-    color: Colors.text,
+    color: C.text,
     fontSize: 15,
     fontWeight: '700',
     marginBottom: Spacing.md,
@@ -315,24 +319,25 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
     gap: Spacing.sm,
   },
-  barLabel: { color: Colors.textSecondary, fontSize: 11, width: 52, fontWeight: '500' },
+  barLabel: { color: C.textSecondary, fontSize: 11, width: 52, fontWeight: '500' },
   barTrack: {
     flex: 1,
     height: 8,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
     borderRadius: 4,
     overflow: 'hidden',
   },
   barFill: {
     height: 8,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: 4,
   },
   barAmount: {
-    color: Colors.text,
+    color: C.text,
     fontSize: 11,
     width: 52,
     textAlign: 'right',
     fontWeight: '600',
   },
-})
+  })
+}

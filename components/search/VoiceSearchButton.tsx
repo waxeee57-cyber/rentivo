@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { Colors, Radius, Spacing } from '@/constants/colors'
 import { Config } from '@/constants/config'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface VoiceSearchButtonProps {
   onResult: (query: string) => void
@@ -16,6 +17,8 @@ const MOCK_RESULTS = [
 ]
 
 export function VoiceSearchButton({ onResult }: VoiceSearchButtonProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [listening, setListening] = useState(false)
   const pulse = React.useRef(new Animated.Value(1)).current
 
@@ -60,17 +63,19 @@ export function VoiceSearchButton({ onResult }: VoiceSearchButtonProps) {
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   wrapper: { alignItems: 'center', gap: 4 },
   btn: {
     width: 40, height: 40, borderRadius: 20,
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: Colors.primaryLight,
+    borderWidth: 1, borderColor: C.primaryLight,
   },
   btnListening: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
   },
   icon: { fontSize: 18 },
-  label: { fontSize: 11, color: Colors.primary, fontWeight: '600' },
-})
+  label: { fontSize: 11, color: C.primary, fontWeight: '600' },
+  })
+}

@@ -5,10 +5,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow'
-import { Colors } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 import type { UserRole } from '@/types'
 
 export default function Index() {
+  const C = useColors()
   const { role, setRole, setLanguage } = useAuthStore()
   const [onboardingChecked, setOnboardingChecked] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -56,7 +57,7 @@ export default function Index() {
   }
 
   if (!onboardingChecked) {
-    return <View style={{ flex: 1, backgroundColor: Colors.background }} />
+    return <View style={{ flex: 1, backgroundColor: C.background }} />
   }
 
   if (showOnboarding) {

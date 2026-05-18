@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, TextInput, StyleSheet, TextInputProps, ViewStyle } from 'react-native'
 import { Colors, Radius, Spacing } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface InputProps extends TextInputProps {
   label?: string
@@ -9,6 +10,8 @@ interface InputProps extends TextInputProps {
 }
 
 export function Input({ label, error, containerStyle, style, ...props }: InputProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [focused, setFocused] = useState(false)
   return (
     <View style={[styles.container, containerStyle]}>
@@ -22,7 +25,7 @@ export function Input({ label, error, containerStyle, style, ...props }: InputPr
         ]}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        placeholderTextColor={Colors.textTertiary}
+        placeholderTextColor={C.textTertiary}
         {...props}
       />
       {error && <Text style={styles.error}>{error}</Text>}
@@ -30,12 +33,13 @@ export function Input({ label, error, containerStyle, style, ...props }: InputPr
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   container: { marginBottom: Spacing.base },
   label: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     marginBottom: Spacing.xs,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -43,14 +47,15 @@ const styles = StyleSheet.create({
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     borderRadius: Radius.lg,
     paddingHorizontal: Spacing.base,
     fontSize: 15,
-    color: Colors.text,
-    backgroundColor: Colors.surfaceWarm,
+    color: C.text,
+    backgroundColor: C.surfaceWarm,
   },
-  inputFocused: { borderColor: Colors.primary },
-  inputError: { borderColor: Colors.error },
-  error: { fontSize: 12, color: Colors.error, marginTop: Spacing.xs },
-})
+  inputFocused: { borderColor: C.primary },
+  inputError: { borderColor: C.error },
+  error: { fontSize: 12, color: C.error, marginTop: Spacing.xs },
+  })
+}

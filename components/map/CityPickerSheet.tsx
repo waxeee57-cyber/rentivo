@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   View, Text, TouchableOpacity, StyleSheet, FlatList,
   TextInput, Modal, Animated,
 } from 'react-native'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 export interface City {
   name: string
@@ -35,6 +36,8 @@ interface CityPickerSheetProps {
 const CITY_ROW_HEIGHT = 58
 
 export function CityPickerSheet({ visible, selectedCity, onSelect, onClose }: CityPickerSheetProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [search, setSearch] = useState('')
   const slideAnim = useRef(new Animated.Value(500)).current
 
@@ -76,7 +79,7 @@ export function CityPickerSheet({ visible, selectedCity, onSelect, onClose }: Ci
           placeholder="Search destinations..."
           value={search}
           onChangeText={setSearch}
-          placeholderTextColor={Colors.textTertiary}
+          placeholderTextColor={C.textTertiary}
         />
         <FlatList
           data={filtered}
@@ -107,13 +110,14 @@ export function CityPickerSheet({ visible, selectedCity, onSelect, onClose }: Ci
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
   },
   sheet: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: Spacing.base,
@@ -123,7 +127,7 @@ const styles = StyleSheet.create({
   handle: {
     width: 40,
     height: 4,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
     borderRadius: Radius.pill,
     alignSelf: 'center',
     marginBottom: Spacing.base,
@@ -131,19 +135,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.base,
   },
   searchInput: {
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     fontSize: 15,
-    color: Colors.text,
+    color: C.text,
     marginBottom: Spacing.base,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   cityRow: {
     flexDirection: 'row',
@@ -154,14 +158,15 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   cityRowActive: {
-    backgroundColor: Colors.primarySurface,
+    backgroundColor: C.primarySurface,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.primary,
+    borderLeftColor: C.primary,
   },
   cityEmoji: { fontSize: 24, marginRight: Spacing.md },
   cityInfo: { flex: 1 },
-  cityName: { fontSize: 16, fontWeight: '600', color: Colors.text },
-  cityNameActive: { color: Colors.primaryDark },
-  cityCountry: { fontSize: 12, color: Colors.textTertiary, marginTop: 1 },
-  chevron: { fontSize: 20, color: Colors.textTertiary },
-})
+  cityName: { fontSize: 16, fontWeight: '600', color: C.text },
+  cityNameActive: { color: C.primaryDark },
+  cityCountry: { fontSize: 12, color: C.textTertiary, marginTop: 1 },
+  chevron: { fontSize: 20, color: C.textTertiary },
+  })
+}

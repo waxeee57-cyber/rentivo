@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, ScrollView, Switch, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator,
 } from 'react-native'
@@ -19,6 +19,7 @@ import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
 import type { PhotoSlot } from '@/components/damage/DamagePhotoGrid'
 import type { FuelLevel } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 const REQUIRED_SLOTS: PhotoSlot[] = ['front', 'back', 'left', 'right', 'interior', 'extra']
 
@@ -31,6 +32,8 @@ const FUEL_LEVELS: { key: FuelLevel; label: string }[] = [
 ]
 
 export default function ReturnDamageScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const bkId = Config.useMock ? 'bk-003' : (bookingId ?? '')
 
@@ -152,18 +155,18 @@ export default function ReturnDamageScreen() {
 
         {aiAnalyzing && (
           <View style={styles.aiLoadingContainer}>
-            <ActivityIndicator color={Colors.primary} />
+            <ActivityIndicator color={C.primary} />
             <Text style={styles.aiLoadingText}>AI analyzing photos...</Text>
           </View>
         )}
         {aiResult && (
           <View style={[
             styles.aiResultContainer,
-            { backgroundColor: aiResult.has_damage ? Colors.errorSurface : Colors.successSurface },
+            { backgroundColor: aiResult.has_damage ? C.errorSurface : C.successSurface },
           ]}>
             <Text style={[
               styles.aiResultTitle,
-              { color: aiResult.has_damage ? Colors.error : Colors.success },
+              { color: aiResult.has_damage ? C.error : C.success },
             ]}>
               {aiResult.has_damage ? 'Damage Detected' : 'No New Damage'}
             </Text>
@@ -179,7 +182,7 @@ export default function ReturnDamageScreen() {
             value={mileage}
             onChangeText={setMileage}
             keyboardType="numeric"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={C.textTertiary}
           />
           <View style={styles.fuelRow}>
             {FUEL_LEVELS.map(f => (
@@ -202,7 +205,7 @@ export default function ReturnDamageScreen() {
             <Switch
               value={damageFound}
               onValueChange={setDamageFound}
-              trackColor={{ true: Colors.error, false: Colors.border }}
+              trackColor={{ true: C.error, false: C.border }}
             />
           </View>
           {damageFound && (
@@ -213,7 +216,7 @@ export default function ReturnDamageScreen() {
               onChangeText={setDamageNotes}
               multiline
               numberOfLines={4}
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={C.textTertiary}
             />
           )}
         </Card>
@@ -227,7 +230,7 @@ export default function ReturnDamageScreen() {
             onChangeText={setNotes}
             multiline
             numberOfLines={3}
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={C.textTertiary}
           />
         </Card>
 
@@ -271,36 +274,38 @@ export default function ReturnDamageScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { paddingBottom: Spacing.xxxl },
-  subtitle: { fontSize: 14, color: Colors.textSecondary, paddingHorizontal: Spacing.base, marginBottom: Spacing.base },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: Colors.text, marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
+  subtitle: { fontSize: 14, color: C.textSecondary, paddingHorizontal: Spacing.base, marginBottom: Spacing.base },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: C.text, marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
   card: { marginHorizontal: Spacing.base, marginBottom: Spacing.base },
   mileageInput: {
-    borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg,
-    padding: Spacing.md, fontSize: 15, color: Colors.text, marginBottom: Spacing.md,
+    borderWidth: 1, borderColor: C.border, borderRadius: Radius.lg,
+    padding: Spacing.md, fontSize: 15, color: C.text, marginBottom: Spacing.md,
   },
   fuelRow: { flexDirection: 'row', gap: Spacing.xs },
   fuelBtn: {
     flex: 1, padding: Spacing.sm, borderRadius: Radius.lg,
-    borderWidth: 1, borderColor: Colors.border, alignItems: 'center',
+    borderWidth: 1, borderColor: C.border, alignItems: 'center',
   },
-  fuelBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  fuelText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '600' },
-  fuelTextActive: { color: Colors.textInverse },
+  fuelBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
+  fuelText: { fontSize: 12, color: C.textSecondary, fontWeight: '600' },
+  fuelTextActive: { color: C.textInverse },
   damageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  damageLabel: { fontSize: 15, color: Colors.text, fontWeight: '500' },
+  damageLabel: { fontSize: 15, color: C.text, fontWeight: '500' },
   textArea: {
-    borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg,
-    padding: Spacing.md, fontSize: 14, color: Colors.text, minHeight: 80,
+    borderWidth: 1, borderColor: C.border, borderRadius: Radius.lg,
+    padding: Spacing.md, fontSize: 14, color: C.text, minHeight: 80,
     textAlignVertical: 'top',
   },
-  sigSubtitle: { fontSize: 13, color: Colors.textSecondary, marginBottom: Spacing.md },
-  sigConfirm: { fontSize: 12, color: Colors.textTertiary, textAlign: 'center', lineHeight: 18 },
+  sigSubtitle: { fontSize: 13, color: C.textSecondary, marginBottom: Spacing.md },
+  sigConfirm: { fontSize: 12, color: C.textTertiary, textAlign: 'center', lineHeight: 18 },
   aiLoadingContainer: { padding: Spacing.base, alignItems: 'center' as const },
-  aiLoadingText: { color: Colors.textSecondary, marginTop: Spacing.sm, fontSize: 14 },
+  aiLoadingText: { color: C.textSecondary, marginTop: Spacing.sm, fontSize: 14 },
   aiResultContainer: { borderRadius: Radius.lg, padding: Spacing.base, marginHorizontal: Spacing.base, marginBottom: Spacing.base },
   aiResultTitle: { fontSize: 16, fontWeight: '700' as const, marginBottom: Spacing.xs },
-  aiResultText: { color: Colors.text, fontSize: 14, lineHeight: 20 },
-})
+  aiResultText: { color: C.text, fontSize: 14, lineHeight: 20 },
+  })
+}

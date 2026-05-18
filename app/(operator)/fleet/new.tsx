@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
 } from 'react-native'
@@ -23,10 +23,13 @@ import { getError } from '@/lib/errors'
 import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
 import type { RentalCategory } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 const FEATURE_OPTIONS = ['AC', 'GPS', 'Bluetooth', 'USB', 'Leather seats', 'Sunroof', 'Convertible', '4WD', 'Child seat']
 
 export default function NewListingScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { operator, language } = useAuthStore()
   const { showPhotoOptions } = useCamera()
   const { showToast } = useToastStore()
@@ -220,7 +223,7 @@ export default function NewListingScreen() {
                     <Image source={{ uri: photos[i]! }} style={styles.photoSlotImage} contentFit="cover" />
                   ) : (
                     <>
-                      <Ionicons name="camera-outline" size={24} color={Colors.textTertiary} />
+                      <Ionicons name="camera-outline" size={24} color={C.textTertiary} />
                       <Text style={styles.photoSlotLabel}>{i === 0 ? 'Cover' : `Photo ${i + 1}`}</Text>
                     </>
                   )}
@@ -274,22 +277,23 @@ export default function NewListingScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
-  stepTitle: { fontSize: 22, fontWeight: '800', color: Colors.text, marginBottom: Spacing.xl },
-  fieldLabel: { fontSize: 12, fontWeight: '700', color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.sm },
+  stepTitle: { fontSize: 22, fontWeight: '800', color: C.text, marginBottom: Spacing.xl },
+  fieldLabel: { fontSize: 12, fontWeight: '700', color: C.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.sm },
   categories: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: Spacing.base },
   featureGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  strHint: { fontSize: 12, color: Colors.textSecondary, marginBottom: Spacing.sm, lineHeight: 18 },
+  strHint: { fontSize: 12, color: C.textSecondary, marginBottom: Spacing.sm, lineHeight: 18 },
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
   photoSlot: {
     width: '31%',
     aspectRatio: 1,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: C.border,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
@@ -297,32 +301,33 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   photoSlotImage: { width: '100%', height: '100%' },
-  photoSlotLabel: { fontSize: 10, color: Colors.textTertiary, fontWeight: '600' },
+  photoSlotLabel: { fontSize: 10, color: C.textTertiary, fontWeight: '600' },
   publishedCircle: {
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
     marginBottom: Spacing.xl,
     borderWidth: 3,
-    borderColor: Colors.success,
+    borderColor: C.success,
   },
-  publishedCheck: { fontSize: 48, color: Colors.success },
+  publishedCheck: { fontSize: 48, color: C.success },
   publishedTitle: {
     fontSize: 26,
     fontWeight: '900',
-    color: Colors.text,
+    color: C.text,
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
   publishedSub: {
     fontSize: 15,
-    color: Colors.textSecondary,
+    color: C.textSecondary,
     textAlign: 'center',
     marginBottom: Spacing.xl,
     lineHeight: 22,
   },
-})
+  })
+}

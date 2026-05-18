@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Switch, Share } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -12,8 +12,11 @@ import { formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { Config } from '@/constants/config'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import type { Listing } from '@/types'
+import { useColors } from '@/lib/hooks/useColors'
 
 function HostSetupWizard({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
+  const C = useColors()
+  const wizardStyles = useMemo(() => makeWizardStyles(C), [C])
   return (
     <View style={wizardStyles.wrap}>
       <View style={wizardStyles.card}>
@@ -38,44 +41,46 @@ function HostSetupWizard({ onStart, onSkip }: { onStart: () => void; onSkip: () 
   )
 }
 
-const wizardStyles = StyleSheet.create({
+function makeWizardStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create({
   wrap: { flex: 1, justifyContent: 'center', paddingHorizontal: Spacing.xl },
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xxl,
     padding: Spacing.xl,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   emoji: { fontSize: 56, marginBottom: Spacing.md },
-  title: { fontSize: 22, fontWeight: '800', color: Colors.text, textAlign: 'center', marginBottom: Spacing.md },
+  title: { fontSize: 22, fontWeight: '800', color: C.text, textAlign: 'center', marginBottom: Spacing.md },
   earningsBox: {
-    backgroundColor: Colors.successSurface,
+    backgroundColor: C.successSurface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     alignItems: 'center',
     marginBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.success,
+    borderColor: C.success,
     width: '100%',
   },
-  earningsLabel: { fontSize: 13, color: Colors.success },
-  earningsAmount: { fontSize: 32, fontWeight: '900', color: Colors.success, marginVertical: 4 },
-  subtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: Spacing.xl },
+  earningsLabel: { fontSize: 13, color: C.success },
+  earningsAmount: { fontSize: 32, fontWeight: '900', color: C.success, marginVertical: 4 },
+  subtitle: { fontSize: 14, color: C.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: Spacing.xl },
   startBtn: {
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xxxl,
     marginBottom: Spacing.sm,
   },
-  startBtnText: { fontSize: 16, fontWeight: '800', color: Colors.textInverse },
+  startBtnText: { fontSize: 16, fontWeight: '800', color: C.textInverse },
   skipBtn: { paddingVertical: Spacing.sm },
-  skipBtnText: { fontSize: 14, color: Colors.textTertiary },
-})
+  skipBtnText: { fontSize: 14, color: C.textTertiary },
+}) }
 
 function HostListingCard({ listing, language }: { listing: Listing; language: 'en' | 'es' | 'hu' }) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [available, setAvailable] = React.useState(listing.available)
 
   const handleShare = async () => {
@@ -100,8 +105,8 @@ function HostListingCard({ listing, language }: { listing: Listing; language: 'e
           <Switch
             value={available}
             onValueChange={setAvailable}
-            trackColor={{ false: Colors.border, true: Colors.success }}
-            thumbColor={Colors.text}
+            trackColor={{ false: C.border, true: C.success }}
+            thumbColor={C.text}
           />
           <Text style={styles.toggleLabel}>{available ? 'Live' : 'Paused'}</Text>
         </View>
@@ -138,6 +143,8 @@ function HostListingCard({ listing, language }: { listing: Listing; language: 'e
 }
 
 export default function HostListingsScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const { language } = useAuthStore()
   const listings: Listing[] = Config.useMock ? [MOCK_HOST_LISTING] : []
   const [showWizard, setShowWizard] = useState(false)
@@ -235,12 +242,13 @@ export default function HostListingsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   title: {
     fontSize: 26,
     fontWeight: '800',
-    color: Colors.text,
+    color: C.text,
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.md,
     marginBottom: Spacing.base,
@@ -248,35 +256,35 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: Spacing.base, paddingBottom: 100 },
 
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: Spacing.base,
     marginBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
   cardHeader: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.md },
   cardImage: {
     width: 72,
     height: 72,
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardInfo: { flex: 1 },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 2 },
-  cardPrice: { fontSize: 13, color: Colors.primary, fontWeight: '600', marginBottom: 4 },
+  cardTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 2 },
+  cardPrice: { fontSize: 13, color: C.primary, fontWeight: '600', marginBottom: 4 },
   cardStats: { flexDirection: 'row', gap: Spacing.base },
-  cardStat: { fontSize: 12, color: Colors.textSecondary },
+  cardStat: { fontSize: 12, color: C.textSecondary },
   toggleCol: { alignItems: 'center', gap: 4 },
-  toggleLabel: { fontSize: 10, fontWeight: '600', color: Colors.textSecondary },
+  toggleLabel: { fontSize: 10, fontWeight: '600', color: C.textSecondary },
 
   cardActions: {
     flexDirection: 'row',
     gap: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: C.border,
     paddingTop: Spacing.md,
   },
   editBtn: {
@@ -284,41 +292,42 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.surfaceWarm,
+    backgroundColor: C.surfaceWarm,
     minHeight: 44,
   },
-  editBtnText: { fontSize: 13, fontWeight: '600', color: Colors.text },
+  editBtnText: { fontSize: 13, fontWeight: '600', color: C.text },
 
   fab: {
     position: 'absolute',
     bottom: Spacing.xxxl + Spacing.xl,
     left: Spacing.xl,
     right: Spacing.xl,
-    backgroundColor: Colors.primary,
+    backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.base,
     alignItems: 'center',
-    shadowColor: Colors.primary,
+    shadowColor: C.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
   },
-  fabText: { fontSize: 15, fontWeight: '800', color: Colors.textInverse },
+  fabText: { fontSize: 15, fontWeight: '800', color: C.textInverse },
   importBtn: {
     position: 'absolute',
     bottom: Spacing.xl,
     left: Spacing.xl,
     right: Spacing.xl,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: C.border,
   },
-  importBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary },
-})
+  importBtnText: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
+  })
+}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
@@ -8,8 +8,11 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function LoginScreen() {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const { role } = useAuthStore()
@@ -90,12 +93,14 @@ export default function LoginScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.background },
   flex: { flex: 1 },
   back: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
-  backText: { fontSize: 16, color: Colors.primary, fontWeight: '600' },
+  backText: { fontSize: 16, color: C.primary, fontWeight: '600' },
   content: { flexGrow: 1, padding: Spacing.xl, justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: '800', color: Colors.text, marginBottom: Spacing.sm },
-  subtitle: { fontSize: 15, color: Colors.textSecondary, marginBottom: Spacing.xl },
-})
+  title: { fontSize: 28, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
+  subtitle: { fontSize: 15, color: C.textSecondary, marginBottom: Spacing.xl },
+  })
+}

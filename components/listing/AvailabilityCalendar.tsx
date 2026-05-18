@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval,
   startOfWeek, endOfWeek, isSameDay, isBefore, isWithinInterval,
   addMonths, startOfDay } from 'date-fns'
 import { Colors, Radius, Spacing } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface AvailabilityCalendarProps {
   blockedDates?: string[]
@@ -18,6 +19,8 @@ export function AvailabilityCalendar({
   selectedStart,
   selectedEnd,
 }: AvailabilityCalendarProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   const [displayMonth, setDisplayMonth] = useState(new Date())
   const [pickingStart, setPickingStart] = useState(!selectedStart)
 
@@ -119,8 +122,9 @@ export function AvailabilityCalendar({
 
 const DAY_SIZE = 40
 
-const styles = StyleSheet.create({
-  container: { backgroundColor: Colors.surface },
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  container: { backgroundColor: C.surface },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -129,15 +133,15 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   navBtn: { padding: Spacing.sm },
-  navText: { fontSize: 22, color: Colors.primary, fontWeight: '700' },
-  monthLabel: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  navText: { fontSize: 22, color: C.primary, fontWeight: '700' },
+  monthLabel: { fontSize: 16, fontWeight: '700', color: C.text },
   weekdays: { flexDirection: 'row', paddingHorizontal: Spacing.sm, marginBottom: Spacing.sm },
   weekday: {
     width: DAY_SIZE,
     textAlign: 'center',
     fontSize: 11,
     fontWeight: '600',
-    color: Colors.textTertiary,
+    color: C.textTertiary,
     textTransform: 'uppercase',
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: Spacing.sm },
@@ -149,13 +153,14 @@ const styles = StyleSheet.create({
     borderRadius: DAY_SIZE / 2,
     marginBottom: 4,
   },
-  daySelected: { backgroundColor: Colors.primary },
-  dayInRange: { backgroundColor: Colors.primarySurface, borderRadius: 0 },
+  daySelected: { backgroundColor: C.primary },
+  dayInRange: { backgroundColor: C.primarySurface, borderRadius: 0 },
   dayDisabled: { opacity: 0.4 },
   dayOutOfMonth: { opacity: 0.25 },
-  dayText: { fontSize: 14, color: Colors.text, fontWeight: '500' },
-  dayTextSelected: { color: Colors.textInverse, fontWeight: '700' },
+  dayText: { fontSize: 14, color: C.text, fontWeight: '500' },
+  dayTextSelected: { color: C.textInverse, fontWeight: '700' },
   dayTextDisabled: { textDecorationLine: 'line-through' },
-  dayTextOutOfMonth: { color: Colors.textTertiary },
-  blockedX: { position: 'absolute', fontSize: 8, color: Colors.error, bottom: 2 },
-})
+  dayTextOutOfMonth: { color: C.textTertiary },
+  blockedX: { position: 'absolute', fontSize: 8, color: C.error, bottom: 2 },
+  })
+}

@@ -1,36 +1,41 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native'
 import { Colors, Spacing } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 interface LoadingOverlayProps {
   message?: string
 }
 
 export function LoadingOverlay({ message }: LoadingOverlayProps) {
+  const C = useColors()
+  const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.overlay}>
       <View style={styles.box}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color={C.primary} />
         {message && <Text style={styles.message}>{message}</Text>}
       </View>
     </View>
   )
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.overlay,
+    backgroundColor: C.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 999,
   },
   box: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: 16,
     padding: Spacing.xl,
     alignItems: 'center',
     gap: Spacing.md,
   },
-  message: { fontSize: 14, color: Colors.textSecondary },
-})
+  message: { fontSize: 14, color: C.textSecondary },
+  })
+}
