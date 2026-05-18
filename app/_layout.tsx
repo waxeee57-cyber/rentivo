@@ -1,5 +1,6 @@
 import { useEffect, useState, Fragment, useCallback } from 'react'
 import { useFonts } from 'expo-font'
+import * as SplashScreen from 'expo-splash-screen'
 import { Ionicons } from '@expo/vector-icons'
 import { Stack, router, usePathname } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
@@ -20,6 +21,8 @@ import { supabase } from '@/lib/supabase'
 import { STRIPE_PUBLISHABLE_KEY } from '@/lib/stripe'
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications'
 import { Colors, Spacing, Radius } from '@/constants/colors'
+
+SplashScreen.preventAutoHideAsync()
 import { t } from '@/constants/i18n'
 import { Toast } from '@/components/ui/Toast'
 import { OfflineBanner } from '@/components/ui/OfflineBanner'
@@ -97,8 +100,14 @@ const gdprStyles = StyleSheet.create({
 })
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ ...Ionicons.font })
+  const [fontsLoaded, fontError] = useFonts({ ...Ionicons.font })
   const isDark = useThemeStore(s => s.isDark)
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      void SplashScreen.hideAsync()
+    }
+  }, [fontsLoaded, fontError])
   const { setSession, setUser, session, role, language } = useAuthStore()
   const { setPushToken, setUnreadCount, unreadCount } = useNotificationStore()
   const [gdprAccepted, setGdprAccepted] = useState<boolean | null>(null)
@@ -208,7 +217,7 @@ export default function RootLayout() {
     }, 300)
   }, [])
 
-  if (!fontsLoaded) return null
+  if (!fontsLoaded && !fontError) return null
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
