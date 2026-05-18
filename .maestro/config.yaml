@@ -1,0 +1,14 @@
+# Rentivo Maestro E2E Workspace Config
+# Bundle ID: com.domrol.rentivo
+# Futtatás: maestro test .maestro/flows/
+
+flows:
+  - flows/**/*.yaml
+
+env:
+  APP_ID: com.domrol.rentivo
+  # Demo teszt credentials (Supabase OTP bypass ha engedélyezett)
+  TEST_PHONE: "+36201234567"
+  TEST_OTP: "123456"
+  # Szöveg-alapú teszt marker — ha látható: eltört az onboarding
+  CRASH_MARKER: "Render Error"

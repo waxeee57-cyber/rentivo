@@ -1,0 +1,34 @@
+appId: com.domrol.rentivo
+name: "06 — Explore: Térkép nézet"
+tags:
+  - regression
+---
+# Teszteli: Map nézet renderel, nincs ▼ háromszög (hiányzó ikon bug)
+
+- launchApp:
+    clearState: true
+- runFlow:
+    file: ../helpers/login-demo.yaml
+
+# Map nézet alapból aktív
+- assertVisible:
+    text: "Explore"
+- waitForAnimationToEnd
+
+# City picker gomb látható
+- assertVisible:
+    text: "Marbella"
+
+# NEM jelenik meg eltört ikon karakter
+- assertNotVisible:
+    text: "▼"
+- assertNotVisible:
+    text: "Render Error"
+
+# Térkép betölt (várjuk a markers-t vagy a nézet átváltót)
+- extendedWaitUntil:
+    notVisible:
+      text: "Loading"
+    timeout: 8000
+
+- takeScreenshot: "06-explore-map-view"

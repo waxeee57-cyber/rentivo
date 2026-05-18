@@ -1,0 +1,36 @@
+appId: com.domrol.rentivo
+name: "01 — Onboarding: Skip gomb"
+tags:
+  - smoke
+  - critical
+---
+# Teszteli: OnboardingFlow Screen1 betölt, Skip gomb navigál Explore-ra
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Screen1: hero szöveg és gombok láthatóak
+- assertVisible:
+    text: "Rent anything."
+- assertVisible:
+    text: "Get started →"
+- assertVisible:
+    text: "Skip"
+
+# Skip → közvetlenül Explore-ra (consumer guest mód)
+- tapOn:
+    text: "Skip"
+- waitForAnimationToEnd
+
+# Explore tab aktív
+- assertVisible:
+    text: "Explore"
+
+# Nincs crash
+- assertNotVisible:
+    text: "Render Error"
+- assertNotVisible:
+    text: "Something went wrong"
+
+- takeScreenshot: "01-onboarding-skip-done"

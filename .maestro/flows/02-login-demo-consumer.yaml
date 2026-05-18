@@ -1,0 +1,43 @@
+appId: com.domrol.rentivo
+name: "02 — Login: Demo consumer bejelentkezés"
+tags:
+  - smoke
+  - critical
+---
+# Teszteli: Onboarding → role card → Consumer Explore közvetlen elérés
+# A OnboardingFlow Screen3 tapping role navigál session nélkül
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+# Screen1
+- assertVisible:
+    text: "Rent anything."
+- tapOn:
+    text: "Get started →"
+- waitForAnimationToEnd
+
+# Screen2: How it works
+- assertVisible:
+    text: "How it works"
+- tapOn:
+    text: "Next →"
+- waitForAnimationToEnd
+
+# Screen3: Role selection
+- assertVisible:
+    text: "How will you use"
+- assertVisible:
+    text: "I want to rent something"
+- tapOn:
+    text: "I want to rent something"
+- waitForAnimationToEnd
+
+# Explore képernyőn vagyunk
+- assertVisible:
+    text: "Explore"
+- assertNotVisible:
+    text: "Render Error"
+
+- takeScreenshot: "02-consumer-explore-reached"

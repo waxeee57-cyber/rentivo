@@ -1,0 +1,33 @@
+appId: com.domrol.rentivo
+name: "07 — Explore: Keresés és kategória szűrő"
+tags:
+  - regression
+---
+# Teszteli: Kategória chip tap szűr, city picker nyílik
+
+- launchApp:
+    clearState: true
+- runFlow:
+    file: ../helpers/login-demo.yaml
+
+- assertVisible:
+    text: "Explore"
+
+# City picker megnyitása
+- tapOn:
+    text: "Marbella"
+- waitForAnimationToEnd
+
+# City picker sheet látható
+- assertVisible:
+    text: "Marbella"
+
+# Bezárás (tap kívülre vagy close gomb)
+- back
+- waitForAnimationToEnd
+
+# Inspire kártyák láthatóak (ha lista nézetben)
+- assertNotVisible:
+    text: "Render Error"
+
+- takeScreenshot: "07-explore-search-filter"

@@ -1,0 +1,57 @@
+appId: com.domrol.rentivo
+name: "18 — Operator: Fleet kártya megnyitás"
+tags:
+  - regression
+---
+# Teszteli: Operator → Fleet tab → fleet kártya tap → szerkesztő form megnyílik
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Rent anything."
+- tapOn:
+    text: "Get started →"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "How it works"
+- tapOn:
+    text: "Next →"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "I run a rental business"
+- tapOn:
+    text: "I run a rental business"
+- waitForAnimationToEnd
+
+# Operator dashboard
+- assertVisible:
+    text: "Dashboard"
+
+# Fleet tab megnyitása
+- tapOn:
+    text: "Fleet"
+- waitForAnimationToEnd
+
+# Fleet lista betölt
+- assertVisible:
+    text: "Fleet"
+
+# Nincs crash
+- assertNotVisible:
+    text: "Render Error"
+
+# Első fleet kártya tappolása (ha van)
+- tapOn:
+    index: 0
+    optional: true
+- waitForAnimationToEnd
+
+# Szerkesztő form — ha van jármű, az edit form nyílt meg
+- assertNotVisible:
+    text: "Render Error"
+
+- takeScreenshot: "18-operator-fleet-edit"

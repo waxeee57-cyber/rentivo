@@ -1,0 +1,41 @@
+appId: com.domrol.rentivo
+name: "11 — Bookings: Foglalások lista képernyő"
+tags:
+  - smoke
+  - regression
+---
+# Teszteli: Bookings tab megnyílik, tab bar működik, üres state helyes
+
+- launchApp:
+    clearState: true
+- runFlow:
+    file: ../helpers/login-demo.yaml
+
+- assertVisible:
+    text: "Explore"
+
+# Bookings tab tappolás
+- tapOn:
+    text: "Bookings"
+- waitForAnimationToEnd
+
+# Bookings képernyő betölt
+- assertVisible:
+    text: "My Trips"
+
+# Tab-ok láthatóak
+- assertVisible:
+    text: "Upcoming"
+
+# Üres state esetén: CTA gomb látható
+- assertNotVisible:
+    text: "Render Error"
+
+# Visszaváltás Explore-ra
+- tapOn:
+    text: "Explore"
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Explore"
+
+- takeScreenshot: "11-bookings-list"

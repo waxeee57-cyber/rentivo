@@ -1,0 +1,61 @@
+appId: com.domrol.rentivo
+name: "14 — Profil: Nyelv váltás EN→HU→EN"
+tags:
+  - regression
+---
+# Teszteli: Nyelv váltás HU-ra megváltoztatja a UI szövegeket
+# setLanguage store frissül, tab bar és képernyők lokalizálva
+
+- launchApp:
+    clearState: true
+- runFlow:
+    file: ../helpers/login-demo.yaml
+
+- assertVisible:
+    text: "Explore"
+
+- tapOn:
+    text: "Profile"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Profile"
+
+# Scroll a Language szekciőhoz
+- scrollUntilVisible:
+    element:
+      text: "Language"
+    direction: DOWN
+    timeout: 5000
+
+# Aktuálisan EN van kiválasztva
+- assertVisible:
+    text: "EN"
+
+# Magyar váltás
+- tapOn:
+    text: "HU"
+- waitForAnimationToEnd
+
+# Tab bar HU-ra vált
+- assertVisible:
+    text: "Felfedez"
+
+# Visszaváltás EN-re
+- tapOn:
+    text: "EN"
+    optional: true
+- scrollUntilVisible:
+    element:
+      text: "EN"
+    direction: DOWN
+    timeout: 3000
+- tapOn:
+    text: "EN"
+- waitForAnimationToEnd
+
+# Tab bar visszaállt EN-re
+- assertVisible:
+    text: "Explore"
+
+- takeScreenshot: "14-language-switch-done"

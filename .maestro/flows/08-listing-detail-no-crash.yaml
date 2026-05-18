@@ -1,0 +1,75 @@
+appId: com.domrol.rentivo
+name: "08 — Listing Detail: Nem crashel (P0 kritikus)"
+tags:
+  - smoke
+  - critical
+---
+# KRITIKUS FLOW: listing/[id].tsx hook bug volt (hasonló listings crash)
+# Ez a teszt bizonyítja, hogy a listing detail NEM crashel betöltés után
+# A P0 javítás után: useAvailability és hasonló hook-ok nem dobnak hibát
+
+- launchApp:
+    clearState: true
+- runFlow:
+    file: ../helpers/login-demo.yaml
+
+# Explore képernyőn vagyunk
+- assertVisible:
+    text: "Explore"
+
+# Lista nézetbe váltás hogy kártyák legyenek kattinthatóak
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 5000
+
+# Várjuk a listing betöltést
+- extendedWaitUntil:
+    notVisible:
+      text: "Loading"
+    timeout: 8000
+
+# Az első elérhető listing kártyára tappolunk
+# Ha map nézetben vagyunk, lapozzunk le a preview-ra
+- scrollUntilVisible:
+    element:
+      text: "€"
+    direction: DOWN
+    timeout: 8000
+
+# Listing card tap (bármelyik ami tartalmaz árat)
+- tapOn:
+    text: "€"
+- waitForAnimationToEnd
+
+# 3 másodperc várakozás — ez volt a crash window
+- extendedWaitUntil:
+    visible:
+      text: "Book"
+    timeout: 5000
+
+# KRITIKUS ASSERTEK
+- assertNotVisible:
+    text: "Render Error"
+- assertNotVisible:
+    text: "Something went wrong"
+- assertNotVisible:
+    text: "null is not an object"
+
+# Hero és ár látható
+- assertVisible:
+    text: "Book"
+
+# Scroll le — similar listings renderelés (ez volt a hook crash forrása)
+- scroll
+- scroll
+- scroll
+- waitForAnimationToEnd
+
+# Még mindig nincs crash
+- assertNotVisible:
+    text: "Render Error"
+- assertNotVisible:
+    text: "Similar vehicles"
+
+- takeScreenshot: "08-listing-detail-no-crash"

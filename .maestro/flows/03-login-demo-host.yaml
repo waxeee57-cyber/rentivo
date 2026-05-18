@@ -1,0 +1,38 @@
+appId: com.domrol.rentivo
+name: "03 — Login: Demo host bejelentkezés"
+tags:
+  - smoke
+  - regression
+---
+# Teszteli: Onboarding → Host role → Host listings képernyő
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Rent anything."
+- tapOn:
+    text: "Get started →"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "How it works"
+- tapOn:
+    text: "Next →"
+- waitForAnimationToEnd
+
+# Screen3: Host role kiválasztása
+- assertVisible:
+    text: "I own something to rent"
+- tapOn:
+    text: "I own something to rent"
+- waitForAnimationToEnd
+
+# Host listings képernyőn vagyunk
+- assertVisible:
+    text: "My Listings"
+- assertNotVisible:
+    text: "Render Error"
+
+- takeScreenshot: "03-host-listings-reached"

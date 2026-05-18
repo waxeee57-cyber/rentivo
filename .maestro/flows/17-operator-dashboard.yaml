@@ -1,0 +1,51 @@
+appId: com.domrol.rentivo
+name: "17 — Operator: Dashboard statisztikák"
+tags:
+  - smoke
+  - critical
+---
+# Teszteli: Operator belépés → Dashboard → revenue/booking stats látható
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Rent anything."
+- tapOn:
+    text: "Get started →"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "How it works"
+- tapOn:
+    text: "Next →"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "I run a rental business"
+- tapOn:
+    text: "I run a rental business"
+- waitForAnimationToEnd
+
+# Operator dashboard betölt
+- assertVisible:
+    text: "Dashboard"
+
+# Bevétel kártya látható
+- assertVisible:
+    text: "Revenue"
+
+# Foglalás statisztika látható
+- assertVisible:
+    text: "Bookings"
+
+# Nincs crash
+- assertNotVisible:
+    text: "Render Error"
+
+# Nincs render hiba
+- assertNotVisible:
+    text: "Something went wrong"
+
+- takeScreenshot: "17-operator-dashboard"

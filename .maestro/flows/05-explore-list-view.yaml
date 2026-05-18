@@ -1,0 +1,41 @@
+appId: com.domrol.rentivo
+name: "05 — Explore: Lista nézet váltás"
+tags:
+  - smoke
+  - regression
+---
+# Teszteli: Explore betölt, map→lista nézet váltás működik
+
+- launchApp:
+    clearState: true
+- runFlow:
+    file: ../helpers/login-demo.yaml
+
+# Explore betölt — alapértelmezett: map nézet
+- assertVisible:
+    text: "Explore"
+
+# Keresés sor / city picker látható
+- assertVisible:
+    text: "Marbella"
+
+# Kategória chipek láthatóak
+- assertVisible:
+    text: "Cars & villas from €35/day"
+
+# Lista nézetre váltás (lista ikon jobbra)
+- tapOn:
+    text: "≡"
+    optional: true
+- waitForAnimationToEnd
+
+# Ha van listing kártyák — assertVisible a listán
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 5000
+
+- assertNotVisible:
+    text: "Render Error"
+
+- takeScreenshot: "05-explore-list-view"

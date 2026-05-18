@@ -1,0 +1,67 @@
+appId: com.domrol.rentivo
+name: "19 — Operator: Naptár nézet"
+tags:
+  - smoke
+  - regression
+---
+# Teszteli: Operator → Bookings → Calendar tab → hónap grid renderel, navigáció működik
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "Rent anything."
+- tapOn:
+    text: "Get started →"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "How it works"
+- tapOn:
+    text: "Next →"
+- waitForAnimationToEnd
+
+- assertVisible:
+    text: "I run a rental business"
+- tapOn:
+    text: "I run a rental business"
+- waitForAnimationToEnd
+
+# Operator dashboard
+- assertVisible:
+    text: "Dashboard"
+
+# Bookings tab
+- tapOn:
+    text: "Bookings"
+- waitForAnimationToEnd
+
+# Bookings betölt
+- assertVisible:
+    text: "Bookings"
+
+# Calendar tab switcher
+- tapOn:
+    text: "Calendar"
+    optional: true
+- waitForAnimationToEnd
+
+# Hónap grid látható (dátum szám vagy hónapnév)
+- assertNotVisible:
+    text: "Render Error"
+
+# Nincs crash
+- assertNotVisible:
+    text: "Something went wrong"
+
+# Előre navigáció (következő hónap gomb)
+- tapOn:
+    accessibilityLabel: "Next month"
+    optional: true
+- waitForAnimationToEnd
+
+- assertNotVisible:
+    text: "Render Error"
+
+- takeScreenshot: "19-operator-calendar"

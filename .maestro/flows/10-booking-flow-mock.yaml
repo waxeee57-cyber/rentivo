@@ -1,0 +1,63 @@
+appId: com.domrol.rentivo
+name: "10 — Booking: Flow indítás dátum picker-rel (P1 fix)"
+tags:
+  - smoke
+  - critical
+---
+# Teszteli: Ha nincs dátum → DatePickerSheet nyílik (nem router.back)
+# Ez a P1-1 fix tesztje: booking flow date guard
+
+- launchApp:
+    clearState: true
+- runFlow:
+    file: ../helpers/login-demo.yaml
+
+- assertVisible:
+    text: "Explore"
+
+# Listing megnyitása
+- extendedWaitUntil:
+    notVisible:
+      text: "Loading"
+    timeout: 8000
+
+- scrollUntilVisible:
+    element:
+      text: "€"
+    direction: DOWN
+    timeout: 8000
+
+- tapOn:
+    text: "€"
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Book"
+    timeout: 5000
+
+# "Book" gomb tap — DatePickerSheet nyílik (dátum nincs megadva)
+- tapOn:
+    text: "Book"
+- waitForAnimationToEnd
+
+# P1-1 fix: DatePickerSheet jelenik meg, NEM router.back()
+# A sheet a "Book" gomb után jelenik meg ha nincs dátum
+- extendedWaitUntil:
+    visible:
+      text: "Apply"
+    timeout: 5000
+
+# DatePickerSheet látható
+- assertVisible:
+    text: "Apply"
+- assertNotVisible:
+    text: "Render Error"
+- assertNotVisible:
+    text: "Kérjük válassz dátumot"
+
+# Dátum picker bezárása (back)
+- back
+- waitForAnimationToEnd
+
+- takeScreenshot: "10-booking-date-picker-opens"

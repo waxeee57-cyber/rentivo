@@ -1,0 +1,16 @@
+# Reusable helper: Consumer onboarding skip + elér explore-ra
+# Feltétel: launchApp clearState:true már megtörtént a szülő flow-ban
+# Eredmény: consumer Explore képernyőn vagyunk (vendég mód)
+#
+# Használat a szülő flow-ban:
+#   - runFlow:
+#       file: ../helpers/login-demo.yaml
+
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Rent anything."
+- tapOn:
+    text: "Skip"
+- waitForAnimationToEnd
+- assertVisible:
+    text: "Explore"

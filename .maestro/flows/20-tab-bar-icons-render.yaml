@@ -1,0 +1,59 @@
+appId: com.domrol.rentivo
+name: "20 — Tab bar: ikonok renderelnek, nincs ▼ karakter"
+tags:
+  - smoke
+  - critical
+---
+# Teszteli: Tab bar ikonok helyesen renderelnek — nincs "▼" fallback karakter
+# Ez a leggyakoribb Expo Go icon font betöltési hiba indikátora
+
+- launchApp:
+    clearState: true
+- runFlow:
+    file: ../helpers/login-demo.yaml
+
+# Tab bar látható — Explore aktív
+- assertVisible:
+    text: "Explore"
+
+# Nincs ▼ fallback ikon karakter (Ionicons betöltési hiba)
+- assertNotVisible:
+    text: "▼"
+
+# Bookings tab ikon megjelenik (szöveg alapján)
+- assertVisible:
+    text: "Bookings"
+
+# Assistant tab
+- assertVisible:
+    text: "Assistant"
+
+# Profile tab
+- assertVisible:
+    text: "Profile"
+
+# Nincs crash
+- assertNotVisible:
+    text: "Render Error"
+
+# Tab váltogatás — minden tab betölt
+- tapOn:
+    text: "Bookings"
+- waitForAnimationToEnd
+- assertNotVisible:
+    text: "▼"
+
+- tapOn:
+    text: "Profile"
+- waitForAnimationToEnd
+- assertNotVisible:
+    text: "▼"
+
+- tapOn:
+    text: "Explore"
+- waitForAnimationToEnd
+
+- assertNotVisible:
+    text: "Render Error"
+
+- takeScreenshot: "20-tab-bar-icons"

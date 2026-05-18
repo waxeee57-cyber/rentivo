@@ -1,0 +1,7 @@
+# Helper: App állapot törlése és újraindítás
+# Minden AsyncStorage és in-memory state törlődik
+# Eredmény: Onboarding képernyő jelenik meg
+
+- launchApp:
+    clearState: true
+- waitForAnimationToEnd
