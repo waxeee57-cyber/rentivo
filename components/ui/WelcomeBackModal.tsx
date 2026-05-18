@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface WelcomeBackModalProps {

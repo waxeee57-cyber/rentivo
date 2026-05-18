@@ -8,7 +8,7 @@ import {
   format, addMonths, subMonths, startOfMonth, endOfMonth,
   eachDayOfInterval, getDay, isSameDay,
 } from 'date-fns'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useOperatorBookings } from '@/lib/hooks/useOperatorBookings'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -30,10 +30,10 @@ const STATUS_ICONS: Record<BookingStatus, string> = {
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 function StatusDot({ status, color }: { status: BookingStatus; color: string }) {
-  const C = useColors()
   return (
     <View style={[{ width: 14, height: 14, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: 1 }, { backgroundColor: color }]}>
-      <Text style={{ fontSize: 7, color: C.white, fontWeight: '800' }}>{STATUS_ICONS[status]}</Text>
+      {/* intentional: white text on colored dot — theme-independent */}
+      <Text style={{ fontSize: 7, color: '#FFFFFF', fontWeight: '800' }}>{STATUS_ICONS[status]}</Text>
     </View>
   )
 }

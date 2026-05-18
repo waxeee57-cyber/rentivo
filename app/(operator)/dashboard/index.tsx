@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated, Linking
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { subDays, format, startOfMonth } from 'date-fns'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { QuickStats } from '@/components/operator/QuickStats'
 import { BookingRow } from '@/components/operator/BookingRow'
 import { SkeletonCard } from '@/components/ui/Skeleton'

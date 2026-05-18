@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import { Colors, Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface SignatureCanvasProps {

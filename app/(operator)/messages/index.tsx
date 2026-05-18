@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { Config } from '@/constants/config'
 import { MOCK_CONVERSATIONS } from '@/lib/mockData'
 import { supabase } from '@/lib/supabase'

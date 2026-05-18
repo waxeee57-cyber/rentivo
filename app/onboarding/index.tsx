@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Colors, Spacing, Radius, Typography, Shadow } from '@/constants/colors'
+import { Spacing, Radius, Typography, Shadow } from '@/constants/colors'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
 

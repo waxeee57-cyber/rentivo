@@ -12,7 +12,7 @@ import {
 import { useLocalSearchParams, router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useColors } from '@/lib/hooks/useColors'
 

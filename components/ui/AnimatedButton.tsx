@@ -4,7 +4,7 @@ import {
   StyleSheet, ViewStyle, TextStyle,
 } from 'react-native'
 import { impactAsync, ImpactFeedbackStyle } from 'expo-haptics'
-import { Colors, Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'

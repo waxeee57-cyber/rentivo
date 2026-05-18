@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Haptics from 'expo-haptics'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { FleetCard } from '@/components/operator/FleetCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -119,7 +119,7 @@ export default function FleetScreen() {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
     refetch()
-    await new Promise(r => setTimeout(r, 600))
+    if (Config.useMock) await new Promise(r => setTimeout(r, 600))
     setRefreshing(false)
   }, [refetch])
 
@@ -134,7 +134,7 @@ export default function FleetScreen() {
         message: 'Check out my vehicle listing on Rentivo!',
         title: 'My Rentivo listing',
       })
-    } catch {}
+    } catch { /* user dismissed share sheet — not an error */ }
   }
 
   if (!wizardChecked || loading) {

@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors, Spacing, Radius, Typography } from '@/constants/colors'
+import { Spacing, Radius, Typography } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { supabase } from '@/lib/supabase'
@@ -19,6 +19,7 @@ interface ChatMessage {
   content: string
 }
 
+// Fallback when rental-assistant Edge Function is unavailable
 const MOCK_REPLIES: Record<string, string> = {
   default: 'I can help you find the perfect rental! We have cars, boats, villas, and more available in Marbella and Budapest. What are you looking for?',
   car: 'Great choice! We have sedans from €45/day and SUVs from €75/day in Marbella. Would you like to see available dates?',

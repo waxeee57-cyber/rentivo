@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import { Image } from 'expo-image'
-import { Colors, Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing } from '@/constants/colors'
 import { useCamera } from '@/lib/hooks/useCamera'
 import { useColors } from '@/lib/hooks/useColors'
 

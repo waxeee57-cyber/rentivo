@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView } from 'react-native'
 import { Image } from 'expo-image'
-import { Colors, Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing } from '@/constants/colors'
 import { Badge } from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils/formatDate'
 import type { DamageReport as DamageReportType } from '@/types'

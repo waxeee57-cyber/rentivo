@@ -108,9 +108,15 @@ export default function NewHostListingScreen() {
         .eq('user_id', session.user.id)
         .maybeSingle()
 
+      if (!hostRecord?.id) {
+        showToast({ message: isHu ? 'Host profil nem található' : 'Host account not found. Please complete your profile.', type: 'error' })
+        setPublishing(false)
+        return
+      }
+
       await createListing({
         operator_id: '',
-        host_id: hostRecord?.id ?? null,
+        host_id: hostRecord.id,
         title: derivedTitle,
         description: description.trim() || null,
         category: category as Listing['category'],

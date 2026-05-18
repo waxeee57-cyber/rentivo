@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { View, Text, ScrollView, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 const SECTIONS = [

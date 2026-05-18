@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useMemo } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Dimensions, Animated, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { BookingCard } from '@/components/booking/BookingCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -85,7 +85,7 @@ export default function BookingsScreen() {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
     refetch()
-    await new Promise(r => setTimeout(r, 600))
+    if (Config.useMock) await new Promise(r => setTimeout(r, 600))
     setRefreshing(false)
   }, [refetch])
 

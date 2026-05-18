@@ -4,7 +4,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { ListingCard, ListingCardSkeleton } from '@/components/listing/ListingCard'
 import { CategoryPill } from '@/components/ui/CategoryPill'
 import { EmptyState } from '@/components/ui/EmptyState'

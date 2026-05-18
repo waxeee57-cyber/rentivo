@@ -230,6 +230,7 @@ export default function ListingDetailScreen() {
               accessibilityRole="button"
               style={styles.backBtnInner}
             >
+              {/* intentional: white text on dark overlay — theme-independent */}
               <Ionicons name="arrow-back" size={20} color={Colors.white} />
             </TouchableOpacity>
           </View>
@@ -248,6 +249,7 @@ export default function ListingDetailScreen() {
                 accessibilityRole="button"
                 style={styles.backBtnInner}
               >
+                {/* intentional: white text on dark overlay — theme-independent */}
                 <Ionicons name="share-outline" size={18} color={Colors.white} />
               </TouchableOpacity>
             </View>
@@ -262,6 +264,7 @@ export default function ListingDetailScreen() {
                 accessibilityRole="button"
                 style={styles.backBtnInner}
               >
+                {/* intentional: white text on dark overlay — theme-independent */}
                 <Ionicons
                   name={isWishlisted(listing.id) ? 'heart' : 'heart-outline'}
                   size={18}
@@ -277,6 +280,7 @@ export default function ListingDetailScreen() {
                 accessibilityRole="button"
                 style={styles.backBtnInner}
               >
+                {/* intentional: white text on dark overlay — theme-independent */}
                 <Ionicons name="flag-outline" size={18} color={Colors.white} />
               </TouchableOpacity>
             </View>

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useMemo } from 'react'
 import { View, Text, Animated, StyleSheet } from 'react-native'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface StepIndicatorProps {

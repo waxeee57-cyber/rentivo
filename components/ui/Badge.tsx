@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, ViewStyle } from 'react-native'
-import { Colors, Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing } from '@/constants/colors'
 import type { BookingStatus } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
 

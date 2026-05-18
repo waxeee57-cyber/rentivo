@@ -192,7 +192,8 @@ export async function sendChatNotification(params: {
       }),
     })
   } catch (error) {
-    console.error('Push notification error:', error) // SAFE: error logging
+    if (__DEV__) console.error('Push notification error:', error)
+    // else Sentry.captureException(error)
   }
 }
 
@@ -232,7 +233,8 @@ export async function sendBookingNotification(params: {
       }),
     })
   } catch (error) {
-    console.error('Push notification error:', error) // SAFE: error logging
+    if (__DEV__) console.error('Push notification error:', error)
+    // else Sentry.captureException(error)
   }
 }
 

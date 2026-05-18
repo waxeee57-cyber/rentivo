@@ -32,6 +32,7 @@ import { router } from 'expo-router'
 import { RotatingText } from '@/components/ui/RotatingText'
 import { useThemeStore } from '@/lib/store/useThemeStore'
 import { useColors } from '@/lib/hooks/useColors'
+import { Config } from '@/constants/config'
 
 const CAT_I18N_KEYS: Record<RentalCategory, TranslationKey> = {
   car: 'catCars', motorcycle: 'catMotorcycles', yacht: 'catYachts',
@@ -74,7 +75,7 @@ const INITIAL_REGION = {
 }
 
 const INSPIRE_THEMES = [
-  { emoji: '🏖️', title: 'Weekend in Marbella', subtitle: '3 cars · 5 villas from €35/day', category: 'car' as RentalCategory, city: 'Marbella' },
+  { emoji: '🏖️', title: 'Weekend in Marbella', subtitle: 'Cars & villas from €35/day', category: 'car' as RentalCategory, city: 'Marbella' },
   { emoji: '🌅', title: 'Mediterranean road trip', subtitle: 'Convertibles in Nice, Barcelona', category: 'car' as RentalCategory, city: null },
   { emoji: '⛵', title: 'Yacht week in the islands', subtitle: '8+ person boats from €200/day', category: 'yacht' as RentalCategory, city: null },
   { emoji: '🛵', title: 'Vespa adventures', subtitle: 'Scooters in Dubrovnik · Lisbon', category: 'scooter' as RentalCategory, city: null },
@@ -206,7 +207,7 @@ export default function ExploreScreen() {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
-    await new Promise<void>(r => setTimeout(r, 700))
+    if (Config.useMock) await new Promise<void>(r => setTimeout(r, 700))
     setRefreshing(false)
   }, [])
 

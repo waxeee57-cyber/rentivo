@@ -3,7 +3,7 @@ import {
   Modal, View, TouchableOpacity, Text,
   Animated, StyleSheet, ScrollView, ViewStyle,
 } from 'react-native'
-import { Colors, Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing } from '@/constants/colors'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useColors } from '@/lib/hooks/useColors'
 

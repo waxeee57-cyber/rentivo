@@ -20,7 +20,7 @@ import { useNotificationStore } from '@/lib/store/useNotificationStore'
 import { supabase } from '@/lib/supabase'
 import { STRIPE_PUBLISHABLE_KEY } from '@/lib/stripe'
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 
 SplashScreen.preventAutoHideAsync()
 import { t } from '@/constants/i18n'

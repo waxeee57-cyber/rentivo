@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 const { width, height } = Dimensions.get('window')

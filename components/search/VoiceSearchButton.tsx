@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import * as Haptics from 'expo-haptics'
-import { Colors, Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing } from '@/constants/colors'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
 

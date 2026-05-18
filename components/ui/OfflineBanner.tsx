@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { View, Text, StyleSheet, AppState, AppStateStatus } from 'react-native'
-import { Colors, Spacing } from '@/constants/colors'
+import { Spacing } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 function checkConnection(setOnline: (v: boolean) => void) {

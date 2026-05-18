@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import {
   View, Text, Modal, TouchableOpacity, StyleSheet,
 } from 'react-native'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface Detail {

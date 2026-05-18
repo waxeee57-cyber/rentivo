@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { Colors, Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing } from '@/constants/colors'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatDate } from '@/lib/utils/formatDate'
 import type { Review } from '@/types'

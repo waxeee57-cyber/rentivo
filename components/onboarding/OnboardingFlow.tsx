@@ -6,7 +6,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import type { UserRole } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
 

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { useColors } from '@/lib/hooks/useColors'
 

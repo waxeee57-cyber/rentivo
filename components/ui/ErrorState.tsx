@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { Colors, Spacing } from '@/constants/colors'
+import { Spacing } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { useColors } from '@/lib/hooks/useColors'
 

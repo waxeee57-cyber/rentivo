@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react'
 import { StyleSheet, View } from 'react-native'
 import MapView, { Region } from 'react-native-maps'
-import { Colors } from '@/constants/colors'
 import { ListingMarker } from '@/components/map/ListingMarker'
 import { ListingPreviewSheet } from '@/components/map/ListingPreviewSheet'
 import type { Listing } from '@/types'

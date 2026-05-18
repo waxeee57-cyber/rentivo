@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { Image } from 'expo-image'
-import { Colors, Radius } from '@/constants/colors'
+import { Radius } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface AvatarProps {

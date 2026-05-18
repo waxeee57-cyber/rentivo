@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval,
   startOfWeek, endOfWeek, isSameDay, isBefore, isWithinInterval,
   addMonths, startOfDay } from 'date-fns'
-import { Colors, Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface AvailabilityCalendarProps {

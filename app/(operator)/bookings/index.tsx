@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } fr
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { BookingRow } from '@/components/operator/BookingRow'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -67,7 +67,7 @@ export default function OperatorBookingsScreen() {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
     refetch()
-    await new Promise(r => setTimeout(r, 600))
+    if (Config.useMock) await new Promise(r => setTimeout(r, 600))
     setRefreshing(false)
   }, [refetch])
 

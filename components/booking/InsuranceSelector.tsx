@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { INSURANCE_PACKAGES } from '@/types'
 import type { InsuranceId } from '@/types'

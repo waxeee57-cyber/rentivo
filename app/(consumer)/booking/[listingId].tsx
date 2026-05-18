@@ -14,8 +14,10 @@ import { HelpTooltip } from '@/components/ui/HelpTooltip'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { PriceBreakdown } from '@/components/booking/PriceBreakdown'
 import { InsuranceSelector } from '@/components/booking/InsuranceSelector'
+import { DatePickerSheet } from '@/components/booking/DatePickerSheet'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { useListing } from '@/lib/hooks/useListing'
+import { useAvailability } from '@/lib/hooks/useAvailability'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { calculatePrice } from '@/lib/utils/calculatePrice'
 import { getError } from '@/lib/errors'
@@ -74,11 +76,18 @@ export default function BookingFlowScreen() {
   const [promoLoading, setPromoLoading] = useState(false)
   const [identityStatus, setIdentityStatus] = useState<string | null>(null)
   const [identityLoading, setIdentityLoading] = useState(true)
+  const [localStartDate, setLocalStartDate] = useState<Date | null>(
+    startDateParam ? new Date(startDateParam) : null
+  )
+  const [localEndDate, setLocalEndDate] = useState<Date | null>(
+    endDateParam ? new Date(endDateParam) : null
+  )
   const { showToast } = useToastStore()
 
   // Theme — must be before early returns
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const { blockedDates } = useAvailability(listingId ?? '')
 
   useEffect(() => {
     if (Config.useMock) {
@@ -142,13 +151,28 @@ export default function BookingFlowScreen() {
     )
   }
 
-  if (!startDateParam || !endDateParam) {
-    showToast({ message: 'Kérjük válassz dátumot', type: 'info' })
-    router.back()
-    return null
+  const startDate = localStartDate
+  const endDate = localEndDate
+
+  if (!startDate || !endDate) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScreenHeader title="Booking" />
+        <DatePickerSheet
+          visible={true}
+          startDate={localStartDate}
+          endDate={localEndDate}
+          onApply={(start, end) => {
+            setLocalStartDate(start)
+            setLocalEndDate(end)
+          }}
+          onClose={() => router.back()}
+          blockedDates={blockedDates}
+          pricePerDay={listing.price_per_day}
+        />
+      </SafeAreaView>
+    )
   }
-  const startDate = new Date(startDateParam)
-  const endDate = new Date(endDateParam)
   const totalDays = Math.max(1, differenceInDays(endDate, startDate))
 
   const priceCalc = calculatePrice(
@@ -175,7 +199,7 @@ export default function BookingFlowScreen() {
     if (result.valid) {
       setPromoDiscount(result.discount)
       setPromoApplied(true)
-      showToast({ message: `Promo applied: -€${result.discount.toFixed(2)}`, type: 'success' })
+      showToast({ message: `Promo applied: -${formatEURDecimal(result.discount)}`, type: 'success' })
     } else {
       showToast({ message: result.error ?? 'Invalid promo code', type: 'error' })
       setPromoDiscount(0)
@@ -569,10 +593,10 @@ export default function BookingFlowScreen() {
             {promoApplied && promoDiscount > 0 && (
               <Text style={styles.promoSaved}>
                 {language === 'hu'
-                  ? `Megtakarítás: -€${promoDiscount.toFixed(2)}`
+                  ? `Megtakarítás: -${formatEURDecimal(promoDiscount)}`
                   : language === 'es'
-                    ? `Ahorro: -€${promoDiscount.toFixed(2)}`
-                    : `You save -€${promoDiscount.toFixed(2)}`}
+                    ? `Ahorro: -${formatEURDecimal(promoDiscount)}`
+                    : `You save -${formatEURDecimal(promoDiscount)}`}
               </Text>
             )}
 

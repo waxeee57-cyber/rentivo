@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { differenceInDays, parseISO } from 'date-fns'
-import { Colors, Radius, Spacing, Shadow, Typography } from '@/constants/colors'
+import { Radius, Spacing, Shadow, Typography } from '@/constants/colors'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import type { Booking } from '@/types'

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius } from '@/constants/colors'
 import { getPricingSuggestions, type PricingSuggestion } from '@/lib/api/pricingSuggestions'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { useColors } from '@/lib/hooks/useColors'

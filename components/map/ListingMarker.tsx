@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useMemo } from 'react'
 import { View, Text, StyleSheet, Animated } from 'react-native'
 import { Marker } from 'react-native-maps'
-import { Colors, Radius, Shadow } from '@/constants/colors'
+import { Radius, Shadow } from '@/constants/colors'
 import type { Listing } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
 
