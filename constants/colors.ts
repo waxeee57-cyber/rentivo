@@ -1,4 +1,4 @@
-export const Colors = {
+export const DarkColors = {
   // Backgrounds
   background:     '#0A1628',
   surface:        '#111E33',
@@ -45,12 +45,74 @@ export const Colors = {
   white:          '#FFFFFF',
   black:          '#000000',
 
-  // Backward-compat aliases (existing screens reference these)
+  // Backward-compat aliases
   primaryLight:   '#F5C878',
   surfaceCard:    '#162038',
   borderLight:    '#1E3050',
   dark:           '#0A1628',
   darkSurface:    '#111E33',
+}
+
+export const LightColors = {
+  // Backgrounds
+  background:     '#FFFFFF',
+  surface:        '#FFFFFF',
+  surfaceWarm:    '#F7F7F7',
+  surfaceHover:   '#F0F0F0',
+
+  // Primary (coral-orange, Airbnb-inspired)
+  primary:        '#FF6B35',
+  primaryDark:    '#E05A28',
+  primarySurface: 'rgba(255,107,53,0.10)',
+  primarySubtle:  'rgba(255,107,53,0.10)',
+
+  // Text
+  text:           '#1A1A1A',
+  textSecondary:  '#484848',
+  textTertiary:   '#717171',
+  textInverse:    '#FFFFFF',
+
+  // Borders
+  border:         '#EBEBEB',
+  borderWarm:     '#DDDDDD',
+  borderGold:     'rgba(255,107,53,0.25)',
+
+  // Status
+  success:        '#00A699',
+  successSurface: 'rgba(0,166,153,0.10)',
+  error:          '#FF385C',
+  errorSurface:   'rgba(255,56,92,0.10)',
+  warning:        '#FFB400',
+  warningSurface: 'rgba(255,180,0,0.10)',
+  info:           '#007AFF',
+  infoSurface:    'rgba(0,122,255,0.10)',
+
+  // Platform colors (same)
+  airbnb:         '#FF5A5F',
+  booking:        '#003580',
+  turo:           '#00A699',
+  vrbo:           '#1B68B3',
+
+  // Special
+  overlay:        'rgba(0,0,0,0.45)',
+  overlayLight:   'rgba(0,0,0,0.25)',
+  transparent:    'transparent',
+  white:          '#FFFFFF',
+  black:          '#000000',
+
+  // Backward-compat aliases
+  primaryLight:   '#FF9B7A',
+  surfaceCard:    '#F7F7F7',
+  borderLight:    '#EBEBEB',
+  dark:           '#FFFFFF',
+  darkSurface:    '#F7F7F7',
+}
+
+// Backward-compatible default (dark theme)
+export const Colors = DarkColors
+
+export function getColors(isDark: boolean): typeof DarkColors {
+  return isDark ? DarkColors : LightColors
 }
 
 export const Spacing = {

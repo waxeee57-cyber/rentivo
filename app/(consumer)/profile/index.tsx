@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Linking, Animated, Share } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Linking, Animated, Share, Switch } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import type { Href } from 'expo-router'
@@ -14,10 +14,14 @@ import { Config } from '@/constants/config'
 import { t } from '@/constants/i18n'
 import { useLoyalty } from '@/lib/hooks/useLoyalty'
 import { supabase } from '@/lib/supabase'
+import { useThemeStore } from '@/lib/store/useThemeStore'
+import { useColors } from '@/lib/hooks/useColors'
 
 export default function ProfileScreen() {
   const { user, operator, signOut, language, setLanguage, hasOperatorAccount, hasHostAccount, setRole } = useAuthStore()
   const { showToast } = useToastStore()
+  const { isDark, toggleTheme } = useThemeStore()
+  const C = useColors()
   const [referralCode] = useState(
     Config.useMock ? 'ROLI2026' : `REF${(user?.id ?? 'GUEST').slice(0, 6).toUpperCase()}`,
   )
@@ -113,42 +117,42 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>{t('profileTitle', language)}</Text>
+        <Text style={[styles.title, { color: C.text }]}>{t('profileTitle', language)}</Text>
 
         <View style={styles.profileSection}>
           <Avatar name={name} imageUrl={avatarUrl} size={72} />
-          <Text style={styles.name}>{name}</Text>
-          <Text style={styles.email}>{email}</Text>
-          <Text style={styles.memberSince}>
+          <Text style={[styles.name, { color: C.text }]}>{name}</Text>
+          <Text style={[styles.email, { color: C.textSecondary }]}>{email}</Text>
+          <Text style={[styles.memberSince, { color: C.textTertiary }]}>
             {t('memberSinceLabel', language)} {memberSince}
           </Text>
 
           {/* Stats row */}
-          <View style={styles.statsRow}>
+          <View style={[styles.statsRow, { backgroundColor: C.surface }]}>
             <TouchableOpacity
               style={styles.statItem}
               onPress={() => router.push('/(consumer)/bookings' as Href)}
               accessibilityLabel={`${tripCount} ${t('trips', language)}`}
               accessibilityRole="button"
             >
-              <Text style={styles.statNum}>{tripCount}</Text>
+              <Text style={[styles.statNum, { color: C.text }]}>{tripCount}</Text>
               <Text style={styles.statLabel}>{t('trips', language)}</Text>
             </TouchableOpacity>
-            <View style={styles.statDivider} />
+            <View style={[styles.statDivider, { backgroundColor: C.border }]} />
             <TouchableOpacity
               style={styles.statItem}
               onPress={() => showToast({ message: 'Your reviews coming soon', type: 'info' })}
               accessibilityLabel={`${reviewCount} ${t('reviews', language)}`}
               accessibilityRole="button"
             >
-              <Text style={styles.statNum}>{reviewCount}</Text>
+              <Text style={[styles.statNum, { color: C.text }]}>{reviewCount}</Text>
               <Text style={styles.statLabel}>{t('reviews', language)}</Text>
             </TouchableOpacity>
-            <View style={styles.statDivider} />
+            <View style={[styles.statDivider, { backgroundColor: C.border }]} />
             <View style={styles.statItem}>
-              <Text style={styles.statNum}>★{avgRating}</Text>
+              <Text style={[styles.statNum, { color: C.text }]}>★{avgRating}</Text>
               <Text style={styles.statLabel}>{t('rating', language)}</Text>
             </View>
           </View>
@@ -168,7 +172,7 @@ export default function ProfileScreen() {
         {/* Loyalty Card */}
         <Card style={styles.card}>
           <View style={styles.loyaltyHeader}>
-            <Text style={styles.sectionTitle}>{t('loyaltyTitle', language)}</Text>
+            <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>{t('loyaltyTitle', language)}</Text>
             <View style={[styles.tierBadge, { backgroundColor: loyalty.tierInfo.color + '22', borderColor: loyalty.tierInfo.color + '66' }]}>
               <Text style={[styles.tierBadgeText, { color: loyalty.tierInfo.color }]}>
                 {loyalty.tierInfo.label.toUpperCase()}
@@ -219,7 +223,7 @@ export default function ProfileScreen() {
           )}
 
           {/* Perks list */}
-          <Text style={[styles.sectionTitle, { marginTop: Spacing.md, marginBottom: Spacing.sm }]}>
+          <Text style={[styles.sectionTitle, { color: C.textTertiary, marginTop: Spacing.md, marginBottom: Spacing.sm }]}>
             {t('loyaltyPerks', language)}
           </Text>
           {loyalty.tierInfo.perks.map((perk) => (
@@ -232,7 +236,7 @@ export default function ProfileScreen() {
 
         {/* Quick access */}
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>
+          <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>
             {language === 'hu' ? 'GYORS ELÉRÉS' : language === 'es' ? 'ACCESO RÁPIDO' : 'QUICK ACCESS'}
           </Text>
           <View style={styles.quickRow}>
@@ -272,8 +276,9 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
+        {/* Language Card */}
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('sectionLanguage', language)}</Text>
+          <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>{t('sectionLanguage', language)}</Text>
           <View style={styles.langRow}>
             {(['en', 'es', 'hu'] as const).map(lang => (
               <TouchableOpacity
@@ -291,8 +296,35 @@ export default function ProfileScreen() {
           </View>
         </Card>
 
+        {/* Appearance Card */}
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('sectionSwitchRole', language)}</Text>
+          <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>
+            {language === 'hu' ? 'MEGJELENÉS' : language === 'es' ? 'APARIENCIA' : 'APPEARANCE'}
+          </Text>
+          <View style={[styles.menuItem, { minHeight: 52 }]}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.menuLabel, { color: C.text }]}>
+                {language === 'hu' ? '🌙 Sötét mód' : language === 'es' ? '🌙 Modo oscuro' : '🌙 Dark mode'}
+              </Text>
+              <Text style={{ fontSize: 12, color: C.textTertiary, marginTop: 2 }}>
+                {isDark
+                  ? (language === 'hu' ? 'Bekapcsolva' : language === 'es' ? 'Activado' : 'Enabled')
+                  : (language === 'hu' ? 'Kikapcsolva' : language === 'es' ? 'Desactivado' : 'Disabled')}
+              </Text>
+            </View>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: C.border, true: C.primary }}
+              thumbColor={C.white}
+              accessibilityLabel="Toggle dark mode"
+              accessibilityRole="switch"
+            />
+          </View>
+        </Card>
+
+        <Card style={styles.card}>
+          <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>{t('sectionSwitchRole', language)}</Text>
           <View style={styles.switchRoleColumn}>
             {(Config.useMock || hasOperatorAccount) && (
               <TouchableOpacity
@@ -302,8 +334,8 @@ export default function ProfileScreen() {
                 accessibilityRole="button"
               >
                 <Text style={styles.switchRoleIcon}>🏢</Text>
-                <Text style={styles.switchRoleText}>{t('roleOperator', language)}</Text>
-                <Text style={styles.switchRoleChevron}>›</Text>
+                <Text style={[styles.switchRoleText, { color: C.text }]}>{t('roleOperator', language)}</Text>
+                <Text style={[styles.switchRoleChevron, { color: C.textTertiary }]}>›</Text>
               </TouchableOpacity>
             )}
             {(Config.useMock || hasHostAccount) && (
@@ -314,8 +346,8 @@ export default function ProfileScreen() {
                 accessibilityRole="button"
               >
                 <Text style={styles.switchRoleIcon}>🏠</Text>
-                <Text style={styles.switchRoleText}>{t('roleHost', language)}</Text>
-                <Text style={styles.switchRoleChevron}>›</Text>
+                <Text style={[styles.switchRoleText, { color: C.text }]}>{t('roleHost', language)}</Text>
+                <Text style={[styles.switchRoleChevron, { color: C.textTertiary }]}>›</Text>
               </TouchableOpacity>
             )}
             {!Config.useMock && !hasOperatorAccount && (
@@ -329,7 +361,7 @@ export default function ProfileScreen() {
                 <Text style={[styles.switchRoleText, styles.switchRoleTextAccent]}>
                   {language === 'hu' ? 'Legyen operátor' : language === 'es' ? 'Convertirse en operador' : 'Become an operator'}
                 </Text>
-                <Text style={styles.switchRoleChevron}>›</Text>
+                <Text style={[styles.switchRoleChevron, { color: C.textTertiary }]}>›</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -337,7 +369,7 @@ export default function ProfileScreen() {
 
         {/* Refer a Friend */}
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>
+          <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>
             {language === 'hu' ? 'BARÁT MEGHÍVÁSA' : language === 'es' ? 'INVITAR AMIGOS' : 'REFER A FRIEND'}
           </Text>
           <View style={styles.referralCard}>
@@ -371,10 +403,12 @@ export default function ProfileScreen() {
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('sectionAccount', language)}</Text>
+          <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>{t('sectionAccount', language)}</Text>
           <MenuItem
             label={`🪪 ${t('identityVerification', language)}`}
             onPress={() => router.push('/(consumer)/profile/identity-verification' as Href)}
+            textColor={C.text}
+            chevronColor={C.textTertiary}
           />
           <Divider />
           <MenuItem
@@ -390,38 +424,46 @@ export default function ProfileScreen() {
                 [{ text: 'OK' }],
               )
             }}
+            textColor={C.text}
+            chevronColor={C.textTertiary}
           />
           <Divider />
           <MenuItem
             label={`🔔 ${language === 'hu' ? 'Értesítési beállítások' : language === 'es' ? 'Configuración de notificaciones' : 'Notification settings'}`}
             onPress={() => router.push('/(consumer)/profile/notifications' as Href)}
+            textColor={C.text}
+            chevronColor={C.textTertiary}
           />
           <Divider />
           <MenuItem
             label={`🛡️ ${language === 'hu' ? 'Adatvédelmi beállítások' : language === 'es' ? 'Configuración de privacidad' : 'Privacy settings'}`}
             onPress={() => router.push('/(consumer)/profile/privacy-settings' as Href)}
+            textColor={C.text}
+            chevronColor={C.textTertiary}
           />
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('sectionLegal', language)}</Text>
-          <MenuItem label={`📄 ${t('termsOfService', language)}`} onPress={handleTermsOfService} />
+          <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>{t('sectionLegal', language)}</Text>
+          <MenuItem label={`📄 ${t('termsOfService', language)}`} onPress={handleTermsOfService} textColor={C.text} chevronColor={C.textTertiary} />
           <Divider />
-          <MenuItem label={`🔒 ${t('privacyPolicy', language)}`} onPress={handlePrivacyPolicy} />
+          <MenuItem label={`🔒 ${t('privacyPolicy', language)}`} onPress={handlePrivacyPolicy} textColor={C.text} chevronColor={C.textTertiary} />
           <Divider />
-          <MenuItem label={`🍪 ${t('cookiePolicy', language)}`} onPress={() => router.push('/(consumer)/legal/cookies' as Href)} />
+          <MenuItem label={`🍪 ${t('cookiePolicy', language)}`} onPress={() => router.push('/(consumer)/legal/cookies' as Href)} textColor={C.text} chevronColor={C.textTertiary} />
           <Divider />
-          <MenuItem label={`🛡️ ${language === 'hu' ? 'Adatvédelmi beállítások' : 'Privacy settings'}`} onPress={() => router.push('/(consumer)/profile/privacy-settings' as Href)} />
+          <MenuItem label={`🛡️ ${language === 'hu' ? 'Adatvédelmi beállítások' : 'Privacy settings'}`} onPress={() => router.push('/(consumer)/profile/privacy-settings' as Href)} textColor={C.text} chevronColor={C.textTertiary} />
           <Divider />
-          <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={handleHelpSupport} />
+          <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={handleHelpSupport} textColor={C.text} chevronColor={C.textTertiary} />
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>{language === 'hu' ? 'FIÓK TÖRLÉSE' : 'ACCOUNT DELETION'}</Text>
+          <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>{language === 'hu' ? 'FIÓK TÖRLÉSE' : 'ACCOUNT DELETION'}</Text>
           <MenuItem
             label={`🗑️ ${language === 'hu' ? 'Fiók törlése' : 'Delete account'}`}
             onPress={() => router.push('/(consumer)/profile/delete-account' as Href)}
             danger
+            textColor={C.text}
+            chevronColor={C.textTertiary}
           />
         </Card>
 
@@ -442,7 +484,19 @@ export default function ProfileScreen() {
   )
 }
 
-function MenuItem({ label, onPress, danger }: { label: string; onPress: () => void; danger?: boolean }) {
+function MenuItem({
+  label,
+  onPress,
+  danger,
+  textColor,
+  chevronColor,
+}: {
+  label: string
+  onPress: () => void
+  danger?: boolean
+  textColor?: string
+  chevronColor?: string
+}) {
   return (
     <TouchableOpacity
       style={styles.menuItem}
@@ -450,8 +504,8 @@ function MenuItem({ label, onPress, danger }: { label: string; onPress: () => vo
       accessibilityLabel={label}
       accessibilityRole="button"
     >
-      <Text style={[styles.menuLabel, danger && styles.menuLabelDanger]}>{label}</Text>
-      <Text style={styles.menuChevron}>›</Text>
+      <Text style={[styles.menuLabel, { color: textColor ?? Colors.text }, danger && styles.menuLabelDanger]}>{label}</Text>
+      <Text style={[styles.menuChevron, { color: chevronColor ?? Colors.textTertiary }]}>›</Text>
     </TouchableOpacity>
   )
 }

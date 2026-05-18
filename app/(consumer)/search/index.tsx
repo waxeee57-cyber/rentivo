@@ -17,6 +17,7 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t, type TranslationKey } from '@/constants/i18n'
 import type { RentalCategory, SearchFilters } from '@/types'
 import type { SearchState } from '@/lib/hooks/useSearch'
+import { useColors } from '@/lib/hooks/useColors'
 
 type SortKey = SearchState['sort']
 type ViewMode = 'list' | 'map'
@@ -46,6 +47,7 @@ const POPULAR_SUGGESTIONS = ['BMW', 'Vespa', 'Marbella', 'Yacht', 'Villa', 'Conv
 
 export default function SearchScreen() {
   const { language } = useAuthStore()
+  const C = useColors()
   const [query, setQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<RentalCategory | null>(null)
   const [sortBy, setSortBy] = useState<SortKey>('relevance')
@@ -93,11 +95,11 @@ export default function SearchScreen() {
   const showSuggestions = focused && query.length === 0
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
       {/* Header row: title + List/Map toggle */}
       <View style={styles.headerRow}>
-        <Text style={styles.title}>{t('search', language)}</Text>
-        <View style={styles.viewToggle}>
+        <Text style={[styles.title, { color: C.text }]}>{t('search', language)}</Text>
+        <View style={[styles.viewToggle, { backgroundColor: C.surface, borderColor: C.border }]}>
           <TouchableOpacity
             style={[styles.toggleBtn, viewMode === 'list' && styles.toggleBtnActive]}
             onPress={() => setViewMode('list')}
@@ -108,9 +110,9 @@ export default function SearchScreen() {
             <Ionicons
               name="list"
               size={16}
-              color={viewMode === 'list' ? Colors.textInverse : Colors.textSecondary}
+              color={viewMode === 'list' ? C.textInverse : C.textSecondary}
             />
-            <Text style={[styles.toggleText, viewMode === 'list' && styles.toggleTextActive]}>
+            <Text style={[styles.toggleText, { color: C.textSecondary }, viewMode === 'list' && { color: C.textInverse }]}>
               {t('viewList', language)}
             </Text>
           </TouchableOpacity>
@@ -124,9 +126,9 @@ export default function SearchScreen() {
             <Ionicons
               name="map"
               size={16}
-              color={viewMode === 'map' ? Colors.textInverse : Colors.textSecondary}
+              color={viewMode === 'map' ? C.textInverse : C.textSecondary}
             />
-            <Text style={[styles.toggleText, viewMode === 'map' && styles.toggleTextActive]}>
+            <Text style={[styles.toggleText, { color: C.textSecondary }, viewMode === 'map' && { color: C.textInverse }]}>
               {t('viewMap', language)}
             </Text>
           </TouchableOpacity>
@@ -135,13 +137,13 @@ export default function SearchScreen() {
 
       {/* Search bar */}
       <View style={styles.searchRow}>
-        <View style={styles.searchBox}>
-          <Ionicons name="search" size={16} color={Colors.textSecondary} style={styles.searchIcon} />
+        <View style={[styles.searchBox, { backgroundColor: C.surface, borderColor: C.border }]}>
+          <Ionicons name="search" size={16} color={C.textSecondary} style={styles.searchIcon} />
           <TextInput
             ref={inputRef}
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: C.text }]}
             placeholder={t('searchPlaceholder', language)}
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={C.textTertiary}
             value={query}
             onChangeText={handleSearch}
             onFocus={() => setFocused(true)}
@@ -152,7 +154,7 @@ export default function SearchScreen() {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="close-circle" size={16} color={Colors.textTertiary} />
+              <Ionicons name="close-circle" size={16} color={C.textTertiary} />
             </TouchableOpacity>
           )}
         </View>
@@ -160,7 +162,7 @@ export default function SearchScreen() {
 
       {/* History / Suggestions dropdown */}
       {showSuggestions && (
-        <View style={styles.suggestions}>
+        <View style={[styles.suggestions, { backgroundColor: C.surface, borderColor: C.border }]}>
           {history.length > 0 && (
             <>
               <View style={styles.suggestionsHeader}>
@@ -171,8 +173,8 @@ export default function SearchScreen() {
               </View>
               {history.map(h => (
                 <TouchableOpacity key={h} style={styles.suggestionRow} onPress={() => handleSuggestion(h)}>
-                  <Ionicons name="time-outline" size={14} color={Colors.textSecondary} />
-                  <Text style={styles.suggestionText}>{h}</Text>
+                  <Ionicons name="time-outline" size={14} color={C.textSecondary} />
+                  <Text style={[styles.suggestionText, { color: C.text }]}>{h}</Text>
                 </TouchableOpacity>
               ))}
             </>
@@ -217,7 +219,7 @@ export default function SearchScreen() {
               onPress={() => setSortBy(opt.key)}
             />
           ))}
-          <View style={styles.sortDivider} />
+          <View style={[styles.sortDivider, { backgroundColor: C.border }]} />
           <CategoryPill
             label={`⚡ ${t('filterInstant', language)}`}
             active={instantBook}
@@ -309,9 +311,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: Colors.textSecondary,
-  },
-  toggleTextActive: {
-    color: Colors.textInverse,
   },
   searchRow: {
     paddingHorizontal: Spacing.base,

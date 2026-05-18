@@ -3,6 +3,7 @@ import { View, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Colors } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
 import { useOperatorBookings } from '@/lib/hooks/useOperatorBookings'
@@ -15,10 +16,11 @@ function TabIcon({ name, focused, size = 24 }: {
   focused: boolean
   size?: number
 }) {
+  const C = useColors()
   return (
     <View style={tabIconStyles.container}>
-      <Ionicons name={name} size={size} color={focused ? Colors.primary : Colors.textTertiary} />
-      {focused && <View style={tabIconStyles.dot} />}
+      <Ionicons name={name} size={size} color={focused ? C.primary : C.textTertiary} />
+      {focused && <View style={[tabIconStyles.dot, { backgroundColor: C.primary }]} />}
     </View>
   )
 }
@@ -29,13 +31,13 @@ const tabIconStyles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.primary,
   },
 })
 
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
 
 export default function OperatorLayout() {
+  const C = useColors()
   const { language, operator } = useAuthStore()
   const { operatorUnreadCount } = useNotificationStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? null)
@@ -45,12 +47,12 @@ export default function OperatorLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarActiveTintColor: C.primary,
+        tabBarInactiveTintColor: C.textTertiary,
         tabBarStyle: {
-          backgroundColor: Colors.background,
+          backgroundColor: C.background,
           borderTopWidth: 1,
-          borderTopColor: Colors.border,
+          borderTopColor: C.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.3,

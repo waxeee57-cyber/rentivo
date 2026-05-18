@@ -3,7 +3,8 @@ import {
   TouchableOpacity, Text, ActivityIndicator,
   StyleSheet, ViewStyle, TextStyle,
 } from 'react-native'
-import { Colors, Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
@@ -25,7 +26,26 @@ export function Button({
   style, textStyle, fullWidth = false,
   accessibilityLabel,
 }: ButtonProps) {
+  const C = useColors()
   const isDisabled = disabled || loading
+
+  const variantContainerStyle: ViewStyle = (() => {
+    switch (variant) {
+      case 'primary':   return { backgroundColor: C.primary }
+      case 'secondary': return { backgroundColor: C.primarySurface, borderWidth: 1, borderColor: C.primary }
+      case 'ghost':     return { backgroundColor: 'transparent', borderWidth: 1, borderColor: C.border }
+      case 'danger':    return { backgroundColor: C.errorSurface, borderWidth: 1, borderColor: C.error }
+    }
+  })()
+
+  const variantTextColor: TextStyle = (() => {
+    switch (variant) {
+      case 'primary':   return { color: C.textInverse }
+      case 'secondary': return { color: C.primary }
+      case 'ghost':     return { color: C.textSecondary }
+      case 'danger':    return { color: C.error }
+    }
+  })()
 
   return (
     <TouchableOpacity
@@ -33,7 +53,7 @@ export function Button({
       disabled={isDisabled}
       style={[
         styles.base,
-        styles[variant],
+        variantContainerStyle,
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
         style,
@@ -43,8 +63,8 @@ export function Button({
       accessibilityRole="button"
     >
       {loading
-        ? <ActivityIndicator color={variant === 'primary' ? Colors.textInverse : Colors.primary} size="small" />
-        : <Text style={[styles.text, styles[`${variant}Text`], textStyle]}>{title}</Text>}
+        ? <ActivityIndicator color={variant === 'primary' ? C.textInverse : C.primary} size="small" />
+        : <Text style={[styles.text, variantTextColor, textStyle]}>{title}</Text>}
     </TouchableOpacity>
   )
 }
@@ -58,14 +78,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   fullWidth: { alignSelf: 'stretch' },
-  primary: { backgroundColor: Colors.primary },
-  secondary: { backgroundColor: Colors.primarySurface, borderWidth: 1, borderColor: Colors.primary },
-  ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.border },
-  danger: { backgroundColor: Colors.errorSurface, borderWidth: 1, borderColor: Colors.error },
   disabled: { opacity: 0.5 },
   text: { fontSize: 15, fontWeight: '600' },
-  primaryText: { color: Colors.textInverse },
-  secondaryText: { color: Colors.primary },
-  ghostText: { color: Colors.textSecondary },
-  dangerText: { color: Colors.error },
 })

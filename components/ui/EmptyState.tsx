@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { Colors, Spacing, Radius, Typography } from '@/constants/colors'
+import { Spacing, Typography } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 import { Button } from '@/components/ui/Button'
 
 interface EmptyStateProps {
@@ -12,13 +13,15 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ emoji = '📭', title, subtitle, action, secondaryAction }: EmptyStateProps) {
+  const C = useColors()
+
   return (
     <View style={styles.container}>
-      <View style={styles.emojiWrap}>
+      <View style={[styles.emojiWrap, { backgroundColor: C.surfaceWarm, borderColor: C.borderWarm }]}>
         <Text style={styles.emoji}>{emoji}</Text>
       </View>
-      <Text style={styles.title}>{title}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      <Text style={[styles.title, { color: C.text }]}>{title}</Text>
+      {subtitle && <Text style={[styles.subtitle, { color: C.textSecondary }]}>{subtitle}</Text>}
       {action && (
         <Button
           title={action.label}
@@ -53,24 +56,20 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: Colors.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.xl,
     borderWidth: 1,
-    borderColor: Colors.borderWarm,
   },
   emoji: { fontSize: 56 },
   title: {
     ...Typography.h3,
-    color: Colors.text,
     textAlign: 'center',
     marginBottom: Spacing.sm,
     marginTop: Spacing.base,
   },
   subtitle: {
     ...Typography.body,
-    color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     maxWidth: 280,

@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from 'react'
 import { Text, StyleSheet, Animated, TouchableOpacity } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Colors, Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing } from '@/constants/colors'
 import { useToastStore } from '@/lib/store/useToastStore'
+import { useColors } from '@/lib/hooks/useColors'
 
 export function Toast() {
+  const C = useColors()
   const { toast, hideToast } = useToastStore()
   const translateY = useRef(new Animated.Value(-120)).current
   const opacity = useRef(new Animated.Value(0)).current
@@ -36,10 +38,10 @@ export function Toast() {
   if (!toast) return null
 
   const config = toast.type === 'success'
-    ? { bg: Colors.successSurface, border: Colors.success, icon: '✓', iconColor: Colors.success }
+    ? { bg: C.successSurface, border: C.success, icon: '✓', iconColor: C.success }
     : toast.type === 'error'
-    ? { bg: Colors.errorSurface, border: Colors.error, icon: '✕', iconColor: Colors.error }
-    : { bg: Colors.primarySubtle, border: Colors.primary, icon: 'ℹ', iconColor: Colors.primary }
+    ? { bg: C.errorSurface, border: C.error, icon: '✕', iconColor: C.error }
+    : { bg: C.primarySubtle, border: C.primary, icon: 'ℹ', iconColor: C.primary }
 
   return (
     <Animated.View style={[
@@ -54,7 +56,7 @@ export function Toast() {
     ]}>
       <TouchableOpacity style={styles.inner} onPress={hideToast} activeOpacity={0.9}>
         <Text style={[styles.icon, { color: config.iconColor }]}>{config.icon}</Text>
-        <Text style={styles.message} numberOfLines={2}>{toast.message}</Text>
+        <Text style={[styles.message, { color: C.text }]} numberOfLines={2}>{toast.message}</Text>
       </TouchableOpacity>
     </Animated.View>
   )
@@ -92,7 +94,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.text,
     lineHeight: 20,
   },
 })

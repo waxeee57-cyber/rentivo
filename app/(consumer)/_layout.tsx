@@ -4,6 +4,7 @@ import { View, StyleSheet, Animated } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { Colors } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
 import { MOCK_CONVERSATIONS } from '@/lib/mockData'
@@ -15,6 +16,7 @@ function TabIcon({ name, focused, size = 24 }: {
   focused: boolean
   size?: number
 }) {
+  const C = useColors()
   const scale = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
@@ -28,8 +30,8 @@ function TabIcon({ name, focused, size = 24 }: {
 
   return (
     <Animated.View style={[tabIconStyles.container, { transform: [{ scale }] }]}>
-      <Ionicons name={name} size={size} color={focused ? Colors.primary : Colors.textTertiary} />
-      {focused && <View style={tabIconStyles.dot} />}
+      <Ionicons name={name} size={size} color={focused ? C.primary : C.textTertiary} />
+      {focused && <View style={[tabIconStyles.dot, { backgroundColor: C.primary }]} />}
     </Animated.View>
   )
 }
@@ -40,13 +42,13 @@ const tabIconStyles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.primary,
   },
 })
 
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
 
 export default function ConsumerLayout() {
+  const C = useColors()
   const { language } = useAuthStore()
   const { unreadCount } = useNotificationStore()
   const consumerChatUnread = Config.useMock
@@ -58,12 +60,12 @@ export default function ConsumerLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textTertiary,
+        tabBarActiveTintColor: C.primary,
+        tabBarInactiveTintColor: C.textTertiary,
         tabBarStyle: {
-          backgroundColor: Colors.background,
+          backgroundColor: C.background,
           borderTopWidth: 1,
-          borderTopColor: Colors.border,
+          borderTopColor: C.border,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.3,

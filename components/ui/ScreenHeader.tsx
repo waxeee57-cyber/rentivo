@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Colors, Spacing, Radius, Typography, Shadow } from '@/constants/colors'
+import { Spacing, Radius, Typography, Shadow } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
 
 type Variant = 'solid' | 'transparent' | 'large'
 
@@ -26,6 +27,7 @@ export function ScreenHeader({
   variant,
   showBack = true,
 }: ScreenHeaderProps) {
+  const C = useColors()
   const insets = useSafeAreaInsets()
   const resolvedVariant: Variant = variant ?? (transparent ? 'transparent' : 'solid')
 
@@ -38,7 +40,7 @@ export function ScreenHeader({
             style={styles.circleBtn}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="chevron-back" size={22} color={Colors.text} />
+            <Ionicons name="chevron-back" size={22} color={C.text} />
           </TouchableOpacity>
         )}
         <View style={{ flex: 1 }} />
@@ -49,9 +51,9 @@ export function ScreenHeader({
 
   if (resolvedVariant === 'large') {
     return (
-      <View style={[styles.largeContainer, { paddingTop: insets.top + 8 }]}>
-        <Text style={styles.largeTitle}>{title}</Text>
-        {subtitle && <Text style={styles.largeSubtitle}>{subtitle}</Text>}
+      <View style={[styles.largeContainer, { paddingTop: insets.top + 8, backgroundColor: C.background }]}>
+        <Text style={[styles.largeTitle, { color: C.text }]}>{title}</Text>
+        {subtitle && <Text style={[styles.largeSubtitle, { color: C.textSecondary }]}>{subtitle}</Text>}
         {rightAction && <View style={styles.largeRightSlot}>{rightAction}</View>}
       </View>
     )
@@ -59,22 +61,29 @@ export function ScreenHeader({
 
   // Solid (default)
   return (
-    <View style={[styles.solidContainer, { paddingTop: insets.top + 8 }]}>
+    <View style={[
+      styles.solidContainer,
+      {
+        paddingTop: insets.top + 8,
+        backgroundColor: C.background,
+        borderBottomColor: C.border,
+      },
+    ]}>
       {showBack ? (
         <TouchableOpacity
           onPress={onBack ?? (() => router.back())}
-          style={styles.surfaceCircleBtn}
+          style={[styles.surfaceCircleBtn, { backgroundColor: C.surface, borderColor: C.border }]}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chevron-back" size={22} color={Colors.text} />
+          <Ionicons name="chevron-back" size={22} color={C.text} />
         </TouchableOpacity>
       ) : (
         <View style={styles.placeholder} />
       )}
 
       <View style={styles.titleContainer}>
-        <Text style={styles.solidTitle} numberOfLines={1}>{title}</Text>
-        {subtitle && <Text style={styles.solidSubtitle} numberOfLines={1}>{subtitle}</Text>}
+        <Text style={[styles.solidTitle, { color: C.text }]} numberOfLines={1}>{title}</Text>
+        {subtitle && <Text style={[styles.solidSubtitle, { color: C.textSecondary }]} numberOfLines={1}>{subtitle}</Text>}
       </View>
 
       <View style={styles.rightSlot}>
@@ -90,9 +99,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.base,
     paddingBottom: Spacing.sm,
-    backgroundColor: Colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
 
   transparentContainer: {
@@ -107,7 +114,6 @@ const styles = StyleSheet.create({
   largeContainer: {
     paddingHorizontal: Spacing.base,
     paddingBottom: Spacing.base,
-    backgroundColor: Colors.background,
   },
 
   circleBtn: {
@@ -124,11 +130,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.full,
-    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
   },
 
   placeholder: {
@@ -142,24 +146,20 @@ const styles = StyleSheet.create({
 
   solidTitle: {
     ...Typography.h4,
-    color: Colors.text,
   },
 
   solidSubtitle: {
     fontSize: 12,
-    color: Colors.textSecondary,
     marginTop: 1,
   },
 
   largeTitle: {
     ...Typography.h1,
-    color: Colors.text,
     marginBottom: 4,
   },
 
   largeSubtitle: {
     ...Typography.body,
-    color: Colors.textSecondary,
   },
 
   rightSlot: {

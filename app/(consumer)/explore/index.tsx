@@ -30,6 +30,8 @@ import type { Listing, RentalCategory, SearchFilters, AnyListing, ExternalListin
 import { format } from 'date-fns'
 import { router } from 'expo-router'
 import { RotatingText } from '@/components/ui/RotatingText'
+import { useThemeStore } from '@/lib/store/useThemeStore'
+import { useColors } from '@/lib/hooks/useColors'
 
 const CAT_I18N_KEYS: Record<RentalCategory, TranslationKey> = {
   car: 'catCars', motorcycle: 'catMotorcycles', yacht: 'catYachts',
@@ -88,6 +90,8 @@ const MOODS = [
 export default function ExploreScreen() {
   const insets = useSafeAreaInsets()
   const { language } = useAuthStore()
+  const isDark = useThemeStore(s => s.isDark)
+  const C = useColors()
   const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
   const [selectedCategory, setSelectedCategory] = useState<RentalCategory | null>(null)
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
@@ -230,7 +234,7 @@ export default function ExploreScreen() {
         </View>
       )}
       <View style={hStyles.hCardInfo}>
-        <Text style={hStyles.hCardTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={[hStyles.hCardTitle, { color: C.text }]} numberOfLines={1}>{item.title}</Text>
         <Text style={hStyles.hCardPrice}>{formatPricePerDay(item.price_per_day, language)}</Text>
         {item.instant_book === true && (
           <View style={hStyles.instantBadge}>
@@ -239,7 +243,7 @@ export default function ExploreScreen() {
         )}
       </View>
     </TouchableOpacity>
-  ), [language])
+  ), [language, C.text])
 
   const renderLastMinuteItem = useCallback<ListRenderItem<Listing>>(({ item }) => (
     <TouchableOpacity
@@ -256,14 +260,14 @@ export default function ExploreScreen() {
         </View>
       )}
       <View style={hStyles.hCardInfo}>
-        <Text style={hStyles.hCardTitle} numberOfLines={1}>{item.title}</Text>
+        <Text style={[hStyles.hCardTitle, { color: C.text }]} numberOfLines={1}>{item.title}</Text>
         <Text style={hStyles.hCardPrice}>{formatPricePerDay(item.price_per_day, language)}</Text>
         <View style={hStyles.dealBadge}>
           <Text style={hStyles.dealBadgeText}>🔥 Last minute</Text>
         </View>
       </View>
     </TouchableOpacity>
-  ), [language])
+  ), [language, C.text])
 
   // Navigate from map preview to listing detail
   const handleViewListing = useCallback((listing: AnyListing) => {
@@ -287,7 +291,7 @@ export default function ExploreScreen() {
   const showDiscovery = displayListings.length === 0 && !isLoading && !error
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: C.background }]}>
       {/* Map layer */}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: mapOpacity }]}>
         {Platform.OS !== 'web' && MapView ? (
@@ -295,8 +299,8 @@ export default function ExploreScreen() {
             ref={mapRef}
             style={StyleSheet.absoluteFill}
             initialRegion={INITIAL_REGION}
-            customMapStyle={MAP_STYLE}
-            userInterfaceStyle="dark"
+            customMapStyle={isDark ? MAP_STYLE : undefined}
+            userInterfaceStyle={isDark ? 'dark' : 'light'}
             showsUserLocation
             showsCompass={false}
             showsMyLocationButton={false}
@@ -314,26 +318,26 @@ export default function ExploreScreen() {
             ))}
           </MapView>
         ) : (
-          <View style={[StyleSheet.absoluteFill, styles.webMapPlaceholder]}>
+          <View style={[StyleSheet.absoluteFill, styles.webMapPlaceholder, { backgroundColor: C.surfaceWarm }]}>
             <Text style={styles.webMapText}>🗺️</Text>
-            <Text style={styles.webMapLabel}>Map view (native only)</Text>
+            <Text style={[styles.webMapLabel, { color: C.textTertiary }]}>Map view (native only)</Text>
           </View>
         )}
       </Animated.View>
 
       {/* Floating search bar */}
-      <View style={[styles.searchBar, { top: searchBarTop }]}>
+      <View style={[styles.searchBar, { top: searchBarTop, backgroundColor: C.surface, borderColor: C.borderWarm }]}>
         <TouchableOpacity style={styles.searchSection} onPress={() => setShowCityPicker(true)} accessibilityLabel={`Location: ${cityName}`} accessibilityRole="button">
-          <Ionicons name="location" size={16} color={Colors.primary} />
-          <Text style={styles.searchCity}>{cityName}</Text>
+          <Ionicons name="location" size={16} color={C.primary} />
+          <Text style={[styles.searchCity, { color: C.text }]}>{cityName}</Text>
         </TouchableOpacity>
         <View style={styles.searchDivider} />
         <TouchableOpacity style={styles.searchSection} onPress={() => setShowDatePicker(true)} accessibilityLabel={`Dates: ${dateLabel}`} accessibilityRole="button">
-          <Ionicons name="calendar-outline" size={16} color={Colors.textSecondary} />
-          <Text style={[styles.searchDates, startDate != null && styles.searchDatesActive]}>{dateLabel}</Text>
+          <Ionicons name="calendar-outline" size={16} color={C.textSecondary} />
+          <Text style={[styles.searchDates, { color: C.textSecondary }, startDate != null && styles.searchDatesActive]}>{dateLabel}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilterSheet(true)} accessibilityLabel="Sort and filter" accessibilityRole="button">
-          <Ionicons name="options-outline" size={16} color={Colors.primary} />
+        <TouchableOpacity style={[styles.filterBtn, { backgroundColor: C.primarySurface }]} onPress={() => setShowFilterSheet(true)} accessibilityLabel="Sort and filter" accessibilityRole="button">
+          <Ionicons name="options-outline" size={16} color={C.primary} />
         </TouchableOpacity>
       </View>
 
@@ -345,19 +349,19 @@ export default function ExploreScreen() {
           contentContainerStyle={styles.categoryContent}
         >
           <TouchableOpacity
-            style={[styles.categoryPill, selectedCategory === null && styles.categoryPillActive]}
+            style={[styles.categoryPill, { backgroundColor: C.surface, borderColor: C.border }, selectedCategory === null && styles.categoryPillActive]}
             onPress={() => setSelectedCategory(null)}
             accessibilityLabel={t('catAll', language)}
             accessibilityRole="button"
           >
-            <Text style={[styles.categoryPillText, selectedCategory === null && styles.categoryPillTextActive]}>
+            <Text style={[styles.categoryPillText, { color: C.text }, selectedCategory === null && styles.categoryPillTextActive]}>
               {t('catAll', language)}
             </Text>
           </TouchableOpacity>
           {CATEGORIES.map(c => (
             <TouchableOpacity
               key={c.key}
-              style={[styles.categoryPill, selectedCategory === c.key && styles.categoryPillActive]}
+              style={[styles.categoryPill, { backgroundColor: C.surface, borderColor: C.border }, selectedCategory === c.key && styles.categoryPillActive]}
               onPress={() => setSelectedCategory(prev => prev === c.key ? null : c.key)}
               accessibilityLabel={t(CAT_I18N_KEYS[c.key], language)}
               accessibilityRole="button"
@@ -365,10 +369,10 @@ export default function ExploreScreen() {
               <Ionicons
                 name={c.icon}
                 size={14}
-                color={selectedCategory === c.key ? Colors.textInverse : Colors.textSecondary}
+                color={selectedCategory === c.key ? Colors.textInverse : C.textSecondary}
                 style={{ marginRight: 4 }}
               />
-              <Text style={[styles.categoryPillText, selectedCategory === c.key && styles.categoryPillTextActive]}>
+              <Text style={[styles.categoryPillText, { color: C.text }, selectedCategory === c.key && styles.categoryPillTextActive]}>
                 {t(CAT_I18N_KEYS[c.key], language)}
               </Text>
             </TouchableOpacity>
@@ -378,7 +382,7 @@ export default function ExploreScreen() {
 
       {/* Map/List toggle */}
       <TouchableOpacity
-        style={[styles.toggleBtn, { bottom: insets.bottom + 142 }]}
+        style={[styles.toggleBtn, { bottom: insets.bottom + 142, backgroundColor: C.background, borderColor: C.border }]}
         onPress={() => {
           setViewMode(v => v === 'map' ? 'list' : 'map')
           setSelectedListing(null)
@@ -386,7 +390,7 @@ export default function ExploreScreen() {
         accessibilityLabel={viewMode === 'map' ? 'Switch to list view' : 'Switch to map view'}
         accessibilityRole="button"
       >
-        <Text style={styles.toggleText}>
+        <Text style={[styles.toggleText, { color: C.text }]}>
           {viewMode === 'map' ? '≡ List' : '⊕ Map'}
         </Text>
       </TouchableOpacity>
@@ -400,12 +404,12 @@ export default function ExploreScreen() {
       )}
 
       {/* List mode overlay */}
-      <Animated.View style={[styles.listOverlay, { transform: [{ translateY: listOverlayY }], paddingTop: insets.top + 80 }]}>
-        <View style={styles.listHandle} />
+      <Animated.View style={[styles.listOverlay, { backgroundColor: C.background, transform: [{ translateY: listOverlayY }], paddingTop: insets.top + 80 }]}>
+        <View style={[styles.listHandle, { backgroundColor: C.border }]} />
 
         {/* Rotating hero headline */}
         <View style={heroStyles.row}>
-          <Text style={heroStyles.prefix}>Rent a </Text>
+          <Text style={[heroStyles.prefix, { color: C.text }]}>Rent a </Text>
           <RotatingText
             words={['car', 'boat', 'villa', 'scooter', 'drone']}
             style={heroStyles.rotating}
@@ -414,7 +418,7 @@ export default function ExploreScreen() {
         </View>
 
         {/* Source toggle */}
-        <View style={styles.sourceToggleRow}>
+        <View style={[styles.sourceToggleRow, { backgroundColor: C.surfaceWarm, borderColor: C.border }]}>
           <TouchableOpacity
             style={[styles.sourceBtn, source === 'rentivo' && styles.sourceBtnActive]}
             onPress={() => setSource('rentivo')}
@@ -454,17 +458,17 @@ export default function ExploreScreen() {
           ]).map(opt => (
             <TouchableOpacity
               key={opt.key}
-              style={[styles.sortPill, sortBy === opt.key && styles.sortPillActive]}
+              style={[styles.sortPill, { backgroundColor: C.surfaceWarm, borderColor: C.border }, sortBy === opt.key && styles.sortPillActive]}
               onPress={() => setSortBy(opt.key)}
               accessibilityLabel={`Sort by: ${opt.label}`}
               accessibilityRole="button"
             >
-              <Text style={[styles.sortPillText, sortBy === opt.key && styles.sortPillTextActive]}>
+              <Text style={[styles.sortPillText, { color: C.text }, sortBy === opt.key && styles.sortPillTextActive]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
           ))}
-          <View style={styles.sortDivider} />
+          <View style={[styles.sortDivider, { backgroundColor: C.border }]} />
           {([
             { cap: null as number | null, label: t('filterAnySize', language) },
             { cap: 4 as number | null, label: t('seats4Plus', language) },
@@ -472,12 +476,12 @@ export default function ExploreScreen() {
           ]).map(opt => (
             <TouchableOpacity
               key={String(opt.cap)}
-              style={[styles.sortPill, minCapacity === opt.cap && styles.sortPillActive]}
+              style={[styles.sortPill, { backgroundColor: C.surfaceWarm, borderColor: C.border }, minCapacity === opt.cap && styles.sortPillActive]}
               onPress={() => setMinCapacity(opt.cap)}
               accessibilityLabel={`Capacity: ${opt.label}`}
               accessibilityRole="button"
             >
-              <Text style={[styles.sortPillText, minCapacity === opt.cap && styles.sortPillTextActive]}>
+              <Text style={[styles.sortPillText, { color: C.text }, minCapacity === opt.cap && styles.sortPillTextActive]}>
                 👥 {opt.label}
               </Text>
             </TouchableOpacity>
@@ -494,11 +498,11 @@ export default function ExploreScreen() {
         ) : showDiscovery ? (
           <ScrollView contentContainerStyle={styles.discoveryContainer}>
             {/* Inspire me */}
-            <Text style={styles.discoverySectionTitle}>💡 {t('discoverIdeas', language)}</Text>
+            <Text style={[styles.discoverySectionTitle, { color: C.text }]}>💡 {t('discoverIdeas', language)}</Text>
             {INSPIRE_THEMES.map(theme => (
               <TouchableOpacity
                 key={theme.title}
-                style={styles.inspireCard}
+                style={[styles.inspireCard, { backgroundColor: C.surface, borderColor: C.border }]}
                 onPress={() => {
                   setSelectedCategory(theme.category)
                   if (theme.city) setCityName(theme.city)
@@ -509,28 +513,28 @@ export default function ExploreScreen() {
               >
                 <Text style={styles.inspireEmoji}>{theme.emoji}</Text>
                 <View style={styles.inspireInfo}>
-                  <Text style={styles.inspireTitle}>{theme.title}</Text>
+                  <Text style={[styles.inspireTitle, { color: C.text }]}>{theme.title}</Text>
                   <Text style={styles.inspireSubtitle}>{theme.subtitle}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color={Colors.textTertiary} />
+                <Ionicons name="chevron-forward" size={16} color={C.textTertiary} />
               </TouchableOpacity>
             ))}
 
             {/* Browse by mood */}
-            <Text style={[styles.discoverySectionTitle, { marginTop: Spacing.xl }]}>
+            <Text style={[styles.discoverySectionTitle, { color: C.text, marginTop: Spacing.xl }]}>
               🎭 {t('browseByMood', language)}
             </Text>
             <View style={styles.moodGrid}>
               {MOODS.map(mood => (
                 <TouchableOpacity
                   key={mood.label}
-                  style={styles.moodCard}
+                  style={[styles.moodCard, { backgroundColor: C.surface, borderColor: C.border }]}
                   onPress={() => setSelectedCategory(mood.category)}
                   accessibilityLabel={mood.label}
                   accessibilityRole="button"
                 >
                   <Text style={styles.moodEmoji}>{mood.emoji}</Text>
-                  <Text style={styles.moodLabel}>{mood.label}</Text>
+                  <Text style={[styles.moodLabel, { color: C.text }]}>{mood.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -562,7 +566,7 @@ export default function ExploreScreen() {
                 {availableTodayListings.length > 0 && (
                   <View style={hStyles.section}>
                     <View style={hStyles.sectionHeader}>
-                      <Text style={hStyles.sectionTitle}>
+                      <Text style={[hStyles.sectionTitle, { color: C.text }]}>
                         {`⚡ ${t('availableTodayTitle', language)}`}
                       </Text>
                       <TouchableOpacity
@@ -587,7 +591,7 @@ export default function ExploreScreen() {
                 {lastMinuteListings.length > 0 && (
                   <View style={hStyles.section}>
                     <View style={hStyles.sectionHeader}>
-                      <Text style={hStyles.sectionTitle}>
+                      <Text style={[hStyles.sectionTitle, { color: C.text }]}>
                         {`🔥 ${t('lastMinuteTitle', language)}`}
                       </Text>
                       <TouchableOpacity
@@ -612,7 +616,7 @@ export default function ExploreScreen() {
                 {recentlyViewed.length > 0 && (
                   <View style={hStyles.section}>
                     <View style={hStyles.sectionHeader}>
-                      <Text style={hStyles.sectionTitle}>🕒 {t('recentlyViewed', language)}</Text>
+                      <Text style={[hStyles.sectionTitle, { color: C.text }]}>🕒 {t('recentlyViewed', language)}</Text>
                     </View>
                     <FlatList
                       horizontal
@@ -653,11 +657,11 @@ export default function ExploreScreen() {
         onRequestClose={() => setShowFilterSheet(false)}
       >
         <TouchableOpacity style={filterStyles.backdrop} activeOpacity={1} onPress={() => setShowFilterSheet(false)} />
-        <View style={filterStyles.sheet}>
-          <View style={filterStyles.handle} />
-          <Text style={filterStyles.title}>{t('sortAndFilter', language)}</Text>
+        <View style={[filterStyles.sheet, { backgroundColor: C.surface }]}>
+          <View style={[filterStyles.handle, { backgroundColor: C.border }]} />
+          <Text style={[filterStyles.title, { color: C.text }]}>{t('sortAndFilter', language)}</Text>
 
-          <Text style={filterStyles.sectionLabel}>{t('sortByLabel', language)}</Text>
+          <Text style={[filterStyles.sectionLabel, { color: C.textTertiary }]}>{t('sortByLabel', language)}</Text>
           <View style={filterStyles.pillRow}>
             {([
               { key: 'default' as typeof sortBy, label: t('sortRelevance', language) },
@@ -667,19 +671,19 @@ export default function ExploreScreen() {
             ]).map(opt => (
               <TouchableOpacity
                 key={opt.key}
-                style={[filterStyles.pill, sortBy === opt.key && filterStyles.pillActive]}
+                style={[filterStyles.pill, { backgroundColor: C.surfaceWarm, borderColor: C.border }, sortBy === opt.key && filterStyles.pillActive]}
                 onPress={() => setSortBy(opt.key)}
                 accessibilityLabel={`Sort by: ${opt.label}`}
                 accessibilityRole="button"
               >
-                <Text style={[filterStyles.pillText, sortBy === opt.key && filterStyles.pillTextActive]}>
+                <Text style={[filterStyles.pillText, { color: C.text }, sortBy === opt.key && filterStyles.pillTextActive]}>
                   {opt.label}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={filterStyles.sectionLabel}>{t('capacityLabel', language)}</Text>
+          <Text style={[filterStyles.sectionLabel, { color: C.textTertiary }]}>{t('capacityLabel', language)}</Text>
           <View style={filterStyles.pillRow}>
             {([
               { cap: null as number | null, label: t('filterAnySize', language) },
@@ -688,12 +692,12 @@ export default function ExploreScreen() {
             ]).map(opt => (
               <TouchableOpacity
                 key={opt.label}
-                style={[filterStyles.pill, minCapacity === opt.cap && filterStyles.pillActive]}
+                style={[filterStyles.pill, { backgroundColor: C.surfaceWarm, borderColor: C.border }, minCapacity === opt.cap && filterStyles.pillActive]}
                 onPress={() => setMinCapacity(opt.cap)}
                 accessibilityLabel={`Capacity: ${opt.label}`}
                 accessibilityRole="button"
               >
-                <Text style={[filterStyles.pillText, minCapacity === opt.cap && filterStyles.pillTextActive]}>
+                <Text style={[filterStyles.pillText, { color: C.text }, minCapacity === opt.cap && filterStyles.pillTextActive]}>
                   {opt.label}
                 </Text>
               </TouchableOpacity>

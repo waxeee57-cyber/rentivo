@@ -3,6 +3,7 @@ import { useFonts } from 'expo-font'
 import { Ionicons } from '@expo/vector-icons'
 import { Stack, router, usePathname } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { useThemeStore } from '@/lib/store/useThemeStore'
 import {
   GestureHandlerRootView,
 } from 'react-native-gesture-handler'
@@ -97,6 +98,7 @@ const gdprStyles = StyleSheet.create({
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({ ...Ionicons.font })
+  const isDark = useThemeStore(s => s.isDark)
   const { setSession, setUser, session, role, language } = useAuthStore()
   const { setPushToken, setUnreadCount, unreadCount } = useNotificationStore()
   const [gdprAccepted, setGdprAccepted] = useState<boolean | null>(null)
@@ -213,7 +215,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY || ''}>
           <Fragment>
-            <StatusBar style="light" />
+            <StatusBar style={isDark ? 'light' : 'dark'} />
             <OfflineBanner />
             <Stack
               initialRouteName="index"

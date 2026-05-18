@@ -5,6 +5,8 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { impactAsync, notificationAsync, ImpactFeedbackStyle, NotificationFeedbackType } from 'expo-haptics'
 import { Colors, Radius, Spacing, Shadow, Typography } from '@/constants/colors'
+import { useColors } from '@/lib/hooks/useColors'
+import { useThemeStore } from '@/lib/store/useThemeStore'
 import { StarRating } from '@/components/ui/StarRating'
 import { formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { getCategoryEmoji, getCategoryLabel } from '@/constants/categories'
@@ -39,8 +41,23 @@ const CATEGORY_GRADIENTS: Record<RentalCategory | 'default', readonly [string, s
   default:    ['#1A2B45', '#0A1628'],
 }
 
-function getGradient(category: string): [string, string] {
-  const g = CATEGORY_GRADIENTS[category as RentalCategory] ?? CATEGORY_GRADIENTS.default
+const lightGradients: Record<RentalCategory | 'default', readonly [string, string]> = {
+  car:        ['#E8E8E8', '#F5F5F5'],
+  motorcycle: ['#EDE8F5', '#F5F0FF'],
+  yacht:      ['#E8F0F5', '#EEF5FF'],
+  villa:      ['#E8F5F0', '#F0FFF8'],
+  bike:       ['#F0F5E8', '#F5FFEE'],
+  scooter:    ['#EDE8F5', '#F5F0FF'],
+  kayak:      ['#E8F0F5', '#EEF5FF'],
+  surfboard:  ['#E8F5F0', '#EEF8FF'],
+  equipment:  ['#E8E8E8', '#F5F5F5'],
+  other:      ['#E8E8E8', '#F5F5F5'],
+  default:    ['#E8E8E8', '#F5F5F5'],
+}
+
+function getGradient(category: string, isDark: boolean): [string, string] {
+  const palette = isDark ? CATEGORY_GRADIENTS : lightGradients
+  const g = palette[category as RentalCategory] ?? palette.default
   return [g[0], g[1]]
 }
 
@@ -55,6 +72,8 @@ const CONTEXT_ACTIONS = [
 function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }: ListingCardProps) {
   const { isWishlisted, toggle } = useWishlistStore()
   const language = useAuthStore((s) => s.language)
+  const isDark = useThemeStore(s => s.isDark)
+  const C = useColors()
   const wishlisted = isWishlisted(listing.id)
   const scale = useRef(new Animated.Value(1)).current
   const [showContext, setShowContext] = useState(false)
@@ -63,7 +82,7 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
   const isFull = variant === 'full'
   // Image priority: images[0] → cover_image_url → null (gradient placeholder)
   const imageUri = listing.images?.[0] ?? listing.cover_image_url ?? null
-  const gradient = getGradient(listing.category)
+  const gradient = getGradient(listing.category, isDark)
   const priceLabel = formatPricePerDay(listing.price_per_day, language)
 
   const onPressIn = useCallback(() => Animated.spring(scale, { toValue: 0.97, damping: 15, useNativeDriver: true }).start(), [scale])
@@ -110,7 +129,11 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
 
   return (
     <>
-      <Animated.View style={[isFull ? styles.cardFull : styles.cardGrid, { transform: [{ scale }] }]}>
+      <Animated.View style={[
+        isFull ? styles.cardFull : styles.cardGrid,
+        { backgroundColor: C.surface, borderColor: C.border },
+        { transform: [{ scale }] },
+      ]}>
         <TouchableOpacity
           onPress={handlePress}
           onPressIn={onPressIn}
@@ -144,7 +167,10 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
               </LinearGradient>
             )}
             {/* Category badge */}
-            <View style={styles.categoryBadge}>
+            <View style={[
+              styles.categoryBadge,
+              { backgroundColor: isDark ? 'rgba(10,22,40,0.80)' : 'rgba(0,0,0,0.55)' },
+            ]}>
               <Text style={styles.categoryText}>
                 {getCategoryEmoji(listing.category)} {getCategoryLabel(listing.category)}
               </Text>
@@ -175,7 +201,7 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
           {/* Info */}
           <View style={styles.info}>
             {/* Title: max 2 lines with ellipsis */}
-            <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{listing.title}</Text>
+            <Text style={[styles.title, { color: C.text }]} numberOfLines={2} ellipsizeMode="tail">{listing.title}</Text>
             {/* Operator tier badge */}
             {listing.operator != null && (
               <View style={styles.tierRow}>
@@ -184,26 +210,26 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
             )}
             {/* Location: pickup_address preferred, city as fallback */}
             {(listing.pickup_address ?? listing.operator?.city ?? listing.host?.city) != null && (
-              <Text style={styles.location} numberOfLines={1}>
+              <Text style={[styles.location, { color: C.textTertiary }]} numberOfLines={1}>
                 📍 {listing.pickup_address ?? listing.operator?.city ?? listing.host?.city}
               </Text>
             )}
             <View style={styles.ratingRow}>
               <StarRating rating={listing.rating} reviewCount={listing.review_count} size={12} />
               {listing.booking_count != null && listing.booking_count > 0 && (
-                <Text style={styles.rentalCount}> · {listing.booking_count} rentals</Text>
+                <Text style={[styles.rentalCount, { color: C.textTertiary }]}> · {listing.booking_count} rentals</Text>
               )}
             </View>
             {listing.cancellation_policy != null && (
               <View style={styles.policyRow}>
                 <View style={styles.policyDot} />
-                <Text style={styles.policyText}>
+                <Text style={[styles.policyText, { color: C.textTertiary }]}>
                   {getCancellationPolicyEmoji(listing.cancellation_policy)} {getCancellationPolicyLabel(listing.cancellation_policy)}
                 </Text>
               </View>
             )}
             <View style={styles.priceRow}>
-              <Text style={styles.price}>{priceLabel}</Text>
+              <Text style={[styles.price, { color: C.primary }]}>{priceLabel}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -217,13 +243,13 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
         onRequestClose={handleContextClose}
       >
         <TouchableOpacity
-          style={contextStyles.backdrop}
+          style={[contextStyles.backdrop, { backgroundColor: C.overlay }]}
           activeOpacity={1}
           onPress={handleContextClose}
         />
-        <View style={contextStyles.menu}>
-          <View style={contextStyles.handle} />
-          <Text style={contextStyles.menuTitle} numberOfLines={1}>{listing.title}</Text>
+        <View style={[contextStyles.menu, { backgroundColor: C.surface }]}>
+          <View style={[contextStyles.handle, { backgroundColor: C.border }]} />
+          <Text style={[contextStyles.menuTitle, { color: C.textTertiary }]} numberOfLines={1}>{listing.title}</Text>
           {CONTEXT_ACTIONS.map((action, idx) => {
             const isWishlistAction = action.key === 'wishlist'
             const label = isWishlistAction
@@ -232,11 +258,12 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
             return (
               <TouchableOpacity
                 key={action.key}
-                style={[contextStyles.menuItem, idx === CONTEXT_ACTIONS.length - 1 && contextStyles.menuItemLast]}
+                style={[contextStyles.menuItem, { borderBottomColor: C.border }, idx === CONTEXT_ACTIONS.length - 1 && contextStyles.menuItemLast]}
                 onPress={() => handleContextAction(action.key)}
               >
                 <Text style={[
                   contextStyles.menuItemText,
+                  { color: C.text },
                   action.key === 'hide' && contextStyles.menuItemTextDanger,
                 ]}>
                   {label}
@@ -244,8 +271,11 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
               </TouchableOpacity>
             )
           })}
-          <TouchableOpacity style={contextStyles.cancelBtn} onPress={handleContextClose}>
-            <Text style={contextStyles.cancelText}>Cancel</Text>
+          <TouchableOpacity
+            style={[contextStyles.cancelBtn, { backgroundColor: C.surfaceWarm }]}
+            onPress={handleContextClose}
+          >
+            <Text style={[contextStyles.cancelText, { color: C.text }]}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -259,21 +289,17 @@ export default ListingCard
 const styles = StyleSheet.create({
   cardFull: {
     width: '100%',
-    backgroundColor: '#1A2B45',
     borderRadius: Radius.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#2A3B55',
     ...Shadow.sm,
     marginBottom: Spacing.md,
   },
   cardGrid: {
     width: GRID_CARD_WIDTH,
-    backgroundColor: '#1A2B45',
     borderRadius: Radius.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#2A3B55',
     ...Shadow.sm,
     marginBottom: Spacing.base,
   },
@@ -297,7 +323,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Spacing.sm,
     left: Spacing.sm,
-    backgroundColor: 'rgba(10,22,40,0.80)',
     borderRadius: Radius.full,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -327,48 +352,47 @@ const styles = StyleSheet.create({
   },
   heart: { fontSize: 16 },
   info: { padding: Spacing.base, paddingBottom: Spacing.md },
-  title: { ...Typography.h4, color: Colors.text, marginBottom: 4, lineHeight: 20 },
+  title: { ...Typography.h4, marginBottom: 4, lineHeight: 20 },
   tierRow: { marginBottom: 4 },
-  location: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 6 },
+  location: { fontSize: 12, marginBottom: 6 },
   ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  rentalCount: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
+  rentalCount: { fontSize: 12 },
   policyRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   policyDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.success },
-  policyText: { fontSize: 12, color: 'rgba(255,255,255,0.6)' },
+  policyText: { fontSize: 12 },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 4 },
-  price: { ...Typography.priceS, color: Colors.primary },
+  price: { ...Typography.priceS },
 })
 
 const contextStyles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: Colors.overlay },
+  backdrop: { flex: 1 },
   menu: {
-    backgroundColor: Colors.surface,
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     paddingBottom: 34,
     paddingTop: Spacing.md,
   },
   handle: {
-    width: 40, height: 4, backgroundColor: Colors.border,
+    width: 40, height: 4,
     borderRadius: Radius.pill, alignSelf: 'center', marginBottom: Spacing.base,
   },
   menuTitle: {
-    fontSize: 14, fontWeight: '700', color: Colors.textTertiary,
+    fontSize: 14, fontWeight: '700',
     textAlign: 'center', marginBottom: Spacing.md,
     paddingHorizontal: Spacing.xl,
   },
   menuItem: {
     paddingHorizontal: Spacing.xl, paddingVertical: 15,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+    borderBottomWidth: 1,
   },
   menuItemLast: { borderBottomWidth: 0 },
-  menuItemText: { fontSize: 16, color: Colors.text, fontWeight: '500' },
+  menuItemText: { fontSize: 16, fontWeight: '500' },
   menuItemTextDanger: { color: Colors.error },
   cancelBtn: {
     marginHorizontal: Spacing.xl, marginTop: Spacing.md,
-    backgroundColor: Colors.surfaceWarm, borderRadius: Radius.pill,
+    borderRadius: Radius.pill,
     paddingVertical: Spacing.md, alignItems: 'center',
   },
-  cancelText: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  cancelText: { fontSize: 16, fontWeight: '700' },
 })
 
 // ---------------------------------------------------------------------------
@@ -376,6 +400,7 @@ const contextStyles = StyleSheet.create({
 // ---------------------------------------------------------------------------
 
 export function ListingCardSkeleton({ variant = 'grid' }: { variant?: 'full' | 'grid' }) {
+  const C = useColors()
   const opacity = useRef(new Animated.Value(0.3)).current
   const isFull = variant === 'full'
 
@@ -391,19 +416,22 @@ export function ListingCardSkeleton({ variant = 'grid' }: { variant?: 'full' | '
   }, [opacity])
 
   return (
-    <Animated.View style={[isFull ? styles.cardFull : styles.cardGrid, { opacity }]}>
-      <View style={[isFull ? styles.imageFull : styles.imageGrid, skeletonStyles.imageSkeleton]} />
+    <Animated.View style={[
+      isFull ? styles.cardFull : styles.cardGrid,
+      { backgroundColor: C.surface, borderColor: C.border },
+      { opacity },
+    ]}>
+      <View style={[isFull ? styles.imageFull : styles.imageGrid, { backgroundColor: C.border }]} />
       <View style={skeletonStyles.info}>
-        <View style={[skeletonStyles.line, { width: '70%' }]} />
-        <View style={[skeletonStyles.line, { width: '45%', marginTop: 8 }]} />
-        <View style={[skeletonStyles.line, { width: '30%', marginTop: 8 }]} />
+        <View style={[skeletonStyles.line, { width: '70%', backgroundColor: C.border }]} />
+        <View style={[skeletonStyles.line, { width: '45%', marginTop: 8, backgroundColor: C.border }]} />
+        <View style={[skeletonStyles.line, { width: '30%', marginTop: 8, backgroundColor: C.border }]} />
       </View>
     </Animated.View>
   )
 }
 
 const skeletonStyles = StyleSheet.create({
-  imageSkeleton: { backgroundColor: Colors.border },
   info: { padding: 12, paddingBottom: 16 },
-  line: { height: 12, backgroundColor: Colors.border, borderRadius: 6 },
+  line: { height: 12, borderRadius: 6 },
 })
