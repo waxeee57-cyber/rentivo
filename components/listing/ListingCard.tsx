@@ -1,5 +1,9 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated, Modal } from 'react-native'
+import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Modal } from 'react-native'
+import Animated, {
+  useSharedValue, useAnimatedStyle, withSpring,
+  withRepeat, withSequence, withTiming, cancelAnimation,
+} from 'react-native-reanimated'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
@@ -76,7 +80,8 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
   const C = useColors()
   const { styles, contextStyles } = useMemo(() => makeStyles(C), [C])
   const wishlisted = isWishlisted(listing.id)
-  const scale = useRef(new Animated.Value(1)).current
+  const scale = useSharedValue(1)
+  const heartScale = useSharedValue(1)
   const [showContext, setShowContext] = useState(false)
   const [hidden, setHidden] = useState(false)
 
@@ -86,8 +91,21 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
   const gradient = getGradient(listing.category, isDark)
   const priceLabel = formatPricePerDay(listing.price_per_day, language)
 
-  const onPressIn = useCallback(() => Animated.spring(scale, { toValue: 0.97, damping: 15, useNativeDriver: true }).start(), [scale])
-  const onPressOut = useCallback(() => Animated.spring(scale, { toValue: 1, damping: 15, useNativeDriver: true }).start(), [scale])
+  const animatedCardStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
+  const heartAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: heartScale.value }],
+  }))
+
+  const onPressIn = useCallback(() => {
+    scale.value = withSpring(0.97, { damping: 15, stiffness: 300 })
+  }, [scale])
+
+  const onPressOut = useCallback(() => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 300 })
+  }, [scale])
 
   const handlePress = useCallback(() => {
     router.push(`/(consumer)/listing/${listing.id}`)
@@ -100,8 +118,12 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
 
   const handleHeartPress = useCallback(() => {
     void impactAsync(ImpactFeedbackStyle.Medium)
+    heartScale.value = withSpring(1.35, { damping: 8, stiffness: 300 })
+    setTimeout(() => {
+      heartScale.value = withSpring(1, { damping: 10, stiffness: 200 })
+    }, 150)
     toggle(listing)
-  }, [listing, toggle])
+  }, [listing, toggle, heartScale])
 
   const handleContextClose = useCallback(() => setShowContext(false), [])
 
@@ -133,7 +155,7 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
       <Animated.View style={[
         isFull ? styles.cardFull : styles.cardGrid,
         { backgroundColor: C.surface, borderColor: C.border },
-        { transform: [{ scale }] },
+        animatedCardStyle,
       ]}>
         <TouchableOpacity
           onPress={handlePress}
@@ -195,7 +217,9 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
               accessibilityLabel={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
               accessibilityRole="button"
             >
-              <Text style={styles.heart}>{wishlisted ? '❤️' : '🤍'}</Text>
+              <Animated.View style={heartAnimStyle}>
+                <Text style={styles.heart}>{wishlisted ? '❤️' : '🤍'}</Text>
+              </Animated.View>
             </TouchableOpacity>
           </View>
 
@@ -406,25 +430,30 @@ return { styles, contextStyles }
 export function ListingCardSkeleton({ variant = 'grid' }: { variant?: 'full' | 'grid' }) {
   const C = useColors()
   const { styles } = useMemo(() => makeStyles(C), [C])
-  const opacity = useRef(new Animated.Value(0.3)).current
+  const opacity = useSharedValue(0.3)
   const isFull = variant === 'full'
 
   useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.7, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
-      ])
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.7, { duration: 800 }),
+        withTiming(0.3, { duration: 800 }),
+      ),
+      -1,
+      false,
     )
-    animation.start()
-    return () => animation.stop()
+    return () => {
+      cancelAnimation(opacity)
+    }
   }, [opacity])
+
+  const skeletonAnimStyle = useAnimatedStyle(() => ({ opacity: opacity.value }))
 
   return (
     <Animated.View style={[
       isFull ? styles.cardFull : styles.cardGrid,
       { backgroundColor: C.surface, borderColor: C.border },
-      { opacity },
+      skeletonAnimStyle,
     ]}>
       <View style={[isFull ? styles.imageFull : styles.imageGrid, { backgroundColor: C.border }]} />
       <View style={skeletonStyles.info}>

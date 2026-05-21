@@ -1,8 +1,9 @@
-import React, { useRef, useMemo } from 'react'
+import React, { useMemo } from 'react'
 import {
-  Pressable, Text, ActivityIndicator, Animated,
+  Pressable, Text, ActivityIndicator,
   StyleSheet, ViewStyle, TextStyle,
 } from 'react-native'
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated'
 import { impactAsync, ImpactFeedbackStyle } from 'expo-haptics'
 import { Radius, Spacing } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
@@ -30,18 +31,22 @@ export function AnimatedButton({
 }: AnimatedButtonProps) {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
-  const scale = useRef(new Animated.Value(1)).current
+  const scale = useSharedValue(1)
   const isDisabled = disabled || loading
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
 
   return (
     <Pressable
       onPressIn={() => {
         if (isDisabled) return
-        Animated.spring(scale, { toValue: 0.95, damping: 10, useNativeDriver: true }).start()
+        scale.value = withSpring(0.95, { damping: 12, stiffness: 200 })
         if (haptic) void impactAsync(ImpactFeedbackStyle.Light)
       }}
       onPressOut={() => {
-        Animated.spring(scale, { toValue: 1, damping: 10, useNativeDriver: true }).start()
+        scale.value = withSpring(1, { damping: 12, stiffness: 200 })
       }}
       onPress={isDisabled ? undefined : onPress}
       accessibilityLabel={accessibilityLabel ?? title}
@@ -55,7 +60,7 @@ export function AnimatedButton({
         variant === 'danger' && styles.danger,
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
-        { transform: [{ scale }] },
+        animatedStyle,
         style,
       ]}>
         {loading

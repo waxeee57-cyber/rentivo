@@ -4,6 +4,7 @@ import {
   StyleSheet, Dimensions, Platform, Animated, Modal, RefreshControl,
   ListRenderItem,
 } from 'react-native'
+import { impactAsync, ImpactFeedbackStyle } from 'expo-haptics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Spacing, Radius, Shadow } from '@/constants/colors'
@@ -348,7 +349,10 @@ export default function ExploreScreen() {
         >
           <TouchableOpacity
             style={[styles.categoryPill, selectedCategory === null && styles.categoryPillActive]}
-            onPress={() => setSelectedCategory(null)}
+            onPress={() => {
+              void impactAsync(ImpactFeedbackStyle.Light)
+              setSelectedCategory(null)
+            }}
             accessibilityLabel={t('catAll', language)}
             accessibilityRole="button"
           >
@@ -360,7 +364,10 @@ export default function ExploreScreen() {
             <TouchableOpacity
               key={c.key}
               style={[styles.categoryPill, selectedCategory === c.key && styles.categoryPillActive]}
-              onPress={() => setSelectedCategory(prev => prev === c.key ? null : c.key)}
+              onPress={() => {
+                void impactAsync(ImpactFeedbackStyle.Light)
+                setSelectedCategory(prev => prev === c.key ? null : c.key)
+              }}
               accessibilityLabel={t(CAT_I18N_KEYS[c.key], language)}
               accessibilityRole="button"
             >
@@ -382,6 +389,7 @@ export default function ExploreScreen() {
       <TouchableOpacity
         style={[styles.toggleBtn, { bottom: insets.bottom + 142 }]}
         onPress={() => {
+          void impactAsync(ImpactFeedbackStyle.Light)
           setViewMode(v => v === 'map' ? 'list' : 'map')
           setSelectedListing(null)
         }}
@@ -418,7 +426,10 @@ export default function ExploreScreen() {
         <View style={styles.sourceToggleRow}>
           <TouchableOpacity
             style={[styles.sourceBtn, source === 'rentivo' && styles.sourceBtnActive]}
-            onPress={() => setSource('rentivo')}
+            onPress={() => {
+              void impactAsync(ImpactFeedbackStyle.Light)
+              setSource('rentivo')
+            }}
             accessibilityLabel={t('sourceRentivoOnly', language)}
             accessibilityRole="button"
           >
@@ -428,7 +439,10 @@ export default function ExploreScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.sourceBtn, source === 'all' && styles.sourceBtnActive]}
-            onPress={() => setSource('all')}
+            onPress={() => {
+              void impactAsync(ImpactFeedbackStyle.Light)
+              setSource('all')
+            }}
             accessibilityLabel={t('sourceAllPlatforms', language)}
             accessibilityRole="button"
           >
@@ -456,7 +470,10 @@ export default function ExploreScreen() {
             <TouchableOpacity
               key={opt.key}
               style={[styles.sortPill, sortBy === opt.key && styles.sortPillActive]}
-              onPress={() => setSortBy(opt.key)}
+              onPress={() => {
+                void impactAsync(ImpactFeedbackStyle.Light)
+                setSortBy(opt.key)
+              }}
               accessibilityLabel={`Sort by: ${opt.label}`}
               accessibilityRole="button"
             >
@@ -474,7 +491,10 @@ export default function ExploreScreen() {
             <TouchableOpacity
               key={String(opt.cap)}
               style={[styles.sortPill, minCapacity === opt.cap && styles.sortPillActive]}
-              onPress={() => setMinCapacity(opt.cap)}
+              onPress={() => {
+                void impactAsync(ImpactFeedbackStyle.Light)
+                setMinCapacity(opt.cap)
+              }}
               accessibilityLabel={`Capacity: ${opt.label}`}
               accessibilityRole="button"
             >
@@ -499,7 +519,9 @@ export default function ExploreScreen() {
               <TouchableOpacity
                 key={theme.title}
                 style={styles.inspireCard}
+                activeOpacity={0.75}
                 onPress={() => {
+                  void impactAsync(ImpactFeedbackStyle.Light)
                   setSelectedCategory(theme.category)
                   if (theme.city) setCityName(theme.city)
                   setViewMode('list')
@@ -524,7 +546,11 @@ export default function ExploreScreen() {
                 <TouchableOpacity
                   key={mood.label}
                   style={styles.moodCard}
-                  onPress={() => setSelectedCategory(mood.category)}
+                  activeOpacity={0.75}
+                  onPress={() => {
+                    void impactAsync(ImpactFeedbackStyle.Light)
+                    setSelectedCategory(mood.category)
+                  }}
                   accessibilityLabel={mood.label}
                   accessibilityRole="button"
                 >
@@ -666,7 +692,10 @@ export default function ExploreScreen() {
               <TouchableOpacity
                 key={opt.key}
                 style={[filterStyles.pill, sortBy === opt.key && filterStyles.pillActive]}
-                onPress={() => setSortBy(opt.key)}
+                onPress={() => {
+                  void impactAsync(ImpactFeedbackStyle.Light)
+                  setSortBy(opt.key)
+                }}
                 accessibilityLabel={`Sort by: ${opt.label}`}
                 accessibilityRole="button"
               >
@@ -687,7 +716,10 @@ export default function ExploreScreen() {
               <TouchableOpacity
                 key={opt.label}
                 style={[filterStyles.pill, minCapacity === opt.cap && filterStyles.pillActive]}
-                onPress={() => setMinCapacity(opt.cap)}
+                onPress={() => {
+                  void impactAsync(ImpactFeedbackStyle.Light)
+                  setMinCapacity(opt.cap)
+                }}
                 accessibilityLabel={`Capacity: ${opt.label}`}
                 accessibilityRole="button"
               >
@@ -701,6 +733,7 @@ export default function ExploreScreen() {
           <TouchableOpacity
             style={filterStyles.applyBtn}
             onPress={() => {
+              void impactAsync(ImpactFeedbackStyle.Medium)
               setViewMode('list')
               setShowFilterSheet(false)
             }}
@@ -934,12 +967,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       paddingBottom: Spacing.sm,
     },
     prefix: {
-      fontSize: 22,
+      fontSize: 28,
       fontWeight: '800',
       color: C.text,
     },
     rotating: {
-      fontSize: 22,
+      fontSize: 28,
       fontWeight: '800',
       color: C.primary,
     },

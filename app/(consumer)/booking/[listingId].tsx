@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 import { Image } from 'expo-image'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
@@ -8,6 +9,7 @@ import * as Haptics from 'expo-haptics'
 import { CardField, useStripe } from '@stripe/stripe-react-native'
 import { Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
+import { AnimatedButton } from '@/components/ui/AnimatedButton'
 import { Input } from '@/components/ui/Input'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { HelpTooltip } from '@/components/ui/HelpTooltip'
@@ -163,6 +165,7 @@ export default function BookingFlowScreen() {
           startDate={localStartDate}
           endDate={localEndDate}
           onApply={(start, end) => {
+            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
             setLocalStartDate(start)
             setLocalEndDate(end)
           }}
@@ -359,7 +362,7 @@ export default function BookingFlowScreen() {
         </View>
 
         {step === 1 && (
-          <>
+          <Animated.View key="step1" entering={FadeInDown.duration(200)}>
             {listing.hourly_rental_enabled && (
               <View style={styles.rentalTypeRow}>
                 {(['daily', 'hourly'] as const).map(rt => (
@@ -499,11 +502,11 @@ export default function BookingFlowScreen() {
               fullWidth
               style={{ marginTop: Spacing.md }}
             />
-          </>
+          </Animated.View>
         )}
 
         {step === 2 && (
-          <>
+          <Animated.View key="step2" entering={FadeInDown.duration(200)}>
             <View style={styles.priceCard}>
               <Text style={styles.priceCardTitle}>Your total</Text>
               <View style={styles.priceRow}>
@@ -642,26 +645,18 @@ export default function BookingFlowScreen() {
               ))}
             </View>
 
-            <TouchableOpacity
-              style={[
-                styles.payBtn,
-                (submitting || submitted || !guestName.trim() || (!Config.useMock && !cardComplete)) && styles.payBtnDisabled,
-              ]}
+            <AnimatedButton
+              title={`Pay ${formatEURDecimal(grandTotal)} →`}
               onPress={() => void handlePayment()}
-              disabled={submitting || submitted || !guestName.trim() || (!Config.useMock && !cardComplete)}
+              loading={submitting}
+              disabled={submitted || !guestName.trim() || (!Config.useMock && !cardComplete)}
               accessibilityLabel={`Pay ${formatEURDecimal(grandTotal)}`}
-              accessibilityRole="button"
-            >
-              {submitting ? (
-                <ActivityIndicator color={C.textInverse} size="small" />
-              ) : (
-                <Text style={styles.payBtnText}>
-                  Pay {formatEURDecimal(grandTotal)} →
-                </Text>
-              )}
-            </TouchableOpacity>
+              fullWidth
+              style={styles.payBtn}
+              textStyle={styles.payBtnText}
+            />
             <Text style={styles.secureNote}>🔒 Secure payment · SSL encrypted</Text>
-          </>
+          </Animated.View>
         )}
       </ScrollView>
     </SafeAreaView>
