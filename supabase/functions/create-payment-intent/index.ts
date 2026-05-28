@@ -39,6 +39,16 @@ serve(async (req) => {
   try {
     const { booking_id, amount_eur, listing_title, operator_stripe_account_id } = await req.json()
 
+    // Payout guard (defense-in-depth): never create a transferless intent silently.
+    // Without a destination Connect account the money would land on the platform
+    // account and never reach the operator.
+    if (!operator_stripe_account_id || typeof operator_stripe_account_id !== 'string' || !operator_stripe_account_id.startsWith('acct_')) {
+      return new Response(
+        JSON.stringify({ error: 'Operator is not set up to receive payments' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     const amountCents = Math.round(amount_eur * 100)
     const platformCut = parseFloat(Deno.env.get('PLATFORM_CUT') ?? '0.10')
     const platformFeeCents = Math.round(amountCents * platformCut)
@@ -48,11 +58,8 @@ serve(async (req) => {
       currency: 'eur',
       automatic_payment_methods: { enabled: true },
       metadata: { booking_id, user_id: user.id, listing_title, platform: 'rentivo' },
-    }
-
-    if (operator_stripe_account_id) {
-      params.application_fee_amount = platformFeeCents
-      params.transfer_data = { destination: operator_stripe_account_id }
+      application_fee_amount: platformFeeCents,
+      transfer_data: { destination: operator_stripe_account_id },
     }
 
     const paymentIntent = await stripe.paymentIntents.create(params)

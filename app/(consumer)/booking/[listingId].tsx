@@ -153,6 +153,48 @@ export default function BookingFlowScreen() {
     )
   }
 
+  // Payout guard — block booking if the operator can't receive payouts yet.
+  // Without an onboarded Connect account the payment would land on the platform
+  // account with no transfer to the operator. Mock mode bypasses this.
+  const operatorCanReceivePayments =
+    Config.useMock ||
+    (listing.operator?.stripe_onboarded === true && !!listing.operator?.stripe_account_id)
+
+  if (!operatorCanReceivePayments) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScreenHeader title="Booking" onBack={() => router.back()} />
+        <View style={styles.vgContainer}>
+          <Text style={styles.vgIcon}>🚧</Text>
+          <Text style={styles.vgTitle}>
+            {language === 'hu'
+              ? 'Ez a hirdetés jelenleg nem foglalható'
+              : language === 'es'
+                ? 'Este anuncio no se puede reservar por ahora'
+                : 'This listing is not bookable right now'}
+          </Text>
+          <Text style={styles.vgDesc}>
+            {language === 'hu'
+              ? 'A szolgáltató még nem fejezte be a fizetési beállításokat. Kérlek, próbáld újra később.'
+              : language === 'es'
+                ? 'El proveedor aún no ha completado la configuración de pagos. Vuelve a intentarlo más tarde.'
+                : 'The operator has not finished setting up payments yet. Please try again later.'}
+          </Text>
+          <TouchableOpacity
+            style={styles.vgButton}
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={language === 'hu' ? 'Vissza' : language === 'es' ? 'Volver' : 'Go back'}
+          >
+            <Text style={styles.vgButtonText}>
+              {language === 'hu' ? 'Vissza' : language === 'es' ? 'Volver' : 'Go back'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
   const startDate = localStartDate
   const endDate = localEndDate
 

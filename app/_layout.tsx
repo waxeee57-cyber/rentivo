@@ -21,8 +21,11 @@ import { supabase } from '@/lib/supabase'
 import { STRIPE_PUBLISHABLE_KEY } from '@/lib/stripe'
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications'
 import { Spacing, Radius } from '@/constants/colors'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { initSentry } from '@/lib/sentry'
 
 SplashScreen.preventAutoHideAsync()
+initSentry()
 import { t } from '@/constants/i18n'
 import { Toast } from '@/components/ui/Toast'
 import { OfflineBanner } from '@/components/ui/OfflineBanner'
@@ -106,7 +109,7 @@ function makeGdprStyles(C: ReturnType<typeof useColors>) {
 
 
 
-export default function RootLayout() {
+function RootLayoutInner() {
   const [fontsLoaded, fontError] = useFonts({ ...Ionicons.font })
   const isDark = useThemeStore(s => s.isDark)
 
@@ -250,5 +253,13 @@ export default function RootLayout() {
         </StripeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  )
+}
+
+export default function RootLayout() {
+  return (
+    <ErrorBoundary>
+      <RootLayoutInner />
+    </ErrorBoundary>
   )
 }
