@@ -1,10 +1,10 @@
 import { Config } from '@/constants/config'
 
-export const PLATFORM_FEE_RATE = 0.025 // 2.5%
+export const PLATFORM_FEE_RATE = 0.10 // 10%
 
 /**
  * Returns the platform fee portion of a given amount.
- * Current rate: 2.5% (Config.platformCut = 0.025)
+ * Current rate: 10% (Config.platformCut = 0.10)
  * TODO: Stripe production — pass fee via application_fee_amount on PaymentIntent
  */
 export function calculatePlatformFee(amountEur: number): number {

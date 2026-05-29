@@ -32,7 +32,8 @@
       "env": {
         "EXPO_PUBLIC_USE_MOCK": "false",
         "EXPO_PUBLIC_APP_NAME": "Rentivo Preview",
-        "EXPO_PUBLIC_PLATFORM_CUT": "0.025"
+        "EXPO_PUBLIC_PLATFORM_CUT": "0.10",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "production": {
@@ -47,7 +48,8 @@
       "env": {
         "EXPO_PUBLIC_USE_MOCK": "false",
         "EXPO_PUBLIC_APP_NAME": "Rentivo",
-        "EXPO_PUBLIC_PLATFORM_CUT": "0.025"
+        "EXPO_PUBLIC_PLATFORM_CUT": "0.10",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     }
   },

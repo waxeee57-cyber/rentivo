@@ -1,6 +1,6 @@
 import type { PriceCalculation } from '@/types'
 
-const PLATFORM_CUT = parseFloat(process.env.EXPO_PUBLIC_PLATFORM_CUT ?? '0.025')
+const PLATFORM_CUT = parseFloat(process.env.EXPO_PUBLIC_PLATFORM_CUT ?? '0.10')
 
 /**
  * Calculates price breakdown. All prices are in whole euros (not cents).

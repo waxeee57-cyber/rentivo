@@ -63,7 +63,7 @@ export function DatePickerSheet({
   // Price preview
   const pricePreview = (() => {
     if (!duration || !pricePerDay) return null
-    const platformCut = 0.025
+    const platformCut = 0.10
     const subtotal = pricePerDay * duration
     const fee = Math.round(subtotal * platformCut)
     const total = subtotal + fee

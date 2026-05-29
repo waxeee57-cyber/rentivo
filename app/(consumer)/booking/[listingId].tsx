@@ -133,7 +133,7 @@ export default function BookingFlowScreen() {
           {(identityStatus === 'unverified' || identityStatus === 'declined' || identityStatus == null) && (
             <TouchableOpacity
               style={styles.vgButton}
-              onPress={() => router.push('/(consumer)/profile/identity-verification' as any)}
+              onPress={() => router.push('/(consumer)/profile/identity-verification')}
               accessibilityLabel="Verify identity"
             >
               <Text style={styles.vgButtonText}>Verify my identity →</Text>

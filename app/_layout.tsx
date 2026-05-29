@@ -16,6 +16,7 @@ import { StripeProvider } from '@stripe/stripe-react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Notifications from 'expo-notifications'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import type { RentivoUser } from '@/types'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
 import { supabase } from '@/lib/supabase'
 import { STRIPE_PUBLISHABLE_KEY } from '@/lib/stripe'
@@ -146,8 +147,7 @@ function RootLayoutInner() {
       .eq('id', uid)
       .maybeSingle()
     if (profile) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setUser(profile as any)
+      setUser(profile as RentivoUser)
     }
   }, [setSession, setUser])
 

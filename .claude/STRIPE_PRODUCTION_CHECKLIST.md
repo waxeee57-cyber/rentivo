@@ -5,7 +5,7 @@
 - create-stripe-account-link Edge Function (deployed)
 - stripe-webhook Edge Function (deployed)
 - delete-account Edge Function (deployed)
-- Platform fee: 2.5% (Config.platformCut)
+- Platform fee: 10% (Config.platformCut)
 - Payment utilities: calculatePlatformFee, toStripeAmount (lib/api/payments.ts)
 
 ## Before Go-Live (Required)
