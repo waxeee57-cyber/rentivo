@@ -16,6 +16,8 @@ import { MOCK_CONVERSATIONS, MOCK_MESSAGES } from '@/lib/mockData'
 import { sendChatNotification } from '@/lib/notifications'
 import { translateMessage } from '@/lib/api/translate'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useToastStore } from '@/lib/store/useToastStore'
+import { t } from '@/constants/i18n'
 import type { Message, Conversation } from '@/types'
 import { format } from 'date-fns'
 import { useColors } from '@/lib/hooks/useColors'
@@ -54,6 +56,7 @@ type MessageBubbleProps = {
 function MessageBubble({ msg, isConsumer, translation, onTranslate }: MessageBubbleProps) {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const language = useAuthStore(s => s.language)
   if (msg.sender_role === 'system') {
     return (
       <View style={styles.systemMsg}>
@@ -87,14 +90,14 @@ function MessageBubble({ msg, isConsumer, translation, onTranslate }: MessageBub
           onPress={() => onTranslate(msg.id, msg.content)}
           disabled={translation.loading}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={translation.text !== null ? 'Hide translation' : 'Translate message'}
+          accessibilityLabel={translation.text !== null ? t('cbkHideTranslation', language) : t('cbkTranslateMsg', language)}
           accessibilityRole="button"
         >
           {translation.loading ? (
             <ActivityIndicator size="small" color={C.primary} style={styles.translateSpinner} />
           ) : (
             <Text style={styles.translateBtnText}>
-              {translation.text !== null ? 'Hide translation' : '🌐 Translate'}
+              {translation.text !== null ? t('cbkHideTranslation', language) : t('cbkTranslate', language)}
             </Text>
           )}
         </TouchableOpacity>
@@ -110,6 +113,7 @@ export default function ConsumerChatScreen() {
   const id = Config.useMock ? (bookingId ?? 'bk-001') : (bookingId ?? '')
   const { booking } = useBooking(id)
   const language = useAuthStore(s => s.language)
+  const { showToast } = useToastStore()
 
   const [messages, setMessages] = useState<Message[]>([])
   const [conversation, setConversation] = useState<Conversation | null>(null)
@@ -218,16 +222,26 @@ export default function ConsumerChatScreen() {
     }
 
     try {
+      // Authoritative auth id — must equal auth.uid() for the chat RLS INSERT
+      // policy (msg_participant_insert: sender_id = auth.uid()). Demo / expired
+      // session has none, so block instead of inserting a null sender.
+      const { data: { session } } = await supabase.auth.getSession()
+      const authUserId = session?.user?.id
+      if (!authUserId) {
+        setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id))
+        setInputText(text)
+        showToast({ message: t('ternLoginRequired', language), type: 'error' })
+        return
+      }
       let convId = conversation?.id
       if (!convId) {
-        const { data: { session } } = await supabase.auth.getSession()
         const { data: newConv } = await supabase
           .from('rentivo_conversations')
           .insert({
             booking_id: id,
             listing_id: booking?.listing_id ?? '',
             operator_id: booking?.operator_id ?? '',
-            user_id: session?.user?.id ?? null,
+            user_id: authUserId,
           })
           .select()
           .single()
@@ -240,7 +254,7 @@ export default function ConsumerChatScreen() {
       await supabase.from('rentivo_messages').insert({
         conversation_id: convId,
         sender_role: 'consumer',
-        sender_id: null,
+        sender_id: authUserId,
         content: text,
       })
       await supabase
@@ -263,7 +277,7 @@ export default function ConsumerChatScreen() {
     } finally {
       setSending(false)
     }
-  }, [inputText, sending, bookingId, conversation, booking, id])
+  }, [inputText, sending, bookingId, conversation, booking, id, language, showToast])
 
   const renderItem = useCallback(({ item, index }: { item: Message; index: number }) => {
     const nextMsg = messages[index + 1] ?? null
@@ -287,7 +301,7 @@ export default function ConsumerChatScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader
-        title={booking?.listing?.title ?? 'Chat'}
+        title={booking?.listing?.title ?? t('cbkChatFallbackTitle', language)}
         subtitle={booking?.operator?.name}
       />
 
@@ -305,7 +319,7 @@ export default function ConsumerChatScreen() {
           renderItem={renderItem}
           ListEmptyComponent={
             <View style={styles.emptyChat}>
-              <Text style={styles.emptyChatText}>No messages yet. Say hello!</Text>
+              <Text style={styles.emptyChatText}>{t('cbkChatEmpty', language)}</Text>
             </View>
           }
         />
@@ -316,19 +330,19 @@ export default function ConsumerChatScreen() {
             style={styles.textInput}
             value={inputText}
             onChangeText={setInputText}
-            placeholder="Type a message..."
+            placeholder={t('cbkChatPlaceholder', language)}
             placeholderTextColor={C.textTertiary}
             multiline
             maxLength={500}
             returnKeyType="send"
             onSubmitEditing={() => void sendMessage()}
-            accessibilityLabel="Message input"
+            accessibilityLabel={t('cbkMsgInput', language)}
           />
           <TouchableOpacity
             style={[styles.sendBtn, (!inputText.trim() || sending) && styles.sendBtnDisabled]}
             onPress={() => void sendMessage()}
             disabled={!inputText.trim() || sending}
-            accessibilityLabel="Send message"
+            accessibilityLabel={t('cbkSendMsg', language)}
             accessibilityRole="button"
           >
             <Ionicons name="send" size={18} color={C.textInverse} />

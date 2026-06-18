@@ -16,9 +16,11 @@ import { MOCK_CONVERSATIONS, MOCK_MESSAGES } from '@/lib/mockData'
 import { sendChatNotification } from '@/lib/notifications'
 import { translateMessage } from '@/lib/api/translate'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useToastStore } from '@/lib/store/useToastStore'
 import type { Message, Conversation } from '@/types'
 import { format } from 'date-fns'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
 
 function formatMsgTime(iso: string): string {
   try { return format(new Date(iso), 'HH:mm') } catch { return '' }
@@ -38,6 +40,7 @@ type MessageBubbleProps = {
 function MessageBubble({ msg, translation, onTranslate }: MessageBubbleProps) {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const language = useAuthStore(s => s.language)
   if (msg.sender_role === 'system') {
     return (
       <View style={styles.systemMsg}>
@@ -71,14 +74,14 @@ function MessageBubble({ msg, translation, onTranslate }: MessageBubbleProps) {
           onPress={() => onTranslate(msg.id, msg.content)}
           disabled={translation.loading}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={translation.text !== null ? 'Hide translation' : 'Translate message'}
+          accessibilityLabel={translation.text !== null ? t('opBkHideTranslation', language) : t('opBkTranslateMsg', language)}
           accessibilityRole="button"
         >
           {translation.loading ? (
             <ActivityIndicator size="small" color={C.primary} style={styles.translateSpinner} />
           ) : (
             <Text style={styles.translateBtnText}>
-              {translation.text !== null ? 'Hide translation' : '🌐 Translate'}
+              {translation.text !== null ? t('opBkHideTranslation', language) : `🌐 ${t('opBkTranslate', language)}`}
             </Text>
           )}
         </TouchableOpacity>
@@ -94,6 +97,7 @@ export default function OperatorChatScreen() {
   const id = Config.useMock ? (bookingId ?? 'bk-001') : (bookingId ?? '')
   const { booking } = useBooking(id)
   const language = useAuthStore(s => s.language)
+  const { showToast } = useToastStore()
 
   const [messages, setMessages] = useState<Message[]>([])
   const [conversation, setConversation] = useState<Conversation | null>(null)
@@ -183,9 +187,18 @@ export default function OperatorChatScreen() {
     }
 
     try {
+      // Authoritative auth id — must equal auth.uid() for the chat RLS INSERT
+      // policy (msg_participant_insert: sender_id = auth.uid()). Demo / expired
+      // session has none, so block instead of inserting a null sender.
+      const { data: { session } } = await supabase.auth.getSession()
+      const authUserId = session?.user?.id
+      if (!authUserId) {
+        setInput(text)
+        showToast({ message: t('ternLoginRequired', language), type: 'error' })
+        return
+      }
       let convId = conversation?.id
       if (!convId) {
-        const { data: { session } } = await supabase.auth.getSession()
         const { data: newConv } = await supabase
           .from('rentivo_conversations')
           .insert({
@@ -205,7 +218,7 @@ export default function OperatorChatScreen() {
       await supabase.from('rentivo_messages').insert({
         conversation_id: convId,
         sender_role: 'operator',
-        sender_id: null,
+        sender_id: authUserId,
         content: text,
       })
       await supabase
@@ -224,7 +237,7 @@ export default function OperatorChatScreen() {
     } finally {
       setSending(false)
     }
-  }, [input, sending, conversation, booking, id])
+  }, [input, sending, conversation, booking, id, language, showToast])
 
   const renderItem = useCallback(({ item }: { item: Message }) => {
     const translation: TranslationState = translations[item.id] ?? { text: null, loading: false }
@@ -240,7 +253,7 @@ export default function OperatorChatScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader
-        title={booking?.guest_name ?? 'Guest Chat'}
+        title={booking?.guest_name ?? t('opBkGuestChat', language)}
         subtitle={booking?.listing?.title}
       />
 
@@ -257,7 +270,7 @@ export default function OperatorChatScreen() {
           renderItem={renderItem}
           ListEmptyComponent={
             <View style={styles.emptyChat}>
-              <Text style={styles.emptyChatText}>No messages yet.</Text>
+              <Text style={styles.emptyChatText}>{t('messagesEmpty', language)}</Text>
             </View>
           }
         />
@@ -267,18 +280,19 @@ export default function OperatorChatScreen() {
             style={styles.textInput}
             value={input}
             onChangeText={setInput}
-            placeholder="Reply to guest..."
+            placeholder={t('opBkReplyPlaceholder', language)}
             placeholderTextColor={C.textTertiary}
             multiline
             maxLength={500}
-            accessibilityLabel="Message input"
+            accessibilityLabel={t('opBkMsgInput', language)}
           />
           <TouchableOpacity
             style={[styles.sendBtn, !input.trim() && styles.sendBtnDisabled]}
             onPress={() => void sendMessage()}
             disabled={!input.trim() || sending}
-            accessibilityLabel="Send message"
+            accessibilityLabel={t('opBkSendMsg', language)}
             accessibilityRole="button"
+            hitSlop={{ top: 2, bottom: 2, left: 2, right: 2 }}
           >
             <Ionicons name="send" size={18} color={C.textInverse} />
           </TouchableOpacity>
