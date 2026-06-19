@@ -380,6 +380,14 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Stripe webhooks do NOT carry a Supabase JWT. With verify_jwt = true the gateway
+# rejects Stripe's calls with 401 before the handler runs, so no event is ever
+# processed. The function authenticates requests itself via Stripe signature
+# verification (constructEventAsync + STRIPE_WEBHOOK_SECRET) — that is the security
+# boundary. Public reachability is intentional. Do NOT flip this back to true.
+[functions.stripe-webhook]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
