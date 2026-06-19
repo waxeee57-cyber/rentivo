@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { differenceInDays, format } from 'date-fns'
 import * as Haptics from 'expo-haptics'
+import { Ionicons } from '@expo/vector-icons'
 import { CardField, useStripe } from '@stripe/stripe-react-native'
 import { Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
@@ -27,7 +28,7 @@ import { Config } from '@/constants/config'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { supabase } from '@/lib/supabase'
 import { createBooking } from '@/lib/api/bookings'
-import { createPaymentIntent } from '@/lib/api/payments'
+import { createPaymentIntent, createDepositSetup } from '@/lib/api/payments'
 import { t } from '@/constants/i18n'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { INSURANCE_PACKAGES } from '@/types'
@@ -55,7 +56,7 @@ export default function BookingFlowScreen() {
   }>()
   const { listing, loading } = useListing(listingId ?? '')
   const { language } = useAuthStore()
-  const { confirmPayment } = useStripe()
+  const { confirmPayment, confirmSetupIntent } = useStripe()
   const [step, setStep] = useState(1)
   const [pickupTime, setPickupTime] = useState('10:00')
   const [guestName, setGuestName] = useState('')
@@ -236,6 +237,10 @@ export default function BookingFlowScreen() {
     ? hourlySubtotal + insuranceTotalCost
     : priceCalc.total + insuranceTotalCost
   const grandTotal = Math.max(0, baseTotal - promoDiscount)
+  // Deposit Model B cap: waived when a paid insurance package covers damage,
+  // otherwise the listing's deposit. Must match the deposit_amount we persist on
+  // the booking below so the disclosure shows the exact charge ceiling.
+  const effectiveDeposit = selectedInsurance.price > 0 ? 0 : listing.deposit_amount
 
   const applyPromo = async () => {
     if (!promoCode.trim()) return
@@ -298,7 +303,7 @@ export default function BookingFlowScreen() {
           subtotal: priceCalc.subtotal,
           platform_fee: priceCalc.platformFee,
           total_amount: grandTotal,
-          deposit_amount: selectedInsurance.price > 0 ? 0 : listing.deposit_amount,
+          deposit_amount: effectiveDeposit,
           currency: 'EUR',
           status: 'pending',
           payment_status: 'pending',
@@ -317,9 +322,6 @@ export default function BookingFlowScreen() {
 
         const { clientSecret } = await createPaymentIntent({
           bookingId,
-          amountEur: grandTotal,
-          listingTitle: listing.title,
-          operatorStripeAccountId: listing.operator?.stripe_account_id ?? null,
           accessToken: session.access_token,
         })
 
@@ -330,6 +332,32 @@ export default function BookingFlowScreen() {
         if (stripeError) {
           showToast({ message: stripeError.message ?? getError('payment_failed'), type: 'error' })
           return
+        }
+
+        // Deposit Model B — vault the same card (off_session) for potential
+        // damage charges, capped at effectiveDeposit. Non-blocking: the rental is
+        // already paid, so a vault failure only warns and proceeds.
+        if (effectiveDeposit > 0) {
+          const depositVaultFailed =
+            language === 'hu'
+              ? 'A fizetés sikeres, de a kaució kártyamentése nem sikerült.'
+              : language === 'es'
+                ? 'El pago se realizó, pero no se pudo guardar la tarjeta para la fianza.'
+                : 'Payment succeeded, but saving your card for the deposit failed.'
+          try {
+            const { clientSecret: depositSecret } = await createDepositSetup({
+              bookingId,
+              accessToken: session.access_token,
+            })
+            const { error: setupError } = await confirmSetupIntent(depositSecret, {
+              paymentMethodType: 'Card',
+            })
+            if (setupError) {
+              showToast({ message: setupError.message ?? depositVaultFailed, type: 'error' })
+            }
+          } catch {
+            showToast({ message: depositVaultFailed, type: 'error' })
+          }
         }
       }
 
@@ -345,7 +373,6 @@ export default function BookingFlowScreen() {
 
   const steps = [t('tripDetails', language), t('reviewAndPay', language)]
   const platformFeeLabel = `Service fee (${(Config.platformCut * 100).toFixed(1)}%)`
-  const refundableDeposit = listing.deposit_amount
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -461,7 +488,7 @@ export default function BookingFlowScreen() {
                 </View>
                 {listing.price_per_hour != null && (
                   <Text style={styles.hourlyTotal}>
-                    Total: €{listing.price_per_hour * totalHours}
+                    Total: {formatEURDecimal(listing.price_per_hour * totalHours)}
                   </Text>
                 )}
               </View>
@@ -473,6 +500,7 @@ export default function BookingFlowScreen() {
                 insuranceName={t(selectedInsurance.nameKey, language)}
                 insurancePricePerDay={selectedInsurance.price}
                 totalDays={totalDays}
+                language={language}
               />
             )}
 
@@ -581,15 +609,20 @@ export default function BookingFlowScreen() {
                 <Text style={styles.priceTotalLabel}>Total now</Text>
                 <Text style={styles.priceTotalValue}>{formatEURDecimal(grandTotal)}</Text>
               </View>
-              {selectedInsurance.price > 0 ? (
+              {effectiveDeposit > 0 ? (
+                <>
+                  <View style={styles.depositRow}>
+                    <Text style={styles.depositLabel}>🔒 {t('depositHoldLabel', language)}</Text>
+                    <Text style={styles.depositValue}>{formatEURDecimal(effectiveDeposit)}</Text>
+                  </View>
+                  <Text style={styles.depositNote}>
+                    {t('depositHoldNote', language).replace('{amount}', formatEURDecimal(effectiveDeposit))}
+                  </Text>
+                </>
+              ) : (
                 <View style={styles.depositRow}>
                   <Text style={styles.depositLabel}>✓ No deposit required</Text>
                   <Text style={[styles.depositValue, { color: C.success }]}>Included</Text>
-                </View>
-              ) : (
-                <View style={styles.depositRow}>
-                  <Text style={styles.depositLabel}>🔒 Refundable deposit</Text>
-                  <Text style={styles.depositValue}>{formatEURDecimal(refundableDeposit)}</Text>
                 </View>
               )}
               <View style={styles.trustRow}>
@@ -674,14 +707,14 @@ export default function BookingFlowScreen() {
             )}
 
             <View style={styles.trustGrid}>
-              {[
-                { icon: '🔒', text: 'Stripe secure' },
-                { icon: '✓', text: 'No hidden fees' },
-                { icon: '✓', text: 'Cancel anytime' },
-                { icon: '↩', text: 'Money back' },
-              ].map(item => (
+              {([
+                { icon: 'lock-closed', text: 'Stripe secure' },
+                { icon: 'checkmark-circle', text: 'No hidden fees' },
+                { icon: 'checkmark-circle', text: 'Cancel anytime' },
+                { icon: 'arrow-undo', text: 'Money back' },
+              ] as const).map(item => (
                 <View key={item.text} style={styles.trustGridItem}>
-                  <Text style={styles.trustGridIcon}>{item.icon}</Text>
+                  <Ionicons name={item.icon} size={14} color={C.success} style={styles.trustGridIcon} />
                   <Text style={styles.trustGridText}>{item.text}</Text>
                 </View>
               ))}
@@ -786,6 +819,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       borderTopWidth: 1, borderTopColor: C.border,
     },
     depositLabel: { fontSize: 13, color: C.textSecondary },
+    depositNote: { fontSize: 12, color: C.textTertiary, lineHeight: 18, marginTop: Spacing.xs },
     depositValue: { fontSize: 13, color: C.textSecondary, fontWeight: '600' },
     trustRow: { marginTop: Spacing.md, gap: 4 },
     trustItem: { fontSize: 12, color: C.success, fontWeight: '500' },

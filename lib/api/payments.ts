@@ -26,11 +26,14 @@ export function fromStripeAmount(amountCents: number): number {
   return amountCents / 100
 }
 
+/**
+ * Creates the rental PaymentIntent. The server derives BOTH the charge amount
+ * (from the persisted booking) and the destination Connect account (from the
+ * listing owner) — the client only references the booking by id, so it can
+ * neither dictate the amount nor redirect the payout.
+ */
 export async function createPaymentIntent(params: {
   bookingId: string
-  amountEur: number
-  listingTitle: string
-  operatorStripeAccountId?: string | null
   accessToken: string
 }): Promise<{ clientSecret: string; payment_intent_id: string }> {
   if (Config.useMock) {
@@ -49,12 +52,7 @@ export async function createPaymentIntent(params: {
         Authorization: `Bearer ${params.accessToken}`,
         apikey: Config.supabaseAnonKey,
       },
-      body: JSON.stringify({
-        booking_id: params.bookingId,
-        amount_eur: params.amountEur,
-        listing_title: params.listingTitle,
-        operator_stripe_account_id: params.operatorStripeAccountId ?? null,
-      }),
+      body: JSON.stringify({ booking_id: params.bookingId }),
     }
   )
 
@@ -66,6 +64,46 @@ export async function createPaymentIntent(params: {
   // Edge Function returns snake_case: { client_secret, payment_intent_id }
   const raw = await res.json() as { client_secret: string; payment_intent_id: string }
   return { clientSecret: raw.client_secret, payment_intent_id: raw.payment_intent_id }
+}
+
+/**
+ * Deposit Model B — creates a SetupIntent that vaults the renter's card on the
+ * platform Stripe Customer (off_session). Confirm the returned client_secret on
+ * the client with the same CardField used for the rental payment. The card is
+ * later charged off_session, capped at the booking's deposit_amount, only if the
+ * operator assesses damage.
+ */
+export async function createDepositSetup(params: {
+  bookingId: string
+  accessToken: string
+}): Promise<{ clientSecret: string; setup_intent_id: string }> {
+  if (Config.useMock) {
+    return {
+      clientSecret: 'seti_mock_secret_' + Date.now(),
+      setup_intent_id: 'seti_mock_' + Date.now(),
+    }
+  }
+
+  const res = await fetch(
+    `${Config.supabaseUrl}/functions/v1/create-deposit-setup`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${params.accessToken}`,
+        apikey: Config.supabaseAnonKey,
+      },
+      body: JSON.stringify({ booking_id: params.bookingId }),
+    }
+  )
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Unknown error' }))
+    throw new Error((err as { error?: string }).error ?? 'Failed to create deposit setup')
+  }
+
+  const raw = await res.json() as { client_secret: string; setup_intent_id: string }
+  return { clientSecret: raw.client_secret, setup_intent_id: raw.setup_intent_id }
 }
 
 export async function createDepositHold(
