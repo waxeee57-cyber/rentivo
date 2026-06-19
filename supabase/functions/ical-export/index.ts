@@ -6,6 +6,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Calendar-injection guard: strip every char outside a safe token set. This removes
+// CR/LF and the RFC 5545 specials (';' ',' '\') so no interpolated value can break
+// out of its line. (The only dynamic values left are a booking UUID and dates.)
+function icalSafe(v: string): string {
+  return String(v ?? '').replace(/[^0-9A-Za-z@._-]/g, '')
+}
+// Dates -> digits only (YYYYMMDD).
+function icalDate(v: string): string {
+  return String(v ?? '').replace(/[^0-9]/g, '').slice(0, 8)
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -20,9 +31,12 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   )
 
+  // PII REMOVED: guest_name is intentionally NOT selected or exported. An external
+  // calendar only needs the blocked date ranges; SUMMARY is a constant 'Unavailable'.
+  // This closes the guest-PII leak even if the feed URL is shared with a third party.
   const { data: bookings, error } = await supabase
     .from('rentivo_bookings')
-    .select('id, start_date, end_date, guest_name, status')
+    .select('id, start_date, end_date')
     .eq('listing_id', listingId)
     .in('status', ['confirmed', 'active', 'completed'])
 
@@ -33,16 +47,15 @@ serve(async (req) => {
   const now = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
 
   const vevents = (bookings ?? []).map((b) => {
-    const uid = `booking-${b.id}@rentivo.domrol.com`
-    const dtstart = b.start_date.replace(/-/g, '')
-    const dtend = b.end_date.replace(/-/g, '')
-    const summary = b.guest_name ? `Booking: ${b.guest_name}` : 'Rentivo Booking'
+    const uid = `booking-${icalSafe(String(b.id))}@rentivo.domrol.com`
+    const dtstart = icalDate(b.start_date)
+    const dtend = icalDate(b.end_date)
     return [
       'BEGIN:VEVENT',
       `UID:${uid}`,
       `DTSTART;VALUE=DATE:${dtstart}`,
       `DTEND;VALUE=DATE:${dtend}`,
-      `SUMMARY:${summary}`,
+      'SUMMARY:Unavailable',
       `DTSTAMP:${now}`,
       'END:VEVENT',
     ].join('\r\n')
@@ -58,11 +71,13 @@ serve(async (req) => {
     'END:VCALENDAR',
   ].join('\r\n')
 
+  const safeName = icalSafe(String(listingId))
+
   return new Response(ical, {
     headers: {
       ...corsHeaders,
       'Content-Type': 'text/calendar; charset=utf-8',
-      'Content-Disposition': `attachment; filename="rentivo-${listingId}.ics"`,
+      'Content-Disposition': `attachment; filename="rentivo-${safeName}.ics"`,
     },
   })
 })
