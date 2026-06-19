@@ -11,7 +11,8 @@
     "test:e2e:smoke": "maestro test .maestro/flows/ --include-tags=smoke",
     "test:e2e:critical": "maestro test .maestro/flows/ --include-tags=critical",
     "test:e2e:single": "maestro test",
-    "test:e2e:record": "maestro record"
+    "test:e2e:record": "maestro record",
+    "itest:payments": "tsx scripts/itest-payments.ts"
   },
   "dependencies": {
     "@babel/plugin-proposal-optional-chaining": "^7.21.0",
@@ -65,6 +66,7 @@
     "@types/react": "~19.1.0",
     "babel-preset-expo": "~54.0.10",
     "sharp": "^0.34.5",
+    "tsx": "^4.22.4",
     "typescript": "~5.9.2"
   },
   "private": true
