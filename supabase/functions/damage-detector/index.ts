@@ -1,9 +1,32 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.24.3'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+async function rateLimited(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  action: string,
+  limit: number,
+  windowSec: number,
+): Promise<boolean> {
+  const since = new Date(Date.now() - windowSec * 1000).toISOString()
+  const { count } = await supabase
+    .from('rate_limits')
+    .select('id', { count: 'exact', head: true })
+    .eq('identifier', userId)
+    .eq('action', action)
+    .gte('window_start', since)
+  if ((count ?? 0) >= limit) return true
+  await supabase.from('rate_limits').insert({ identifier: userId, action })
+  return false
 }
 
 interface DamageDetectionRequest {
@@ -25,22 +48,29 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  )
+
+  const token = (req.headers.get('Authorization') ?? '').replace('Bearer ', '')
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
+  if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
+
+  if (await rateLimited(supabase, user.id, 'damage_detector', 10, 3600)) {
+    return json({ error: 'Rate limit exceeded. Please slow down.' }, 429)
+  }
+
   try {
     const { before_image_url, after_image_url } = await req.json() as DamageDetectionRequest
 
     if (!before_image_url || !after_image_url) {
-      return new Response(
-        JSON.stringify({ error: 'Both before_image_url and after_image_url are required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+      return json({ error: 'Both before_image_url and after_image_url are required' }, 400)
     }
 
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
     if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+      return json({ error: 'ANTHROPIC_API_KEY not configured' }, 500)
     }
 
     const anthropic = new Anthropic({ apiKey })
@@ -99,14 +129,8 @@ serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify(result),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    )
-  } catch (err) {
-    return new Response(
-      JSON.stringify({ error: String(err) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    )
+    return json(result)
+  } catch (_err) {
+    return json({ error: 'Internal error' }, 500)
   }
 })

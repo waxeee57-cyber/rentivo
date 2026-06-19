@@ -1,12 +1,48 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+async function rateLimited(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  action: string,
+  limit: number,
+  windowSec: number,
+): Promise<boolean> {
+  const since = new Date(Date.now() - windowSec * 1000).toISOString()
+  const { count } = await supabase
+    .from('rate_limits')
+    .select('id', { count: 'exact', head: true })
+    .eq('identifier', userId)
+    .eq('action', action)
+    .gte('window_start', since)
+  if ((count ?? 0) >= limit) return true
+  await supabase.from('rate_limits').insert({ identifier: userId, action })
+  return false
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  )
+
+  const token = (req.headers.get('Authorization') ?? '').replace('Bearer ', '')
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
+  if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
+
+  if (await rateLimited(supabase, user.id, 'translate_message', 100, 60)) {
+    return json({ error: 'Rate limit exceeded. Please slow down.' }, 429)
+  }
 
   try {
     const { text, target_language } = await req.json() as {
@@ -15,16 +51,12 @@ serve(async (req) => {
     }
 
     if (!text?.trim()) {
-      return new Response(JSON.stringify({ translated: text }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      return json({ translated: text })
     }
 
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
     if (!anthropicKey) {
-      return new Response(JSON.stringify({ translated: text, error: 'Translation unavailable' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      return json({ translated: text, error: 'Translation unavailable' })
     }
 
     const langNames: Record<string, string> = {
@@ -49,22 +81,14 @@ serve(async (req) => {
     })
 
     if (!resp.ok) {
-      return new Response(JSON.stringify({ translated: text, error: 'Translation failed' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      return json({ translated: text, error: 'Translation failed' })
     }
 
     const data = await resp.json() as { content?: Array<{ text?: string }> }
     const translated = data.content?.[0]?.text?.trim() ?? text
 
-    return new Response(JSON.stringify({ translated }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
-
-  } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return json({ translated })
+  } catch (_err) {
+    return json({ error: 'Internal error' }, 500)
   }
 })

@@ -6,8 +6,43 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+async function rateLimited(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  action: string,
+  limit: number,
+  windowSec: number,
+): Promise<boolean> {
+  const since = new Date(Date.now() - windowSec * 1000).toISOString()
+  const { count } = await supabase
+    .from('rate_limits')
+    .select('id', { count: 'exact', head: true })
+    .eq('identifier', userId)
+    .eq('action', action)
+    .gte('window_start', since)
+  if ((count ?? 0) >= limit) return true
+  await supabase.from('rate_limits').insert({ identifier: userId, action })
+  return false
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  )
+
+  const token = (req.headers.get('Authorization') ?? '').replace('Bearer ', '')
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(token)
+  if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
+
+  if (await rateLimited(supabase, user.id, 'pricing_suggestions', 30, 3600)) {
+    return json({ error: 'Rate limit exceeded. Please slow down.' }, 429)
+  }
 
   try {
     const { listing_id, city, category, current_price } = await req.json() as {
@@ -17,10 +52,30 @@ serve(async (req) => {
       current_price: number
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+    if (!listing_id) return json({ error: 'Missing listing_id' }, 400)
+
+    // ── Ownership: the caller must own the listing (operator or host). This stops
+    //    arbitrary-market probing and binds the aggregate to the caller's own listing.
+    const { data: listing } = await supabase
+      .from('rentivo_listings')
+      .select('owner_type, operator_id, host_id, owner_user_id')
+      .eq('id', listing_id)
+      .maybeSingle()
+    if (!listing) return json({ error: 'Listing not found' }, 404)
+
+    let owns = false
+    if (listing.owner_user_id && listing.owner_user_id === user.id) {
+      owns = true
+    } else if (listing.owner_type === 'host' && listing.host_id) {
+      const { data: h } = await supabase
+        .from('rentivo_hosts').select('auth_id').eq('id', listing.host_id).maybeSingle()
+      owns = h?.auth_id === user.id
+    } else if (listing.operator_id) {
+      const { data: o } = await supabase
+        .from('rentivo_operators').select('auth_id').eq('id', listing.operator_id).maybeSingle()
+      owns = o?.auth_id === user.id
+    }
+    if (!owns) return json({ error: 'Not authorized for this listing' }, 403)
 
     // Get comparable listings in the same category
     const { data: comparables } = await supabase
@@ -66,19 +121,15 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({
+    return json({
       suggested_min: Math.round(minPrice),
       suggested_avg: avgPrice,
       suggested_max: Math.round(maxPrice),
       current_price,
       comparable_count: prices.length,
       insight,
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
-  } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
+  } catch (_err) {
+    return json({ error: 'Internal error' }, 500)
   }
 })
