@@ -17,15 +17,25 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
-
     const sendEmailUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
     // send-email is server-to-server only; forward the shared internal secret.
     const internalSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET') ?? ''
+
+    // ── Fail-closed: this is a cron/internal-only batch blast. Without this gate any
+    //    authenticated user could trigger the full operator drip (denial-of-wallet +
+    //    duplicate spam). The scheduler MUST send the X-Internal-Secret header.
+    const providedSecret = req.headers.get('X-Internal-Secret') ?? ''
+    if (!internalSecret || providedSecret !== internalSecret) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
 
     let totalSent = 0
 

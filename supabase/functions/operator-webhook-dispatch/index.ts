@@ -23,8 +23,26 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
+    // ── Fail-closed authorization: this function signs events with the OPERATOR's
+    //    secret and POSTs them to their integration. It must be callable ONLY by
+    //    trusted server code (cron / other edge fns), never directly by an end user.
+    //    Without this gate any authenticated user could forge correctly-signed
+    //    webhook events to any operator (operator_id is request-body controlled).
+    const internalSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET') ?? ''
+    const providedSecret = req.headers.get('X-Internal-Secret') ?? ''
+    if (!internalSecret || providedSecret !== internalSecret) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const payload = await req.json() as WebhookPayload
     const { operator_id, event, data } = payload
+    if (!operator_id || typeof operator_id !== 'string' || !event || typeof event !== 'string') {
+      return new Response(JSON.stringify({ error: 'Missing operator_id or event' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,

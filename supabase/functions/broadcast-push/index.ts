@@ -30,7 +30,10 @@ serve(async (req) => {
   try {
     const payload = await req.json() as BroadcastPayload
 
-    if (payload.secret !== Deno.env.get('ADMIN_BROADCAST_SECRET')) {
+    // Fail-closed: reject if the server secret is unset/empty OR the caller omits it.
+    // (Previously `payload.secret !== Deno.env.get(...)` passed when both were undefined.)
+    const adminSecret = Deno.env.get('ADMIN_BROADCAST_SECRET') ?? ''
+    if (!adminSecret || !payload.secret || payload.secret !== adminSecret) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
