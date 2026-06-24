@@ -249,7 +249,7 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
               <View style={styles.policyRow}>
                 <View style={styles.policyDot} />
                 <Text style={[styles.policyText, { color: C.textTertiary }]}>
-                  {getCancellationPolicyEmoji(listing.cancellation_policy)} {getCancellationPolicyLabel(listing.cancellation_policy)}
+                  {getCancellationPolicyEmoji(listing.cancellation_policy)} {getCancellationPolicyLabel(listing.cancellation_policy, language)}
                 </Text>
               </View>
             )}

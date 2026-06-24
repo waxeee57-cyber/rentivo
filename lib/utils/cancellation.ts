@@ -1,10 +1,14 @@
 import { differenceInHours } from 'date-fns'
 import type { CancellationPolicy, CancellationResult } from '@/types'
+import { t } from '@/constants/i18n'
+
+type Lang = 'en' | 'es' | 'hu'
 
 export function calculateCancellationRefund(
   policy: CancellationPolicy,
   startDate: string,
   totalAmount: number,
+  language: Lang = 'en',
   now = new Date(),
 ): CancellationResult {
   const start = new Date(startDate)
@@ -13,63 +17,38 @@ export function calculateCancellationRefund(
   switch (policy) {
     case 'flexible':
       if (hoursUntilStart >= 24) {
-        return {
-          refundAmount: totalAmount,
-          refundPercent: 100,
-          message: 'Full refund — cancelled more than 24 hours before pickup',
-        }
+        return { refundAmount: totalAmount, refundPercent: 100, message: t('rcFull24', language) }
       }
-      return {
-        refundAmount: 0,
-        refundPercent: 0,
-        message: 'No refund — cancelled less than 24 hours before pickup',
-      }
+      return { refundAmount: 0, refundPercent: 0, message: t('rcNone24', language) }
 
     case 'moderate':
       if (hoursUntilStart >= 48) {
-        return {
-          refundAmount: totalAmount,
-          refundPercent: 100,
-          message: 'Full refund — cancelled more than 48 hours before pickup',
-        }
+        return { refundAmount: totalAmount, refundPercent: 100, message: t('rcFull48', language) }
       }
       if (hoursUntilStart >= 24) {
         const refund = Math.round(totalAmount * 0.5)
-        return {
-          refundAmount: refund,
-          refundPercent: 50,
-          message: '50% refund — cancelled 24–48 hours before pickup',
-        }
+        return { refundAmount: refund, refundPercent: 50, message: t('rcHalf2448', language) }
       }
-      return {
-        refundAmount: 0,
-        refundPercent: 0,
-        message: 'No refund — cancelled less than 24 hours before pickup',
-      }
+      return { refundAmount: 0, refundPercent: 0, message: t('rcNone24', language) }
 
     case 'strict':
       if (hoursUntilStart >= 72) {
-        return {
-          refundAmount: totalAmount,
-          refundPercent: 100,
-          message: 'Full refund — cancelled more than 72 hours before pickup',
-        }
+        return { refundAmount: totalAmount, refundPercent: 100, message: t('rcFull72', language) }
       }
-      return {
-        refundAmount: 0,
-        refundPercent: 0,
-        message: 'No refund — cancelled less than 72 hours before pickup',
-      }
+      return { refundAmount: 0, refundPercent: 0, message: t('rcNone72', language) }
   }
 }
 
-export function getCancellationPolicyLabel(policy: CancellationPolicy): string {
-  const labels: Record<CancellationPolicy, string> = {
-    flexible: 'Flexible — Free cancellation up to 24h before',
-    moderate: 'Moderate — 50% refund 24–48h before',
-    strict: 'Strict — Full refund only 72h+ before',
+export function getCancellationPolicyLabel(
+  policy: CancellationPolicy,
+  language: Lang = 'en',
+): string {
+  const keys: Record<CancellationPolicy, 'clFlexible' | 'clModerate' | 'clStrict'> = {
+    flexible: 'clFlexible',
+    moderate: 'clModerate',
+    strict: 'clStrict',
   }
-  return labels[policy]
+  return t(keys[policy], language)
 }
 
 export function getCancellationPolicyColor(policy: CancellationPolicy): string {

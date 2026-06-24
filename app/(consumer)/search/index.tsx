@@ -192,7 +192,7 @@ export default function SearchScreen() {
       )}
 
       {/* Category filter */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.categories}>
         <CategoryPill
           label={t('catAll', language)}
           active={selectedCategory === null}
@@ -211,7 +211,7 @@ export default function SearchScreen() {
 
       {/* Sort + Filters bar — only shown in list mode */}
       {viewMode === 'list' && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortBar}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.sortBar}>
           {SORT_OPTION_KEYS.map(opt => (
             <CategoryPill
               key={opt.key}
@@ -370,6 +370,10 @@ function makeStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create(
     borderWidth: 1, borderColor: C.primaryLight,
   },
   trendingChipText: { fontSize: 13, fontWeight: '600', color: C.primaryDark },
+  // Horizontal chip rows must hug their content height; without flexGrow:0 a
+  // horizontal ScrollView expands vertically in the flex column and shoves the
+  // list down (the big empty gap bug).
+  chipScroll: { flexGrow: 0 },
   categories: { paddingHorizontal: 16, paddingVertical: Spacing.sm, alignItems: 'center' },
   sortBar: { paddingHorizontal: 16, paddingVertical: Spacing.sm, alignItems: 'center' },
   trendingLabel: {

@@ -57,11 +57,17 @@ serve(async (req: Request) => {
     const totalChars = messages.reduce((n, m) => n + (typeof m?.content === 'string' ? m.content.length : 0), 0)
     if (totalChars > 8000) return json({ error: 'Input too large' }, 413)
 
+    const apiKey = Deno.env.get('ANTHROPIC_API_KEY') ?? ''
+    if (!apiKey) {
+      console.error('rental-assistant: ANTHROPIC_API_KEY is not set')
+      return json({ error: 'Assistant is not configured (missing API key).' }, 503)
+    }
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': Deno.env.get('ANTHROPIC_API_KEY') ?? '',
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
@@ -72,9 +78,22 @@ serve(async (req: Request) => {
       }),
     })
 
-    const data = await response.json() as { content: Array<{ text: string }> }
-    return json({ response: data.content[0]?.text ?? 'Sorry, I could not process that.' })
-  } catch (_err) {
+    // Surface the real upstream failure instead of an opaque 500.
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '')
+      console.error('rental-assistant: Anthropic API error', response.status, detail.slice(0, 300))
+      return json({ error: 'Assistant upstream error' }, 502)
+    }
+
+    const data = await response.json() as { content?: Array<{ text?: string }> }
+    const text = data.content?.[0]?.text
+    if (!text) {
+      console.error('rental-assistant: unexpected Anthropic response shape')
+      return json({ error: 'Assistant returned no content' }, 502)
+    }
+    return json({ response: text })
+  } catch (err) {
+    console.error('rental-assistant: internal error', err instanceof Error ? err.message : String(err))
     return json({ error: 'Internal error' }, 500)
   }
 })
