@@ -18,7 +18,7 @@ export default function VerifyScreen() {
   const [code, setCode] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const inputs = useRef<(TextInput | null)[]>([])
-  const { role, setSession, setUser } = useAuthStore()
+  const { role, setSession, setUser, setOperator } = useAuthStore()
 
   useEffect(() => {
     AsyncStorage.getItem('pending_otp_phone').then(saved => {
@@ -65,7 +65,20 @@ export default function VerifyScreen() {
       }
       // Route based on role — new users without role check consent first
       if (role === 'operator') {
-        router.replace('/(operator)/dashboard')
+        // Operator must have a rentivo_operators row (keyed on auth_id = auth.uid())
+        // before the dashboard/payout flow works. Load it if present, else send the
+        // user to the setup form that creates it — never drop them on an empty dashboard.
+        const { data: op } = await supabase
+          .from('rentivo_operators')
+          .select('*')
+          .eq('auth_id', data.session!.user.id)
+          .maybeSingle()
+        if (op) {
+          setOperator(op as unknown as Parameters<typeof setOperator>[0])
+          router.replace('/(operator)/dashboard')
+        } else {
+          router.replace('/auth/operator-setup')
+        }
       } else if (role === 'host') {
         router.replace('/(host)/dashboard')
       } else if (role === 'consumer') {

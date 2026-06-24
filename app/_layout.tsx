@@ -119,7 +119,7 @@ function RootLayoutInner() {
       void SplashScreen.hideAsync()
     }
   }, [fontsLoaded, fontError])
-  const { setSession, setUser, session, role, language } = useAuthStore()
+  const { setSession, setUser, setOperator, setHost, session, role, language } = useAuthStore()
   const { setPushToken, setUnreadCount, unreadCount } = useNotificationStore()
   const [gdprAccepted, setGdprAccepted] = useState<boolean | null>(null)
   const pathname = usePathname()
@@ -137,6 +137,8 @@ function RootLayoutInner() {
     setSession(s)
     if (!s) {
       setUser(null)
+      setOperator(null)
+      setHost(null)
       return
     }
     const uid = (s as Record<string, unknown> & { user?: { id?: string } }).user?.id
@@ -149,7 +151,21 @@ function RootLayoutInner() {
     if (profile) {
       setUser(profile as RentivoUser)
     }
-  }, [setSession, setUser])
+    // Hydrate operator/host records so the dashboard is populated on any device
+    // (keyed on auth_id = auth.uid(); RLS scopes each read to the caller's own row).
+    const { data: op } = await supabase
+      .from('rentivo_operators')
+      .select('*')
+      .eq('auth_id', uid)
+      .maybeSingle()
+    setOperator(op ? (op as unknown as Parameters<typeof setOperator>[0]) : null)
+    const { data: hostRow } = await supabase
+      .from('rentivo_hosts')
+      .select('*')
+      .eq('auth_id', uid)
+      .maybeSingle()
+    setHost(hostRow ? (hostRow as unknown as Parameters<typeof setHost>[0]) : null)
+  }, [setSession, setUser, setOperator, setHost])
 
   // Supabase auth — restore session on startup and keep in sync
   useEffect(() => {

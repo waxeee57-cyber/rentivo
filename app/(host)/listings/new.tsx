@@ -105,7 +105,7 @@ export default function NewHostListingScreen() {
       const { data: hostRecord } = await supabase
         .from('rentivo_hosts')
         .select('id')
-        .eq('user_id', session.user.id)
+        .eq('auth_id', session.user.id)
         .maybeSingle()
 
       if (!hostRecord?.id) {
