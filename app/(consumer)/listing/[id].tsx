@@ -402,7 +402,7 @@ export default function ListingDetailScreen() {
             <Text style={styles.sectionTitle}>{t('cancellationPolicy', language)}</Text>
             <View style={styles.policyBadge}>
               <Text style={styles.policyBadgeText}>
-                {getCancellationPolicyEmoji(policy)} {getCancellationPolicyLabel(policy)}
+                {getCancellationPolicyEmoji(policy)} {getCancellationPolicyLabel(policy, language)}
               </Text>
             </View>
           </View>

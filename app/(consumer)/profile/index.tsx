@@ -39,7 +39,7 @@ export default function ProfileScreen() {
         ? new Date(user.created_at).getFullYear().toString()
         : operator?.created_at
           ? new Date(operator.created_at).getFullYear().toString()
-          : '—')
+          : null)
 
   const userId = Config.useMock ? 'usr-001' : (user?.id ?? null)
   const { bookings } = useBookings(userId)
@@ -126,9 +126,11 @@ export default function ProfileScreen() {
           <Avatar name={name} imageUrl={avatarUrl} size={72} />
           <Text style={[styles.name, { color: C.text }]}>{name}</Text>
           <Text style={[styles.email, { color: C.textSecondary }]}>{email}</Text>
-          <Text style={[styles.memberSince, { color: C.textTertiary }]}>
-            {t('memberSinceLabel', language)} {memberSince}
-          </Text>
+          {memberSince ? (
+            <Text style={[styles.memberSince, { color: C.textTertiary }]}>
+              {t('memberSinceLabel', language)} {memberSince}
+            </Text>
+          ) : null}
 
           {/* Stats row */}
           <View style={[styles.statsRow, { backgroundColor: C.surface }]}>
