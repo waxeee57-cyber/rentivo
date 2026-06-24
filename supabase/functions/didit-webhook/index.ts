@@ -3,8 +3,19 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-signature',
 }
+
+// Didit signs each webhook callback with HMAC-SHA256 over the RAW request body,
+// using the Webhook Secret from the Didit console, sent (hex) in the `x-signature`
+// header. We recompute the HMAC and compare in constant time BEFORE trusting or
+// persisting anything — without this, a forged POST could write a fake "Approved"
+// KYC status. Crypto pattern mirrors operator-webhook-dispatch/index.ts.
+//
+// ⚠️ Confirm the exact header name + signing scheme against the current Didit
+//    dashboard/webhook docs before go-live; adjust SIGNATURE_HEADER if Didit uses
+//    a different header (the verification logic itself stays the same).
+const SIGNATURE_HEADER = 'x-signature'
 
 interface DiditDocument {
   type?: string
@@ -35,14 +46,58 @@ const STATUS_MAP: Record<string, string> = {
   'Expired': 'expired',
 }
 
+// Constant-time hex string comparison — avoids leaking match length via timing.
+function timingSafeEqualHex(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let mismatch = 0
+  for (let i = 0; i < a.length; i++) {
+    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  }
+  return mismatch === 0
+}
+
+async function hmacHex(secret: string, body: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+  )
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(body))
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Fail-safe: a missing secret means we cannot verify anything, so we reject
+  // every request rather than accept unsigned callbacks. Secure default = closed.
+  const webhookSecret = Deno.env.get('DIDIT_WEBHOOK_SECRET')
+  if (!webhookSecret) {
+    return new Response(
+      JSON.stringify({ error: 'Webhook secret not configured' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
+  }
+
+  // Read the RAW body — HMAC must be computed over the exact bytes Didit signed,
+  // not a re-serialized JSON object.
+  const rawBody = await req.text()
+
+  // Verify the signature BEFORE parsing or persisting anything.
+  const provided = req.headers.get(SIGNATURE_HEADER) ?? ''
+  const normalized = (provided.startsWith('sha256=') ? provided.slice(7) : provided).toLowerCase()
+  const expected = await hmacHex(webhookSecret, rawBody)
+  if (!normalized || !timingSafeEqualHex(normalized, expected)) {
+    return new Response(
+      JSON.stringify({ error: 'Invalid signature' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
+  }
+
   let body: DiditWebhookPayload
   try {
-    body = await req.json() as DiditWebhookPayload
+    body = JSON.parse(rawBody) as DiditWebhookPayload
   } catch {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
       status: 400,
@@ -52,7 +107,7 @@ serve(async (req) => {
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    (Deno.env.get('SB_SECRET_KEY') ?? Deno.env.get('SUPABASE_SECRET_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) ?? '',
   )
 
   const { session_id, status, vendor_data: userId, document, face } = body

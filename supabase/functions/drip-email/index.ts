@@ -18,7 +18,7 @@ serve(async (req) => {
 
   try {
     const sendEmailUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const anonKey = (Deno.env.get('SB_PUBLISHABLE_KEY') ?? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY'))!
     // send-email is server-to-server only; forward the shared internal secret.
     const internalSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET') ?? ''
 
@@ -34,7 +34,7 @@ serve(async (req) => {
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      (Deno.env.get('SB_SECRET_KEY') ?? Deno.env.get('SUPABASE_SECRET_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))!
     )
 
     let totalSent = 0
