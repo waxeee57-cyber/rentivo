@@ -25,6 +25,8 @@ async function rateLimited(
     .gte('window_start', since)
   if ((count ?? 0) >= limit) return true
   await supabase.from('rate_limits').insert({ identifier: userId, action })
+  // Opportunistic cleanup (no pg_cron installed): drop this identifier+action's expired rows.
+  await supabase.from('rate_limits').delete().eq('identifier', userId).eq('action', action).lt('window_start', since)
   return false
 }
 
@@ -52,6 +54,10 @@ serve(async (req) => {
 
     if (!text?.trim()) {
       return json({ translated: text })
+    }
+    // Input-size cap — denial-of-wallet defense in addition to the rate limit.
+    if (typeof text === 'string' && text.length > 5000) {
+      return json({ error: 'Text too long' }, 413)
     }
 
     const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')

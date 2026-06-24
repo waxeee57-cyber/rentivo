@@ -26,6 +26,8 @@ async function rateLimited(
     .gte('window_start', since)
   if ((count ?? 0) >= limit) return true
   await supabase.from('rate_limits').insert({ identifier: userId, action })
+  // Opportunistic cleanup (no pg_cron installed): drop this identifier+action's expired rows.
+  await supabase.from('rate_limits').delete().eq('identifier', userId).eq('action', action).lt('window_start', since)
   return false
 }
 
@@ -66,6 +68,11 @@ serve(async (req) => {
 
     if (!before_image_url || !after_image_url) {
       return json({ error: 'Both before_image_url and after_image_url are required' }, 400)
+    }
+    // Input cap + scheme allowlist (Anthropic fetches these URLs; keep them https + bounded).
+    if (before_image_url.length > 2048 || after_image_url.length > 2048 ||
+        !/^https:\/\//i.test(before_image_url) || !/^https:\/\//i.test(after_image_url)) {
+      return json({ error: 'Invalid image URL' }, 400)
     }
 
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY')

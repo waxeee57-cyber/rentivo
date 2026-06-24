@@ -25,6 +25,8 @@ async function rateLimited(
     .gte('window_start', since)
   if ((count ?? 0) >= limit) return true
   await supabase.from('rate_limits').insert({ identifier: userId, action })
+  // Opportunistic cleanup (no pg_cron installed): drop this identifier+action's expired rows.
+  await supabase.from('rate_limits').delete().eq('identifier', userId).eq('action', action).lt('window_start', since)
   return false
 }
 
@@ -53,6 +55,10 @@ serve(async (req) => {
     }
 
     if (!listing_id) return json({ error: 'Missing listing_id' }, 400)
+    // Input-size cap on free-text fields interpolated into the prompt.
+    if ((city && String(city).length > 100) || (category && String(category).length > 100)) {
+      return json({ error: 'Input too long' }, 400)
+    }
 
     // ── Ownership: the caller must own the listing (operator or host). This stops
     //    arbitrary-market probing and binds the aggregate to the caller's own listing.

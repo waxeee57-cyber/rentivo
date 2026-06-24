@@ -26,6 +26,8 @@ async function rateLimited(
     .gte('window_start', since)
   if ((count ?? 0) >= limit) return true
   await supabase.from('rate_limits').insert({ identifier: userId, action })
+  // Opportunistic cleanup (no pg_cron installed): drop this identifier+action's expired rows.
+  await supabase.from('rate_limits').delete().eq('identifier', userId).eq('action', action).lt('window_start', since)
   return false
 }
 
@@ -47,6 +49,13 @@ serve(async (req: Request) => {
 
   try {
     const { messages } = await req.json() as { messages: Array<{ role: string; content: string }> }
+
+    // Input-size cap — denial-of-wallet defense in addition to the rate limit.
+    if (!Array.isArray(messages) || messages.length === 0 || messages.length > 30) {
+      return json({ error: 'Invalid or oversized messages' }, 400)
+    }
+    const totalChars = messages.reduce((n, m) => n + (typeof m?.content === 'string' ? m.content.length : 0), 0)
+    if (totalChars > 8000) return json({ error: 'Input too large' }, 413)
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

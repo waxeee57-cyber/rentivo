@@ -43,13 +43,14 @@ serve(async (req) => {
           break
         }
 
-        // Rental payment.
+        // Rental payment. Guard against Stripe event re-delivery: only transition a
+        // not-yet-paid booking so paid_at / stripe_charge_id are not churned on retries.
         await supabase.from('rentivo_bookings').update({
           payment_status: 'paid',
           status: 'confirmed',
           paid_at: new Date().toISOString(),
           stripe_charge_id: typeof pi.latest_charge === 'string' ? pi.latest_charge : null,
-        }).eq('id', bookingId)
+        }).eq('id', bookingId).neq('payment_status', 'paid')
         break
       }
       case 'payment_intent.payment_failed': {
@@ -90,13 +91,14 @@ serve(async (req) => {
       }
       case 'account.updated': {
         const account = event.data.object as Stripe.Account
-        if (account.charges_enabled && account.payouts_enabled) {
-          // Owner can be an operator OR a host — update whichever row matches.
-          await supabase.from('rentivo_operators')
-            .update({ stripe_onboarded: true }).eq('stripe_account_id', account.id)
-          await supabase.from('rentivo_hosts')
-            .update({ stripe_onboarded: true }).eq('stripe_account_id', account.id)
-        }
+        // Reflect the CURRENT capability state in BOTH directions: if Stripe later
+        // disables the account (KYC lapse / capability revoked), revert stripe_onboarded
+        // to false so create-payment-intent stops routing payouts to a dead account.
+        const onboarded = !!(account.charges_enabled && account.payouts_enabled)
+        await supabase.from('rentivo_operators')
+          .update({ stripe_onboarded: onboarded }).eq('stripe_account_id', account.id)
+        await supabase.from('rentivo_hosts')
+          .update({ stripe_onboarded: onboarded }).eq('stripe_account_id', account.id)
         break
       }
     }
