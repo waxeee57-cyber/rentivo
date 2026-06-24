@@ -24,6 +24,15 @@ interface ConnectAccount {
   stripe_onboarded: boolean | null
 }
 
+// ── Authoritative price model — MIRRORS lib/utils/bookingPricing.ts and the
+//    create-booking edge function (keep INSURANCE_PRICES in sync with
+//    types/index.ts INSURANCE_PACKAGES). Insurance is the ONLY booking input not
+//    persisted as its own column, so we reconstruct the total for each tier and
+//    accept the persisted total ONLY if it matches one of them to the cent.
+const INSURANCE_PRICES: Record<string, number> = { basic: 0, standard: 9.99, premium: 19.99 }
+const round2 = (n: number) => Math.round(n * 100) / 100
+const numOr0 = (v: unknown) => { const n = Number(v); return Number.isFinite(n) ? n : 0 }
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -41,19 +50,20 @@ serve(async (req) => {
   if (authError || !user) return jsonError('Unauthorized', 401)
 
   try {
-    // CONTRACT: the client sends ONLY booking_id. The charge amount and the
-    // destination Connect account are both derived server-side from the persisted
-    // booking/listing — a tampered client can neither dictate the amount nor
-    // redirect the payout.
+    // CONTRACT: the client sends ONLY booking_id. The charge amount, currency, and
+    // destination Connect account are all derived server-side — a tampered client
+    // can neither dictate the amount nor redirect the payout.
     const { booking_id } = await req.json()
     if (!booking_id || typeof booking_id !== 'string') {
       return jsonError('Missing booking_id', 400)
     }
 
-    // ── Load the booking with the service-role client (bypasses RLS).
+    // ── Load the booking with the service-role client (bypasses RLS). The money
+    //    columns are loaded ONLY to cross-check against the server reconstruction,
+    //    never to source the charge.
     const { data: booking, error: bookingError } = await supabase
       .from('rentivo_bookings')
-      .select('id, user_id, listing_id, start_date, end_date, total_amount, currency, status, payment_status, payment_intent_id, promo_code')
+      .select('id, user_id, listing_id, start_date, end_date, total_amount, status, payment_status, payment_intent_id, promo_code, rental_type, total_hours')
       .eq('id', booking_id)
       .maybeSingle()
 
@@ -63,8 +73,8 @@ serve(async (req) => {
     // Ownership: the caller must be the traveler who owns this booking.
     if (booking.user_id !== user.id) return jsonError('Booking does not belong to caller', 403)
 
-    // ── Idempotency: if this booking already has a PaymentIntent, return its
-    //    client_secret instead of creating a second intent (double-charge guard).
+    // Idempotency: if this booking already has a PaymentIntent, return its
+    // client_secret instead of creating a second intent (double-charge guard).
     if (booking.payment_intent_id) {
       const existing = await stripe.paymentIntents.retrieve(booking.payment_intent_id)
       return new Response(
@@ -73,17 +83,17 @@ serve(async (req) => {
       )
     }
 
-    // ── State guard: only an unpaid booking may open a fresh intent.
+    // State guard: only an unpaid booking may open a fresh intent.
     if (booking.status === 'cancelled') return jsonError('Booking is cancelled', 409)
     if (booking.payment_status === 'captured' || booking.payment_status === 'paid') {
       return jsonError('Booking is already paid', 409)
     }
 
-    // ── Destination account + pricing inputs: derived from the LISTING, never the body.
+    // ── Pricing inputs + destination: from the LISTING, never the body/booking row.
     const { data: listing, error: listingError } = await supabase
       .from('rentivo_listings')
       .select(
-        'id, title, owner_type, price_per_day, price_per_week, hourly_rental_enabled, operator:rentivo_operators(stripe_account_id, stripe_onboarded), host:rentivo_hosts(stripe_account_id, stripe_onboarded)'
+        'id, title, owner_type, price_per_day, price_per_week, price_per_hour, deposit_amount, hourly_rental_enabled, operator:rentivo_operators(stripe_account_id, stripe_onboarded), host:rentivo_hosts(stripe_account_id, stripe_onboarded)'
       )
       .eq('id', booking.listing_id)
       .maybeSingle()
@@ -91,6 +101,103 @@ serve(async (req) => {
     if (listingError) return jsonError('Failed to load listing', 500)
     if (!listing) return jsonError('Listing not found', 404)
 
+    // ── SERVER-AUTHORITATIVE AMOUNT (the fix). Recompute the rental price from the
+    //    LISTING + the booking's dates / rental_type / total_hours, exactly as
+    //    create-booking does, re-validate the promo, and accept the persisted
+    //    total_amount ONLY if it equals a reconstructed tier total to the cent.
+    //    The charge is ALWAYS the server-derived value — never booking.total_amount.
+    const platformCut = parseFloat(Deno.env.get('PLATFORM_CUT') ?? '0.10')
+    const MS_PER_DAY = 86400000
+    const startMs = new Date(booking.start_date).getTime()
+    const endMs = new Date(booking.end_date).getTime()
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs < startMs) {
+      return jsonError('Invalid booking date range', 400)
+    }
+    const days = Math.max(1, Math.round((endMs - startMs) / MS_PER_DAY))
+    const rentalType = booking.rental_type === 'hourly' ? 'hourly' : 'daily'
+
+    const perDay = numOr0(listing.price_per_day)
+    const perWeek = listing.price_per_week != null ? numOr0(listing.price_per_week) : null
+    const perHour = listing.price_per_hour != null ? numOr0(listing.price_per_hour) : null
+
+    let serverSubtotal: number
+    let serverFee: number
+    if (rentalType === 'hourly') {
+      if (listing.hourly_rental_enabled !== true || !perHour || perHour <= 0 || numOr0(booking.total_hours) < 1) {
+        return jsonError('Hourly rental is not available for this listing or total_hours is invalid', 400)
+      }
+      serverSubtotal = round2(perHour * Math.max(1, Math.floor(numOr0(booking.total_hours))))
+      serverFee = 0
+    } else if (perWeek && perWeek > 0 && days >= 7) {
+      serverSubtotal = round2(Math.floor(days / 7) * perWeek + (days % 7) * perDay)
+      serverFee = Math.round(serverSubtotal * platformCut)
+    } else {
+      serverSubtotal = round2(days * perDay)
+      serverFee = Math.round(serverSubtotal * platformCut)
+    }
+
+    // Re-validate the promo SERVER-side; never trust the client-written promo_discount.
+    let promo: { discount_type: string; discount_value: number; min_booking_value: number } | null = null
+    if (booking.promo_code) {
+      const { data: p } = await supabase
+        .from('rentivo_promo_codes')
+        .select('discount_type, discount_value, max_uses, current_uses, valid_until, min_booking_value')
+        .eq('code', String(booking.promo_code).toUpperCase().trim())
+        .maybeSingle()
+      if (
+        p &&
+        Number(p.current_uses) < Number(p.max_uses) &&
+        (!p.valid_until || new Date(p.valid_until) >= new Date())
+      ) {
+        promo = {
+          discount_type: String(p.discount_type),
+          discount_value: numOr0(p.discount_value),
+          min_booking_value: numOr0(p.min_booking_value),
+        }
+      }
+    }
+
+    // Reconstruct the authoritative total for each insurance tier and accept the
+    // persisted total only if it matches one to the cent (TOLERANCE = rounding).
+    const clientTotal = round2(numOr0(booking.total_amount))
+    const TOLERANCE_EUR = 0.01
+    let authoritativeTotal: number | null = null
+    let matchedInsurance = 0
+    let matchedDiscount = 0
+    for (const tier of Object.keys(INSURANCE_PRICES)) {
+      const insurance = round2(INSURANCE_PRICES[tier] * days)
+      const baseTotal = round2(serverSubtotal + serverFee + insurance)
+      let discount = 0
+      if (promo && baseTotal >= promo.min_booking_value) {
+        discount = promo.discount_type === 'percent'
+          ? round2((baseTotal * promo.discount_value) / 100)
+          : Math.min(promo.discount_value, baseTotal)
+      }
+      const candidate = Math.max(0, round2(baseTotal - discount))
+      if (Math.abs(candidate - clientTotal) <= TOLERANCE_EUR) {
+        authoritativeTotal = candidate
+        matchedInsurance = insurance
+        matchedDiscount = discount
+        break
+      }
+    }
+
+    // Defense-in-depth: a persisted total that matches no server-derived tier is
+    // tampered or stale — reject cleanly, never silently charge a mismatch.
+    if (authoritativeTotal === null) {
+      return jsonError(
+        `Booking amount (${clientTotal.toFixed(2)}) does not match the server-derived rental price. Please re-create the booking.`,
+        400
+      )
+    }
+
+    // The charge is the SERVER-reconstructed value (not booking.total_amount).
+    const amountCents = Math.round(authoritativeTotal * 100)
+    if (!Number.isFinite(amountCents) || amountCents <= 0) {
+      return jsonError('Invalid booking amount', 400)
+    }
+
+    // ── Destination account: derived from the listing owner, never the body.
     const owner = (listing.owner_type === 'host'
       ? listing.host
       : listing.operator) as ConnectAccount | null
@@ -100,68 +207,10 @@ serve(async (req) => {
       return jsonError('Owner is not set up to receive payments', 400)
     }
 
-    // ── Server-authoritative rental FLOOR. The charge must NOT undercut the price
-    //    derived from the LISTING + booking dates (minus a re-validated promo). The
-    //    booking row's total_amount/subtotal/price_per_day are client-written at INSERT
-    //    (the financial guard only covers UPDATE), so they cannot be trusted as the
-    //    charge source. A client may pad ABOVE this floor (e.g. insurance add-ons),
-    //    but never below it — this is what stops a tampered total_amount=0.50.
-    const platformCut = parseFloat(Deno.env.get('PLATFORM_CUT') ?? '0.10')
-    const MS_PER_DAY = 86400000
-    const days = Math.max(1, Math.round(
-      (new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / MS_PER_DAY
-    ))
-    const perDay = Number(listing.price_per_day) || 0
-    const perWeek = listing.price_per_week != null ? Number(listing.price_per_week) : null
-    let serverSubtotal = days * perDay
-    if (perWeek && perWeek > 0 && days >= 7) {
-      const weeks = Math.floor(days / 7)
-      serverSubtotal = weeks * perWeek + (days % 7) * perDay
-    }
-    const serverFee = Math.round(serverSubtotal * platformCut)
-
-    // Re-validate the promo SERVER-side; never trust the client-written promo_discount.
-    let serverDiscount = 0
-    if (booking.promo_code) {
-      const { data: promo } = await supabase
-        .from('rentivo_promo_codes')
-        .select('discount_type, discount_value, max_uses, current_uses, valid_until')
-        .eq('code', String(booking.promo_code).toUpperCase().trim())
-        .maybeSingle()
-      if (
-        promo &&
-        Number(promo.current_uses) < Number(promo.max_uses) &&
-        (!promo.valid_until || new Date(promo.valid_until) >= new Date())
-      ) {
-        const base = serverSubtotal + serverFee
-        serverDiscount = promo.discount_type === 'percent'
-          ? Math.round((base * Number(promo.discount_value)) / 100 * 100) / 100
-          : Math.min(Number(promo.discount_value), base)
-      }
-    }
-
-    const TOLERANCE_EUR = 1
-    const clientTotal = Number(booking.total_amount)
-    const rentalFloor = serverSubtotal + serverFee - serverDiscount - TOLERANCE_EUR
-    // Hourly rentals are not yet reconstructable from the booking row (no persisted
-    // rental_type/total_hours; currently 0 listings are hourly-enabled). Skip the floor
-    // for hourly-enabled listings rather than risk a false reject. Daily/weekly are
-    // fully validated. A misconfigured (price 0) listing also skips the floor.
-    const skipFloor = listing.hourly_rental_enabled === true || serverSubtotal <= 0
-    if (!skipFloor && clientTotal < rentalFloor) {
-      return jsonError(
-        `Booking amount (${clientTotal.toFixed(2)}) is below the server-derived rental price (min ${Math.max(0, rentalFloor).toFixed(2)}).`,
-        400
-      )
-    }
-
-    // Authoritative charge amount: the floor-validated total (>= server rental price).
-    const amountCents = Math.round(clientTotal * 100)
-    if (!Number.isFinite(amountCents) || amountCents <= 0) {
-      return jsonError('Invalid booking amount', 400)
-    }
     const platformFeeCents = Math.round(amountCents * platformCut)
-    const currency = (typeof booking.currency === 'string' ? booking.currency : 'EUR').toLowerCase()
+    // Currency is server-fixed (EUR-only platform); never trust booking.currency —
+    // a zero-decimal currency (KRW/JPY/VND) would otherwise re-denominate the charge.
+    const currency = 'eur'
 
     const paymentIntent = await stripe.paymentIntents.create(
       {
@@ -180,9 +229,23 @@ serve(async (req) => {
       { idempotencyKey: `rentivo_pi_${booking_id}` }
     )
 
+    // ── Heal the booking's financial columns to the SERVER-authoritative values at
+    //    payment time (service_role bypasses the BEFORE-UPDATE financial guard). This
+    //    persists the exact charged total AND corrects the deposit to the tier the
+    //    charge accepted — closing the client-insertable deposit_amount waiver
+    //    (basic rental + deposit_amount=0) before create-deposit-setup reads it.
+    const expectedDeposit = matchedInsurance > 0 ? 0 : numOr0(listing.deposit_amount)
     await supabase
       .from('rentivo_bookings')
-      .update({ payment_intent_id: paymentIntent.id })
+      .update({
+        payment_intent_id: paymentIntent.id,
+        currency: 'EUR',
+        subtotal: serverSubtotal,
+        platform_fee: serverFee,
+        promo_discount: matchedDiscount,
+        total_amount: authoritativeTotal,
+        deposit_amount: expectedDeposit,
+      })
       .eq('id', booking_id)
 
     return new Response(

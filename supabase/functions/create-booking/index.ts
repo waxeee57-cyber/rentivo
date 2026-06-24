@@ -151,7 +151,10 @@ serve(async (req) => {
 
     if (existing?.id) {
       await supabase.from('rentivo_bookings').update({
-        total_days: days, price_per_day: perDay, subtotal, platform_fee: platformFee,
+        total_days: days,
+        rental_type: rentalType,
+        total_hours: rentalType === 'hourly' ? Math.max(1, Math.floor(numOr0(total_hours))) : null,
+        price_per_day: perDay, subtotal, platform_fee: platformFee,
         total_amount: totalAmount, deposit_amount: depositAmount,
         promo_code: appliedPromoCode, promo_discount: promoDiscount,
         guest_name, guest_email, guest_phone, guest_nationality, driver_license_no,
@@ -172,6 +175,8 @@ serve(async (req) => {
         user_id: user.id,
         guest_name, guest_email, guest_phone, guest_nationality, driver_license_no,
         start_date, end_date, total_days: days,
+        rental_type: rentalType,
+        total_hours: rentalType === 'hourly' ? Math.max(1, Math.floor(numOr0(total_hours))) : null,
         pickup_time, return_time, pickup_location,
         price_per_day: perDay,
         subtotal,
