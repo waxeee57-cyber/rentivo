@@ -284,39 +284,27 @@ export default function BookingFlowScreen() {
           return
         }
 
+        // Server-authoritative: the client sends only booking parameters — never money.
+        // create-booking derives subtotal/platform_fee/total_amount/deposit_amount from
+        // the listing + these inputs (the client-side priceCalc above is display-only).
         const booking = await createBooking({
           listing_id: listing.id,
-          operator_id: listing.operator_id,
-          user_id: session.user.id,
+          start_date: format(startDate, 'yyyy-MM-dd'),
+          end_date: format(endDate, 'yyyy-MM-dd'),
+          rental_type: rentalType,
+          total_hours: rentalType === 'hourly' ? totalHours : null,
+          insurance_id: insurancePackage,
+          promo_code: promoApplied ? promoCode : null,
           guest_name: guestName.trim(),
           guest_email: guestEmail.trim() || null,
           guest_phone: guestPhone.trim(),
           guest_nationality: null,
           driver_license_no: null,
-          start_date: format(startDate, 'yyyy-MM-dd'),
-          end_date: format(endDate, 'yyyy-MM-dd'),
-          total_days: totalDays,
           pickup_time: pickupTime,
           return_time: null,
           pickup_location: null,
-          price_per_day: listing.price_per_day,
-          subtotal: priceCalc.subtotal,
-          platform_fee: priceCalc.platformFee,
-          total_amount: grandTotal,
-          deposit_amount: effectiveDeposit,
-          currency: 'EUR',
-          status: 'pending',
-          payment_status: 'pending',
-          payment_intent_id: null,
-          paid_at: null,
-          contract_signed_at: null,
-          contract_url: null,
-          consumer_signature: null,
-          operator_signature: null,
           notes: notes.trim() || null,
           flight_number: flightNumber.trim() || null,
-          promo_code: promoApplied ? promoCode : null,
-          promo_discount: promoDiscount,
         })
         bookingId = booking.id
 
