@@ -29,7 +29,7 @@ export default function HostProfileScreen() {
   const responseRate = hostData?.response_rate ?? 100
   const memberSince = hostData?.member_since
     ? new Date(hostData.member_since).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
-    : '—'
+    : null
 
   const [totalEarned, setTotalEarned] = useState(Config.useMock ? 63000 : 0)
 
@@ -76,7 +76,9 @@ export default function HostProfileScreen() {
             <Text style={styles.ratingDot}>·</Text>
             <Text style={styles.reviewCount}>{reviewCount} reviews</Text>
           </View>
-          <Text style={styles.memberSince}>Member since {memberSince}</Text>
+          {memberSince ? (
+            <Text style={styles.memberSince}>{t('memberSinceLabel', language)} {memberSince}</Text>
+          ) : null}
           {hostData?.verified && (
             <View style={styles.verifiedBadge}>
               <Text style={styles.verifiedText}>✓ {t('verifiedHost', language)}</Text>

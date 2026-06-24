@@ -286,6 +286,9 @@ export default function ExploreScreen() {
     : 'Dates'
 
   const searchBarTop = insets.top + 8
+  // Hide the floating filter + map/list toggle while a preview card is up, so they
+  // never paint or intercept touches over the ListingPreviewSheet (iOS z-order).
+  const previewOpen = viewMode === 'map' && selectedListing != null
   const isLoading = source === 'all' ? allSourceLoading : loading
   const showDiscovery = displayListings.length === 0 && !isLoading && !error
 
@@ -341,7 +344,8 @@ export default function ExploreScreen() {
       </View>
 
       {/* Floating category filter */}
-      <View style={[styles.categoryBar, { bottom: insets.bottom + 90 }]}>
+      {!previewOpen && (
+      <View style={[styles.categoryBar, { bottom: Spacing.base }]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -384,10 +388,12 @@ export default function ExploreScreen() {
           ))}
         </ScrollView>
       </View>
+      )}
 
       {/* Map/List toggle */}
+      {!previewOpen && (
       <TouchableOpacity
-        style={[styles.toggleBtn, { bottom: insets.bottom + 142 }]}
+        style={[styles.toggleBtn, { bottom: Spacing.base + 56 }]}
         onPress={() => {
           void impactAsync(ImpactFeedbackStyle.Light)
           setViewMode(v => v === 'map' ? 'list' : 'map')
@@ -400,6 +406,7 @@ export default function ExploreScreen() {
           {viewMode === 'map' ? '≡ List' : '⊕ Map'}
         </Text>
       </TouchableOpacity>
+      )}
 
       {/* Listing preview (map mode) */}
       {viewMode === 'map' && selectedListing && (
