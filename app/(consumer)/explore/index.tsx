@@ -94,7 +94,9 @@ export default function ExploreScreen() {
   const { language } = useAuthStore()
   const isDark = useThemeStore(s => s.isDark)
   const C = useColors()
-  const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
+  // Default to list when maps are gated off (no native key) — the map layer below
+  // is absoluteFill and would otherwise mount a crashing <MapView> regardless of mode.
+  const [viewMode, setViewMode] = useState<'map' | 'list'>(Config.mapsEnabled ? 'map' : 'list')
   const [selectedCategory, setSelectedCategory] = useState<RentalCategory | null>(null)
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
   const [cityName, setCityName] = useState('Marbella')
@@ -296,7 +298,7 @@ export default function ExploreScreen() {
     <View style={styles.container}>
       {/* Map layer */}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: mapOpacity }]}>
-        {Platform.OS !== 'web' && MapView ? (
+        {Platform.OS !== 'web' && MapView && Config.mapsEnabled ? (
           <MapView
             ref={mapRef}
             style={StyleSheet.absoluteFill}
@@ -390,8 +392,8 @@ export default function ExploreScreen() {
       </View>
       )}
 
-      {/* Map/List toggle */}
-      {!previewOpen && (
+      {/* Map/List toggle — hidden when maps are gated off (list-only build) */}
+      {!previewOpen && Config.mapsEnabled && (
       <TouchableOpacity
         style={[styles.toggleBtn, { bottom: Spacing.base + 56 }]}
         onPress={() => {
@@ -402,9 +404,12 @@ export default function ExploreScreen() {
         accessibilityLabel={viewMode === 'map' ? 'Switch to list view' : 'Switch to map view'}
         accessibilityRole="button"
       >
-        <Text style={styles.toggleText}>
-          {viewMode === 'map' ? '≡ List' : '⊕ Map'}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name={viewMode === 'map' ? 'list' : 'map'} size={16} color={C.text} />
+          <Text style={styles.toggleText}>
+            {viewMode === 'map' ? 'List' : 'Map'}
+          </Text>
+        </View>
       </TouchableOpacity>
       )}
 

@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useMemo } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, View, Text } from 'react-native'
 import MapView, { Region } from 'react-native-maps'
 import { ListingMarker } from '@/components/map/ListingMarker'
 import { ListingPreviewSheet } from '@/components/map/ListingPreviewSheet'
 import type { Listing } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import { Config } from '@/constants/config'
 
 interface Props {
   listings: Listing[]
@@ -41,6 +42,18 @@ export default function ListingsMap({ listings, initialRegion }: Props) {
     [listings],
   )
 
+  // Maps gate: never mount <MapView> without a native Google Maps key — it would
+  // hard-crash the app. Render a safe placeholder instead (maps are not required
+  // for the booking/payment flow). See Config.mapsEnabled.
+  if (!Config.mapsEnabled) {
+    return (
+      <View style={[styles.container, styles.fallback]}>
+        <Text style={styles.fallbackEmoji}>🗺️</Text>
+        <Text style={styles.fallbackText}>Map view unavailable</Text>
+      </View>
+    )
+  }
+
   return (
     <View style={styles.container}>
       <MapView
@@ -72,6 +85,18 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   map: {
     flex: 1,
+  },
+  fallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  fallbackEmoji: {
+    fontSize: 40,
+  },
+  fallbackText: {
+    color: C.textSecondary,
+    fontSize: 14,
   },
   })
 }

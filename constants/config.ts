@@ -10,4 +10,11 @@ export const Config = {
   appName:          process.env.EXPO_PUBLIC_APP_NAME ?? 'Rentivo',
   platformCut:      parseFloat(process.env.EXPO_PUBLIC_PLATFORM_CUT ?? '0.10'),
   useMock:          process.env.EXPO_PUBLIC_USE_MOCK === 'true',
+  // Google Maps gate. react-native-maps' <MapView> HARD-CRASHES at mount when the
+  // native com.google.android.geo.API_KEY is absent from the build (RuntimeException:
+  // "API key not found"). Keep maps OFF unless a key actually shipped: set
+  // EXPO_PUBLIC_MAPS_ENABLED=true in the EAS build profile env IN TANDEM with adding
+  // the native key to app.json (android.config.googleMaps.apiKey). Fail-safe: default
+  // false, so a keyless build renders list/placeholder fallbacks instead of crashing.
+  mapsEnabled:      process.env.EXPO_PUBLIC_MAPS_ENABLED === 'true',
 }
