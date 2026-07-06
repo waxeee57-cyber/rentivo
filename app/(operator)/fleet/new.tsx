@@ -172,7 +172,7 @@ export default function NewListingScreen() {
                 <CategoryPill
                   key={c.key}
                   label={c.label}
-                  emoji={c.emoji}
+                  icon={c.icon}
                   active={category === c.key}
                   onPress={() => setCategory(c.key)}
                   style={{ marginBottom: Spacing.sm }}
