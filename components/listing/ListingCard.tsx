@@ -6,6 +6,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
+import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { impactAsync, notificationAsync, ImpactFeedbackStyle, NotificationFeedbackType } from 'expo-haptics'
 import { Radius, Spacing, Shadow, Typography } from '@/constants/colors'
@@ -13,7 +14,7 @@ import { useColors } from '@/lib/hooks/useColors'
 import { useThemeStore } from '@/lib/store/useThemeStore'
 import { StarRating } from '@/components/ui/StarRating'
 import { formatPricePerDay } from '@/lib/utils/formatCurrency'
-import { getCategoryEmoji, getCategoryLabel } from '@/constants/categories'
+import { getCategoryEmoji, getCategoryLabel, getCategoryIcon } from '@/constants/categories'
 import { getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
 import { useWishlistStore } from '@/lib/store/useWishlistStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -192,10 +193,11 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
             {/* Category badge */}
             <View style={[
               styles.categoryBadge,
-              { backgroundColor: isDark ? 'rgba(10,22,40,0.80)' : 'rgba(0,0,0,0.55)' },
+              { backgroundColor: isDark ? 'rgba(10,22,40,0.80)' : 'rgba(0,0,0,0.55)', flexDirection: 'row', alignItems: 'center' },
             ]}>
+              <Ionicons name={getCategoryIcon(listing.category)} size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
               <Text style={styles.categoryText}>
-                {getCategoryEmoji(listing.category)} {getCategoryLabel(listing.category)}
+                {getCategoryLabel(listing.category)}
               </Text>
             </View>
             {/* Available / Instant book badge */}

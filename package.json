@@ -12,7 +12,8 @@
     "test:e2e:critical": "maestro test .maestro/flows/ --include-tags=critical",
     "test:e2e:single": "maestro test",
     "test:e2e:record": "maestro record",
-    "itest:payments": "tsx scripts/itest-payments.ts"
+    "itest:payments": "tsx scripts/itest-payments.ts",
+    "test:booking": "tsx scripts/test-booking-flow.ts"
   },
   "dependencies": {
     "@babel/plugin-proposal-optional-chaining": "^7.21.0",

@@ -26,6 +26,10 @@ export function getCategoryEmoji(cat: RentalCategory): string {
   return CATEGORIES.find(c => c.key === cat)?.emoji ?? '📦'
 }
 
+export function getCategoryIcon(cat: RentalCategory): CategoryConfig['icon'] {
+  return CATEGORIES.find(c => c.key === cat)?.icon ?? 'cube-outline'
+}
+
 export function getCategoryLabel(cat: RentalCategory): string {
   return CATEGORIES.find(c => c.key === cat)?.label ?? cat
 }
