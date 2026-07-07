@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
 
@@ -25,7 +26,7 @@ export default function ConsumerDisputeScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
-  const { user } = useAuthStore()
+  const { user, language } = useAuthStore()
   const { showToast } = useToastStore()
   const [selectedReason, setSelectedReason] = useState('')
   const [description, setDescription] = useState('')
@@ -33,7 +34,7 @@ export default function ConsumerDisputeScreen() {
 
   const handleSubmit = async () => {
     if (!selectedReason) {
-      showToast({ message: 'Please select a reason', type: 'error' })
+      showToast({ message: t('cbkSelectReason', language), type: 'error' })
       return
     }
     setSubmitting(true)
@@ -49,10 +50,10 @@ export default function ConsumerDisputeScreen() {
         })
         if (error) throw error
       }
-      showToast({ message: "Dispute submitted. We'll review within 48 hours.", type: 'success' })
+      showToast({ message: t('cbkDisputeSubmitted', language), type: 'success' })
       router.back()
     } catch {
-      showToast({ message: 'Failed to submit dispute', type: 'error' })
+      showToast({ message: t('cbkDisputeFailed', language), type: 'error' })
     } finally {
       setSubmitting(false)
     }
@@ -60,10 +61,10 @@ export default function ConsumerDisputeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Open a Dispute" onBack={() => router.back()} />
+      <ScreenHeader title={t('cbkOpenDispute', language)} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content}>
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>REASON</Text>
+          <Text style={styles.sectionTitle}>{t('cbkReason', language)}</Text>
           {DISPUTE_REASONS.map(r => (
             <TouchableOpacity
               key={r}
@@ -78,12 +79,12 @@ export default function ConsumerDisputeScreen() {
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>DETAILS (OPTIONAL)</Text>
+          <Text style={styles.sectionTitle}>{t('cbkDetailsOptional', language)}</Text>
           <TextInput
             style={styles.textArea}
             value={description}
             onChangeText={setDescription}
-            placeholder="Describe the issue..."
+            placeholder={t('cbkDescribeIssue', language)}
             placeholderTextColor={C.textSecondary}
             multiline
             numberOfLines={4}
@@ -92,11 +93,11 @@ export default function ConsumerDisputeScreen() {
         </Card>
 
         <View style={styles.infoBox}>
-          <Text style={styles.infoText}>Our team reviews disputes within 48 hours. Both parties will be contacted.</Text>
+          <Text style={styles.infoText}>{t('cbkDisputeInfo', language)}</Text>
         </View>
 
         <Button
-          title={submitting ? 'Submitting...' : 'Submit Dispute'}
+          title={submitting ? t('cbkSubmitting', language) : t('cbkSubmitDispute', language)}
           onPress={() => void handleSubmit()}
           loading={submitting}
           fullWidth

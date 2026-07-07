@@ -14,6 +14,8 @@ import { Divider } from '@/components/ui/Divider'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { useToastStore } from '@/lib/store/useToastStore'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 import { getError } from '@/lib/errors'
 import { formatDate, formatDateRange, isDateToday } from '@/lib/utils/formatDate'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
@@ -26,18 +28,18 @@ import { supabase } from '@/lib/supabase'
 import type { BookingStatus, CancellationPolicy } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
 
-const STATUS_LABELS: Record<BookingStatus, string> = {
-  pending: 'Awaiting confirmation',
-  confirmed: 'Booking confirmed ✓',
-  active: 'Rental in progress',
-  completed: 'Completed ✓',
-  cancelled: 'Cancelled ✗',
-  disputed: 'Disputed',
-}
-
 export default function BookingDetailScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const language = useAuthStore(s => s.language)
+  const STATUS_LABELS = useMemo<Record<BookingStatus, string>>(() => ({
+    pending: t('cbkStatusPending', language),
+    confirmed: t('cbkStatusConfirmed', language),
+    active: t('cbkStatusActive', language),
+    completed: t('cbkStatusCompleted', language),
+    cancelled: t('cbkStatusCancelled', language),
+    disputed: t('cbkStatusDisputed', language),
+  }), [language])
   const STATUS_COLORS: Record<BookingStatus, string> = {
     pending: C.warning,
     confirmed: C.success,
@@ -69,14 +71,14 @@ export default function BookingDetailScreen() {
   }, [booking?.id])
 
   if (loading) return <SafeAreaView style={styles.container}><SkeletonCard /></SafeAreaView>
-  if (error || !booking) return <ErrorState message={error ?? 'Booking not found'} onRetry={refetch} />
+  if (error || !booking) return <ErrorState message={error ?? t('hostBBookingNotFound', language)} onRetry={refetch} />
 
   const pickupToday = isDateToday(booking.start_date)
   const returnToday = isDateToday(booking.end_date)
   const policy = (booking.listing?.cancellation_policy ?? 'moderate') as CancellationPolicy
 
   const refundCalc = ['confirmed', 'pending'].includes(booking.status)
-    ? calculateCancellationRefund(policy, booking.start_date, booking.total_amount)
+    ? calculateCancellationRefund(policy, booking.start_date, booking.total_amount, language)
     : null
 
   const handleCancel = async () => {
@@ -86,7 +88,7 @@ export default function BookingDetailScreen() {
         await updateBookingStatus(booking.id, 'cancelled')
       }
       setShowCancelSheet(false)
-      showToast({ message: 'Booking cancelled.', type: 'info' })
+      showToast({ message: t('cbkBookingCancelled', language), type: 'info' })
       router.back()
     } catch {
       showToast({ message: getError('booking_failed'), type: 'error' })
@@ -116,9 +118,9 @@ export default function BookingDetailScreen() {
         </Card>
 
         <Card style={{ marginBottom: Spacing.base }}>
-          <Text style={styles.sectionTitle}>Price</Text>
+          <Text style={styles.sectionTitle}>{t('cbkPrice', language)}</Text>
           <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Total paid</Text>
+            <Text style={styles.priceLabel}>{t('cbkTotalPaid', language)}</Text>
             <Text style={styles.priceValue}>{formatEURDecimal(booking.total_amount)}</Text>
           </View>
           <Badge label={booking.payment_status} variant={booking.payment_status === 'paid' ? 'success' : 'warning'} />
@@ -131,19 +133,19 @@ export default function BookingDetailScreen() {
 
         {/* Insurance */}
         <Card style={{ marginBottom: Spacing.base }}>
-          <Text style={styles.sectionTitle}>Insurance</Text>
+          <Text style={styles.sectionTitle}>{t('insurance', language)}</Text>
           <View style={styles.insuranceRow}>
             <Text style={styles.insuranceIcon}>🛡️</Text>
-            <Text style={styles.insuranceText}>Basic rental insurance included · TPL up to €500,000 · Excess €500</Text>
+            <Text style={styles.insuranceText}>{t('cbkInsuranceDesc', language)}</Text>
           </View>
         </Card>
 
         {/* Cancellation Policy */}
         {refundCalc && (
           <Card style={{ marginBottom: Spacing.base }}>
-            <Text style={styles.sectionTitle}>Cancellation Policy</Text>
+            <Text style={styles.sectionTitle}>{t('cancellationPolicy', language)}</Text>
             <Text style={styles.policyLabel}>
-              {getCancellationPolicyEmoji(policy)} {getCancellationPolicyLabel(policy)}
+              {getCancellationPolicyEmoji(policy)} {getCancellationPolicyLabel(policy, language)}
             </Text>
             <Divider style={{ marginVertical: Spacing.sm }} />
             <Text style={styles.refundNote}>
@@ -155,19 +157,19 @@ export default function BookingDetailScreen() {
         )}
 
         <Card style={{ marginBottom: Spacing.base }}>
-          <Text style={styles.sectionTitle}>Inspection</Text>
+          <Text style={styles.sectionTitle}>{t('cbkInspectionTitle', language)}</Text>
           <View style={styles.inspectionRow}>
-            <Text style={styles.inspLabel}>Pickup</Text>
+            <Text style={styles.inspLabel}>{t('cbkPickup', language)}</Text>
             <Badge
-              label={booking.pickup_damage_done ? 'Done' : 'Pending'}
+              label={booking.pickup_damage_done ? t('cbkDone', language) : t('pending', language)}
               variant={booking.pickup_damage_done ? 'success' : 'warning'}
             />
           </View>
           <Divider style={{ marginVertical: Spacing.sm }} />
           <View style={styles.inspectionRow}>
-            <Text style={styles.inspLabel}>Return</Text>
+            <Text style={styles.inspLabel}>{t('cbkReturn', language)}</Text>
             <Badge
-              label={booking.return_damage_done ? 'Done' : 'Pending'}
+              label={booking.return_damage_done ? t('cbkDone', language) : t('pending', language)}
               variant={booking.return_damage_done ? 'success' : 'warning'}
             />
           </View>
@@ -175,7 +177,7 @@ export default function BookingDetailScreen() {
 
         {booking.operator?.phone && (
           <Card style={{ marginBottom: Spacing.base }}>
-            <Text style={styles.sectionTitle}>Contact operator</Text>
+            <Text style={styles.sectionTitle}>{t('contactOperator', language)}</Text>
             <TouchableOpacity
               style={styles.phoneBtn}
               onPress={() => Linking.openURL(`tel:${booking.operator!.phone}`)}
@@ -188,7 +190,7 @@ export default function BookingDetailScreen() {
         {/* Action buttons */}
         {booking.status === 'confirmed' && pickupToday && !booking.pickup_damage_done && (
           <Button
-            title="Start pickup inspection →"
+            title={t('cbkStartPickupInspection', language)}
             onPress={() => router.push(`/(consumer)/damage/pickup/${booking.id}`)}
             fullWidth
             style={{ marginBottom: Spacing.md }}
@@ -197,7 +199,7 @@ export default function BookingDetailScreen() {
 
         {booking.status === 'active' && returnToday && !booking.return_damage_done && (
           <Button
-            title="Start return inspection →"
+            title={t('cbkStartReturnInspection', language)}
             onPress={() => router.push(`/(consumer)/damage/return/${booking.id}`)}
             fullWidth
             style={{ marginBottom: Spacing.md }}
@@ -211,35 +213,35 @@ export default function BookingDetailScreen() {
             if (booking.contract_url) {
               void Linking.openURL(booking.contract_url)
             } else if (booking.status === 'confirmed' || booking.status === 'active' || booking.status === 'completed') {
-              showToast({ message: 'Contract is being generated — check back in a few minutes', type: 'info' })
+              showToast({ message: t('cbkContractGenerating', language), type: 'info' })
             } else {
-              showToast({ message: 'Contract will be available after booking is confirmed', type: 'info' })
+              showToast({ message: t('cbkContractAfterConfirm', language), type: 'info' })
             }
           }}
-          accessibilityLabel="View rental contract"
+          accessibilityLabel={t('cbkViewContractLabel', language)}
           accessibilityRole="button"
         >
-          <Text style={styles.actionBtnText}>📄 View Contract</Text>
+          <Text style={styles.actionBtnText}>{t('cbkViewContractBtn', language)}</Text>
         </TouchableOpacity>
 
         {/* Message operator */}
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => router.push(`/(consumer)/bookings/chat/${booking.id}`)}
-          accessibilityLabel="Message operator"
+          accessibilityLabel={t('messageOperator', language)}
           accessibilityRole="button"
         >
-          <Text style={styles.actionBtnText}>💬 Message Operator</Text>
+          <Text style={styles.actionBtnText}>{t('cbkMessageOperatorBtn', language)}</Text>
         </TouchableOpacity>
 
         {(booking.status === 'completed' || booking.status === 'active') && (
           <TouchableOpacity
             style={styles.disputeBtn}
             onPress={() => router.push(`/(consumer)/bookings/dispute/${booking.id}` as Parameters<typeof router.push>[0])}
-            accessibilityLabel="Open a dispute"
+            accessibilityLabel={t('cbkOpenDispute', language)}
             accessibilityRole="button"
           >
-            <Text style={styles.disputeBtnText}>⚠️ Open a Dispute</Text>
+            <Text style={styles.disputeBtnText}>{t('cbkOpenDisputeBtn', language)}</Text>
           </TouchableOpacity>
         )}
 
@@ -248,10 +250,10 @@ export default function BookingDetailScreen() {
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnGold]}
             onPress={() => router.push(`/(consumer)/bookings/review/${booking.id}`)}
-            accessibilityLabel="Leave a review for this booking"
+            accessibilityLabel={t('cbkLeaveReviewLabel', language)}
             accessibilityRole="button"
           >
-            <Text style={[styles.actionBtnText, { color: C.primaryDark }]}>⭐ Leave a Review</Text>
+            <Text style={[styles.actionBtnText, { color: C.primaryDark }]}>{t('cbkLeaveReviewBtn', language)}</Text>
           </TouchableOpacity>
         )}
 
@@ -260,10 +262,10 @@ export default function BookingDetailScreen() {
           <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnDanger]}
             onPress={() => setShowCancelSheet(true)}
-            accessibilityLabel="Cancel this booking"
+            accessibilityLabel={t('cbkCancelThisBooking', language)}
             accessibilityRole="button"
           >
-            <Text style={[styles.actionBtnText, { color: C.error }]}>✕ Cancel Booking</Text>
+            <Text style={[styles.actionBtnText, { color: C.error }]}>{t('cbkCancelBookingBtn', language)}</Text>
           </TouchableOpacity>
         )}
 
@@ -272,15 +274,15 @@ export default function BookingDetailScreen() {
 
       <ConfirmSheet
         visible={showCancelSheet}
-        title="Cancel this booking?"
-        message="This action cannot be undone."
-        confirmLabel={cancelling ? 'Cancelling...' : 'Yes, cancel'}
+        title={t('cbkCancelConfirmTitle', language)}
+        message={t('cbkCannotBeUndone', language)}
+        confirmLabel={cancelling ? t('cbkCancelling', language) : t('cbkYesCancel', language)}
         confirmVariant="danger"
         onConfirm={handleCancel}
         onCancel={() => setShowCancelSheet(false)}
         details={refundCalc ? [
-          { label: 'Refund amount', value: formatEURDecimal(refundCalc.refundAmount) },
-          { label: 'Policy', value: `${getCancellationPolicyEmoji(policy)} ${getCancellationPolicyLabel(policy)}` },
+          { label: t('cbkRefundAmount', language), value: formatEURDecimal(refundCalc.refundAmount) },
+          { label: t('cbkPolicy', language), value: `${getCancellationPolicyEmoji(policy)} ${getCancellationPolicyLabel(policy, language)}` },
         ] : undefined}
       />
     </SafeAreaView>

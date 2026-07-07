@@ -50,16 +50,18 @@ TextSecondary:#8A9BB5  muted blue-gray
 Border:       #1E3050
 ```
 
-## Ismert bug-ok (audit alapján, javítandó)
-- booking/[listingId].tsx: Nincs Stripe CardField — payment flow hiányzik
-- booking/[listingId].tsx: startDate/endDate hardcode (+1/+4 nap)
-- bookings/review/[bookingId].tsx: user_id = null — RLS sérti
-- operator/fleet/[id].tsx: handleSave csak setTimeout mock
-- host/listings/new.tsx: handlePublish nem hív Supabase-t
-- supabase/functions/create-payment-intent: nem létezik
-- supabase/functions/stripe-webhook: teljes placeholder
-- supabase/functions/ical-export: placeholder
-- supabase/functions/ical-import: placeholder
+## Bug-státusz (2026-06 audit alapján mérve)
+JAVÍTVA (kódban igazolva):
+- booking/[listingId].tsx: Stripe CardField + useStripe + confirmPayment MEGVAN
+- booking/[listingId].tsx: startDate/endDate route-paramból jön (startDateParam/endDateParam), NEM +1/+4 hardcode
+- bookings/review/[bookingId].tsx: user_id = user.id (NEM null) — RLS rendben
+- operator/fleet/[id].tsx: handleSave hív updateListing-et + supabase.update-et (nem mock)
+- host/listings/new.tsx: handlePublish hív createListing-et (Supabase)
+- supabase/functions/create-payment-intent: létezik (~110 sor)
+- supabase/functions/stripe-webhook | ical-export | ical-import: fájlok léteznek, nem üres placeholderek (67/68/118 sor) — funkcionális end-to-end ellenőrzés még ajánlott
+
+NYITOTT PONT (NEM javítva, scope-on kívül):
+- operator/fleet/[id].tsx ~147. sor: setTimeout(600) mock-szag a KYC ágban (a fő mentés valódi, csak ez az ág)
 
 ## Agents
 - lead-orchestrator: fő koordinátor (opus)

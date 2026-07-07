@@ -10,14 +10,16 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { MOCK_HOST } from '@/lib/mockData'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import type { TranslationKey } from '@/constants/i18n'
 
-const CATEGORY_CHIPS = [
-  { key: 'car', emoji: '🚗', label: 'Car' },
-  { key: 'boat', emoji: '⛵', label: 'Boat' },
-  { key: 'villa', emoji: '🏠', label: 'Villa' },
-  { key: 'motorcycle', emoji: '🏍️', label: 'Motorcycle' },
-  { key: 'bike', emoji: '🚲', label: 'Bike' },
-  { key: 'other', emoji: '📦', label: 'Other' },
+const CATEGORY_CHIPS: { key: string; emoji: string; labelKey: string }[] = [
+  { key: 'car', emoji: '🚗', labelKey: 'auth2CatCar' },
+  { key: 'boat', emoji: '⛵', labelKey: 'auth2CatBoat' },
+  { key: 'villa', emoji: '🏠', labelKey: 'auth2CatVilla' },
+  { key: 'motorcycle', emoji: '🏍️', labelKey: 'auth2CatMotorcycle' },
+  { key: 'bike', emoji: '🚲', labelKey: 'auth2CatBike' },
+  { key: 'other', emoji: '📦', labelKey: 'catOther' },
 ]
 
 type Step = 1 | 2 | 3
@@ -25,7 +27,7 @@ type Step = 1 | 2 | 3
 export default function HostSetupScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
-  const { setHost, setRole } = useAuthStore()
+  const { setHost, setRole, language } = useAuthStore()
   const [step, setStep] = useState<Step>(1)
   const [name, setName] = useState('')
   const [city, setCity] = useState('')
@@ -97,57 +99,64 @@ export default function HostSetupScreen() {
           >
             {step === 1 && (
               <View>
-                <Text style={styles.stepLabel}>Step 1 of 3</Text>
-                <Text style={styles.title}>About you</Text>
-                <Text style={styles.subtitle}>Let guests know who they're renting from</Text>
+                <Text style={styles.stepLabel}>{t('auth2Step1of3', language)}</Text>
+                <Text style={styles.title}>{t('auth2HostAboutYou', language)}</Text>
+                <Text style={styles.subtitle}>{t('auth2HostAboutSubtitle', language)}</Text>
 
                 <View style={styles.field}>
-                  <Text style={styles.label}>Your name</Text>
+                  <Text style={styles.label}>{t('auth2HostYourName', language)}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Full name"
+                    placeholder={t('auth2HostFullNamePlaceholder', language)}
                     placeholderTextColor={C.textTertiary}
                     value={name}
                     onChangeText={setName}
+                    accessibilityLabel={t('auth2HostYourName', language)}
                   />
                 </View>
 
                 <View style={styles.field}>
-                  <Text style={styles.label}>City</Text>
+                  <Text style={styles.label}>{t('hostLCity', language)}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Where are your rentals located?"
+                    placeholder={t('auth2HostCityPlaceholder', language)}
                     placeholderTextColor={C.textTertiary}
                     value={city}
                     onChangeText={setCity}
+                    accessibilityLabel={t('hostLCity', language)}
                   />
                 </View>
 
                 <View style={styles.field}>
-                  <Text style={styles.label}>Short bio (optional)</Text>
+                  <Text style={styles.label}>{t('auth2HostBioLabel', language)}</Text>
                   <TextInput
                     style={[styles.input, styles.inputMulti]}
-                    placeholder="Tell guests a bit about yourself..."
+                    placeholder={t('auth2HostBioPlaceholder', language)}
                     placeholderTextColor={C.textTertiary}
                     value={bio}
                     onChangeText={setBio}
                     multiline
                     numberOfLines={3}
+                    accessibilityLabel={t('auth2HostBioLabel', language)}
                   />
                 </View>
 
                 <View style={styles.field}>
-                  <Text style={styles.label}>What can you rent?</Text>
+                  <Text style={styles.label}>{t('auth2HostWhatCanYouRent', language)}</Text>
                   <View style={styles.chips}>
                     {CATEGORY_CHIPS.map(chip => (
                       <TouchableOpacity
                         key={chip.key}
                         style={[styles.chip, selectedCategories.includes(chip.key) && styles.chipActive]}
                         onPress={() => toggleCategory(chip.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={t(chip.labelKey as TranslationKey, language)}
+                        accessibilityState={{ selected: selectedCategories.includes(chip.key) }}
+                        hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
                       >
                         <Text style={styles.chipEmoji}>{chip.emoji}</Text>
                         <Text style={[styles.chipLabel, selectedCategories.includes(chip.key) && styles.chipLabelActive]}>
-                          {chip.label}
+                          {t(chip.labelKey as TranslationKey, language)}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -158,39 +167,47 @@ export default function HostSetupScreen() {
                   style={[styles.primaryBtn, (!name || !city) && styles.primaryBtnDisabled]}
                   onPress={() => goToStep(2)}
                   disabled={!name || !city}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('auth2ContinueArrow', language)}
                 >
-                  <Text style={styles.primaryBtnText}>Continue →</Text>
+                  <Text style={styles.primaryBtnText}>{t('auth2ContinueArrow', language)}</Text>
                 </TouchableOpacity>
               </View>
             )}
 
             {step === 2 && (
               <View>
-                <Text style={styles.stepLabel}>Step 2 of 3</Text>
-                <Text style={styles.title}>Verify your identity</Text>
-                <Text style={styles.subtitle}>To protect renters, we need to verify your identity</Text>
+                <Text style={styles.stepLabel}>{t('auth2Step2of3', language)}</Text>
+                <Text style={styles.title}>{t('auth2VerifyYourIdentity', language)}</Text>
+                <Text style={styles.subtitle}>{t('auth2VerifySubtitle', language)}</Text>
 
                 <View style={styles.verifyBox}>
                   <Text style={styles.verifyIcon}>🪪</Text>
-                  <Text style={styles.verifyTitle}>Driver's license required</Text>
+                  <Text style={styles.verifyTitle}>{t('auth2DriverLicenseRequired', language)}</Text>
                   <Text style={styles.verifyText}>
-                    Please have your driver's license ready. We'll need a photo of the front, back, and a selfie holding it.
+                    {t('auth2DriverLicenseText', language)}
                   </Text>
                 </View>
 
                 {verified ? (
                   <View style={styles.verifiedBanner}>
                     <Text style={styles.verifiedIcon}>✅</Text>
-                    <Text style={styles.verifiedText}>Identity verified!</Text>
+                    <Text style={styles.verifiedText}>{t('auth2IdentityVerified', language)}</Text>
                   </View>
                 ) : (
                   <TouchableOpacity
                     style={[styles.primaryBtn, verifying && styles.primaryBtnDisabled]}
                     onPress={handleVerify}
                     disabled={verifying}
+                    accessibilityRole="button"
+                    accessibilityLabel={verifying
+                      ? t('auth2Verifying', language)
+                      : t('auth2StartVerification', language)}
                   >
                     <Text style={styles.primaryBtnText}>
-                      {verifying ? 'Verifying...' : 'Start verification'}
+                      {verifying
+                        ? t('auth2Verifying', language)
+                        : t('auth2StartVerification', language)}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -199,36 +216,43 @@ export default function HostSetupScreen() {
                   <TouchableOpacity
                     style={[styles.primaryBtn, { marginTop: Spacing.base }]}
                     onPress={() => goToStep(3)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('auth2ContinueArrow', language)}
                   >
-                    <Text style={styles.primaryBtnText}>Continue →</Text>
+                    <Text style={styles.primaryBtnText}>{t('auth2ContinueArrow', language)}</Text>
                   </TouchableOpacity>
                 )}
 
-                <TouchableOpacity style={styles.skipBtn} onPress={() => goToStep(3)}>
-                  <Text style={styles.skipText}>Skip for now</Text>
+                <TouchableOpacity
+                  style={styles.skipBtn}
+                  onPress={() => goToStep(3)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('opFleetWizardSkip', language)}
+                >
+                  <Text style={styles.skipText}>{t('opFleetWizardSkip', language)}</Text>
                 </TouchableOpacity>
               </View>
             )}
 
             {step === 3 && (
               <View>
-                <Text style={styles.stepLabel}>Step 3 of 3</Text>
-                <Text style={styles.title}>Set up payouts</Text>
-                <Text style={styles.subtitle}>Get paid directly to your bank account</Text>
+                <Text style={styles.stepLabel}>{t('auth2Step3of3', language)}</Text>
+                <Text style={styles.title}>{t('auth2SetupPayouts', language)}</Text>
+                <Text style={styles.subtitle}>{t('auth2HostPayoutsSubtitle', language)}</Text>
 
                 <View style={styles.stripeBox}>
                   <Text style={styles.stripeIcon}>💳</Text>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.stripeTitle}>Rentivo uses Stripe</Text>
+                    <Text style={styles.stripeTitle}>{t('auth2RentivoUsesStripe', language)}</Text>
                     <Text style={styles.stripeText}>
-                      Secure payments. Automatic payouts. You earn money every time someone rents from you.
+                      {t('auth2StripeText', language)}
                     </Text>
                   </View>
                 </View>
 
                 <View style={styles.feeNote}>
                   <Text style={styles.feeNoteText}>
-                    💡 Rentivo takes 10% of each payout — industry standard. You keep the rest.
+                    {t('auth2FeeNote', language)}
                   </Text>
                 </View>
 
@@ -236,14 +260,25 @@ export default function HostSetupScreen() {
                   style={[styles.primaryBtn, onboarding && styles.primaryBtnDisabled]}
                   onPress={handleComplete}
                   disabled={onboarding}
+                  accessibilityRole="button"
+                  accessibilityLabel={onboarding
+                    ? t('auth2SettingUp', language)
+                    : t('auth2CompleteSetup', language)}
                 >
                   <Text style={styles.primaryBtnText}>
-                    {onboarding ? 'Setting up...' : 'Complete setup'}
+                    {onboarding
+                      ? t('auth2SettingUp', language)
+                      : t('auth2CompleteSetup', language)}
                   </Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.skipBtn} onPress={handleComplete}>
-                  <Text style={styles.skipText}>Skip — set up payouts later</Text>
+                <TouchableOpacity
+                  style={styles.skipBtn}
+                  onPress={handleComplete}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('auth2SkipPayouts', language)}
+                >
+                  <Text style={styles.skipText}>{t('auth2SkipPayouts', language)}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -340,6 +375,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.surfaceWarm,
     borderWidth: 1,
     borderColor: C.border,
+    minHeight: 44,
   },
   chipActive: {
     backgroundColor: C.primarySurface,
@@ -360,6 +396,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     shadowRadius: 12,
     elevation: 6,
     marginTop: Spacing.sm,
+    minHeight: 44,
   },
   primaryBtnDisabled: {
     backgroundColor: C.textTertiary,
@@ -375,6 +412,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     paddingVertical: Spacing.base,
     marginTop: Spacing.sm,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   skipText: {
     fontSize: 14,

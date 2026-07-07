@@ -10,6 +10,12 @@ import { Spacing, Radius } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import type { TranslationKey } from '@/constants/i18n'
+
+// Wrapper to allow pending cpr keys before i18n.ts is updated
+const cprT = (key: string, lang: 'en' | 'es' | 'hu'): string =>
+  t(key as unknown as TranslationKey, lang)
 
 type VerificationStatus =
   | 'loading'
@@ -32,7 +38,6 @@ export default function IdentityVerificationScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const { language, user } = useAuthStore()
-  const isHu = language === 'hu'
   const [status, setStatus] = useState<VerificationStatus>('loading')
   const [loading, setLoading] = useState(false)
 
@@ -85,8 +90,8 @@ export default function IdentityVerificationScreen() {
       setStatus('in_progress')
     } catch (err) {
       Alert.alert(
-        isHu ? 'Hiba' : 'Error',
-        err instanceof Error ? err.message : 'Something went wrong',
+        t('opFleet2Error', language),
+        err instanceof Error ? err.message : cprT('cprSomethingWentWrong', language),
       )
     } finally {
       setLoading(false)
@@ -99,61 +104,51 @@ export default function IdentityVerificationScreen() {
   const STATUS_CONFIGS: Record<VerificationStatus, StatusConfig> = {
     loading: {
       icon: '⏳',
-      title: isHu ? 'Betöltés...' : 'Loading...',
+      title: t('opFleet2Loading', language),
       desc: '',
       cta: '',
       color: C.textSecondary,
     },
     unverified: {
       icon: '📋',
-      title: isHu ? 'Azonosítás szükséges' : 'Identity verification required',
-      desc: isHu
-        ? 'Egyes bérlések előtt igazolnod kell a személyazonosságodat. Ez 2 percet vesz igénybe.'
-        : 'Some rentals require identity verification before booking. This takes about 2 minutes.',
-      cta: isHu ? 'Azonosítás megkezdése' : 'Start verification',
+      title: cprT('cprVerificationRequired', language),
+      desc: cprT('cprVerificationRequiredDesc', language),
+      cta: cprT('cprStartVerification', language),
       color: C.primary,
     },
     pending: {
       icon: '⏳',
-      title: isHu ? 'Feldolgozás alatt' : 'Verification pending',
-      desc: isHu ? 'Az azonosítás feldolgozás alatt van.' : 'Your verification is being processed.',
-      cta: isHu ? 'Frissítés' : 'Refresh',
+      title: cprT('cprVerificationPending', language),
+      desc: cprT('cprVerificationPendingDesc', language),
+      cta: cprT('cprRefresh', language),
       color: C.warning,
     },
     in_progress: {
       icon: '🔄',
-      title: isHu ? 'Folyamatban' : 'In progress',
-      desc: isHu
-        ? 'Fejezd be az azonosítást a megnyílt oldalon, majd térj vissza és frissíts.'
-        : 'Complete verification on the opened page, then return and refresh.',
-      cta: isHu ? 'Frissítés' : 'Refresh status',
+      title: cprT('cprInProgress', language),
+      desc: cprT('cprInProgressDesc', language),
+      cta: cprT('cprRefreshStatus', language),
       color: C.warning,
     },
     approved: {
       icon: '✅',
-      title: isHu ? 'Azonosítva' : 'Identity verified',
-      desc: isHu
-        ? 'A személyazonosságod sikeresen ellenőrizve. Minden bérlés elérhető számodra.'
-        : 'Your identity has been successfully verified. All rentals are available to you.',
+      title: cprT('cprIdentityVerified', language),
+      desc: cprT('cprIdentityVerifiedDesc', language),
       cta: '',
       color: C.success,
     },
     declined: {
       icon: '❌',
-      title: isHu ? 'Sikertelen' : 'Verification failed',
-      desc: isHu
-        ? 'Az azonosítás sikertelen volt. Próbáld újra érvényes dokumentummal.'
-        : 'Verification failed. Please try again with a valid document.',
-      cta: isHu ? 'Újrapróbálás' : 'Try again',
+      title: cprT('cprVerificationFailed', language),
+      desc: cprT('cprVerificationFailedDesc', language),
+      cta: cprT('cprTryAgain', language),
       color: C.error,
     },
     expired: {
       icon: '⌛',
-      title: isHu ? 'Lejárt' : 'Session expired',
-      desc: isHu
-        ? 'Az azonosítási munkamenet lejárt. Kérjük, indíts újat.'
-        : 'The verification session expired. Please start a new one.',
-      cta: isHu ? 'Újraindítás' : 'Start again',
+      title: cprT('cprSessionExpired', language),
+      desc: cprT('cprSessionExpiredDesc', language),
+      cta: cprT('cprStartAgain', language),
       color: C.warning,
     },
   }
@@ -167,13 +162,12 @@ export default function IdentityVerificationScreen() {
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
-          accessibilityLabel={isHu ? 'Vissza' : 'Go back'}
+          accessibilityLabel={t('opFleet2GoBack', language)}
+          accessibilityRole="button"
         >
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>
-          {isHu ? 'Személyazonosság igazolás' : 'Identity Verification'}
-        </Text>
+        <Text style={styles.title}>{t('identityVerification', language)}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -193,6 +187,7 @@ export default function IdentityVerificationScreen() {
                   onPress={isRefreshAction ? loadStatus : startVerification}
                   disabled={loading}
                   accessibilityLabel={config.cta}
+                  accessibilityRole="button"
                 >
                   {loading
                     ? <ActivityIndicator color={C.background} />
@@ -203,14 +198,12 @@ export default function IdentityVerificationScreen() {
 
             {(status === 'unverified' || status === 'declined' || status === 'expired') && (
               <View style={styles.infoCard}>
-                <Text style={styles.infoTitle}>
-                  {isHu ? 'Mit ellenőrzünk' : 'What we verify'}
-                </Text>
+                <Text style={styles.infoTitle}>{cprT('cprWhatWeVerify', language)}</Text>
                 {[
-                  isHu ? '📄 Jogosítvány vagy személyi igazolvány' : '📄 Driver license or ID card',
-                  isHu ? '🤳 Selfie az okmánnyal' : '🤳 Selfie with your document',
-                  isHu ? '⏱ Kb. 2 perc' : '⏱ Takes about 2 minutes',
-                  isHu ? '🔒 GDPR kompatibilis, adataid védve vannak' : '🔒 GDPR compliant, data protected',
+                  cprT('cprVerifyDoc', language),
+                  cprT('cprVerifySelfie', language),
+                  cprT('cprVerifyTime', language),
+                  cprT('cprVerifyGdpr', language),
                 ].map((item, i) => (
                   <Text key={i} style={styles.infoItem}>{item}</Text>
                 ))}

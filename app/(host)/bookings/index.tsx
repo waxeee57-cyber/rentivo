@@ -16,6 +16,7 @@ import { formatDateRange } from '@/lib/utils/formatDate'
 import { updateBookingStatus } from '@/lib/api/bookings'
 import type { Booking, BookingStatus } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
 
 type Tab = 'pending' | 'confirmed' | 'past'
 const TABS: { key: Tab; label: string }[] = [
@@ -35,6 +36,7 @@ function BookingCard({
 }) {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const { language } = useAuthStore()
   return (
     <TouchableOpacity
       style={styles.card}
@@ -77,20 +79,20 @@ function BookingCard({
             <TouchableOpacity
               style={styles.declineBtn}
               onPress={onDecline}
-              accessibilityLabel="Decline booking"
+              accessibilityLabel={t('hostBDeclineBooking', language)}
               accessibilityRole="button"
             >
-              <Text style={styles.declineBtnText}>Decline</Text>
+              <Text style={styles.declineBtnText}>{t('declineBooking', language)}</Text>
             </TouchableOpacity>
           )}
           {onConfirm && (
             <TouchableOpacity
               style={styles.confirmBtn}
               onPress={onConfirm}
-              accessibilityLabel="Confirm booking"
+              accessibilityLabel={t('confirmBooking', language)}
               accessibilityRole="button"
             >
-              <Text style={styles.confirmBtnText}>Confirm</Text>
+              <Text style={styles.confirmBtnText}>{t('confirmBooking', language)}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -99,19 +101,13 @@ function BookingCard({
   )
 }
 
-const EMPTY_MESSAGES: Record<Tab, { emoji: string; title: string; subtitle: string }> = {
-  pending: { emoji: '📅', title: 'No pending requests', subtitle: 'New booking requests will appear here' },
-  confirmed: { emoji: '💰', title: 'No confirmed bookings', subtitle: 'Once travelers book your vehicle, they\'ll appear here' },
-  past: { emoji: '📚', title: 'No past bookings', subtitle: 'Your completed rentals will appear here' },
-}
-
 export default function HostBookingsScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const [activeTab, setActiveTab] = useState<Tab>('pending')
   const [decliningId, setDecliningId] = useState<string | null>(null)
   const { showToast } = useToastStore()
-  const { host } = useAuthStore()
+  const { host, language } = useAuthStore()
   const hostId = Config.useMock ? 'host-001' : (host?.id ?? null)
   const { bookings: liveBookings, loading } = useHostBookings(hostId)
   const [bookings, setBookings] = useState<Booking[]>(
@@ -131,6 +127,12 @@ export default function HostBookingsScreen() {
     return b.status === 'completed' || b.status === 'cancelled'
   })
 
+  const EMPTY_MESSAGES: Record<Tab, { emoji: string; title: string; subtitle: string }> = {
+    pending: { emoji: '📅', title: t('hostBNoPendingRequests', language), subtitle: t('hostBNoPendingSubtitle', language) },
+    confirmed: { emoji: '💰', title: t('hostBNoConfirmedBookings', language), subtitle: t('hostBNoConfirmedSubtitle', language) },
+    past: { emoji: '📚', title: t('hostBNoPastBookings', language), subtitle: t('hostBNoPastSubtitle', language) },
+  }
+
   const handleConfirm = async (bookingId: string) => {
     try {
       if (!Config.useMock) {
@@ -138,9 +140,9 @@ export default function HostBookingsScreen() {
       }
       setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'confirmed' as BookingStatus } : b))
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      showToast({ message: 'Booking confirmed ✓', type: 'success' })
+      showToast({ message: t('hostBToastConfirmed', language), type: 'success' })
     } catch {
-      showToast({ message: 'Failed to confirm booking. Please try again.', type: 'error' })
+      showToast({ message: t('hostBToastConfirmFail', language), type: 'error' })
     }
   }
 
@@ -154,16 +156,16 @@ export default function HostBookingsScreen() {
       }
       setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' as BookingStatus } : b))
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-      showToast({ message: 'Booking declined.', type: 'info' })
+      showToast({ message: t('hostBToastDeclined', language), type: 'info' })
     } catch {
-      showToast({ message: 'Failed to decline booking. Please try again.', type: 'error' })
+      showToast({ message: t('hostBToastDeclineFail', language), type: 'error' })
     }
   }
 
   if (loading && !Config.useMock) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <Text style={styles.title}>Bookings</Text>
+        <Text style={styles.title}>{t('bookings', language)}</Text>
         <SkeletonCard />
         <SkeletonCard />
       </SafeAreaView>
@@ -172,20 +174,26 @@ export default function HostBookingsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.title}>Bookings</Text>
+      <Text style={styles.title}>{t('bookings', language)}</Text>
 
       <View style={styles.tabs}>
-        {TABS.map(tab => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() => setActiveTab(tab.key)}
-          >
-            <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {TABS.map(tab => {
+          const label = tab.key === 'pending' ? t('pending', language) : tab.key === 'confirmed' ? t('confirmed', language) : t('tabPast', language)
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+              onPress={() => setActiveTab(tab.key)}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          )
+        })}
       </View>
 
       {filtered.length === 0 ? (
@@ -194,7 +202,7 @@ export default function HostBookingsScreen() {
           title={EMPTY_MESSAGES[activeTab].title}
           subtitle={EMPTY_MESSAGES[activeTab].subtitle}
           action={activeTab === 'pending' ? {
-            label: 'View my listings →',
+            label: t('hostBViewMyListings', language),
             onPress: () => router.push('/(host)/listings' as Parameters<typeof router.push>[0]),
           } : undefined}
         />
@@ -216,9 +224,9 @@ export default function HostBookingsScreen() {
 
       <ConfirmSheet
         visible={!!decliningId}
-        title="Decline this booking?"
-        message="The guest will be notified and refunded."
-        confirmLabel="Decline"
+        title={t('opBkDeclineTitle', language)}
+        message={t('hostBDeclineMsg', language)}
+        confirmLabel={t('declineBooking', language)}
         confirmVariant="danger"
         onConfirm={handleDecline}
         onCancel={() => setDecliningId(null)}
@@ -249,9 +257,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingVertical: Spacing.sm,
     borderRadius: Radius.lg,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: C.border,
     backgroundColor: C.surface,
+    minHeight: 44,
   },
   tabActive: { backgroundColor: C.primary, borderColor: C.primary },
   tabText: { fontSize: 12, fontWeight: '600', color: C.textSecondary },

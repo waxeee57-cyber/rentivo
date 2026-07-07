@@ -15,6 +15,8 @@ import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import type { DynamicPricingRules } from '@/lib/utils/pricing'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const MULTIPLIERS = [1.0, 1.2, 1.3, 1.5, 2.0]
@@ -25,6 +27,7 @@ export default function PricingRulesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { listing } = useListing(id ?? '')
   const { showToast } = useToastStore()
+  const { language } = useAuthStore()
 
   const [weekendMultiplier, setWeekendMultiplier] = useState(1.3)
   const [peakEnabled, setPeakEnabled] = useState(false)
@@ -62,26 +65,26 @@ export default function PricingRulesScreen() {
         .update({ pricing_rules: rules })
         .eq('id', id ?? '')
       if (error) {
-        showToast({ message: 'Failed to save pricing rules', type: 'error' })
+        showToast({ message: t('opFleet2SaveError', language), type: 'error' })
         setSaving(false)
         return
       }
     }
 
-    showToast({ message: 'Pricing rules saved', type: 'success' })
+    showToast({ message: t('opFleet2SaveSuccess', language), type: 'success' })
     setSaving(false)
     router.back()
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader title="Pricing Rules" />
+      <ScreenHeader title={t('opFleet2PricingRulesTitle', language)} />
       <ScrollView contentContainerStyle={styles.content}>
 
         {/* Weekend Multiplier */}
         <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Weekend Multiplier</Text>
-          <Text style={styles.sectionDesc}>Price on Sat/Sun vs weekday</Text>
+          <Text style={styles.sectionTitle}>{t('opFleet2WeekendMultiplier', language)}</Text>
+          <Text style={styles.sectionDesc}>{t('opFleet2WeekendMultiplierDesc', language)}</Text>
           <View style={styles.row}>
             {MULTIPLIERS.map(m => (
               <TouchableOpacity
@@ -104,15 +107,15 @@ export default function PricingRulesScreen() {
         <Card style={styles.section}>
           <View style={styles.rowBetween}>
             <View>
-              <Text style={styles.sectionTitle}>Peak Season</Text>
-              <Text style={styles.sectionDesc}>Higher prices in peak months</Text>
+              <Text style={styles.sectionTitle}>{t('opFleet2PeakSeason', language)}</Text>
+              <Text style={styles.sectionDesc}>{t('opFleet2PeakSeasonDesc', language)}</Text>
             </View>
             <Switch
               value={peakEnabled}
               onValueChange={setPeakEnabled}
               trackColor={{ false: C.border, true: C.primary }}
               thumbColor={C.text}
-              accessibilityLabel="Enable peak season pricing"
+              accessibilityLabel={t('opFleet2EnablePeakSeason', language)}
             />
           </View>
           {peakEnabled && (
@@ -139,7 +142,7 @@ export default function PricingRulesScreen() {
                   )
                 })}
               </View>
-              <Text style={[styles.sectionDesc, { marginTop: 8 }]}>Peak multiplier</Text>
+              <Text style={[styles.sectionDesc, { marginTop: 8 }]}>{t('opFleet2PeakMultiplier', language)}</Text>
               <View style={styles.row}>
                 {MULTIPLIERS.map(m => (
                   <TouchableOpacity
@@ -162,9 +165,9 @@ export default function PricingRulesScreen() {
 
         {/* Long Stay Discounts */}
         <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Long Stay Discounts</Text>
+          <Text style={styles.sectionTitle}>{t('opFleet2LongStayDiscounts', language)}</Text>
           <View style={styles.inputRow}>
-            <Text style={styles.inputLabel}>Weekly (7+ days)</Text>
+            <Text style={styles.inputLabel}>{t('opFleet2WeeklyDiscount', language)}</Text>
             <TextInput
               style={styles.input}
               value={String(Math.round(weeklyDiscount * 100))}
@@ -172,12 +175,12 @@ export default function PricingRulesScreen() {
               keyboardType="numeric"
               placeholder="10"
               placeholderTextColor={C.textTertiary}
-              accessibilityLabel="Weekly discount percentage"
+              accessibilityLabel={t('opFleet2WeeklyDiscountA11y', language)}
             />
             <Text style={styles.inputSuffix}>%</Text>
           </View>
           <View style={styles.inputRow}>
-            <Text style={styles.inputLabel}>Monthly (30+ days)</Text>
+            <Text style={styles.inputLabel}>{t('opFleet2MonthlyDiscount', language)}</Text>
             <TextInput
               style={styles.input}
               value={String(Math.round(monthlyDiscount * 100))}
@@ -185,7 +188,7 @@ export default function PricingRulesScreen() {
               keyboardType="numeric"
               placeholder="20"
               placeholderTextColor={C.textTertiary}
-              accessibilityLabel="Monthly discount percentage"
+              accessibilityLabel={t('opFleet2MonthlyDiscountA11y', language)}
             />
             <Text style={styles.inputSuffix}>%</Text>
           </View>
@@ -194,7 +197,7 @@ export default function PricingRulesScreen() {
         {/* Preview */}
         {listing && (
           <Card style={styles.section}>
-            <Text style={styles.sectionTitle}>Preview</Text>
+            <Text style={styles.sectionTitle}>{t('opFleet2Preview', language)}</Text>
             <Text style={styles.previewText}>
               Base: {listing.price_per_day} EUR/day
             </Text>
@@ -210,7 +213,7 @@ export default function PricingRulesScreen() {
         )}
 
         <Button
-          title="Save Pricing Rules"
+          title={t('opFleet2SaveRules', language)}
           onPress={() => void handleSave()}
           loading={saving}
           fullWidth

@@ -56,11 +56,7 @@ export default function BookingConfirmationScreen() {
             <Text style={styles.title}>{t('bookingConfirmed', language)}</Text>
             <Text style={styles.ref}>#{ref}</Text>
             <Text style={styles.subtitle}>
-              {language === 'es'
-                ? 'Tu reserva ha sido enviada. El operador confirmará en breve.'
-                : language === 'hu'
-                ? 'A foglalásod megérkezett. Az operátor hamarosan visszaigazolja.'
-                : 'Your booking has been placed. The operator will confirm shortly.'}
+              {t('ternBookingPlaced', language)}
             </Text>
           </Animated.View>
         </View>
@@ -71,31 +67,19 @@ export default function BookingConfirmationScreen() {
           <View style={styles.nextStep}>
             <Text style={styles.nextStepNum}>1</Text>
             <Text style={styles.nextStepText}>
-              {language === 'es'
-                ? 'El operador te contactará con los detalles de recogida'
-                : language === 'hu'
-                ? 'Az operátor kapcsolatba lép veled az átvétel részleteiről'
-                : 'The operator will contact you about pickup details'}
+              {t('ternOperatorContactPickup', language)}
             </Text>
           </View>
           <View style={styles.nextStep}>
             <Text style={styles.nextStepNum}>2</Text>
             <Text style={styles.nextStepText}>
-              {language === 'es'
-                ? 'Recibirás un contrato digital para firmar'
-                : language === 'hu'
-                ? 'Digitális szerződést kapsz aláírásra'
-                : "You'll receive a digital contract to sign"}
+              {t('ternDigitalContract', language)}
             </Text>
           </View>
           <View style={styles.nextStep}>
             <Text style={styles.nextStepNum}>3</Text>
             <Text style={styles.nextStepText}>
-              {language === 'es'
-                ? 'En el día de recogida: inspección conjunta del vehículo'
-                : language === 'hu'
-                ? 'Az átvétel napján: közös állapotfelmérés a járművel'
-                : 'On pickup day: inspect the vehicle together'}
+              {t('ternPickupDayInspect', language)}
             </Text>
           </View>
         </View>
@@ -103,10 +87,10 @@ export default function BookingConfirmationScreen() {
         {/* Trust checklist */}
         <View style={styles.checklist}>
           {[
-            language === 'es' ? 'Reserva confirmada' : language === 'hu' ? 'Foglalás visszaigazolva' : 'Booking Confirmed',
-            language === 'es' ? 'Pago procesado' : language === 'hu' ? 'Fizetés feldolgozva' : 'Payment Processed',
-            language === 'es' ? 'Contrato generado' : language === 'hu' ? 'Szerződés elkészítve' : 'Contract Generated',
-            language === 'es' ? 'Seguro activo 🛡️' : language === 'hu' ? 'Biztosítás aktív 🛡️' : 'Insurance Active 🛡️',
+            t('ternChecklistBookingConfirmed', language),
+            t('ternChecklistPaymentProcessed', language),
+            t('ternChecklistContractGenerated', language),
+            t('ternChecklistInsuranceActive', language),
           ].map((label, i) => (
             <View key={i} style={styles.checkRow}>
               <Text style={styles.checkRowIcon}>✅</Text>
@@ -126,7 +110,7 @@ export default function BookingConfirmationScreen() {
 
       <View style={styles.actions}>
         <Button
-          title={language === 'es' ? 'Ver detalles de reserva' : language === 'hu' ? 'Foglalás részletei' : 'View booking details'}
+          title={t('ternViewBookingDetails', language)}
           onPress={() => router.push(`/(consumer)/bookings/${id ?? 'bk-001'}`)}
           fullWidth
           style={{ marginBottom: Spacing.sm }}

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Spacing } from '@/constants/colors'
+import { t } from '@/constants/i18n'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
@@ -15,10 +16,10 @@ export default function LoginScreen() {
   const styles = useMemo(() => makeStyles(C), [C])
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
-  const { role } = useAuthStore()
+  const { role, language } = useAuthStore()
 
   const handleSendCode = async () => {
-    if (!phone.trim()) { Alert.alert('Please enter your phone number'); return }
+    if (!phone.trim()) { Alert.alert(t('authPhoneRequired', language)); return }
     setLoading(true)
     try {
       const normalizedPhone = phone.trim().replace(/\s/g, '')
@@ -29,7 +30,7 @@ export default function LoginScreen() {
       await AsyncStorage.setItem('pending_otp_phone', normalizedPhone)
       router.push('/auth/verify')
     } catch (e) {
-      Alert.alert('Error', String(e))
+      Alert.alert(t('authError', language), String(e))
     } finally {
       setLoading(false)
     }
@@ -46,8 +47,14 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.back} onPress={() => router.back()}>
-        <Text style={styles.backText}>← Back</Text>
+      <TouchableOpacity
+        style={styles.back}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel={t('authBack', language)}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Text style={styles.backText}>{t('authBack', language)}</Text>
       </TouchableOpacity>
 
       <KeyboardAvoidingView
@@ -60,11 +67,11 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.title}>Welcome to Rentivo</Text>
-          <Text style={styles.subtitle}>Enter your phone number to continue</Text>
+          <Text style={styles.title}>{t('authLoginTitle', language)}</Text>
+          <Text style={styles.subtitle}>{t('authLoginSubtitle', language)}</Text>
 
           <Button
-            title="Continue without account (demo)"
+            title={t('authDemoButton', language)}
             onPress={handleMockLogin}
             variant="ghost"
             fullWidth
@@ -72,16 +79,16 @@ export default function LoginScreen() {
           />
 
           <Input
-            label="Phone number"
+            label={t('authPhoneLabel', language)}
             value={phone}
             onChangeText={setPhone}
-            placeholder="+34 600 000 000"
+            placeholder={t('authPhonePlaceholder', language)}
             keyboardType="phone-pad"
             autoFocus={false}
           />
 
           <Button
-            title="Send verification code"
+            title={t('authSendCode', language)}
             onPress={handleSendCode}
             loading={loading}
             fullWidth

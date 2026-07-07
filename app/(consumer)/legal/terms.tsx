@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Spacing, Radius } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 const SECTIONS = [
   {
@@ -38,12 +40,13 @@ const SECTIONS = [
 
 export default function TermsOfServiceScreen() {
   const C = useColors()
+  const { language } = useAuthStore()
   const styles = useMemo(() => makeStyles(C), [C])
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Terms of Service" />
+      <ScreenHeader title={t('termsOfService', language)} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.lastUpdated}>Last updated: January 2025</Text>
+        <Text style={styles.lastUpdated}>{t('legLastUpdated', language)} January 2025</Text>
         <Text style={styles.intro}>
           Please read these Terms of Service carefully before using Rentivo. By using the app you agree to be bound by these terms.
         </Text>

@@ -11,6 +11,7 @@ import { Config } from '@/constants/config'
 import { MOCK_CONVERSATIONS } from '@/lib/mockData'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 import type { Conversation } from '@/types'
 import { format } from 'date-fns'
 import { useColors } from '@/lib/hooks/useColors'
@@ -30,7 +31,7 @@ export default function HostMessagesScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const router = useRouter()
-  const { host } = useAuthStore()
+  const { host, language } = useAuthStore()
   const [conversations, setConversations] = useState<Conversation[]>(
     Config.useMock ? [...MOCK_CONVERSATIONS] : []
   )
@@ -69,7 +70,7 @@ export default function HostMessagesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Messages" />
+      <ScreenHeader title={t('messagesTitle', language)} />
       <FlatList
         data={conversations}
         keyExtractor={c => c.id}
@@ -115,7 +116,7 @@ export default function HostMessagesScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>💬</Text>
-            <Text style={styles.emptyText}>No messages yet</Text>
+            <Text style={styles.emptyText}>{t('messagesEmpty', language)}</Text>
           </View>
         }
         ItemSeparatorComponent={() => <View style={styles.separator} />}

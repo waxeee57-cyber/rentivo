@@ -11,30 +11,41 @@ import { MOCK_HOST_LISTING } from '@/lib/mockData'
 import { formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { Config } from '@/constants/config'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 import type { Listing } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
 
 function HostSetupWizard({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
   const C = useColors()
+  const { language } = useAuthStore()
   const wizardStyles = useMemo(() => makeWizardStyles(C), [C])
   return (
     <View style={wizardStyles.wrap}>
       <View style={wizardStyles.card}>
         <Text style={wizardStyles.emoji}>💰</Text>
-        <Text style={wizardStyles.title}>Welcome! Let's start earning</Text>
+        <Text style={wizardStyles.title}>{t('hostLWelcomeTitle', language)}</Text>
         <View style={wizardStyles.earningsBox}>
-          <Text style={wizardStyles.earningsLabel}>Vehicles like yours earn</Text>
+          <Text style={wizardStyles.earningsLabel}>{t('hostLVehiclesLikeYoursEarn', language)}</Text>
           <Text style={wizardStyles.earningsAmount}>~€450/month</Text>
-          <Text style={wizardStyles.earningsLabel}>on Rentivo</Text>
+          <Text style={wizardStyles.earningsLabel}>{t('hostLOnRentivo', language)}</Text>
         </View>
-        <Text style={wizardStyles.subtitle}>
-          List your vehicle in 5 minutes and start getting bookings.
-        </Text>
-        <TouchableOpacity style={wizardStyles.startBtn} onPress={onStart}>
-          <Text style={wizardStyles.startBtnText}>List my vehicle →</Text>
+        <Text style={wizardStyles.subtitle}>{t('hostLListIn5min', language)}</Text>
+        <TouchableOpacity
+          style={wizardStyles.startBtn}
+          onPress={onStart}
+          accessibilityRole="button"
+          accessibilityLabel={t('hostLListMyVehicle', language)}
+        >
+          <Text style={wizardStyles.startBtnText}>{t('hostLListMyVehicle', language)}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={wizardStyles.skipBtn} onPress={onSkip}>
-          <Text style={wizardStyles.skipBtnText}>I'll do it later</Text>
+        <TouchableOpacity
+          style={wizardStyles.skipBtn}
+          onPress={onSkip}
+          accessibilityRole="button"
+          accessibilityLabel={t('hostLDoItLater', language)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Text style={wizardStyles.skipBtnText}>{t('hostLDoItLater', language)}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -108,7 +119,7 @@ function HostListingCard({ listing, language }: { listing: Listing; language: 'e
             trackColor={{ false: C.border, true: C.success }}
             thumbColor={C.text}
           />
-          <Text style={styles.toggleLabel}>{available ? 'Live' : 'Paused'}</Text>
+          <Text style={styles.toggleLabel}>{available ? t('fleetLive', language) : t('opFleetBadgePaused', language)}</Text>
         </View>
       </View>
 
@@ -116,26 +127,26 @@ function HostListingCard({ listing, language }: { listing: Listing; language: 'e
         <TouchableOpacity
           style={styles.editBtn}
           onPress={() => router.push(`/(consumer)/listing/${listing.id}`)}
-          accessibilityLabel="View listing"
           accessibilityRole="button"
+          accessibilityLabel={t('hostLViewListing', language)}
         >
-          <Text style={styles.editBtnText}>View listing</Text>
+          <Text style={styles.editBtnText}>{t('hostLViewListing', language)}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.editBtn}
           onPress={() => router.push(`/(host)/listings/new` as Parameters<typeof router.push>[0])}
-          accessibilityLabel="Edit listing"
           accessibilityRole="button"
+          accessibilityLabel={t('hostLEditArrow', language)}
         >
-          <Text style={styles.editBtnText}>Edit →</Text>
+          <Text style={styles.editBtnText}>{t('hostLEditArrow', language)}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.editBtn}
           onPress={() => { void handleShare() }}
-          accessibilityLabel="Share listing"
           accessibilityRole="button"
+          accessibilityLabel={t('hostLShareArrow', language)}
         >
-          <Text style={styles.editBtnText}>↗ Share</Text>
+          <Text style={styles.editBtnText}>{t('hostLShareArrow', language)}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -164,7 +175,7 @@ export default function HostListingsScreen() {
   if (!wizardChecked) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <Text style={styles.title}>Your vehicles</Text>
+        <Text style={styles.title}>{t('hostLYourVehicles', language)}</Text>
         <View style={styles.list}><SkeletonCard /></View>
       </SafeAreaView>
     )
@@ -173,7 +184,7 @@ export default function HostListingsScreen() {
   if (showWizard && listings.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <Text style={styles.title}>Your vehicles</Text>
+        <Text style={styles.title}>{t('hostLYourVehicles', language)}</Text>
         <HostSetupWizard
           onStart={() => {
             void dismissWizard()
@@ -189,13 +200,13 @@ export default function HostListingsScreen() {
   if (listings.length === 0) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <Text style={styles.title}>Your vehicles</Text>
+        <Text style={styles.title}>{t('hostLYourVehicles', language)}</Text>
         <EmptyState
           emoji="🏠"
-          title="Nothing listed yet"
-          subtitle="List your vehicle in 5 minutes and start earning"
+          title={t('hostLNothingListedYet', language)}
+          subtitle={t('hostLNothingListedYetSub', language)}
           action={{
-            label: 'List something →',
+            label: t('hostLListMyVehicle', language),
             onPress: () => router.push('/(host)/listings/new' as Parameters<typeof router.push>[0]),
           }}
         />
@@ -221,10 +232,10 @@ export default function HostListingsScreen() {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
           router.push('/(host)/listings/new' as Parameters<typeof router.push>[0])
         }}
-        accessibilityLabel="List something new"
         accessibilityRole="button"
+        accessibilityLabel={t('hostLListSomethingNew', language)}
       >
-        <Text style={styles.fabText}>+ List something new</Text>
+        <Text style={styles.fabText}>{t('hostLListSomethingNew', language)}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -233,10 +244,10 @@ export default function HostListingsScreen() {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
           router.push('/(host)/listings/add-external' as Parameters<typeof router.push>[0])
         }}
-        accessibilityLabel="Import from Airbnb or Booking.com"
         accessibilityRole="button"
+        accessibilityLabel={t('hostLImportExternal', language)}
       >
-        <Text style={styles.importBtnText}>↗ Import from Airbnb / Booking.com</Text>
+        <Text style={styles.importBtnText}>{t('hostLImportExternal', language)}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   )

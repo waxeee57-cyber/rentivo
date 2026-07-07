@@ -9,6 +9,13 @@ import { Card } from '@/components/ui/Card'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
+import type { TranslationKey } from '@/constants/i18n'
+
+// Wrapper to allow pending cpr keys before i18n.ts is updated
+const cprT = (key: string, lang: 'en' | 'es' | 'hu'): string =>
+  t(key as unknown as TranslationKey, lang)
 
 interface Connection {
   id: string
@@ -41,15 +48,10 @@ const MOCK_CONNECTIONS: Connection[] = Config.useMock ? [
   },
 ] : []
 
-const STATUS_LABELS: Record<Connection['status'], string> = {
-  active: 'Synced',
-  error: 'Sync error',
-  pending: 'Pending',
-}
-
 export default function ConnectedPlatformsScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const { language } = useAuthStore()
   const STATUS_COLORS: Record<Connection['status'], string> = {
     active: C.success,
     error: C.error,
@@ -59,12 +61,18 @@ export default function ConnectedPlatformsScreen() {
   const [syncing, setSyncing] = useState<string | null>(null)
   const { showToast } = useToastStore()
 
+  const statusLabel = (s: Connection['status']): string => {
+    if (s === 'active') return cprT('cprStatusSynced', language)
+    if (s === 'error') return cprT('cprStatusSyncError', language)
+    return cprT('cprStatusPending', language)
+  }
+
   const handleSync = async (id: string) => {
     setSyncing(id)
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     await new Promise(r => setTimeout(r, 1200))
     setSyncing(null)
-    showToast({ message: 'iCal sync complete ✓', type: 'success' })
+    showToast({ message: cprT('cprICalSyncComplete', language), type: 'success' })
     setConnections(prev => prev.map(c =>
       c.id === id ? { ...c, lastSynced: 'just now', status: 'active' } : c
     ))
@@ -74,7 +82,10 @@ export default function ConnectedPlatformsScreen() {
     setConnections(prev => prev.map(c =>
       c.id === id ? { ...c, icalEnabled: enabled } : c
     ))
-    showToast({ message: enabled ? 'iCal sync enabled' : 'iCal sync paused', type: 'info' })
+    showToast({
+      message: enabled ? cprT('cprICalSyncEnabled', language) : cprT('cprICalSyncPaused', language),
+      type: 'info',
+    })
   }
 
   const handleAddConnection = () => {
@@ -83,21 +94,16 @@ export default function ConnectedPlatformsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Connected Platforms" />
+      <ScreenHeader title={t('connectedPlatforms', language)} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.subtitle}>
-          Connect your listings from Airbnb, Booking.com, VRBO and more.
-          Your availability syncs automatically — no double bookings.
-        </Text>
+        <Text style={styles.subtitle}>{cprT('cprConnectedPlatformsSubtitle', language)}</Text>
 
         {connections.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>🔗</Text>
-            <Text style={styles.emptyTitle}>No platforms connected</Text>
-            <Text style={styles.emptySubtitle}>
-              Connect your external listings to sync availability automatically.
-            </Text>
+            <Text style={styles.emptyTitle}>{cprT('cprNoPlatformsConnected', language)}</Text>
+            <Text style={styles.emptySubtitle}>{cprT('cprNoPlatformsDesc', language)}</Text>
           </View>
         ) : (
           connections.map(conn => (
@@ -109,22 +115,23 @@ export default function ConnectedPlatformsScreen() {
                   <View style={styles.statusRow}>
                     <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[conn.status] }]} />
                     <Text style={[styles.statusText, { color: STATUS_COLORS[conn.status] }]}>
-                      {STATUS_LABELS[conn.status]}
+                      {statusLabel(conn.status)}
                     </Text>
-                    <Text style={styles.lastSynced}> · Last synced: {conn.lastSynced}</Text>
+                    <Text style={styles.lastSynced}> · {cprT('cprLastSynced', language)} {conn.lastSynced}</Text>
                   </View>
                 </View>
               </View>
 
               <View style={styles.cardRow}>
                 <View style={styles.cardRowLeft}>
-                  <Text style={styles.cardRowLabel}>🔄 iCal sync</Text>
-                  <Text style={styles.cardRowSub}>Auto-sync every 4 hours</Text>
+                  <Text style={styles.cardRowLabel}>🔄 {cprT('cprICalSync', language)}</Text>
+                  <Text style={styles.cardRowSub}>{cprT('cprAutoSyncEvery4Hours', language)}</Text>
                 </View>
                 <Switch
                   value={conn.icalEnabled}
                   onValueChange={v => handleToggleIcal(conn.id, v)}
                   trackColor={{ true: C.success, false: C.border }}
+                  accessibilityLabel={cprT('cprICalSync', language)}
                 />
               </View>
 
@@ -132,27 +139,29 @@ export default function ConnectedPlatformsScreen() {
                 style={[styles.syncBtn, syncing === conn.id && styles.syncBtnDisabled]}
                 onPress={() => { void handleSync(conn.id) }}
                 disabled={syncing === conn.id}
+                accessibilityRole="button"
+                accessibilityLabel={cprT('cprSyncNow', language)}
               >
                 <Text style={styles.syncBtnText}>
-                  {syncing === conn.id ? 'Syncing...' : '⟳ Sync now'}
+                  {syncing === conn.id ? cprT('cprSyncing', language) : cprT('cprSyncNow', language)}
                 </Text>
               </TouchableOpacity>
             </Card>
           ))
         )}
 
-        <TouchableOpacity style={styles.addBtn} onPress={handleAddConnection}>
-          <Text style={styles.addBtnText}>+ Add a platform connection</Text>
+        <TouchableOpacity
+          style={styles.addBtn}
+          onPress={handleAddConnection}
+          accessibilityRole="button"
+          accessibilityLabel={cprT('cprAddPlatformConnection', language)}
+        >
+          <Text style={styles.addBtnText}>{cprT('cprAddPlatformConnection', language)}</Text>
         </TouchableOpacity>
 
         <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>How it works</Text>
-          <Text style={styles.infoText}>
-            {'✓  Your listing appears on Rentivo\n'}
-            {'✓  Guests are directed to book on the original platform\n'}
-            {'✓  iCal keeps your calendars in sync automatically\n'}
-            {'✓  Rentivo earns a commission on bookings made through the link'}
-          </Text>
+          <Text style={styles.infoTitle}>{t('opFleet2HowItWorks', language)}</Text>
+          <Text style={styles.infoText}>{cprT('cprConnectedPlatformsHowItWorks', language)}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -220,6 +229,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     borderWidth: 1,
     borderColor: C.primary,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   syncBtnDisabled: { opacity: 0.5 },
   syncBtnText: { fontSize: 14, fontWeight: '700', color: C.primaryDark },
@@ -232,6 +243,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     padding: Spacing.base,
     alignItems: 'center',
     marginBottom: Spacing.xl,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   addBtnText: { fontSize: 14, fontWeight: '700', color: C.primary },
 

@@ -48,3 +48,7 @@ google-play-service-account.json
 # generated native folders
 /ios
 /android
+# --- higiénia-audit 2026-07-07: bináris/python szemét ---
+*.exe
+__pycache__/
+*.pyc

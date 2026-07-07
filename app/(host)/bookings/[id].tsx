@@ -9,6 +9,8 @@ import { Config } from '@/constants/config'
 import { useBooking } from '@/lib/hooks/useBookings'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { useColors } from '@/lib/hooks/useColors'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 
 function BookingDetailSkeleton() {
   const C = useColors()
@@ -36,6 +38,7 @@ export default function HostBookingDetailScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const { id } = useLocalSearchParams<{ id: string }>()
+  const { language } = useAuthStore()
   const { booking: liveBooking, loading } = useBooking(Config.useMock ? null : (id ?? null))
   const booking = Config.useMock
     ? MOCK_BOOKINGS.find(b => b.id === id) ?? MOCK_BOOKINGS[0]
@@ -49,7 +52,7 @@ export default function HostBookingDetailScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: C.textSecondary }}>Booking not found</Text>
+          <Text style={{ color: C.textSecondary }}>{t('hostBBookingNotFound', language)}</Text>
         </View>
       </SafeAreaView>
     )
@@ -60,41 +63,55 @@ export default function HostBookingDetailScreen() {
   payoutDate.setDate(payoutDate.getDate() + 1)
 
   const handleConfirm = () => {
-    Alert.alert('Booking confirmed', 'The guest has been notified.')
+    Alert.alert(t('hostBBookingConfirmedAlert', language), t('hostBGuestNotified', language))
     router.back()
   }
 
   const handleDecline = () => {
-    Alert.alert('Decline booking?', 'The guest will be refunded.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Decline', style: 'destructive', onPress: () => router.back() },
+    Alert.alert(t('hostBDeclineTitle', language), t('hostBGuestRefunded', language), [
+      { text: t('cancel', language), style: 'cancel' },
+      { text: t('declineBooking', language), style: 'destructive', onPress: () => router.back() },
     ])
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          accessibilityRole="button"
+          accessibilityLabel={t('opBkBack', language)}
+        >
           <Ionicons name="arrow-back" size={22} color={C.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Booking details</Text>
+        <Text style={styles.headerTitle}>{t('hostBBookingDetails', language)}</Text>
         <View style={{ width: 22 }} />
       </View>
 
       {/* Prominent confirm banner for pending bookings */}
       {booking.status === 'pending' && (
         <View style={styles.confirmBanner}>
-          <Text style={styles.confirmBannerLabel}>⏳ New booking — confirm to accept</Text>
+          <Text style={styles.confirmBannerLabel}>{'⏳ ' + t('hostBNewBookingBanner', language)}</Text>
           <View style={styles.confirmBannerRow}>
-            <TouchableOpacity style={styles.confirmBigBtn} onPress={handleConfirm}>
-              <Text style={styles.confirmBigBtnText}>✓ Confirm booking</Text>
+            <TouchableOpacity
+              style={styles.confirmBigBtn}
+              onPress={handleConfirm}
+              accessibilityRole="button"
+              accessibilityLabel={t('confirmBooking', language)}
+            >
+              <Text style={styles.confirmBigBtnText}>{'✓ ' + t('confirmBooking', language)}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.declineSmallBtn} onPress={handleDecline}>
-              <Text style={styles.declineSmallBtnText}>Decline</Text>
+            <TouchableOpacity
+              style={styles.declineSmallBtn}
+              onPress={handleDecline}
+              accessibilityRole="button"
+              accessibilityLabel={t('declineBooking', language)}
+            >
+              <Text style={styles.declineSmallBtnText}>{t('declineBooking', language)}</Text>
             </TouchableOpacity>
           </View>
           <Text style={styles.confirmBannerPayout}>
-            You receive: {formatEURDecimal(earnings)} · 24h after pickup
+            {`${t('youReceive', language)}: ${formatEURDecimal(earnings)} · 24h after pickup`}
           </Text>
         </View>
       )}
@@ -109,7 +126,7 @@ export default function HostBookingDetailScreen() {
             <View style={styles.guestNameRow}>
               <Text style={styles.guestName}>{booking.guest_name}</Text>
               <View style={styles.verifiedBadge}>
-                <Text style={styles.verifiedBadgeText}>✓ Verified</Text>
+                <Text style={styles.verifiedBadgeText}>{t('hostBVerified', language)}</Text>
               </View>
             </View>
             <Text style={styles.guestMeta}>
@@ -121,42 +138,42 @@ export default function HostBookingDetailScreen() {
 
         {/* Booking details */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Booking details</Text>
+          <Text style={styles.sectionTitle}>{t('hostBBookingDetails', language)}</Text>
           <View style={styles.detailCard}>
-            <Row label="Vehicle" value={booking.listing?.title ?? '—'} />
-            <Row label="Check-in" value={booking.start_date} />
-            <Row label="Check-out" value={booking.end_date} />
-            <Row label="Duration" value={`${booking.total_days} days`} />
-            {booking.pickup_time && <Row label="Pickup time" value={booking.pickup_time} />}
-            {booking.pickup_location && <Row label="Pickup location" value={booking.pickup_location} />}
+            <Row label={t('hostBVehicle', language)} value={booking.listing?.title ?? '—'} />
+            <Row label={t('hostBCheckIn', language)} value={booking.start_date} />
+            <Row label={t('hostBCheckOut', language)} value={booking.end_date} />
+            <Row label={t('hostBDuration', language)} value={`${booking.total_days} days`} />
+            {booking.pickup_time && <Row label={t('pickupTime', language)} value={booking.pickup_time} />}
+            {booking.pickup_location && <Row label={t('pickupLocation', language)} value={booking.pickup_location} />}
           </View>
         </View>
 
         {/* Payment */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment</Text>
+          <Text style={styles.sectionTitle}>{t('hostBPayment', language)}</Text>
           <View style={styles.detailCard}>
-            <Row label="Total charge" value={formatEURDecimal(booking.total_amount)} />
-            <Row label="Rentivo fee (2.5%)" value={`-${formatEURDecimal(booking.total_amount - earnings)}`} />
+            <Row label={t('hostBTotalCharge', language)} value={formatEURDecimal(booking.total_amount)} />
+            <Row label={t('hostBRentivoFee', language)} value={`-${formatEURDecimal(booking.total_amount - earnings)}`} />
             <View style={styles.earningsRow}>
-              <Text style={styles.earningsLabel}>Your earnings</Text>
+              <Text style={styles.earningsLabel}>{t('hostBYourEarnings', language)}</Text>
               <Text style={styles.earningsValue}>{formatEURDecimal(earnings)}</Text>
             </View>
-            <Row label="Payout date" value={payoutDate.toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })} />
+            <Row label={t('hostBPayoutDate', language)} value={payoutDate.toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })} />
           </View>
         </View>
 
         {/* Inspection status */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Inspection</Text>
+          <Text style={styles.sectionTitle}>{t('opBkInspection', language)}</Text>
           <View style={styles.detailCard}>
             <Row
-              label="Pickup inspection"
-              value={booking.pickup_damage_done ? '✅ Done' : '⏳ Pending'}
+              label={t('pickupInspection', language)}
+              value={booking.pickup_damage_done ? ('✅ ' + t('opBkDone', language)) : ('⏳ ' + t('pending', language))}
             />
             <Row
-              label="Return inspection"
-              value={booking.return_damage_done ? '✅ Done' : '⏳ Pending'}
+              label={t('returnInspection', language)}
+              value={booking.return_damage_done ? ('✅ ' + t('opBkDone', language)) : ('⏳ ' + t('pending', language))}
             />
           </View>
         </View>
@@ -166,18 +183,30 @@ export default function HostBookingDetailScreen() {
           <TouchableOpacity
             style={styles.messageBtn}
             onPress={() => router.push(`/(consumer)/bookings/chat/${booking.id}`)}
+            accessibilityRole="button"
+            accessibilityLabel={t('opBkMessageGuest', language)}
           >
             <Ionicons name="chatbubble-outline" size={18} color={C.primary} />
-            <Text style={styles.messageBtnText}>Message guest</Text>
+            <Text style={styles.messageBtnText}>{t('opBkMessageGuest', language)}</Text>
           </TouchableOpacity>
 
           {booking.status === 'pending' && (
             <View style={styles.pendingActions}>
-              <TouchableOpacity style={styles.declineBtn} onPress={handleDecline}>
-                <Text style={styles.declineBtnText}>Decline</Text>
+              <TouchableOpacity
+                style={styles.declineBtn}
+                onPress={handleDecline}
+                accessibilityRole="button"
+                accessibilityLabel={t('declineBooking', language)}
+              >
+                <Text style={styles.declineBtnText}>{t('declineBooking', language)}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm}>
-                <Text style={styles.confirmBtnText}>Confirm booking</Text>
+              <TouchableOpacity
+                style={styles.confirmBtn}
+                onPress={handleConfirm}
+                accessibilityRole="button"
+                accessibilityLabel={t('confirmBooking', language)}
+              >
+                <Text style={styles.confirmBtnText}>{t('confirmBooking', language)}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -186,8 +215,10 @@ export default function HostBookingDetailScreen() {
             <TouchableOpacity
               style={styles.inspectionBtn}
               onPress={() => router.push(`/(consumer)/damage/pickup/${booking.id}`)}
+              accessibilityRole="button"
+              accessibilityLabel={t('hostBStartPickupInspection', language)}
             >
-              <Text style={styles.inspectionBtnText}>🔍 Start pickup inspection</Text>
+              <Text style={styles.inspectionBtnText}>{'🔍 ' + t('hostBStartPickupInspection', language)}</Text>
             </TouchableOpacity>
           )}
 
@@ -195,8 +226,10 @@ export default function HostBookingDetailScreen() {
             <TouchableOpacity
               style={styles.inspectionBtn}
               onPress={() => router.push(`/(consumer)/damage/return/${booking.id}`)}
+              accessibilityRole="button"
+              accessibilityLabel={t('hostBCompleteRental', language)}
             >
-              <Text style={styles.inspectionBtnText}>🏁 Complete rental</Text>
+              <Text style={styles.inspectionBtnText}>{'🏁 ' + t('hostBCompleteRental', language)}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -307,6 +340,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.primary,
     backgroundColor: C.primarySurface,
+    minHeight: 44,
   },
   messageBtnText: { fontSize: 15, fontWeight: '700', color: C.primary },
 
@@ -319,6 +353,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.error,
     backgroundColor: C.errorSurface,
+    minHeight: 44,
   },
   declineBtnText: { fontSize: 15, fontWeight: '700', color: C.error },
   confirmBtn: {
@@ -332,6 +367,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
+    minHeight: 44,
   },
   confirmBtnText: { fontSize: 15, fontWeight: '700', color: C.textInverse },
 
@@ -345,6 +381,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
+    minHeight: 44,
   },
   inspectionBtnText: { fontSize: 15, fontWeight: '700', color: C.textInverse },
   confirmBanner: {
@@ -362,6 +399,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: Radius.lg,
     paddingVertical: Spacing.md,
     alignItems: 'center',
+    minHeight: 44,
   },
   confirmBigBtnText: { fontSize: 16, fontWeight: '800', color: C.white },
   declineSmallBtn: {
@@ -371,6 +409,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     borderWidth: 1,
     borderColor: C.error,
+    minHeight: 44,
   },
   declineSmallBtnText: { fontSize: 14, fontWeight: '700', color: C.error },
   confirmBannerPayout: { fontSize: 12, color: C.textSecondary, textAlign: 'center' },

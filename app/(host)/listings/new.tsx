@@ -17,6 +17,7 @@ import { supabase } from '@/lib/supabase'
 import { createListing } from '@/lib/api/listings'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 import type { Listing } from '@/types'
 
 const CATEGORIES: { key: string; icon: React.ComponentProps<typeof Ionicons>['name']; label: string }[] = [
@@ -43,7 +44,6 @@ export default function NewHostListingScreen() {
   const { showPhotoOptions } = useCamera()
   const { showToast } = useToastStore()
   const { language } = useAuthStore()
-  const isHu = language === 'hu'
   const [step, setStep] = useState<Step>(1)
   const [category, setCategory] = useState('')
   const [make, setMake] = useState('')
@@ -91,8 +91,8 @@ export default function NewHostListingScreen() {
     const derivedTitle = [make, model].filter(Boolean).join(' ').trim() || category
     if (!derivedTitle) {
       Alert.alert(
-        isHu ? 'Hiba' : 'Error',
-        isHu ? 'Kategória megadása kötelező' : 'Category is required',
+        t('opFleet2Error', language),
+        t('hostLErrCategoryRequired', language),
       )
       return
     }
@@ -109,7 +109,7 @@ export default function NewHostListingScreen() {
         .maybeSingle()
 
       if (!hostRecord?.id) {
-        showToast({ message: isHu ? 'Host profil nem található' : 'Host account not found. Please complete your profile.', type: 'error' })
+        showToast({ message: t('hostLHostNotFound', language), type: 'error' })
         setPublishing(false)
         return
       }
@@ -147,10 +147,10 @@ export default function NewHostListingScreen() {
       })
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      showToast({ message: isHu ? 'Hirdetés létrehozva' : 'Listing created', type: 'success' })
+      showToast({ message: t('hostLListingCreated', language), type: 'success' })
       router.replace('/(host)/listings')
     } catch {
-      showToast({ message: isHu ? 'Hiba történt' : 'Something went wrong', type: 'error' })
+      showToast({ message: t('hostLSomethingWentWrong', language), type: 'error' })
     } finally {
       setPublishing(false)
     }
@@ -165,17 +165,17 @@ export default function NewHostListingScreen() {
           <View style={styles.publishedCircle}>
             <Text style={styles.publishedCheck}>✓</Text>
           </View>
-          <Text style={styles.publishedTitle}>You're live! 🎉</Text>
-          <Text style={styles.publishedSubtitle}>Your listing is now visible to travellers.</Text>
+          <Text style={styles.publishedTitle}>{t('hostLYoureLive', language)}</Text>
+          <Text style={styles.publishedSubtitle}>{t('hostLLiveSubtitle', language)}</Text>
           <WhatNextScreen
             steps={[
-              { icon: '🔔', text: "You'll get a notification when someone books" },
-              { icon: '✓', text: 'Confirm or decline each booking in your inbox' },
-              { icon: '💰', text: 'Your payout arrives 24 hours after pickup' },
-              { icon: '🛡️', text: 'Insurance is automatically included' },
+              { icon: '🔔', text: t('hostLWhatNext1', language) },
+              { icon: '✓', text: t('hostLWhatNext2', language) },
+              { icon: '💰', text: t('hostLWhatNext3', language) },
+              { icon: '🛡️', text: t('hostLWhatNext4', language) },
             ]}
             primaryAction={{
-              label: 'View my listings',
+              label: t('hostLViewMyListings', language),
               onPress: () => router.replace('/(host)/listings'),
             }}
           />
@@ -192,17 +192,27 @@ export default function NewHostListingScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => step > 1 ? setStep((step - 1) as Step) : router.back()}>
+          <TouchableOpacity
+            onPress={() => step > 1 ? setStep((step - 1) as Step) : router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={t('opBkBack', language)}
+          >
             <Ionicons name="arrow-back" size={22} color={C.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>List your vehicle</Text>
+          <Text style={styles.headerTitle}>{t('hostLListYourVehicle', language)}</Text>
           <View style={{ width: 22 }} />
         </View>
 
         <StepIndicator
           totalSteps={5}
           currentStep={step}
-          labels={['Type', 'Details', 'Photos', 'Price', 'Location']}
+          labels={[
+            t('hostLStepType', language),
+            t('opFleetStepDetails', language),
+            t('opFleetPhotos', language),
+            t('opFleetStepPrice', language),
+            t('hostLStepLocation', language),
+          ]}
         />
 
         <ScrollView
@@ -213,7 +223,7 @@ export default function NewHostListingScreen() {
           {/* Step 1: Category */}
           {step === 1 && (
             <View>
-              <Text style={styles.title}>What are you renting?</Text>
+              <Text style={styles.title}>{t('hostLWhatAreYouRenting', language)}</Text>
               <View style={styles.categoryGrid}>
                 {CATEGORIES.map(cat => (
                   <TouchableOpacity
@@ -238,25 +248,25 @@ export default function NewHostListingScreen() {
           {/* Step 2: Details */}
           {step === 2 && (
             <View>
-              <Text style={styles.title}>Tell us about it</Text>
+              <Text style={styles.title}>{t('hostLTellUsAboutIt', language)}</Text>
               {(category === 'car' || category === 'motorcycle') && (
                 <>
                   <View style={styles.row}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.label}>Make</Text>
+                      <Text style={styles.label}>{t('opFleetMake', language)}</Text>
                       <TextInput
                         style={styles.input}
-                        placeholder="e.g. Toyota"
+                        placeholder={t('hostLMakePlaceholder', language)}
                         placeholderTextColor={C.textTertiary}
                         value={make}
                         onChangeText={setMake}
                       />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.label}>Model</Text>
+                      <Text style={styles.label}>{t('opFleetModel', language)}</Text>
                       <TextInput
                         style={styles.input}
-                        placeholder="e.g. RAV4"
+                        placeholder={t('hostLModelPlaceholder', language)}
                         placeholderTextColor={C.textTertiary}
                         value={model}
                         onChangeText={setModel}
@@ -265,7 +275,7 @@ export default function NewHostListingScreen() {
                   </View>
                   <View style={styles.row}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.label}>Year (optional)</Text>
+                      <Text style={styles.label}>{t('hostLYearOptional', language)}</Text>
                       <TextInput
                         style={styles.input}
                         placeholder="2023"
@@ -276,7 +286,7 @@ export default function NewHostListingScreen() {
                       />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.label}>Color (optional)</Text>
+                      <Text style={styles.label}>{t('hostLColorOptional', language)}</Text>
                       <TextInput
                         style={styles.input}
                         placeholder="White"
@@ -290,30 +300,30 @@ export default function NewHostListingScreen() {
               )}
               {(category === 'villa') && (
                 <View>
-                  <Text style={styles.label}>STR Registration Number</Text>
+                  <Text style={styles.label}>{t('opFleetStrNumber', language)}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="e.g. VUT/MAD/2024/12345 (required by local law)"
+                    placeholder={t('hostLStrPlaceholder', language)}
                     placeholderTextColor={C.textTertiary}
                     value={strRegistration}
                     onChangeText={setStrRegistration}
                   />
                   <Text style={{ color: C.textTertiary, fontSize: 11, marginBottom: Spacing.md }}>
-                    Many EU cities require a short-term rental licence number on all listings.
+                    {t('hostLStrHintText', language)}
                   </Text>
                 </View>
               )}
-              <Text style={styles.label}>Short description</Text>
+              <Text style={styles.label}>{t('hostLShortDescription', language)}</Text>
               <TextInput
                 style={[styles.input, styles.inputMulti]}
-                placeholder="What makes your rental special?"
+                placeholder={t('hostLDescPlaceholder', language)}
                 placeholderTextColor={C.textTertiary}
                 value={description}
                 onChangeText={setDescription}
                 multiline
                 numberOfLines={4}
               />
-              <Text style={styles.label}>Key features</Text>
+              <Text style={styles.label}>{t('hostLKeyFeatures', language)}</Text>
               <View style={styles.featureChips}>
                 {FEATURE_CHIPS.map(f => (
                   <TouchableOpacity
@@ -322,6 +332,9 @@ export default function NewHostListingScreen() {
                     onPress={() => setFeatures(prev =>
                       prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]
                     )}
+                    accessibilityRole="button"
+                    accessibilityLabel={f}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
                     <Text style={[styles.featureChipText, features.includes(f) && styles.featureChipTextActive]}>
                       {f}
@@ -335,32 +348,36 @@ export default function NewHostListingScreen() {
           {/* Step 3: Photos */}
           {step === 3 && (
             <View>
-              <Text style={styles.title}>Add photos</Text>
-              <Text style={styles.subtitle}>Add at least 1 photo. Good lighting makes a big difference!</Text>
+              <Text style={styles.title}>{t('hostLAddPhotosTitle', language)}</Text>
+              <Text style={styles.subtitle}>{t('hostLAddPhotosSubtitle', language)}</Text>
               <View style={styles.photoGrid}>
                 {Array.from({ length: 6 }, (_, i) => (
-                  <TouchableOpacity key={i} style={styles.photoSlot} onPress={() => handlePickPhoto(i)}>
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.photoSlot}
+                    onPress={() => handlePickPhoto(i)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('opFleetAddPhoto', language)}
+                  >
                     {photos[i] ? (
                       <Image source={{ uri: photos[i]! }} style={styles.photoSlotImage} contentFit="cover" />
                     ) : (
                       <>
                         <Ionicons name="camera-outline" size={28} color={C.textTertiary} />
-                        {i === 0 && <Text style={styles.photoSlotLabel}>Cover</Text>}
+                        {i === 0 && <Text style={styles.photoSlotLabel}>{t('opFleetPhotoCover', language)}</Text>}
                       </>
                     )}
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={styles.photoTip}>
-                💡 Tip: Show the front, back, interior, and any special features
-              </Text>
+              <Text style={styles.photoTip}>{t('hostLPhotoTip', language)}</Text>
             </View>
           )}
 
           {/* Step 4: Pricing */}
           {step === 4 && (
             <View>
-              <Text style={styles.title}>Set your price</Text>
+              <Text style={styles.title}>{t('hostLSetYourPrice', language)}</Text>
               <View style={styles.priceInputWrap}>
                 <Text style={styles.currencySymbol}>€</Text>
                 <TextInput
@@ -371,23 +388,21 @@ export default function NewHostListingScreen() {
                   onChangeText={setPricePerDay}
                   keyboardType="numeric"
                 />
-                <Text style={styles.priceUnit}>/day</Text>
+                <Text style={styles.priceUnit}>{t('perDay', language)}</Text>
               </View>
-              <Text style={styles.priceSuggestion}>
-                💡 Suggested: €35–€65/day based on similar listings in your area
-              </Text>
+              <Text style={styles.priceSuggestion}>{t('hostLPriceSuggestion', language)}</Text>
 
               {pricePerDay !== '' && parseFloat(pricePerDay) > 0 && (
                 <View style={styles.earningsCard}>
-                  <Text style={styles.earningsTitle}>💰 Estimated earnings</Text>
+                  <Text style={styles.earningsTitle}>{'💰 ' + t('estimatedEarnings', language)}</Text>
                   <Text style={styles.earningsValue}>
                     ~€{Math.round(parseFloat(pricePerDay) * 8 * 0.975)}/month
                   </Text>
-                  <Text style={styles.earningsNote}>8 days/month · after 2.5% platform fee</Text>
+                  <Text style={styles.earningsNote}>{t('hostLEarningsNote', language)}</Text>
                 </View>
               )}
 
-              <Text style={styles.label}>Cancellation policy</Text>
+              <Text style={styles.label}>{t('cancellationPolicy', language)}</Text>
               {POLICIES.map(p => (
                 <TouchableOpacity
                   key={p.key}
@@ -409,21 +424,21 @@ export default function NewHostListingScreen() {
           {/* Step 5: Location & availability */}
           {step === 5 && (
             <View>
-              <Text style={styles.title}>Location & availability</Text>
+              <Text style={styles.title}>{t('hostLLocationTitle', language)}</Text>
 
-              <Text style={styles.label}>City</Text>
+              <Text style={styles.label}>{t('hostLCity', language)}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="City where your rental is located"
+                placeholder={t('hostLCityPlaceholder', language)}
                 placeholderTextColor={C.textTertiary}
                 value={city}
                 onChangeText={setCity}
               />
 
-              <Text style={styles.label}>Pickup address</Text>
+              <Text style={styles.label}>{t('hostLPickupAddress', language)}</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Street address or area"
+                placeholder={t('hostLPickupAddressPlaceholder', language)}
                 placeholderTextColor={C.textTertiary}
                 value={address}
                 onChangeText={setAddress}
@@ -431,16 +446,18 @@ export default function NewHostListingScreen() {
 
               <View style={styles.instantBookRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.instantBookTitle}>Instant book</Text>
+                  <Text style={styles.instantBookTitle}>{t('instantBook', language)}</Text>
                   <Text style={styles.instantBookDesc}>
                     {instantBook
-                      ? 'Bookings confirmed automatically'
-                      : 'You confirm each booking manually'}
+                      ? t('hostLInstantBookOn', language)
+                      : t('hostLInstantBookOff', language)}
                   </Text>
                 </View>
                 <TouchableOpacity
                   style={[styles.toggleBtn, instantBook && styles.toggleBtnActive]}
                   onPress={() => setInstantBook(v => !v)}
+                  accessibilityRole="switch"
+                  accessibilityLabel={t('instantBook', language)}
                 >
                   <Text style={[styles.toggleBtnText, instantBook && styles.toggleBtnTextActive]}>
                     {instantBook ? 'ON' : 'OFF'}
@@ -449,9 +466,7 @@ export default function NewHostListingScreen() {
               </View>
 
               <View style={styles.publishNote}>
-                <Text style={styles.publishNoteText}>
-                  🚀 Your listing will go live immediately after publishing. You can pause or edit it at any time.
-                </Text>
+                <Text style={styles.publishNoteText}>{t('hostLPublishNote', language)}</Text>
               </View>
             </View>
           )}
@@ -462,9 +477,13 @@ export default function NewHostListingScreen() {
             style={[styles.nextBtn, (!canProceed() || publishing) && styles.nextBtnDisabled]}
             onPress={nextStep}
             disabled={!canProceed() || publishing}
+            accessibilityRole="button"
+            accessibilityLabel={step === 5 ? t('hostLPublishBtn', language) : t('continue', language)}
           >
             <Text style={styles.nextBtnText}>
-              {step === 5 ? (publishing ? '...' : '🚀 Publish listing') : 'Continue →'}
+              {step === 5
+                ? (publishing ? t('hostLPublishing', language) : t('hostLPublishBtn', language))
+                : `${t('continue', language)} →`}
             </Text>
           </TouchableOpacity>
         </View>

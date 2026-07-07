@@ -14,6 +14,9 @@ import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import type { OperatorStaffMember } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+
+const tr = t
 
 type StaffRole = 'admin' | 'staff' | 'viewer'
 
@@ -54,7 +57,7 @@ export default function TeamScreen() {
     staff: C.success,
     viewer: C.textSecondary,
   }
-  const { operator } = useAuthStore()
+  const { operator, language } = useAuthStore()
   const { showToast } = useToastStore()
   const operatorId = Config.useMock ? 'op-001' : (operator?.id ?? '')
 
@@ -63,6 +66,17 @@ export default function TeamScreen() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<StaffRole>('staff')
   const [inviting, setInviting] = useState(false)
+
+  const roleLabels: Record<StaffRole, string> = {
+    admin: tr('opSetRoleAdmin', language),
+    staff: tr('opSetRoleStaff', language),
+    viewer: tr('opSetRoleViewer', language),
+  }
+  const roleDescs: Record<StaffRole, string> = {
+    admin: tr('opSetRoleAdminDesc', language),
+    staff: tr('opSetRoleStaffDesc', language),
+    viewer: tr('opSetRoleViewerDesc', language),
+  }
 
   const loadStaff = useCallback(async () => {
     if (Config.useMock) {
@@ -83,7 +97,7 @@ export default function TeamScreen() {
 
   const handleInvite = async () => {
     if (!inviteEmail.trim() || !inviteEmail.includes('@')) {
-      showToast({ message: 'Enter a valid email address', type: 'error' })
+      showToast({ message: tr('opSetInvalidEmail', language), type: 'error' })
       return
     }
     setInviting(true)
@@ -97,7 +111,7 @@ export default function TeamScreen() {
           status: 'invited',
         })
       if (error) {
-        showToast({ message: 'Failed to send invite', type: 'error' })
+        showToast({ message: tr('opSetInviteFailed', language), type: 'error' })
         setInviting(false)
         return
       }
@@ -113,16 +127,16 @@ export default function TeamScreen() {
       await supabase.from('rentivo_operator_staff').delete().eq('id', memberId)
     }
     setStaff(prev => prev.filter(s => s.id !== memberId))
-    showToast({ message: 'Member removed', type: 'success' })
+    showToast({ message: tr('opSetMemberRemoved', language), type: 'success' })
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScreenHeader title="Team Members" />
+      <ScreenHeader title={tr('opSetTeamMembers', language)} />
       <ScrollView contentContainerStyle={styles.content}>
 
         <Card style={styles.inviteCard}>
-          <Text style={styles.sectionTitle}>Invite Member</Text>
+          <Text style={styles.sectionTitle}>{tr('opSetInviteMember', language)}</Text>
           <TextInput
             style={styles.emailInput}
             value={inviteEmail}
@@ -131,7 +145,7 @@ export default function TeamScreen() {
             placeholderTextColor={C.textSecondary}
             keyboardType="email-address"
             autoCapitalize="none"
-            accessibilityLabel="Email address to invite"
+            accessibilityLabel={tr('opSetEmailToInvite', language)}
           />
           <View style={styles.roleRow}>
             {ROLES.map(r => (
@@ -144,16 +158,16 @@ export default function TeamScreen() {
                 accessibilityState={{ selected: inviteRole === r.key }}
               >
                 <Text style={[styles.roleText, inviteRole === r.key && styles.roleTextActive]}>
-                  {r.label}
+                  {roleLabels[r.key]}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
           <Text style={styles.roleDesc}>
-            {ROLES.find(r => r.key === inviteRole)?.desc}
+            {roleDescs[inviteRole]}
           </Text>
           <Button
-            title={inviting ? 'Sending...' : 'Send Invite'}
+            title={inviting ? tr('opSetSending', language) : tr('opSetSendInvite', language)}
             onPress={handleInvite}
             loading={inviting}
             fullWidth
@@ -179,7 +193,7 @@ export default function TeamScreen() {
                     <View style={styles.badgeRow}>
                       <View style={[styles.roleBadge, { borderColor: roleColor[member.role] }]}>
                         <Text style={[styles.roleBadgeText, { color: roleColor[member.role] }]}>
-                          {member.role}
+                          {roleLabels[member.role]}
                         </Text>
                       </View>
                       <View style={[
@@ -190,7 +204,7 @@ export default function TeamScreen() {
                           styles.statusText,
                           { color: member.status === 'active' ? C.success : C.textSecondary },
                         ]}>
-                          {member.status === 'active' ? '● Active' : '○ Invited'}
+                          {member.status === 'active' ? tr('opSetStatusActive', language) : tr('opSetStatusInvited', language)}
                         </Text>
                       </View>
                     </View>
@@ -207,7 +221,7 @@ export default function TeamScreen() {
               </Card>
             ))}
             {staff.length === 0 && (
-              <Text style={styles.emptyText}>No team members yet. Invite someone above.</Text>
+              <Text style={styles.emptyText}>{tr('opSetTeamEmpty', language)}</Text>
             )}
           </>
         )}

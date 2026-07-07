@@ -22,6 +22,8 @@ import { Config } from '@/constants/config'
 import type { PhotoSlot } from '@/components/damage/DamagePhotoGrid'
 import type { FuelLevel } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 const FUEL_LEVELS: { key: FuelLevel; label: string }[] = [
   { key: 'empty', label: 'Empty' },
@@ -32,7 +34,6 @@ const FUEL_LEVELS: { key: FuelLevel; label: string }[] = [
 ]
 
 const REQUIRED_SLOTS: PhotoSlot[] = ['front', 'back', 'left', 'right', 'interior', 'extra']
-const STEP_LABELS = ['Photos', 'Details', 'Signatures']
 
 interface ValidationErrors {
   photos?: string
@@ -54,6 +55,7 @@ export default function PickupDamageScreen() {
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const bkId = Config.useMock ? 'bk-003' : (bookingId ?? '')
   const { showToast } = useToastStore()
+  const { language } = useAuthStore()
 
   const [step, setStep] = useState(1)
   const [photos, setPhotos] = useState<Partial<Record<PhotoSlot, string | null>>>({})
@@ -83,15 +85,15 @@ export default function PickupDamageScreen() {
     }
     if (s === 2) {
       if (!mileage || isNaN(Number(mileage))) {
-        errs.mileage = 'Enter current mileage'
+        errs.mileage = t('cdmgEnterMileage', language)
       }
       if (damageFound && damageNotes.trim().length < 10) {
-        errs.damageDescription = 'Describe the damage (min 10 characters)'
+        errs.damageDescription = t('cdmgDescribeDamageMin', language)
       }
     }
     if (s === 3) {
-      if (!operatorSig) errs.operatorSignature = 'Operator signature required'
-      if (!consumerSig) errs.consumerSignature = 'Your signature required'
+      if (!operatorSig) errs.operatorSignature = t('cdmgOperatorSigRequired', language)
+      if (!consumerSig) errs.consumerSignature = t('cdmgConsumerSigRequired', language)
     }
     return errs
   }
@@ -122,7 +124,7 @@ export default function PickupDamageScreen() {
       if (Config.useMock) {
         await new Promise<void>(r => setTimeout(r, 1000))
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        showToast({ message: 'Inspection complete! Both parties have signed.', type: 'success' })
+        showToast({ message: t('cdmgInspectionComplete', language), type: 'success' })
         router.back()
         return
       }
@@ -159,7 +161,7 @@ export default function PickupDamageScreen() {
       })
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      showToast({ message: 'Pickup inspection completed! ✓', type: 'success' })
+      showToast({ message: t('cdmgPickupComplete', language), type: 'success' })
       router.back()
     } catch {
       showToast({ message: getError('server_error'), type: 'error' })
@@ -174,36 +176,40 @@ export default function PickupDamageScreen() {
     if (step === 1) {
       return filledPhotoCount < 6
         ? `${filledPhotoCount}/6 photos · Need ${6 - filledPhotoCount} more`
-        : 'Next: Details →'
+        : t('cdmgNextDetails', language)
     }
-    if (step === 2) return 'Next: Signatures →'
-    if (!operatorSig || !consumerSig) return 'Sign first'
-    return 'Submit inspection'
+    if (step === 2) return t('cdmgNextSignatures', language)
+    if (!operatorSig || !consumerSig) return t('cdmgSignFirst', language)
+    return t('cdmgSubmitInspectionBtn', language)
   })()
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader
-        title="Pickup Inspection"
+        title={t('pickupInspection', language)}
         onBack={() => step > 1 ? setStep(s => s - 1) : router.back()}
         rightAction={
           <HelpTooltip
-            title="Vehicle inspection"
-            description={'Take photos before you drive away. This protects both you and the operator.'}
+            title={t('cdmgVehicleInspection', language)}
+            description={t('cdmgHelpTakePhotos', language)}
             faqs={[
-              { q: 'Do I have to take all 6 photos?', a: 'Yes — front, back, both sides, interior, and one extra.' },
-              { q: 'What if I find damage?', a: 'Toggle "Damage found" and describe it. Both parties sign.' },
+              { q: t('cdmgHelp6PhotosQ', language), a: t('cdmgHelp6PhotosA', language) },
+              { q: t('cdmgHelpDamageFoundQ', language), a: t('cdmgHelpDamageFoundA', language) },
             ]}
           />
         }
       />
 
-      <StepIndicator totalSteps={3} currentStep={step} labels={STEP_LABELS} />
+      <StepIndicator
+        totalSteps={3}
+        currentStep={step}
+        labels={[t('cdmgStepPhotos', language), t('cdmgStepDetails', language), t('cdmgSignaturesTitle', language)]}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         {step === 1 && (
           <>
-            <Text style={styles.stepHint}>Take 6 photos of the vehicle from all angles</Text>
+            <Text style={styles.stepHint}>{t('cdmgTake6Photos', language)}</Text>
             <DamagePhotoGrid photos={photos} onPhoto={handlePhoto} />
             <FieldError message={errors.photos} />
           </>
@@ -211,17 +217,17 @@ export default function PickupDamageScreen() {
 
         {step === 2 && (
           <>
-            <Text style={styles.stepHint}>Record the vehicle condition details</Text>
+            <Text style={styles.stepHint}>{t('cdmgRecordCondition', language)}</Text>
             <Card style={styles.card}>
-              <Text style={styles.sectionTitle}>Mileage & Fuel</Text>
+              <Text style={styles.sectionTitle}>{t('cdmgMileageAndFuel', language)}</Text>
               <TextInput
                 style={[styles.mileageInput, errors.mileage && styles.inputError]}
-                placeholder="Enter current mileage (km)"
+                placeholder={t('cdmgMileagePlaceholder', language)}
                 value={mileage}
                 onChangeText={v => { setMileage(v); setErrors(prev => ({ ...prev, mileage: undefined })) }}
                 keyboardType="numeric"
                 placeholderTextColor={C.textTertiary}
-                accessibilityLabel="Current mileage"
+                accessibilityLabel={t('cdmgCurrentMileageA11y', language)}
               />
               <FieldError message={errors.mileage} />
               <View style={styles.fuelRow}>
@@ -244,25 +250,25 @@ export default function PickupDamageScreen() {
 
             <Card style={styles.card}>
               <View style={styles.damageRow}>
-                <Text style={styles.damageLabel}>Any damage found?</Text>
+                <Text style={styles.damageLabel}>{t('cdmgAnyDamageFound', language)}</Text>
                 <Switch
                   value={damageFound}
                   onValueChange={v => { setDamageFound(v); setErrors(prev => ({ ...prev, damageDescription: undefined })) }}
                   trackColor={{ true: C.error, false: C.border }}
-                  accessibilityLabel="Damage found toggle"
+                  accessibilityLabel={t('cdmgDamageFoundToggle', language)}
                 />
               </View>
               {damageFound && (
                 <>
                   <TextInput
                     style={[styles.textArea, errors.damageDescription && styles.inputError]}
-                    placeholder="Describe the damage in detail..."
+                    placeholder={t('cdmgDescribeDamageDetail', language)}
                     value={damageNotes}
                     onChangeText={v => { setDamageNotes(v); setErrors(prev => ({ ...prev, damageDescription: undefined })) }}
                     multiline
                     numberOfLines={4}
                     placeholderTextColor={C.textTertiary}
-                    accessibilityLabel="Damage description"
+                    accessibilityLabel={t('cdmgDamageDescriptionA11y', language)}
                   />
                   <FieldError message={errors.damageDescription} />
                 </>
@@ -270,10 +276,10 @@ export default function PickupDamageScreen() {
             </Card>
 
             <Card style={styles.card}>
-              <Text style={styles.sectionTitle}>General Notes</Text>
+              <Text style={styles.sectionTitle}>{t('cdmgGeneralNotes', language)}</Text>
               <TextInput
                 style={styles.textArea}
-                placeholder="Any other notes..."
+                placeholder={t('cdmgAnyOtherNotes', language)}
                 value={notes}
                 onChangeText={setNotes}
                 multiline
@@ -286,24 +292,24 @@ export default function PickupDamageScreen() {
 
         {step === 3 && (
           <>
-            <Text style={styles.stepHint}>Both parties sign to confirm the vehicle condition</Text>
+            <Text style={styles.stepHint}>{t('cdmgBothPartiesSignHint', language)}</Text>
             <Card style={styles.card}>
-              <Text style={styles.sectionTitle}>Signatures</Text>
-              <Text style={styles.sigSubtitle}>Both parties must sign to confirm the vehicle condition.</Text>
+              <Text style={styles.sectionTitle}>{t('cdmgSignaturesTitle', language)}</Text>
+              <Text style={styles.sigSubtitle}>{t('cdmgBothPartiesMustSign', language)}</Text>
               <SignatureCanvas
-                label="Operator Signature"
+                label={t('cdmgOperatorSignature', language)}
                 onSave={v => { setOperatorSig(v); setErrors(prev => ({ ...prev, operatorSignature: undefined })) }}
                 saved={!!operatorSig}
               />
               <FieldError message={errors.operatorSignature} />
               <SignatureCanvas
-                label="Renter Signature"
+                label={t('cdmgRenterSignature', language)}
                 onSave={v => { setConsumerSig(v); setErrors(prev => ({ ...prev, consumerSignature: undefined })) }}
                 saved={!!consumerSig}
               />
               <FieldError message={errors.consumerSignature} />
               <Text style={styles.sigConfirm}>
-                I confirm this accurately reflects the vehicle condition at pickup.
+                {t('cdmgSignConfirmPickup', language)}
               </Text>
             </Card>
           </>
@@ -322,9 +328,9 @@ export default function PickupDamageScreen() {
 
       <ConfirmSheet
         visible={showConfirm}
-        title="Submit inspection report?"
-        message="Both parties have signed. This cannot be changed after submission."
-        confirmLabel="Submit report"
+        title={t('cdmgSubmitInspectionTitle', language)}
+        message={t('cdmgBothPartiesSigned', language)}
+        confirmLabel={t('cdmgSubmitReport', language)}
         onConfirm={() => void handleSubmit()}
         onCancel={() => setShowConfirm(false)}
       />

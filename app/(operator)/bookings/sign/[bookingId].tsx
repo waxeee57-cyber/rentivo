@@ -18,12 +18,15 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 export default function OperatorSignScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const { showToast } = useToastStore()
+  const { language } = useAuthStore()
   const [paths, setPaths] = useState<string[]>([])
   const [currentPath, setCurrentPath] = useState('')
   const [signing, setSigning] = useState(false)
@@ -59,7 +62,7 @@ export default function OperatorSignScreen() {
 
   const handleSign = async () => {
     if (!hasSignature) {
-      showToast({ message: 'Please sign before continuing', type: 'error' })
+      showToast({ message: t('opBkToastSignFirst', language), type: 'error' })
       return
     }
     setSigning(true)
@@ -75,26 +78,26 @@ export default function OperatorSignScreen() {
         })
         .eq('id', bookingId ?? '')
       if (error) {
-        showToast({ message: 'Signing failed. Please try again.', type: 'error' })
+        showToast({ message: t('opBkToastSignFail', language), type: 'error' })
         setSigning(false)
         return
       }
     }
 
-    showToast({ message: 'Rental agreement signed!', type: 'success' })
+    showToast({ message: t('opBkToastSigned', language), type: 'success' })
     setSigning(false)
     router.back()
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScreenHeader title="Sign Rental Agreement" />
+      <ScreenHeader title={t('opBkSignTitle', language)} />
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
         <Card style={styles.info}>
-          <Text style={styles.infoTitle}>Rental Agreement</Text>
+          <Text style={styles.infoTitle}>{t('rentalAgreement', language)}</Text>
           <Text style={styles.infoText}>
             By signing below, you confirm the rental terms as the operator.
             This is an eIDAS-compliant Simple Electronic Signature (SES) under
@@ -103,11 +106,11 @@ export default function OperatorSignScreen() {
         </Card>
 
         <Card style={styles.padCard}>
-          <Text style={styles.padLabel}>Sign here</Text>
+          <Text style={styles.padLabel}>{t('signHere', language)}</Text>
           <View
             style={styles.signaturePad}
             {...panResponder.panHandlers}
-            accessibilityLabel="Signature drawing area"
+            accessibilityLabel={t('opBkSigArea', language)}
           >
             <Svg width="100%" height={160}>
               {paths.map((p, i) => (
@@ -130,7 +133,7 @@ export default function OperatorSignScreen() {
             </Svg>
             {!hasSignature && (
               <View style={styles.placeholderContainer} pointerEvents="none">
-                <Text style={styles.placeholder}>Draw your signature above</Text>
+                <Text style={styles.placeholder}>{t('opBkDrawSignature', language)}</Text>
               </View>
             )}
           </View>
@@ -138,19 +141,20 @@ export default function OperatorSignScreen() {
           <TouchableOpacity
             style={styles.clearBtn}
             onPress={clearSignature}
-            accessibilityLabel="Clear signature"
+            accessibilityLabel={t('opBkClearSigLabel', language)}
+            accessibilityRole="button"
           >
-            <Text style={styles.clearText}>Clear</Text>
+            <Text style={styles.clearText}>{t('clearSignature', language)}</Text>
           </TouchableOpacity>
         </Card>
 
         <Button
-          title={signing ? 'Signing...' : 'Sign & Confirm'}
+          title={signing ? t('opBkSigning', language) : t('opBkSignConfirm', language)}
           onPress={handleSign}
           loading={signing}
           disabled={!hasSignature || signing}
           fullWidth
-          accessibilityLabel="Sign rental agreement and confirm"
+          accessibilityLabel={t('opBkSignConfirmLabel', language)}
         />
       </ScrollView>
     </SafeAreaView>

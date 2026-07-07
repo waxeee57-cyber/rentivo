@@ -23,6 +23,7 @@ import { updateListing, deleteListing } from '@/lib/api/listings'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { supabase } from '@/lib/supabase'
 import { PricingInsightWidget } from '@/components/operator/PricingInsightWidget'
+import { t } from '@/constants/i18n'
 
 const POLICIES: { key: CancellationPolicy; label: string; desc: string }[] = [
   { key: 'flexible', label: 'Flexible', desc: 'Full refund 1 day before' },
@@ -36,7 +37,7 @@ export default function EditVehicleScreen() {
   const { listing, loading } = useListing(id ?? '')
   const { showToast } = useToastStore()
   const { showPhotoOptions } = useCamera()
-  const { operator } = useAuthStore()
+  const { operator, language } = useAuthStore()
   const operatorId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? '')
 
   const [title, setTitle] = useState('')
@@ -95,12 +96,12 @@ export default function EditVehicleScreen() {
 
   const handleSave = async () => {
     if (!title.trim()) {
-      showToast({ message: 'Vehicle name is required', type: 'error' })
+      showToast({ message: t('opFleetToastNameRequired', language), type: 'error' })
       return
     }
     const price = parseFloat(pricePerDay)
     if (isNaN(price) || price <= 0) {
-      showToast({ message: 'Valid price per day is required', type: 'error' })
+      showToast({ message: t('opFleetToastPriceRequired', language), type: 'error' })
       return
     }
     setSaving(true)
@@ -131,10 +132,10 @@ export default function EditVehicleScreen() {
           .eq('id', operatorId)
       }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      showToast({ message: 'Updated ✓', type: 'success' })
+      showToast({ message: t('opFleetToastUpdated', language), type: 'success' })
       router.back()
     } catch {
-      showToast({ message: 'Failed to save changes', type: 'error' })
+      showToast({ message: t('opFleetToastSaveFailed', language), type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -149,10 +150,10 @@ export default function EditVehicleScreen() {
         await deleteListing(id ?? '', operatorId)
       }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      showToast({ message: 'Vehicle removed', type: 'info' })
+      showToast({ message: t('opFleetToastVehicleRemoved', language), type: 'info' })
       router.replace('/(operator)/fleet' as Parameters<typeof router.replace>[0])
     } catch {
-      showToast({ message: 'Failed to delete vehicle', type: 'error' })
+      showToast({ message: t('opFleetToastDeleteFailed', language), type: 'error' })
     } finally {
       setDeleting(false)
     }
@@ -163,9 +164,9 @@ export default function EditVehicleScreen() {
   if (loading || !listing) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
-        <ScreenHeader title="Edit vehicle" />
+        <ScreenHeader title={t('opFleetEditTitle', language)} />
         <View style={styles.loadingWrap}>
-          <Text style={styles.loadingText}>Loading…</Text>
+          <Text style={styles.loadingText}>{t('opFleetLoading', language)}</Text>
         </View>
       </SafeAreaView>
     )
@@ -173,19 +174,19 @@ export default function EditVehicleScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Edit vehicle" />
+      <ScreenHeader title={t('opFleetEditTitle', language)} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* Photos */}
-        <Text style={styles.sectionTitle}>Photos</Text>
+        <Text style={styles.sectionTitle}>{t('opFleetPhotos', language)}</Text>
         <View style={styles.photoGrid}>
           {photos.map((uri, i) => (
             <TouchableOpacity
               key={i}
               style={styles.photoSlot}
               onPress={() => handlePickPhoto(i)}
-              accessibilityLabel={uri ? `Change photo ${i + 1}` : `Add photo ${i + 1}`}
+              accessibilityLabel={`${uri ? t('opFleetChangePhoto', language) : t('opFleetAddPhoto', language)} ${i + 1}`}
               accessibilityRole="button"
             >
               {uri ? (
@@ -193,7 +194,9 @@ export default function EditVehicleScreen() {
               ) : (
                 <View style={styles.photoPlaceholder}>
                   <Text style={styles.photoPlaceholderIcon}>📷</Text>
-                  <Text style={styles.photoPlaceholderText}>{i === 0 ? 'Cover' : `Photo ${i + 1}`}</Text>
+                  <Text style={styles.photoPlaceholderText}>
+                    {i === 0 ? t('opFleetPhotoCover', language) : `${t('opFleetPhotoN', language)} ${i + 1}`}
+                  </Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -201,18 +204,18 @@ export default function EditVehicleScreen() {
         </View>
 
         {/* Vehicle name */}
-        <Text style={styles.sectionTitle}>Vehicle name</Text>
+        <Text style={styles.sectionTitle}>{t('opFleetVehicleName', language)}</Text>
         <TextInput
           style={styles.input}
           value={title}
           onChangeText={setTitle}
-          placeholder="e.g. Mercedes-Benz E-Class"
+          placeholder={t('opFleetVehicleNamePlaceholder', language)}
           placeholderTextColor={C.textTertiary}
-          accessibilityLabel="Vehicle name"
+          accessibilityLabel={t('opFleetVehicleName', language)}
         />
 
         {/* Category */}
-        <Text style={styles.sectionTitle}>Category</Text>
+        <Text style={styles.sectionTitle}>{t('opFleetCategory', language)}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
           {CATEGORIES.map(cat => (
             <TouchableOpacity
@@ -232,7 +235,7 @@ export default function EditVehicleScreen() {
         </ScrollView>
 
         {/* Price */}
-        <Text style={styles.sectionTitle}>Price per day (€)</Text>
+        <Text style={styles.sectionTitle}>{t('opFleetPricePerDay', language)}</Text>
         <TextInput
           style={styles.input}
           value={pricePerDay}
@@ -240,7 +243,7 @@ export default function EditVehicleScreen() {
           placeholder="e.g. 75"
           placeholderTextColor={C.textTertiary}
           keyboardType="numeric"
-          accessibilityLabel="Price per day"
+          accessibilityLabel={t('opFleetPricePerDay', language)}
         />
 
         {/* AI Pricing Insights */}
@@ -252,26 +255,26 @@ export default function EditVehicleScreen() {
         />
 
         {/* Description */}
-        <Text style={styles.sectionTitle}>Description</Text>
+        <Text style={styles.sectionTitle}>{t('opFleetDescription', language)}</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           value={description}
           onChangeText={setDescription}
-          placeholder="Describe your vehicle, features, included extras…"
+          placeholder={t('opFleetDescPlaceholder', language)}
           placeholderTextColor={C.textTertiary}
           multiline
           numberOfLines={4}
           textAlignVertical="top"
-          accessibilityLabel="Description"
+          accessibilityLabel={t('opFleetDescription', language)}
         />
 
         {/* Availability */}
         <Card style={styles.card}>
           <View style={styles.toggleRow}>
             <View style={styles.toggleLeft}>
-              <Text style={styles.toggleTitle}>Available for booking</Text>
+              <Text style={styles.toggleTitle}>{t('opFleetAvailableForBooking', language)}</Text>
               <Text style={styles.toggleSub}>
-                {available ? 'Visible to travellers' : 'Hidden from search results'}
+                {available ? t('opFleetVisibleToTravellers', language) : t('opFleetHiddenFromSearch', language)}
               </Text>
             </View>
             <Switch
@@ -282,7 +285,7 @@ export default function EditVehicleScreen() {
               }}
               trackColor={{ true: C.success, false: C.border }}
               thumbColor={C.surface}
-              accessibilityLabel={`Vehicle: ${available ? 'available' : 'unavailable'}`}
+              accessibilityLabel={available ? t('opFleetSwitchAvail', language) : t('opFleetSwitchUnavail', language)}
               accessibilityRole="switch"
               accessibilityState={{ checked: available }}
             />
@@ -290,7 +293,7 @@ export default function EditVehicleScreen() {
         </Card>
 
         {/* Min rental days */}
-        <Text style={styles.sectionTitle}>Minimum rental days</Text>
+        <Text style={styles.sectionTitle}>{t('opFleetMinRentalDays', language)}</Text>
         <View style={styles.minDaysRow}>
           {[1, 2, 3, 5, 7].map(d => (
             <TouchableOpacity
@@ -309,34 +312,46 @@ export default function EditVehicleScreen() {
         </View>
 
         {/* Cancellation policy */}
-        <Text style={styles.sectionTitle}>Cancellation policy</Text>
-        {POLICIES.map(p => (
-          <TouchableOpacity
-            key={p.key}
-            style={[styles.policyRow, policy === p.key && styles.policyRowActive]}
-            onPress={() => setPolicy(p.key)}
-            accessibilityLabel={`${p.label}: ${p.desc}`}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: policy === p.key }}
-          >
-            <View style={[styles.radio, policy === p.key && styles.radioActive]}>
-              {policy === p.key && <View style={styles.radioDot} />}
-            </View>
-            <View style={styles.policyText}>
-              <Text style={styles.policyLabel}>{p.label}</Text>
-              <Text style={styles.policyDesc}>{p.desc}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+        <Text style={styles.sectionTitle}>{t('cancellationPolicy', language)}</Text>
+        {POLICIES.map(p => {
+          const pl = p.key === 'flexible'
+            ? t('opFleetPolicyFlexible', language)
+            : p.key === 'moderate'
+            ? t('opFleetPolicyModerate', language)
+            : t('opFleetPolicyStrict', language)
+          const pd = p.key === 'flexible'
+            ? t('opFleetPolicyFlexibleDesc', language)
+            : p.key === 'moderate'
+            ? t('opFleetPolicyModerateDesc', language)
+            : t('opFleetPolicyStrictDesc', language)
+          return (
+            <TouchableOpacity
+              key={p.key}
+              style={[styles.policyRow, policy === p.key && styles.policyRowActive]}
+              onPress={() => setPolicy(p.key)}
+              accessibilityLabel={`${pl}: ${pd}`}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: policy === p.key }}
+            >
+              <View style={[styles.radio, policy === p.key && styles.radioActive]}>
+                {policy === p.key && <View style={styles.radioDot} />}
+              </View>
+              <View style={styles.policyText}>
+                <Text style={styles.policyLabel}>{pl}</Text>
+                <Text style={styles.policyDesc}>{pd}</Text>
+              </View>
+            </TouchableOpacity>
+          )
+        })}
 
         {/* Hourly Rental */}
-        <Text style={styles.sectionTitle}>Hourly Rental</Text>
+        <Text style={styles.sectionTitle}>{t('opFleetHourlyRental', language)}</Text>
         <Card style={styles.card}>
           <View style={styles.toggleRow}>
             <View style={styles.toggleLeft}>
-              <Text style={styles.toggleTitle}>Enable hourly booking</Text>
+              <Text style={styles.toggleTitle}>{t('opFleetEnableHourly', language)}</Text>
               <Text style={styles.toggleSub}>
-                {hourlyEnabled ? 'Travellers can book by the hour' : 'Daily booking only'}
+                {hourlyEnabled ? t('opFleetHourlyOn', language) : t('opFleetHourlyOff', language)}
               </Text>
             </View>
             <Switch
@@ -347,14 +362,14 @@ export default function EditVehicleScreen() {
               }}
               trackColor={{ false: C.border, true: C.primary }}
               thumbColor={C.surface}
-              accessibilityLabel={`Hourly rental: ${hourlyEnabled ? 'enabled' : 'disabled'}`}
+              accessibilityLabel={hourlyEnabled ? t('opFleetHourlyEnabled', language) : t('opFleetHourlyDisabled', language)}
               accessibilityRole="switch"
               accessibilityState={{ checked: hourlyEnabled }}
             />
           </View>
           {hourlyEnabled && (
             <View style={styles.hourlyFields}>
-              <Text style={styles.hourlyFieldLabel}>Price per hour (€)</Text>
+              <Text style={styles.hourlyFieldLabel}>{t('opFleetPricePerHour', language)}</Text>
               <TextInput
                 style={styles.input}
                 value={pricePerHour}
@@ -362,9 +377,9 @@ export default function EditVehicleScreen() {
                 keyboardType="decimal-pad"
                 placeholder="25.00"
                 placeholderTextColor={C.textTertiary}
-                accessibilityLabel="Price per hour in euros"
+                accessibilityLabel={t('opFleetPricePerHour', language)}
               />
-              <Text style={[styles.hourlyFieldLabel, { marginTop: Spacing.md }]}>Minimum hours</Text>
+              <Text style={[styles.hourlyFieldLabel, { marginTop: Spacing.md }]}>{t('opFleetMinHours', language)}</Text>
               <View style={styles.minHoursRow}>
                 {[1, 2, 3, 4, 6, 8].map(h => (
                   <TouchableOpacity
@@ -386,12 +401,12 @@ export default function EditVehicleScreen() {
         </Card>
 
         {/* Identity Verification Requirement */}
-        <Text style={styles.sectionTitle}>Identity Verification</Text>
+        <Text style={styles.sectionTitle}>{t('identityVerification', language)}</Text>
         <Card style={styles.card}>
           <View style={styles.toggleRow}>
             <View style={styles.toggleLeft}>
-              <Text style={styles.toggleTitle}>Require Identity Verification</Text>
-              <Text style={styles.toggleSub}>Guests must verify ID before booking</Text>
+              <Text style={styles.toggleTitle}>{t('opFleetRequireKyc', language)}</Text>
+              <Text style={styles.toggleSub}>{t('opFleetRequireKycDesc', language)}</Text>
             </View>
             <Switch
               value={requiresKyc}
@@ -401,7 +416,7 @@ export default function EditVehicleScreen() {
               }}
               trackColor={{ false: C.border, true: C.primary }}
               thumbColor={C.surface}
-              accessibilityLabel={`Require identity verification: ${requiresKyc ? 'enabled' : 'disabled'}`}
+              accessibilityLabel={requiresKyc ? t('opFleetKycEnabled', language) : t('opFleetKycDisabled', language)}
               accessibilityRole="switch"
               accessibilityState={{ checked: requiresKyc }}
             />
@@ -409,7 +424,7 @@ export default function EditVehicleScreen() {
         </Card>
 
         <Button
-          title="Save changes"
+          title={t('opFleetSaveChanges', language)}
           onPress={handleSave}
           loading={saving}
           fullWidth
@@ -419,37 +434,37 @@ export default function EditVehicleScreen() {
         <TouchableOpacity
           style={styles.icalBtn}
           onPress={() => router.push(`/(operator)/fleet/ical-sync/${id}` as Parameters<typeof router.push>[0])}
-          accessibilityLabel="iCal sync"
+          accessibilityLabel={t('opFleetIcalSync', language)}
           accessibilityRole="button"
         >
-          <Text style={styles.icalBtnText}>📅 iCal Sync</Text>
+          <Text style={styles.icalBtnText}>📅 {t('opFleetIcalSync', language)}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.pricingBtn}
           onPress={() => router.push(`/(operator)/fleet/pricing/${id}` as Parameters<typeof router.push>[0])}
-          accessibilityLabel="Edit pricing rules"
+          accessibilityLabel={t('opFleetPricingRules', language)}
           accessibilityRole="button"
         >
-          <Text style={styles.pricingBtnText}>📊 Pricing Rules</Text>
+          <Text style={styles.pricingBtnText}>📊 {t('opFleetPricingRules', language)}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.availabilityBtn}
           onPress={() => router.push(`/(operator)/fleet/availability/${id}` as Parameters<typeof router.push>[0])}
-          accessibilityLabel="Manage availability"
+          accessibilityLabel={t('opFleetManageAvail', language)}
           accessibilityRole="button"
         >
-          <Text style={styles.availabilityBtnText}>📅 Manage Availability</Text>
+          <Text style={styles.availabilityBtnText}>📅 {t('opFleetManageAvail', language)}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.deleteBtn}
           onPress={() => setShowDelete(true)}
-          accessibilityLabel="Delete this vehicle"
+          accessibilityLabel={t('opFleetDeleteVehicle', language)}
           accessibilityRole="button"
         >
-          <Text style={styles.deleteBtnText}>🗑 Delete vehicle</Text>
+          <Text style={styles.deleteBtnText}>🗑 {t('opFleetDeleteVehicle', language)}</Text>
         </TouchableOpacity>
 
         <View style={{ height: Spacing.xxxl }} />
@@ -457,9 +472,9 @@ export default function EditVehicleScreen() {
 
       <ConfirmSheet
         visible={showDelete}
-        title="Delete this vehicle?"
-        message="This will remove the vehicle from your fleet. Active bookings will not be affected."
-        confirmLabel={deleting ? 'Deleting…' : 'Delete'}
+        title={t('opFleetDeleteConfirmTitle', language)}
+        message={t('opFleetDeleteConfirmMsg', language)}
+        confirmLabel={deleting ? t('opFleetDeleting', language) : t('opFleetDelete', language)}
         confirmVariant="danger"
         onConfirm={() => void handleDelete()}
         onCancel={() => setShowDelete(false)}

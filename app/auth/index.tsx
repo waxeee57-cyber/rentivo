@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { Spacing, Radius, Typography, Shadow } from '@/constants/colors'
+import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
@@ -44,6 +45,8 @@ function RoleCard({
         onPressIn={() => Animated.spring(scale, { toValue: 0.97, damping: 15, useNativeDriver: true }).start()}
         onPressOut={() => Animated.spring(scale, { toValue: 1, damping: 15, useNativeDriver: true }).start()}
         activeOpacity={1}
+        accessibilityRole="button"
+        accessibilityLabel={title}
       >
         <Text style={styles.cardEmoji}>{emoji}</Text>
         <View style={styles.cardBody}>
@@ -59,7 +62,7 @@ function RoleCard({
 export default function RoleSelectionScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
-  const { setRole } = useAuthStore()
+  const { setRole, language } = useAuthStore()
 
   const handleSelect = (role: 'consumer' | 'operator' | 'host') => {
     setRole(role)
@@ -85,13 +88,13 @@ export default function RoleSelectionScreen() {
         <View style={styles.hero}>
           <Text style={styles.wave}>🌊</Text>
           <Text style={styles.logo}>Rentivo</Text>
-          <Text style={styles.tagline}>Premium rentals across the Mediterranean</Text>
+          <Text style={styles.tagline}>{t('authTagline', language)}</Text>
           <View style={styles.trustRow}>
-            <Text style={styles.trustBadge}>🔒 Insured</Text>
+            <Text style={styles.trustBadge}>{t('authTrustInsured', language)}</Text>
             <Text style={styles.trustDot}>·</Text>
-            <Text style={styles.trustBadge}>⚡ Instant</Text>
+            <Text style={styles.trustBadge}>{t('authTrustInstant', language)}</Text>
             <Text style={styles.trustDot}>·</Text>
-            <Text style={styles.trustBadge}>⭐ Verified</Text>
+            <Text style={styles.trustBadge}>{t('authTrustVerified', language)}</Text>
           </View>
         </View>
 
@@ -99,31 +102,29 @@ export default function RoleSelectionScreen() {
         <View style={styles.cards}>
           <RoleCard
             emoji="🌴"
-            title="I want to rent something"
-            desc="Cars, boats, bikes and more"
+            title={t('authRoleTravelerTitle', language)}
+            desc={t('authRoleTravelerDesc', language)}
             variant="traveler"
             onPress={() => handleSelect('consumer')}
           />
           <RoleCard
             emoji="🏠"
-            title="I own something to rent"
-            desc="List your vehicle, earn money"
+            title={t('authRoleHostTitle', language)}
+            desc={t('authRoleHostDesc', language)}
             variant="host"
             onPress={() => handleSelect('host')}
           />
           <RoleCard
             emoji="🏢"
-            title="I run a rental business"
-            desc="Fleet management, bookings"
+            title={t('authRoleOperatorTitle', language)}
+            desc={t('authRoleOperatorDesc', language)}
             variant="operator"
             onPress={() => handleSelect('operator')}
           />
         </View>
 
         {/* Footer */}
-        <Text style={styles.footer}>
-          By continuing you agree to our Terms · Privacy
-        </Text>
+        <Text style={styles.footer}>{t('authFooterTerms', language)}</Text>
       </SafeAreaView>
     </View>
   )

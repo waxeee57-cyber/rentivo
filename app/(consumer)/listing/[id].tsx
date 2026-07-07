@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, Animated, TouchableOpacity, StyleSheet, Dimensions, Share, Platform, Linking, Alert,
 } from 'react-native'
 import { BlurView } from 'expo-blur'
+import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { differenceInDays } from 'date-fns'
@@ -131,10 +132,8 @@ export default function ListingDetailScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     if (!canContact) {
       Alert.alert(
-        language === 'hu' ? 'Bejelentkezés szükséges' : 'Login required',
-        language === 'hu'
-          ? 'Bejelentkezés után tudod felvenni a kapcsolatot a házigazdával.'
-          : 'Please log in to contact the host.',
+        t('ternLoginRequired', language),
+        t('ternLoginToContactHost', language),
       )
       return
     }
@@ -146,14 +145,14 @@ export default function ListingDetailScreen() {
 
   const handleReport = () => {
     const reasons = [
-      { label: language === 'hu' ? 'Hamis hirdetés' : 'Fake listing', value: 'fake_listing' },
-      { label: language === 'hu' ? 'Illegális jármű' : 'Illegal vehicle', value: 'illegal_vehicle' },
-      { label: language === 'hu' ? 'Félrevezető információ' : 'Misleading info', value: 'misleading_info' },
-      { label: language === 'hu' ? 'Egyéb' : 'Other', value: 'other' },
+      { label: t('ternFakeListing', language), value: 'fake_listing' },
+      { label: t('ternIllegalVehicle', language), value: 'illegal_vehicle' },
+      { label: t('ternMisleadingInfo', language), value: 'misleading_info' },
+      { label: t('ternOther', language), value: 'other' },
     ]
     Alert.alert(
-      language === 'hu' ? 'Hirdetés bejelentése' : 'Report listing',
-      language === 'hu' ? 'Válaszd ki a bejelentés okát:' : 'Select a reason:',
+      t('ternReportListing', language),
+      t('ternSelectReason', language),
       [
         ...reasons.map(r => ({
           text: r.label,
@@ -167,20 +166,18 @@ export default function ListingDetailScreen() {
                 reason: r.value,
               })
               Alert.alert(
-                language === 'hu' ? 'Köszönjük' : 'Thank you',
-                language === 'hu'
-                  ? 'Bejelentésedet megkaptuk. 24 órán belül megvizsgáljuk. DSA 16. cikk.'
-                  : 'We received your report. We will review it within 24 hours. DSA Article 16.',
+                t('ternThankYou', language),
+                t('ternReportReceived', language),
               )
             } catch {
               Alert.alert(
-                language === 'hu' ? 'Hiba' : 'Error',
-                language === 'hu' ? 'Nem sikerült bejelenteni.' : 'Could not submit report.',
+                t('opFleet2Error', language),
+                t('ternCouldNotReport', language),
               )
             }
           },
         })),
-        { text: language === 'hu' ? 'Mégse' : 'Cancel', style: 'cancel' },
+        { text: t('cancel', language), style: 'cancel' },
       ],
     )
   }
@@ -278,7 +275,7 @@ export default function ListingDetailScreen() {
               <BlurView intensity={55} tint="dark" style={StyleSheet.absoluteFill} />
               <TouchableOpacity
                 onPress={handleReport}
-                accessibilityLabel={language === 'hu' ? 'Hirdetés bejelentése' : 'Report this listing'}
+                accessibilityLabel={t('ternReportThisListing', language)}
                 accessibilityRole="button"
                 style={styles.backBtnInner}
               >
@@ -352,18 +349,18 @@ export default function ListingDetailScreen() {
           )}
           {listing.hourly_rental_enabled && rentalType === 'hourly' && listing.price_per_hour != null && (
             <Text style={styles.hourlyPrice}>
-              €{listing.price_per_hour}/hour · min {listing.min_rental_hours ?? 2}h
+              {formatEUR(listing.price_per_hour)}/hour · min {listing.min_rental_hours ?? 2}h
             </Text>
           )}
 
           <View style={styles.infoChips}>
-            {listing.year ? <View style={styles.infoChip}><Text style={styles.infoChipText}>🚗 {listing.year}</Text></View> : null}
-            {listing.color ? <View style={styles.infoChip}><Text style={styles.infoChipText}>⚫ {listing.color}</Text></View> : null}
-            {listing.capacity ? <View style={styles.infoChip}><Text style={styles.infoChipText}>👥 {listing.capacity} seats</Text></View> : null}
+            {listing.year ? <View style={styles.infoChip}><Ionicons name="car-outline" size={13} color={C.textSecondary} /><Text style={styles.infoChipText}>{listing.year}</Text></View> : null}
+            {listing.color ? <View style={styles.infoChip}><Ionicons name="color-palette-outline" size={13} color={C.textSecondary} /><Text style={styles.infoChipText}>{listing.color}</Text></View> : null}
+            {listing.capacity ? <View style={styles.infoChip}><Ionicons name="people-outline" size={13} color={C.textSecondary} /><Text style={styles.infoChipText}>{listing.capacity} seats</Text></View> : null}
             {listing.cancellation_policy != null && (
               <View style={styles.infoChip}>
                 <Text style={styles.infoChipText}>
-                  {getCancellationPolicyEmoji(listing.cancellation_policy)} {getCancellationPolicyLabel(listing.cancellation_policy)}
+                  {getCancellationPolicyEmoji(listing.cancellation_policy)} {getCancellationPolicyLabel(listing.cancellation_policy, language)}
                 </Text>
               </View>
             )}
@@ -385,7 +382,7 @@ export default function ListingDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('insurance', language)}</Text>
             <View style={styles.insuranceBox}>
-              <Text style={styles.insuranceIcon}>🛡️</Text>
+              <Ionicons name="shield-checkmark" size={22} color={C.success} />
               <View style={styles.insuranceInfo}>
                 <Text style={styles.insuranceTitle}>{t('insuranceIncluded', language)}</Text>
                 <Text style={styles.insuranceText}>
@@ -436,7 +433,7 @@ export default function ListingDetailScreen() {
                   <Text style={styles.breakdownValue}>{formatEURDecimal(priceCalc.subtotal)}</Text>
                 </View>
                 <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>Service fee (2.5%)</Text>
+                  <Text style={styles.breakdownLabel}>Service fee ({(Config.platformCut * 100).toFixed(1)}%)</Text>
                   <Text style={styles.breakdownValue}>{formatEURDecimal(priceCalc.platformFee)}</Text>
                 </View>
                 <View style={[styles.breakdownRow, styles.breakdownTotal]}>
@@ -445,11 +442,14 @@ export default function ListingDetailScreen() {
                 </View>
                 {listing.deposit_amount > 0 && (
                   <View style={styles.depositNote}>
-                    <Text style={styles.depositNoteText}>
-                      🔒 + {formatEURDecimal(listing.deposit_amount)} security deposit hold
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="lock-closed" size={12} color={C.info} />
+                      <Text style={styles.depositNoteText}>
+                        + {formatEURDecimal(listing.deposit_amount)} {t('depositRefundableShort', language)}
+                      </Text>
+                    </View>
                     <Text style={styles.depositNoteSubtext}>
-                      Released automatically 7 days after return if no damage reported.
+                      {t('depositPickupNote', language)}
                     </Text>
                   </View>
                 )}
@@ -505,30 +505,6 @@ export default function ListingDetailScreen() {
                       <Text style={styles.reviewCountLabel}>
                         {listing.review_count} {t('reviews', language)}
                       </Text>
-                    </View>
-
-                    <View style={styles.breakdownCategories}>
-                      {(
-                        [
-                          ['reviewValue', listing.rating > 0 ? Math.max(1, listing.rating - 0.3) : 0],
-                          ['reviewAccuracy', listing.rating > 0 ? Math.min(5, listing.rating + 0.1) : 0],
-                          ['reviewCondition', listing.rating > 0 ? listing.rating : 0],
-                          ['reviewCommunication', listing.rating > 0 ? Math.min(5, listing.rating + 0.2) : 0],
-                        ] as Array<[Parameters<typeof t>[0], number]>
-                      ).map(([key, score]) => (
-                        <View key={key} style={styles.categoryRow}>
-                          <Text style={styles.categoryLabel}>{t(key, language)}</Text>
-                          <View style={styles.progressTrack}>
-                            <View
-                              style={[
-                                styles.progressFill,
-                                { width: `${Math.round((score / 5) * 100)}%` },
-                              ]}
-                            />
-                          </View>
-                          <Text style={styles.categoryScore}>{score.toFixed(1)}</Text>
-                        </View>
-                      ))}
                     </View>
                   </View>
 
@@ -658,7 +634,7 @@ export default function ListingDetailScreen() {
                 <Text style={styles.sectionTitle}>{t('pickupLocation', language)}</Text>
                 <View style={styles.locationCard}>
                   <View style={styles.locationMapPreview}>
-                    <Text style={styles.locationMapIcon}>📍</Text>
+                    <Ionicons name="location" size={36} color={C.primary} />
                   </View>
                   <View style={styles.locationInfo}>
                     <Text style={styles.locationAddress} numberOfLines={2}>
@@ -702,9 +678,13 @@ export default function ListingDetailScreen() {
                     accessibilityLabel={`${sim.title}, ${formatPricePerDay(sim.price_per_day, language)}`}
                     accessibilityRole="button"
                   >
-                    <View style={styles.similarImgPlaceholder}>
-                      <Text style={styles.similarEmoji}>{getCategoryEmoji(sim.category)}</Text>
-                    </View>
+                    {sim.cover_image_url ? (
+                      <Image source={{ uri: sim.cover_image_url }} style={styles.similarImgPlaceholder} contentFit="cover" />
+                    ) : (
+                      <View style={styles.similarImgPlaceholder}>
+                        <Text style={styles.similarFallbackText}>{sim.title.charAt(0).toUpperCase()}</Text>
+                      </View>
+                    )}
                     <Text style={styles.similarTitle} numberOfLines={1}>{sim.title}</Text>
                     <Text style={styles.similarPrice}>{formatPricePerDay(sim.price_per_day, language)}</Text>
                   </TouchableOpacity>
@@ -899,6 +879,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
 
     infoChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
     infoChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.xs,
       backgroundColor: C.surfaceWarm,
       borderRadius: Radius.md,
       paddingHorizontal: Spacing.sm,
@@ -1027,12 +1010,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       borderColor: C.border,
     },
     similarImgPlaceholder: {
+      width: '100%',
       height: 90,
       backgroundColor: C.surfaceWarm,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    similarEmoji: { fontSize: 36 },
+    similarFallbackText: { fontSize: 32, fontWeight: '700', color: C.textTertiary },
     similarTitle: { fontSize: 13, fontWeight: '600', color: C.text, padding: Spacing.sm, paddingBottom: 2 },
     similarPrice: { fontSize: 12, color: C.primary, fontWeight: '700', paddingHorizontal: Spacing.sm, paddingBottom: Spacing.sm },
 

@@ -5,6 +5,7 @@ import { Divider } from '@/components/ui/Divider'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import type { PriceCalculation } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
 
 interface PriceBreakdownProps {
   calculation: PriceCalculation
@@ -12,6 +13,7 @@ interface PriceBreakdownProps {
   insuranceName?: string
   insurancePricePerDay?: number
   totalDays?: number
+  language?: 'en' | 'es' | 'hu'
 }
 
 export function PriceBreakdown({
@@ -20,6 +22,7 @@ export function PriceBreakdown({
   insuranceName,
   insurancePricePerDay,
   totalDays,
+  language = 'en',
 }: PriceBreakdownProps) {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
@@ -46,7 +49,7 @@ export function PriceBreakdown({
       />
       {!compact && calculation.deposit > 0 && (
         <Row
-          label="Security deposit (refundable)"
+          label={t('depositRefundable', language)}
           value={formatEURDecimal(calculation.deposit)}
           note
         />

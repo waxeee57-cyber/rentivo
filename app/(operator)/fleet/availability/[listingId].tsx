@@ -20,6 +20,7 @@ import {
 } from '@/lib/api/availability'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
 
 const REASONS: { value: BlackoutPeriod['reason']; label: string }[] = [
   { value: 'maintenance', label: 'Maintenance' },
@@ -39,7 +40,7 @@ export default function ListingAvailabilityScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const { listingId } = useLocalSearchParams<{ listingId: string }>()
-  const { operator } = useAuthStore()
+  const { operator, language } = useAuthStore()
   const { showToast } = useToastStore()
   const [blackouts, setBlackouts] = useState<BlackoutPeriod[]>([])
   const [loading, setLoading] = useState(true)
@@ -58,11 +59,11 @@ export default function ListingAvailabilityScreen() {
       const data = await getBlackoutPeriods(listingId ?? '')
       setBlackouts(data)
     } catch {
-      showToast({ message: 'Failed to load availability', type: 'error' })
+      showToast({ message: t('opFleet2LoadFailedAvailability', language), type: 'error' })
     } finally {
       setLoading(false)
     }
-  }, [listingId, showToast])
+  }, [listingId, showToast, language])
 
   useEffect(() => { void load() }, [load])
 
@@ -76,15 +77,15 @@ export default function ListingAvailabilityScreen() {
 
   const handleAdd = async () => {
     if (!startDate || !endDate) {
-      showToast({ message: 'Please enter start and end dates (YYYY-MM-DD)', type: 'error' })
+      showToast({ message: t('opFleet2EnterDates', language), type: 'error' })
       return
     }
     if (endDate < startDate) {
-      showToast({ message: 'End date must be after start date', type: 'error' })
+      showToast({ message: t('opFleet2EndDateAfterStart', language), type: 'error' })
       return
     }
     if (!listingId || !operator?.id) {
-      showToast({ message: 'Missing listing or operator context', type: 'error' })
+      showToast({ message: t('opFleet2MissingContext', language), type: 'error' })
       return
     }
 
@@ -103,9 +104,9 @@ export default function ListingAvailabilityScreen() {
       setBlackouts(prev => [...prev, newPeriod])
       setShowAddModal(false)
       resetForm()
-      showToast({ message: 'Blackout period added', type: 'success' })
+      showToast({ message: t('opFleet2BlackoutAdded', language), type: 'success' })
     } catch {
-      showToast({ message: 'Failed to add period', type: 'error' })
+      showToast({ message: t('opFleet2AddPeriodFailed', language), type: 'error' })
     } finally {
       setSaving(false)
     }
@@ -113,20 +114,20 @@ export default function ListingAvailabilityScreen() {
 
   const handleDelete = (id: string) => {
     Alert.alert(
-      'Remove Blackout Period',
-      'These dates will become available again.',
+      t('opFleet2RemoveBlackout', language),
+      t('opFleet2RemoveBlackoutDesc', language),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('cancel', language), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('opFleet2Remove', language),
           style: 'destructive',
           onPress: async () => {
             try {
               await deleteBlackoutPeriod(id)
               setBlackouts(prev => prev.filter(b => b.id !== id))
-              showToast({ message: 'Period removed', type: 'success' })
+              showToast({ message: t('opFleet2PeriodRemoved', language), type: 'success' })
             } catch {
-              showToast({ message: 'Failed to remove period', type: 'error' })
+              showToast({ message: t('opFleet2RemovePeriodFailed', language), type: 'error' })
             }
           },
         },
@@ -136,28 +137,28 @@ export default function ListingAvailabilityScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Availability" onBack={() => router.back()} />
+      <ScreenHeader title={t('opFleet2Availability', language)} onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.topRow}>
-          <Text style={styles.subtitle}>Block dates when this vehicle is unavailable</Text>
+          <Text style={styles.subtitle}>{t('opFleet2AvailabilitySubtitle', language)}</Text>
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => setShowAddModal(true)}
-            accessibilityLabel="Add blackout period"
+            accessibilityLabel={t('opFleet2AddBlackoutPeriod', language)}
             accessibilityRole="button"
           >
-            <Text style={styles.addBtnText}>+ Add Period</Text>
+            <Text style={styles.addBtnText}>{t('opFleet2AddPeriod', language)}</Text>
           </TouchableOpacity>
         </View>
 
         {loading ? (
-          <Text style={styles.loadingText}>Loading...</Text>
+          <Text style={styles.loadingText}>{t('opFleet2Loading', language)}</Text>
         ) : blackouts.length === 0 ? (
           <Card style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No blocked dates</Text>
+            <Text style={styles.emptyTitle}>{t('opFleet2NoBlockedDates', language)}</Text>
             <Text style={styles.emptyText}>
-              Add periods when this vehicle won't be available for rental.
+              {t('opFleet2NoBlockedDatesDesc', language)}
             </Text>
           </Card>
         ) : (
@@ -171,7 +172,7 @@ export default function ListingAvailabilityScreen() {
                   accessibilityRole="button"
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Text style={styles.deleteBtn}>Remove</Text>
+                  <Text style={styles.deleteBtn}>{t('opFleet2Remove', language)}</Text>
                 </TouchableOpacity>
               </View>
               <Text style={styles.periodDates}>{b.start_date} to {b.end_date}</Text>
@@ -199,29 +200,29 @@ export default function ListingAvailabilityScreen() {
       >
         <SafeAreaView style={styles.modal}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add Blackout Period</Text>
+            <Text style={styles.modalTitle}>{t('opFleet2AddBlackoutPeriod', language)}</Text>
             <TouchableOpacity
               onPress={() => setShowAddModal(false)}
-              accessibilityLabel="Close modal"
+              accessibilityLabel={t('opFleet2Close', language)}
               accessibilityRole="button"
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.closeBtn}>Close</Text>
+              <Text style={styles.closeBtn}>{t('opFleet2Close', language)}</Text>
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
-            <Text style={styles.fieldLabel}>Title</Text>
+            <Text style={styles.fieldLabel}>{t('opFleet2BlackoutTitle', language)}</Text>
             <TextInput
               style={styles.input}
               value={title}
               onChangeText={setTitle}
-              placeholder="e.g. Annual Service"
+              placeholder={t('opFleet2TitlePlaceholder', language)}
               placeholderTextColor={C.textSecondary}
-              accessibilityLabel="Blackout period title"
+              accessibilityLabel={t('opFleet2BlackoutTitleA11y', language)}
             />
 
-            <Text style={styles.fieldLabel}>Start Date (YYYY-MM-DD)</Text>
+            <Text style={styles.fieldLabel}>{t('opFleet2StartDate', language)}</Text>
             <TextInput
               style={styles.input}
               value={startDate}
@@ -230,10 +231,10 @@ export default function ListingAvailabilityScreen() {
               placeholderTextColor={C.textSecondary}
               keyboardType="numbers-and-punctuation"
               maxLength={10}
-              accessibilityLabel="Start date"
+              accessibilityLabel={t('opFleet2StartDate', language)}
             />
 
-            <Text style={styles.fieldLabel}>End Date (YYYY-MM-DD)</Text>
+            <Text style={styles.fieldLabel}>{t('opFleet2EndDate', language)}</Text>
             <TextInput
               style={styles.input}
               value={endDate}
@@ -242,10 +243,10 @@ export default function ListingAvailabilityScreen() {
               placeholderTextColor={C.textSecondary}
               keyboardType="numbers-and-punctuation"
               maxLength={10}
-              accessibilityLabel="End date"
+              accessibilityLabel={t('opFleet2EndDate', language)}
             />
 
-            <Text style={styles.fieldLabel}>Reason</Text>
+            <Text style={styles.fieldLabel}>{t('opFleet2Reason', language)}</Text>
             <View style={styles.reasonRow}>
               {REASONS.map(r => (
                 <TouchableOpacity
@@ -263,21 +264,21 @@ export default function ListingAvailabilityScreen() {
               ))}
             </View>
 
-            <Text style={styles.fieldLabel}>Notes (optional)</Text>
+            <Text style={styles.fieldLabel}>{t('opFleet2Notes', language)}</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={notes}
               onChangeText={setNotes}
-              placeholder="Internal notes..."
+              placeholder={t('opFleet2NotesPlaceholder', language)}
               placeholderTextColor={C.textSecondary}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
-              accessibilityLabel="Notes"
+              accessibilityLabel={t('opFleet2Notes', language)}
             />
 
             <Button
-              title={saving ? 'Saving...' : 'Add Blackout Period'}
+              title={saving ? t('opFleet2Saving', language) : t('opFleet2AddBlackoutPeriod', language)}
               onPress={() => void handleAdd()}
               loading={saving}
               fullWidth

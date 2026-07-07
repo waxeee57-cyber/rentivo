@@ -227,9 +227,7 @@ export default function DashboardScreen() {
           accessibilityRole="button"
         >
           <Text style={styles.stripeBannerText}>
-            {language === 'hu'
-              ? '⚡ Állítsd be a kifizetéseket a foglalások fogadásához →'
-              : '⚡ Set up payouts to accept bookings →'}
+            {t('ternSetupPayouts', language)}
           </Text>
         </TouchableOpacity>
       )}
@@ -241,13 +239,13 @@ export default function DashboardScreen() {
           <View style={[styles.monthlyStatCard, styles.monthlyStatPrimary]}>
             <Text style={styles.monthlyStatValue}>{formatEURDecimal(monthlyRevenue)}</Text>
             <Text style={styles.monthlyStatLabel}>
-              {language === 'hu' ? 'Havi bevétel' : 'Revenue this month'}
+              {t('ternRevenueThisMonth', language)}
             </Text>
           </View>
           <View style={styles.monthlyStatCard}>
             <Text style={styles.monthlyStatValueAlt}>{monthlyBookings}</Text>
             <Text style={styles.monthlyStatLabel}>
-              {language === 'hu' ? 'Foglalás' : 'Bookings'}
+              {t('bookings', language)}
             </Text>
           </View>
         </View>
@@ -276,7 +274,7 @@ export default function DashboardScreen() {
             />
             <QuickActionCard
               icon="💳"
-              label={language === 'hu' ? 'Kifizetés' : 'Payouts'}
+              label={t('ternPayouts', language)}
               externalUrl="https://dashboard.stripe.com/express"
             />
           </View>

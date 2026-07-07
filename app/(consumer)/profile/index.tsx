@@ -240,40 +240,40 @@ export default function ProfileScreen() {
         {/* Quick access */}
         <Card style={styles.card}>
           <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>
-            {language === 'hu' ? 'GYORS ELÉRÉS' : language === 'es' ? 'ACCESO RÁPIDO' : 'QUICK ACCESS'}
+            {t('ternQuickAccess', language)}
           </Text>
           <View style={styles.quickRow}>
             <TouchableOpacity
               style={styles.quickBtn}
               onPress={() => router.push('/(consumer)/bookings' as Href)}
-              accessibilityLabel={language === 'hu' ? 'Bérléseim' : language === 'es' ? 'Mis reservas' : 'My Rentals'}
+              accessibilityLabel={t('ternMyRentals', language)}
               accessibilityRole="button"
             >
               <Text style={styles.quickIcon}>🚗</Text>
               <Text style={styles.quickLabel}>
-                {language === 'hu' ? 'Bérléseim' : language === 'es' ? 'Mis reservas' : 'My Rentals'}
+                {t('ternMyRentals', language)}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.quickBtn}
               onPress={() => router.push('/(consumer)/wishlist' as Href)}
-              accessibilityLabel={language === 'hu' ? 'Mentett' : language === 'es' ? 'Guardados' : 'Saved'}
+              accessibilityLabel={t('ternSaved', language)}
               accessibilityRole="button"
             >
               <Text style={styles.quickIcon}>❤️</Text>
               <Text style={styles.quickLabel}>
-                {language === 'hu' ? 'Mentett' : language === 'es' ? 'Guardados' : 'Saved'}
+                {t('ternSaved', language)}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.quickBtn}
               onPress={() => router.push('/(consumer)/profile/notifications' as Href)}
-              accessibilityLabel={language === 'hu' ? 'Értesítések' : language === 'es' ? 'Notificaciones' : 'Notifications'}
+              accessibilityLabel={t('ternNotifications', language)}
               accessibilityRole="button"
             >
               <Text style={styles.quickIcon}>🔔</Text>
               <Text style={styles.quickLabel}>
-                {language === 'hu' ? 'Értesítések' : language === 'es' ? 'Notificaciones' : 'Notifications'}
+                {t('ternNotifications', language)}
               </Text>
             </TouchableOpacity>
           </View>
@@ -302,17 +302,15 @@ export default function ProfileScreen() {
         {/* Appearance Card */}
         <Card style={styles.card}>
           <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>
-            {language === 'hu' ? 'MEGJELENÉS' : language === 'es' ? 'APARIENCIA' : 'APPEARANCE'}
+            {t('ternAppearance', language)}
           </Text>
           <View style={[styles.menuItem, { minHeight: 52 }]}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.menuLabel, { color: C.text }]}>
-                {language === 'hu' ? '🌙 Sötét mód' : language === 'es' ? '🌙 Modo oscuro' : '🌙 Dark mode'}
+                {t('ternDarkMode', language)}
               </Text>
               <Text style={{ fontSize: 12, color: C.textTertiary, marginTop: 2 }}>
-                {isDark
-                  ? (language === 'hu' ? 'Bekapcsolva' : language === 'es' ? 'Activado' : 'Enabled')
-                  : (language === 'hu' ? 'Kikapcsolva' : language === 'es' ? 'Desactivado' : 'Disabled')}
+                {isDark ? t('ternEnabled', language) : t('ternDisabled', language)}
               </Text>
             </View>
             <Switch
@@ -362,7 +360,7 @@ export default function ProfileScreen() {
               >
                 <Text style={styles.switchRoleIcon}>+</Text>
                 <Text style={[styles.switchRoleText, styles.switchRoleTextAccent]}>
-                  {language === 'hu' ? 'Legyen operátor' : language === 'es' ? 'Convertirse en operador' : 'Become an operator'}
+                  {t('ternBecomeOperator', language)}
                 </Text>
                 <Text style={[styles.switchRoleChevron, { color: C.textTertiary }]}>›</Text>
               </TouchableOpacity>
@@ -373,15 +371,11 @@ export default function ProfileScreen() {
         {/* Refer a Friend */}
         <Card style={styles.card}>
           <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>
-            {language === 'hu' ? 'BARÁT MEGHÍVÁSA' : language === 'es' ? 'INVITAR AMIGOS' : 'REFER A FRIEND'}
+            {t('ternReferFriend', language)}
           </Text>
           <View style={styles.referralCard}>
             <Text style={styles.referralDesc}>
-              {language === 'hu'
-                ? 'Oszd meg a kódodat és keress 500 hűségpontot minden barátért, aki bérel!'
-                : language === 'es'
-                  ? '¡Comparte tu código y gana 500 puntos de fidelidad por cada amigo que reserve!'
-                  : 'Share your code and earn 500 loyalty points for each friend who books!'}
+              {t('ternReferralDesc', language)}
             </Text>
             <View style={styles.referralCodeRow}>
               <Text style={styles.referralCode}>{referralCode}</Text>
@@ -398,7 +392,7 @@ export default function ProfileScreen() {
                 accessibilityRole="button"
               >
                 <Text style={styles.shareBtnText}>
-                  {language === 'hu' ? 'Megosztás' : language === 'es' ? 'Compartir' : 'Share'}
+                  {t('ternShare', language)}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -419,11 +413,7 @@ export default function ProfileScreen() {
             onPress={() => {
               Alert.alert(
                 t('payoutSettings', language),
-                language === 'hu'
-                  ? 'A kifizetési beállítások Stripe Connect portálon keresztül kezelhetők. Hamarosan elérhető az app-on belül.'
-                  : language === 'es'
-                    ? 'Los ajustes de pago se gestionan a través de Stripe Connect. Próximamente disponible en la app.'
-                    : 'Payout settings are managed via Stripe Connect. In-app management coming soon.',
+                t('ternPayoutSettingsInfo', language),
                 [{ text: 'OK' }],
               )
             }}
@@ -432,14 +422,14 @@ export default function ProfileScreen() {
           />
           <Divider />
           <MenuItem
-            label={`🔔 ${language === 'hu' ? 'Értesítési beállítások' : language === 'es' ? 'Configuración de notificaciones' : 'Notification settings'}`}
+            label={`🔔 ${t('cprNotificationSettings', language)}`}
             onPress={() => router.push('/(consumer)/profile/notifications' as Href)}
             textColor={C.text}
             chevronColor={C.textTertiary}
           />
           <Divider />
           <MenuItem
-            label={`🛡️ ${language === 'hu' ? 'Adatvédelmi beállítások' : language === 'es' ? 'Configuración de privacidad' : 'Privacy settings'}`}
+            label={`🛡️ ${t('cprPrivacySettings', language)}`}
             onPress={() => router.push('/(consumer)/profile/privacy-settings' as Href)}
             textColor={C.text}
             chevronColor={C.textTertiary}
@@ -454,15 +444,15 @@ export default function ProfileScreen() {
           <Divider />
           <MenuItem label={`🍪 ${t('cookiePolicy', language)}`} onPress={() => router.push('/(consumer)/legal/cookies' as Href)} textColor={C.text} chevronColor={C.textTertiary} />
           <Divider />
-          <MenuItem label={`🛡️ ${language === 'hu' ? 'Adatvédelmi beállítások' : 'Privacy settings'}`} onPress={() => router.push('/(consumer)/profile/privacy-settings' as Href)} textColor={C.text} chevronColor={C.textTertiary} />
+          <MenuItem label={`🛡️ ${t('cprPrivacySettings', language)}`} onPress={() => router.push('/(consumer)/profile/privacy-settings' as Href)} textColor={C.text} chevronColor={C.textTertiary} />
           <Divider />
           <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={handleHelpSupport} textColor={C.text} chevronColor={C.textTertiary} />
         </Card>
 
         <Card style={styles.card}>
-          <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>{language === 'hu' ? 'FIÓK TÖRLÉSE' : 'ACCOUNT DELETION'}</Text>
+          <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>{t('ternAccountDeletion', language)}</Text>
           <MenuItem
-            label={`🗑️ ${language === 'hu' ? 'Fiók törlése' : 'Delete account'}`}
+            label={`🗑️ ${t('cprDeleteAccount', language)}`}
             onPress={() => router.push('/(consumer)/profile/delete-account' as Href)}
             danger
             textColor={C.text}

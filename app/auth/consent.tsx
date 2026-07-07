@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
 
 const TERMS_URL = 'https://rentivo.domrol.com/legal/terms'
 const PRIVACY_URL = 'https://rentivo.domrol.com/legal/privacy'
@@ -34,7 +35,10 @@ export default function ConsentScreen() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
-        Alert.alert('Error', 'No active session. Please log in again.')
+        Alert.alert(
+          t('auth2Error', language),
+          t('auth2NoSession', language),
+        )
         setLoading(false)
         return
       }
@@ -67,38 +71,34 @@ export default function ConsentScreen() {
       // Route to onboarding — avoids infinite loop with root layout consent check
       router.replace('/onboarding')
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Something went wrong'
-      Alert.alert('Error', msg)
+      const msg = e instanceof Error ? e.message : t('auth2Error', language)
+      Alert.alert(t('auth2Error', language), msg)
     } finally {
       setLoading(false)
     }
   }
 
-  const isHu = language === 'hu'
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>
-          {isHu ? 'Adatvédelmi hozzájárulás' : 'Privacy & Consent'}
+          {t('auth2ConsentTitle', language)}
         </Text>
         <Text style={styles.subtitle}>
-          {isHu
-            ? 'A folytatáshoz kérjük fogadd el az alábbi feltételeket.'
-            : 'To continue, please accept the required terms below.'}
+          {t('auth2ConsentSubtitle', language)}
         </Text>
 
         {/* Required section */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>
-            {isHu ? 'KÖTELEZŐ' : 'REQUIRED'}
+            {t('auth2Required', language)}
           </Text>
 
           <View style={styles.row}>
             <TouchableOpacity
               style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}
               onPress={() => setTermsAccepted(v => !v)}
-              accessibilityLabel={isHu ? 'Általános Szerződési Feltételek elfogadása' : 'Accept Terms of Service'}
+              accessibilityLabel={t('auth2AcceptTermsA11y', language)}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: termsAccepted }}
             >
@@ -106,18 +106,18 @@ export default function ConsentScreen() {
             </TouchableOpacity>
             <View style={styles.rowContent}>
               <Text style={styles.rowText}>
-                {isHu ? 'Elfogadom az ' : 'I accept the '}
+                {t('auth2AcceptTermsPrefix', language)}
                 <Text
                   style={styles.link}
                   onPress={() => Linking.openURL(TERMS_URL)}
-                  accessibilityLabel={isHu ? 'Általános Szerződési Feltételek megnyitása' : 'Open Terms of Service'}
+                  accessibilityLabel={t('auth2OpenTermsA11y', language)}
                   accessibilityRole="link"
                 >
-                  {isHu ? 'Általános Szerződési Feltételeket' : 'Terms of Service'}
+                  {t('auth2TermsLinkLabel', language)}
                 </Text>
               </Text>
               <Text style={styles.rowMeta}>
-                {isHu ? 'Kötelező a szolgáltatás használatához' : 'Required to use the service'}
+                {t('auth2TermsRequiredMeta', language)}
               </Text>
             </View>
           </View>
@@ -128,7 +128,7 @@ export default function ConsentScreen() {
             <TouchableOpacity
               style={[styles.checkbox, privacyAccepted && styles.checkboxChecked]}
               onPress={() => setPrivacyAccepted(v => !v)}
-              accessibilityLabel={isHu ? 'Adatvédelmi Szabályzat elfogadása' : 'Accept Privacy Policy'}
+              accessibilityLabel={t('auth2AcceptPrivacyA11y', language)}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: privacyAccepted }}
             >
@@ -136,18 +136,18 @@ export default function ConsentScreen() {
             </TouchableOpacity>
             <View style={styles.rowContent}>
               <Text style={styles.rowText}>
-                {isHu ? 'Elfogadom az ' : 'I accept the '}
+                {t('auth2AcceptPrivacyPrefix', language)}
                 <Text
                   style={styles.link}
                   onPress={() => Linking.openURL(PRIVACY_URL)}
-                  accessibilityLabel={isHu ? 'Adatvédelmi Szabályzat megnyitása' : 'Open Privacy Policy'}
+                  accessibilityLabel={t('auth2OpenPrivacyA11y', language)}
                   accessibilityRole="link"
                 >
-                  {isHu ? 'Adatvédelmi Szabályzatot' : 'Privacy Policy'}
+                  {t('auth2PrivacyLinkLabel', language)}
                 </Text>
               </Text>
               <Text style={styles.rowMeta}>
-                {isHu ? 'Kötelező — GDPR 7. cikk' : 'Required — GDPR Article 7'}
+                {t('auth2PrivacyRequiredMeta', language)}
               </Text>
             </View>
           </View>
@@ -156,18 +156,16 @@ export default function ConsentScreen() {
         {/* Optional section */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>
-            {isHu ? 'OPCIONÁLIS' : 'OPTIONAL'}
+            {t('auth2Optional', language)}
           </Text>
 
           <View style={styles.switchRow}>
             <View style={styles.switchContent}>
               <Text style={styles.switchTitle}>
-                {isHu ? 'Marketing e-mailek' : 'Marketing emails'}
+                {t('auth2MarketingEmails', language)}
               </Text>
               <Text style={styles.switchMeta}>
-                {isHu
-                  ? 'Ajánlatok, hírek és tippek emailben'
-                  : 'Offers, news and tips by email'}
+                {t('auth2MarketingEmailsDesc', language)}
               </Text>
             </View>
             <Switch
@@ -175,7 +173,7 @@ export default function ConsentScreen() {
               onValueChange={setMarketingEmail}
               trackColor={{ false: C.border, true: C.primary }}
               thumbColor={C.white}
-              accessibilityLabel={isHu ? 'Marketing e-mailek kapcsoló' : 'Marketing emails toggle'}
+              accessibilityLabel={t('auth2MarketingEmailsToggle', language)}
             />
           </View>
 
@@ -184,12 +182,10 @@ export default function ConsentScreen() {
           <View style={styles.switchRow}>
             <View style={styles.switchContent}>
               <Text style={styles.switchTitle}>
-                {isHu ? 'Push értesítések' : 'Push notifications'}
+                {t('auth2PushNotifications', language)}
               </Text>
               <Text style={styles.switchMeta}>
-                {isHu
-                  ? 'Ajánlatok és frissítések push értesítésben'
-                  : 'Offers and updates via push'}
+                {t('auth2PushNotificationsDesc', language)}
               </Text>
             </View>
             <Switch
@@ -197,7 +193,7 @@ export default function ConsentScreen() {
               onValueChange={setMarketingPush}
               trackColor={{ false: C.border, true: C.primary }}
               thumbColor={C.white}
-              accessibilityLabel={isHu ? 'Push értesítések kapcsoló' : 'Push notifications toggle'}
+              accessibilityLabel={t('auth2PushNotificationsToggle', language)}
             />
           </View>
 
@@ -206,12 +202,10 @@ export default function ConsentScreen() {
           <View style={styles.switchRow}>
             <View style={styles.switchContent}>
               <Text style={styles.switchTitle}>
-                {isHu ? 'Analitika' : 'Analytics'}
+                {t('auth2Analytics', language)}
               </Text>
               <Text style={styles.switchMeta}>
-                {isHu
-                  ? 'Segíts javítani a Rentivo-t névtelen adatokkal'
-                  : 'Help improve Rentivo with anonymous data'}
+                {t('auth2AnalyticsDesc', language)}
               </Text>
             </View>
             <Switch
@@ -219,13 +213,13 @@ export default function ConsentScreen() {
               onValueChange={setAnalytics}
               trackColor={{ false: C.border, true: C.primary }}
               thumbColor={C.white}
-              accessibilityLabel={isHu ? 'Analitika kapcsoló' : 'Analytics toggle'}
+              accessibilityLabel={t('auth2AnalyticsToggle', language)}
             />
           </View>
         </View>
 
         <Button
-          title={isHu ? 'Elfogadom és folytatom' : 'Accept & Continue'}
+          title={t('auth2ConsentAccept', language)}
           onPress={handleConfirm}
           loading={loading}
           disabled={!canContinue}
@@ -234,9 +228,7 @@ export default function ConsentScreen() {
         />
 
         <Text style={styles.gdprNote}>
-          {isHu
-            ? 'Hozzájárulásodat bármikor visszavonhatod a Profil → Adatvédelmi beállítások menüben.'
-            : 'You can withdraw your consent at any time in Profile → Privacy settings.'}
+          {t('auth2GdprNote', language)}
         </Text>
       </ScrollView>
     </SafeAreaView>

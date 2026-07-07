@@ -9,6 +9,8 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 interface AdminUser {
   id: string
@@ -26,6 +28,7 @@ const MOCK_USERS: AdminUser[] = [
 
 export default function AdminUsersScreen() {
   const C = useColors()
+  const { language } = useAuthStore()
   const styles = useMemo(() => makeStyles(C), [C])
   const [users, setUsers] = useState<AdminUser[]>(Config.useMock ? MOCK_USERS : [])
   const [loadingList, setLoadingList] = useState(!Config.useMock)
@@ -41,7 +44,7 @@ export default function AdminUsersScreen() {
           .select('id, full_name, email, is_banned, created_at')
           .order('created_at', { ascending: false })
           .limit(100)
-        if (error) { showToast({ message: 'Failed to load users', type: 'error' }); return }
+        if (error) { showToast({ message: t('admFailLoadUsers', language), type: 'error' }); return }
         setUsers(
           (data ?? []).map(u => ({
             id: u.id as string,
@@ -65,7 +68,7 @@ export default function AdminUsersScreen() {
         .update({ is_banned: !u.is_banned })
         .eq('id', u.id)
       if (error) {
-        showToast({ message: 'Failed to update', type: 'error' })
+        showToast({ message: t('admFailUpdate', language), type: 'error' })
         return
       }
     }
@@ -73,10 +76,10 @@ export default function AdminUsersScreen() {
       prev.map((x) => (x.id === u.id ? { ...x, is_banned: !x.is_banned } : x))
     )
     showToast({
-      message: u.is_banned ? 'User unbanned' : 'User banned',
+      message: u.is_banned ? t('admUserUnbanned', language) : t('admUserBanned', language),
       type: 'success',
     })
-  }, [showToast])
+  }, [showToast, language])
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<AdminUser>) => (
@@ -84,28 +87,28 @@ export default function AdminUsersScreen() {
         <View style={styles.info}>
           <Text style={styles.name}>{item.name}</Text>
           <Text style={styles.email}>{item.email}</Text>
-          {item.is_banned && <Badge label="Banned" variant="error" />}
+          {item.is_banned && <Badge label={t('admBanned', language)} variant="error" />}
         </View>
         <TouchableOpacity
           style={[styles.actionBtn, item.is_banned && styles.actionBtnUnban]}
           onPress={() => void toggleBan(item)}
-          accessibilityLabel={item.is_banned ? 'Unban user' : 'Ban user'}
+          accessibilityLabel={item.is_banned ? t('admUnbanUser', language) : t('admBanUser', language)}
           accessibilityRole="button"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Text style={[styles.actionBtnText, item.is_banned && styles.actionBtnTextUnban]}>
-            {item.is_banned ? 'Unban' : 'Ban'}
+            {item.is_banned ? t('admUnban', language) : t('admBan', language)}
           </Text>
         </TouchableOpacity>
       </View>
     ),
-    [toggleBan]
+    [toggleBan, language]
   )
 
   if (loadingList) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
-        <ScreenHeader title="Users" onBack={() => router.back()} />
+        <ScreenHeader title={t('admUsers', language)} onBack={() => router.back()} />
         <ActivityIndicator style={{ marginTop: 40 }} color={C.primary} />
       </SafeAreaView>
     )
@@ -113,7 +116,7 @@ export default function AdminUsersScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Users" onBack={() => router.back()} />
+      <ScreenHeader title={t('admUsers', language)} onBack={() => router.back()} />
       <FlatList
         data={users}
         keyExtractor={(u) => u.id}

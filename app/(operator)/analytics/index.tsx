@@ -18,6 +18,9 @@ import { MOCK_OPERATOR } from '@/lib/mockData'
 import { getOperatorAnalytics } from '@/lib/api/analytics'
 import type { OperatorAnalytics } from '@/lib/api/analytics'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+
+const tr = t
 
 type Period = 'week' | 'month' | 'quarter' | 'year'
 
@@ -31,13 +34,20 @@ const PERIODS: { key: Period; label: string }[] = [
 export default function AnalyticsScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
-  const { operator } = useAuthStore()
+  const { operator, language } = useAuthStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? '')
 
   const [period, setPeriod] = useState<Period>('month')
   const [analytics, setAnalytics] = useState<OperatorAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const periodLabels: Record<Period, string> = {
+    week: tr('opSetWeek', language),
+    month: tr('opSetMonth', language),
+    quarter: tr('opSetQuarter', language),
+    year: tr('opSetYear', language),
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -61,12 +71,12 @@ export default function AnalyticsScreen() {
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backBtn}
-          accessibilityLabel="Go back"
+          accessibilityLabel={tr('opSetGoBack', language)}
           accessibilityRole="button"
         >
           <Ionicons name="chevron-back" size={24} color={C.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Analytics</Text>
+        <Text style={styles.title}>{tr('opSetAnalytics', language)}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -81,7 +91,7 @@ export default function AnalyticsScreen() {
             accessibilityRole="button"
           >
             <Text style={[styles.periodText, period === p.key && styles.periodTextActive]}>
-              {p.label}
+              {periodLabels[p.key]}
             </Text>
           </TouchableOpacity>
         ))}
@@ -91,27 +101,27 @@ export default function AnalyticsScreen() {
       {loading ? (
         <View style={styles.centered}>
           <ActivityIndicator color={C.primary} size="large" />
-          <Text style={styles.loadingText}>Loading analytics...</Text>
+          <Text style={styles.loadingText}>{tr('opSetLoadingAnalytics', language)}</Text>
         </View>
       ) : error != null ? (
         <View style={styles.centered}>
           <Text style={styles.errorEmoji}>⚠️</Text>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>{tr('opSetAnalyticsLoadFailed', language)}</Text>
           <TouchableOpacity
             style={styles.retryBtn}
             onPress={() => void load()}
-            accessibilityLabel="Retry loading analytics"
+            accessibilityLabel={tr('opSetRetryAnalytics', language)}
             accessibilityRole="button"
           >
-            <Text style={styles.retryText}>Try Again</Text>
+            <Text style={styles.retryText}>{tr('opSetTryAgain', language)}</Text>
           </TouchableOpacity>
         </View>
       ) : analytics == null || analytics.totalBookings === 0 ? (
         <View style={styles.centered}>
           <Text style={styles.emptyEmoji}>📊</Text>
-          <Text style={styles.emptyTitle}>No data yet</Text>
+          <Text style={styles.emptyTitle}>{tr('opSetNoData', language)}</Text>
           <Text style={styles.emptySubtitle}>
-            Analytics will appear once you have confirmed or completed bookings.
+            {tr('opSetAnalyticsEmpty', language)}
           </Text>
         </View>
       ) : (
@@ -125,11 +135,11 @@ export default function AnalyticsScreen() {
               <Text style={styles.kpiValue}>
                 €{analytics.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </Text>
-              <Text style={styles.kpiLabel}>Revenue</Text>
+              <Text style={styles.kpiLabel}>{tr('opSetRevenue', language)}</Text>
             </Card>
             <Card style={styles.kpi}>
               <Text style={styles.kpiValue}>{analytics.totalBookings}</Text>
-              <Text style={styles.kpiLabel}>Bookings</Text>
+              <Text style={styles.kpiLabel}>{t('bookings', language)}</Text>
             </Card>
           </View>
 
@@ -139,18 +149,18 @@ export default function AnalyticsScreen() {
               <Text style={styles.kpiValue}>
                 €{analytics.avgBookingValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </Text>
-              <Text style={styles.kpiLabel}>Avg Value</Text>
+              <Text style={styles.kpiLabel}>{tr('opSetAvgValue', language)}</Text>
             </Card>
             <Card style={styles.kpi}>
               <Text style={styles.kpiValue}>{analytics.occupancyRate}%</Text>
-              <Text style={styles.kpiLabel}>Occupancy</Text>
+              <Text style={styles.kpiLabel}>{tr('opSetOccupancy', language)}</Text>
             </Card>
           </View>
 
           {/* Best performer */}
           {analytics.bestListingTitle != null && (
             <Card style={styles.bestCard}>
-              <Text style={styles.bestLabel}>TOP PERFORMER</Text>
+              <Text style={styles.bestLabel}>{tr('opSetTopPerformer', language)}</Text>
               <Text style={styles.bestTitle}>{analytics.bestListingTitle}</Text>
               <Text style={styles.bestRevenue}>
                 €{analytics.bestListingRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} revenue this period
@@ -161,7 +171,7 @@ export default function AnalyticsScreen() {
           {/* Revenue breakdown bar chart */}
           {analytics.revenueByPeriod.length > 0 && (
             <Card style={styles.chartCard}>
-              <Text style={styles.chartTitle}>Revenue Breakdown</Text>
+              <Text style={styles.chartTitle}>{tr('opSetRevenueBreakdown', language)}</Text>
               {analytics.revenueByPeriod.map((item, i) => {
                 const maxAmount = Math.max(
                   ...analytics.revenueByPeriod.map(x => x.amount),

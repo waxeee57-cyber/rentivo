@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
 
 const DISPUTE_REASONS = [
   'Vehicle damage by guest',
@@ -25,7 +26,7 @@ export default function OperatorDisputeScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
-  const { user } = useAuthStore()
+  const { user, language } = useAuthStore()
   const { showToast } = useToastStore()
   const [selectedReason, setSelectedReason] = useState('')
   const [description, setDescription] = useState('')
@@ -33,7 +34,7 @@ export default function OperatorDisputeScreen() {
 
   const handleSubmit = async () => {
     if (!selectedReason) {
-      showToast({ message: 'Please select a reason', type: 'error' })
+      showToast({ message: t('opBkToastSelectReason', language), type: 'error' })
       return
     }
     setSubmitting(true)
@@ -49,10 +50,10 @@ export default function OperatorDisputeScreen() {
         })
         if (error) throw error
       }
-      showToast({ message: 'Dispute submitted successfully', type: 'success' })
+      showToast({ message: t('opBkToastDisputeOk', language), type: 'success' })
       router.back()
     } catch {
-      showToast({ message: 'Failed to submit dispute', type: 'error' })
+      showToast({ message: t('opBkToastDisputeFail', language), type: 'error' })
     } finally {
       setSubmitting(false)
     }
@@ -60,10 +61,10 @@ export default function OperatorDisputeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Open a Dispute" onBack={() => router.back()} />
+      <ScreenHeader title={t('opBkOpenDispute', language)} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content}>
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>REASON</Text>
+          <Text style={styles.sectionTitle}>{t('opBkReason', language)}</Text>
           {DISPUTE_REASONS.map(r => (
             <TouchableOpacity
               key={r}
@@ -78,21 +79,22 @@ export default function OperatorDisputeScreen() {
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>DETAILS (OPTIONAL)</Text>
+          <Text style={styles.sectionTitle}>{t('opBkDetails', language)}</Text>
           <TextInput
             style={styles.textArea}
             value={description}
             onChangeText={setDescription}
-            placeholder="Describe the issue..."
+            placeholder={t('opBkDescribePlaceholder', language)}
             placeholderTextColor={C.textSecondary}
             multiline
             numberOfLines={4}
             maxLength={1000}
+            accessibilityLabel="Describe the issue"
           />
         </Card>
 
         <Button
-          title={submitting ? 'Submitting...' : 'Submit Dispute'}
+          title={submitting ? t('opBkSubmitting', language) : t('opBkSubmitDispute', language)}
           onPress={() => void handleSubmit()}
           loading={submitting}
           fullWidth

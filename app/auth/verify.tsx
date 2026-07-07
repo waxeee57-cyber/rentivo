@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Spacing, Radius } from '@/constants/colors'
+import { t } from '@/constants/i18n'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -18,7 +19,7 @@ export default function VerifyScreen() {
   const [code, setCode] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const inputs = useRef<(TextInput | null)[]>([])
-  const { role, setSession, setUser, setOperator } = useAuthStore()
+  const { role, setSession, setUser, setOperator, language } = useAuthStore()
 
   useEffect(() => {
     AsyncStorage.getItem('pending_otp_phone').then(saved => {
@@ -37,7 +38,7 @@ export default function VerifyScreen() {
 
   const handleVerify = async () => {
     const otp = code.join('')
-    if (otp.length < 6) { Alert.alert('Please enter the full 6-digit code'); return }
+    if (otp.length < 6) { Alert.alert(t('authCodeRequired', language)); return }
     setLoading(true)
     try {
       const { data, error } = await supabase.auth.verifyOtp({
@@ -97,7 +98,7 @@ export default function VerifyScreen() {
         }
       }
     } catch (e) {
-      Alert.alert('Invalid code', 'Please check the code and try again.')
+      Alert.alert(t('authInvalidCode', language), t('authInvalidCodeMsg', language))
     } finally {
       setLoading(false)
     }
@@ -105,13 +106,19 @@ export default function VerifyScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableOpacity style={styles.back} onPress={() => router.back()}>
-        <Text style={styles.backText}>← Back</Text>
+      <TouchableOpacity
+        style={styles.back}
+        onPress={() => router.back()}
+        accessibilityRole="button"
+        accessibilityLabel={t('authBack', language)}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Text style={styles.backText}>{t('authBack', language)}</Text>
       </TouchableOpacity>
 
       <View style={styles.content}>
-        <Text style={styles.title}>Enter verification code</Text>
-        <Text style={styles.subtitle}>We sent a 6-digit code to your phone</Text>
+        <Text style={styles.title}>{t('authVerifyTitle', language)}</Text>
+        <Text style={styles.subtitle}>{t('authVerifySubtitle', language)}</Text>
 
         <View style={styles.codeRow}>
           {code.map((digit, i) => (
@@ -130,7 +137,7 @@ export default function VerifyScreen() {
         </View>
 
         <Button
-          title="Verify"
+          title={t('authVerifyButton', language)}
           onPress={handleVerify}
           loading={loading}
           fullWidth

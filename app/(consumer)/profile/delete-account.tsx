@@ -10,6 +10,12 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import type { TranslationKey } from '@/constants/i18n'
+
+// Wrapper to allow pending cpr keys before i18n.ts is updated
+const cprT = (key: string, lang: 'en' | 'es' | 'hu'): string =>
+  t(key as unknown as TranslationKey, lang)
 
 export default function DeleteAccountScreen() {
   const C = useColors()
@@ -18,21 +24,17 @@ export default function DeleteAccountScreen() {
   const insets = useSafeAreaInsets()
   const [loading, setLoading] = useState(false)
 
-  const isHu = language === 'hu'
-
   const handleDelete = () => {
     Alert.alert(
-      isHu ? 'Fiók végleges törlése' : 'Permanently delete account',
-      isHu
-        ? 'Ez a művelet visszafordíthatatlan. Minden adatod törlésre kerül. Biztosan folytatod?'
-        : 'This action is irreversible. All your data will be deleted. Are you sure?',
+      cprT('cprPermanentlyDelete', language),
+      cprT('cprDeleteAccountConfirmBody', language),
       [
         {
-          text: isHu ? 'Mégse' : 'Cancel',
+          text: t('cancel', language),
           style: 'cancel',
         },
         {
-          text: isHu ? 'Törlés' : 'Delete',
+          text: t('opFleetDelete', language),
           style: 'destructive',
           onPress: confirmDelete,
         },
@@ -46,8 +48,8 @@ export default function DeleteAccountScreen() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) {
         Alert.alert(
-          isHu ? 'Hiba' : 'Error',
-          isHu ? 'Nincs aktív munkamenet. Kérjük jelentkezz be újra.' : 'No active session. Please log in again.',
+          t('opFleet2Error', language),
+          cprT('cprNoActiveSession', language),
         )
         return
       }
@@ -70,7 +72,7 @@ export default function DeleteAccountScreen() {
       router.replace('/')
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown error'
-      Alert.alert(isHu ? 'Hiba' : 'Error', msg)
+      Alert.alert(t('opFleet2Error', language), msg)
     } finally {
       setLoading(false)
     }
@@ -82,54 +84,35 @@ export default function DeleteAccountScreen() {
         <TouchableOpacity
           style={[styles.back, { paddingTop: insets.top + Spacing.sm }]}
           onPress={() => router.back()}
-          accessibilityLabel={isHu ? 'Vissza' : 'Go back'}
+          accessibilityLabel={t('opFleet2GoBack', language)}
           accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.backText}>← {isHu ? 'Vissza' : 'Back'}</Text>
+          <Text style={styles.backText}>← {t('opBkBack', language)}</Text>
         </TouchableOpacity>
 
         <View style={styles.content}>
           <Text style={styles.icon}>🗑️</Text>
-          <Text style={styles.title}>
-            {isHu ? 'Fiók törlése' : 'Delete Account'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {isHu
-              ? 'A GDPR 17. cikke alapján jogod van kérni adataid törlését.'
-              : 'Under GDPR Article 17, you have the right to request erasure of your data.'}
-          </Text>
+          <Text style={styles.title}>{cprT('cprDeleteAccount', language)}</Text>
+          <Text style={styles.subtitle}>{cprT('cprDeleteAccountSubtitle', language)}</Text>
 
           <View style={styles.infoCard}>
-            <Text style={styles.infoTitle}>
-              {isHu ? 'Mi történik a törléskor?' : 'What happens when you delete?'}
-            </Text>
-            <Text style={styles.infoItem}>
-              {isHu ? '• Profilod és személyes adataid törlődnek' : '• Your profile and personal data are deleted'}
-            </Text>
-            <Text style={styles.infoItem}>
-              {isHu ? '• Foglalásaid névtelenítve megmaradnak (pénzügyi kötelezettség)' : '• Bookings are anonymized and retained (financial obligation)'}
-            </Text>
-            <Text style={styles.infoItem}>
-              {isHu ? '• Értékeléseid névtelenítve megmaradnak' : '• Reviews are anonymized and kept'}
-            </Text>
-            <Text style={styles.infoItem}>
-              {isHu ? '• Mentett hirdetéseid törlődnek' : '• Your saved listings are deleted'}
-            </Text>
-            <Text style={styles.infoItem}>
-              {isHu ? '• Ez a művelet visszafordíthatatlan' : '• This action is irreversible'}
-            </Text>
+            <Text style={styles.infoTitle}>{cprT('cprDeleteAccountInfoTitle', language)}</Text>
+            <Text style={styles.infoItem}>{cprT('cprDeleteItem1', language)}</Text>
+            <Text style={styles.infoItem}>{cprT('cprDeleteItem2', language)}</Text>
+            <Text style={styles.infoItem}>{cprT('cprDeleteItem3', language)}</Text>
+            <Text style={styles.infoItem}>{cprT('cprDeleteItem4', language)}</Text>
+            <Text style={styles.infoItem}>{cprT('cprDeleteItem5', language)}</Text>
           </View>
 
           <View style={styles.warningCard}>
             <Text style={styles.warningText}>
-              ⚠️ {isHu
-                ? 'Ha aktív foglalásod van, törlés előtt kérd azok lemondását.'
-                : 'If you have active bookings, please cancel them before deleting.'}
+              {'⚠️ '}{cprT('cprDeleteWarning', language)}
             </Text>
           </View>
 
           <Button
-            title={isHu ? 'Fiók végleges törlése' : 'Permanently delete account'}
+            title={cprT('cprPermanentlyDelete', language)}
             onPress={handleDelete}
             variant="danger"
             loading={loading}
@@ -140,11 +123,11 @@ export default function DeleteAccountScreen() {
           <TouchableOpacity
             style={styles.cancelLink}
             onPress={() => router.back()}
-            accessibilityLabel={isHu ? 'Mégse' : 'Cancel'}
+            accessibilityLabel={t('cancel', language)}
             accessibilityRole="button"
           >
             <Text style={styles.cancelLinkText}>
-              {isHu ? 'Mégse, megtartom a fiókot' : 'Cancel, keep my account'}
+              {cprT('cprCancelKeepAccount', language)}
             </Text>
           </TouchableOpacity>
         </View>

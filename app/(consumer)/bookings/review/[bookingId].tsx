@@ -12,12 +12,11 @@ import { Button } from '@/components/ui/Button'
 import { useBooking } from '@/lib/hooks/useBookings'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
 import { Config } from '@/constants/config'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { supabase } from '@/lib/supabase'
 import { useColors } from '@/lib/hooks/useColors'
-
-const RATING_LABELS = ['', 'Terrible', 'Poor', 'OK', 'Good', 'Excellent!']
 
 const REVIEW_TAGS = [
   { key: 'clean', label: 'Clean ✓' },
@@ -70,7 +69,11 @@ export default function ReviewScreen() {
   const id = Config.useMock ? (bookingId ?? 'bk-004') : (bookingId ?? '')
   const { booking } = useBooking(id)
   const { showToast } = useToastStore()
-  const user = useAuthStore(s => s.user)
+  const { user, language } = useAuthStore()
+  const RATING_LABELS = useMemo(
+    () => ['', t('cbkRating1', language), t('cbkRating2', language), t('cbkRating3', language), t('cbkRating4', language), t('cbkRating5', language)],
+    [language],
+  )
 
   const [rating, setRating] = useState(0)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -90,7 +93,7 @@ export default function ReviewScreen() {
   const handleSubmit = async () => {
     if (!canSubmit || submitting) return
     if (!user) {
-      showToast({ message: 'You must be logged in to submit a review.', type: 'error' })
+      showToast({ message: t('cbkMustBeLoggedIn', language), type: 'error' })
       return
     }
     setSubmitting(true)
@@ -113,9 +116,9 @@ export default function ReviewScreen() {
       }
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       setDone(true)
-      showToast({ message: 'Review submitted! ⭐', type: 'success' })
+      showToast({ message: t('cbkReviewSubmitted', language), type: 'success' })
     } catch {
-      showToast({ message: 'Failed to submit review. Please try again.', type: 'error' })
+      showToast({ message: t('cbkReviewSubmitFailed', language), type: 'error' })
     } finally {
       setSubmitting(false)
     }
@@ -126,12 +129,12 @@ export default function ReviewScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.successContainer}>
           <Text style={styles.confetti}>🎉</Text>
-          <Text style={styles.successTitle}>Thank you!</Text>
+          <Text style={styles.successTitle}>{t('cbkThankYou', language)}</Text>
           <Text style={styles.successSubtitle}>
-            Your review helps others choose the right rental.
+            {t('cbkReviewHelps', language)}
           </Text>
           <Button
-            title="Back to Bookings"
+            title={t('cbkBackToBookings', language)}
             onPress={() => router.replace('/(consumer)/bookings')}
             fullWidth
             style={{ marginTop: Spacing.xl }}
@@ -143,12 +146,12 @@ export default function ReviewScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Leave a Review" />
+      <ScreenHeader title={t('leaveReview', language)} />
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {booking && (
           <View style={styles.vehicleCard}>
-            <Text style={styles.vehicleTitle}>{booking.listing?.title ?? 'Your Rental'}</Text>
+            <Text style={styles.vehicleTitle}>{booking.listing?.title ?? t('cbkYourRental', language)}</Text>
             <Text style={styles.vehicleOp}>{booking.operator?.name}</Text>
             <Text style={styles.vehicleDates}>
               {formatDateRange(booking.start_date, booking.end_date)} · {booking.total_days} days
@@ -157,7 +160,7 @@ export default function ReviewScreen() {
         )}
 
         {/* Step 1: Star rating */}
-        <Text style={styles.sectionTitle}>Overall Rating</Text>
+        <Text style={styles.sectionTitle}>{t('cbkOverallRating', language)}</Text>
         <StarPicker value={rating} onChange={setRating} />
         {rating > 0 && (
           <Text style={styles.ratingLabel}>{RATING_LABELS[rating]}</Text>
@@ -167,7 +170,7 @@ export default function ReviewScreen() {
         {rating > 0 && (
           <>
             <Text style={[styles.sectionTitle, { marginTop: Spacing.xl }]}>
-              What was great? (optional)
+              {t('cbkWhatWasGreat', language)}
             </Text>
             <View style={styles.tagsGrid}>
               {REVIEW_TAGS.map(tag => {
@@ -194,25 +197,25 @@ export default function ReviewScreen() {
         {rating > 0 && (
           <>
             <Text style={[styles.sectionTitle, { marginTop: Spacing.xl }]}>
-              Tell others about your experience (optional)
+              {t('cbkTellOthers', language)}
             </Text>
             <TextInput
               style={styles.reviewInput}
               multiline
               numberOfLines={5}
-              placeholder="Describe your experience..."
+              placeholder={t('cbkDescribeExperience', language)}
               placeholderTextColor={C.textTertiary}
               value={comment}
               onChangeText={setComment}
               maxLength={500}
-              accessibilityLabel="Written review"
+              accessibilityLabel={t('cbkWrittenReview', language)}
             />
             <Text style={styles.charCount}>{comment.length}/500</Text>
           </>
         )}
 
         <Button
-          title={submitting ? 'Submitting...' : 'Submit Review ⭐'}
+          title={submitting ? t('cbkSubmitting', language) : t('cbkSubmitReview', language)}
           onPress={() => void handleSubmit()}
           fullWidth
           disabled={!canSubmit || submitting}

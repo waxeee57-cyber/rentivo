@@ -13,6 +13,7 @@ import { useLocalSearchParams, router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
 import { Spacing, Radius } from '@/constants/colors'
+import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useColors } from '@/lib/hooks/useColors'
 
@@ -21,7 +22,6 @@ export default function ICalSyncScreen() {
   const styles = useMemo(() => makeStyles(C), [C])
   const { id } = useLocalSearchParams<{ id: string }>()
   const { language } = useAuthStore()
-  const isHu = language === 'hu'
 
   const [icalUrl, setIcalUrl] = useState('')
   const [syncing, setSyncing] = useState(false)
@@ -30,8 +30,8 @@ export default function ICalSyncScreen() {
   async function handleSync() {
     if (!icalUrl.trim()) {
       Alert.alert(
-        isHu ? 'Hiba' : 'Error',
-        isHu ? 'Add meg az iCal URL-t' : 'Please enter an iCal URL',
+        t('opFleet2Error', language),
+        t('opFleet2EnterICalUrl', language),
       )
       return
     }
@@ -58,15 +58,15 @@ export default function ICalSyncScreen() {
 
       setLastSync(new Date().toLocaleString())
       Alert.alert(
-        isHu ? 'Szinkronizálás kész' : 'Sync complete',
-        isHu
+        t('opFleet2SyncComplete', language),
+        language === 'hu'
           ? `${result.count ?? 0} foglalt nap importálva`
           : `${result.count ?? 0} blocked dates imported`,
       )
     } catch (error) {
       Alert.alert(
-        isHu ? 'Hiba' : 'Error',
-        error instanceof Error ? error.message : 'Sync failed',
+        t('opFleet2Error', language),
+        error instanceof Error ? error.message : t('opFleet2SyncFailed', language),
       )
     } finally {
       setSyncing(false)
@@ -76,7 +76,7 @@ export default function ICalSyncScreen() {
   function handleExport() {
     const exportUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/ical-export?listing_id=${id}`
     Alert.alert(
-      isHu ? 'iCal export URL' : 'iCal Export URL',
+      t('opFleet2ICalExportUrl', language),
       exportUrl,
       [{ text: 'OK' }],
     )
@@ -94,23 +94,21 @@ export default function ICalSyncScreen() {
           <TouchableOpacity
             onPress={() => router.back()}
             style={styles.backButton}
-            accessibilityLabel={isHu ? 'Vissza' : 'Go back'}
+            accessibilityLabel={t('opFleet2GoBack', language)}
             accessibilityRole="button"
           >
             <Text style={styles.backText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>{isHu ? 'iCal szinkronizálás' : 'iCal Sync'}</Text>
+          <Text style={styles.title}>{t('opFleet2ICalSync', language)}</Text>
         </View>
 
         {/* Import section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {isHu ? 'Külső naptár importálása' : 'Import external calendar'}
+            {t('opFleet2ImportCalendar', language)}
           </Text>
           <Text style={styles.sectionDesc}>
-            {isHu
-              ? 'Add meg az Airbnb, Booking.com vagy más platform iCal URL-jét, hogy a foglalt napok automatikusan blokkolásra kerüljenek.'
-              : 'Enter your Airbnb, Booking.com or other platform iCal URL to automatically block booked dates.'}
+            {t('opFleet2ImportCalendarDesc', language)}
           </Text>
 
           <Text style={styles.inputLabel}>iCal URL</Text>
@@ -123,12 +121,12 @@ export default function ICalSyncScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
-            accessibilityLabel="iCal URL input"
+            accessibilityLabel={t('opFleet2ICalUrlInput', language)}
           />
 
           {lastSync !== null && (
             <Text style={styles.lastSync}>
-              {isHu ? `Utolsó szinkron: ${lastSync}` : `Last sync: ${lastSync}`}
+              {`${t('opFleet2LastSyncPrefix', language)} ${lastSync}`}
             </Text>
           )}
 
@@ -136,14 +134,14 @@ export default function ICalSyncScreen() {
             style={[styles.button, syncing && styles.buttonDisabled]}
             onPress={() => void handleSync()}
             disabled={syncing}
-            accessibilityLabel={isHu ? 'Szinkronizálás indítása' : 'Start sync'}
+            accessibilityLabel={t('opFleet2StartSync', language)}
             accessibilityRole="button"
           >
             {syncing ? (
               <ActivityIndicator color={C.textInverse} />
             ) : (
               <Text style={styles.buttonText}>
-                {isHu ? 'Szinkronizálás' : 'Sync now'}
+                {t('opFleet2SyncNow', language)}
               </Text>
             )}
           </TouchableOpacity>
@@ -152,22 +150,20 @@ export default function ICalSyncScreen() {
         {/* Export section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {isHu ? 'Saját naptár exportálása' : 'Export your calendar'}
+            {t('opFleet2ExportCalendar', language)}
           </Text>
           <Text style={styles.sectionDesc}>
-            {isHu
-              ? 'Más platformok számára szinkronizáld a foglalásaidat ezzel az iCal URL-lel.'
-              : 'Use this iCal URL to sync your bookings to other platforms.'}
+            {t('opFleet2ExportCalendarDesc', language)}
           </Text>
 
           <TouchableOpacity
             style={styles.buttonSecondary}
             onPress={handleExport}
-            accessibilityLabel={isHu ? 'Export URL megjelenítése' : 'Show export URL'}
+            accessibilityLabel={t('opFleet2ShowExportUrl', language)}
             accessibilityRole="button"
           >
             <Text style={styles.buttonSecondaryText}>
-              {isHu ? 'Export URL megjelenítése' : 'Show export URL'}
+              {t('opFleet2ShowExportUrl', language)}
             </Text>
           </TouchableOpacity>
         </View>
@@ -175,12 +171,10 @@ export default function ICalSyncScreen() {
         {/* Info card */}
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>
-            {isHu ? 'Hogyan működik?' : 'How it works'}
+            {t('opFleet2HowItWorks', language)}
           </Text>
           <Text style={styles.infoText}>
-            {isHu
-              ? '1. Másold ki az iCal URL-t az Airbnb / Booking.com fiókodból.\n2. Illeszd be a fenti mezőbe.\n3. Nyomj a Szinkronizálás gombra — a foglalt napok azonnal blokkolva lesznek.'
-              : '1. Copy the iCal URL from your Airbnb / Booking.com account.\n2. Paste it in the field above.\n3. Tap Sync now — booked dates will be blocked immediately.'}
+            {t('opFleet2HowItWorksText', language)}
           </Text>
         </View>
       </ScrollView>

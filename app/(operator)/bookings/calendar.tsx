@@ -14,6 +14,8 @@ import { useOperatorBookings } from '@/lib/hooks/useOperatorBookings'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import type { Booking, BookingStatus } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import type { TranslationKey } from '@/constants/i18n'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CELL_SIZE = (SCREEN_WIDTH - Spacing.base * 2) / 7
@@ -50,7 +52,7 @@ export default function OperatorCalendarScreen() {
     disputed: C.error,
   }), [C])
   const [currentMonth, setCurrentMonth] = useState(new Date())
-  const { operator } = useAuthStore()
+  const { operator, language } = useAuthStore()
   const { bookings } = useOperatorBookings(operator?.id ?? 'op-001')
 
   const monthStart = startOfMonth(currentMonth)
@@ -81,14 +83,15 @@ export default function OperatorCalendarScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScreenHeader title="Fleet Calendar" />
+      <ScreenHeader title={t('opBkFleetCalendar', language)} />
 
       <View style={styles.monthNav}>
         <TouchableOpacity
           style={styles.navBtn}
           onPress={() => setCurrentMonth(m => subMonths(m, 1))}
-          accessibilityLabel="Previous month"
+          accessibilityLabel={t('opBkPrevMonth', language)}
           accessibilityRole="button"
+          hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
         >
           <Text style={styles.navArrow}>‹</Text>
         </TouchableOpacity>
@@ -96,8 +99,9 @@ export default function OperatorCalendarScreen() {
         <TouchableOpacity
           style={styles.navBtn}
           onPress={() => setCurrentMonth(m => addMonths(m, 1))}
-          accessibilityLabel="Next month"
+          accessibilityLabel={t('opBkNextMonth', language)}
           accessibilityRole="button"
+          hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
         >
           <Text style={styles.navArrow}>›</Text>
         </TouchableOpacity>
@@ -108,7 +112,7 @@ export default function OperatorCalendarScreen() {
         {(['pending', 'confirmed', 'active', 'completed'] as BookingStatus[]).map(s => (
           <View key={s} style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: STATUS_COLORS[s] }]} />
-            <Text style={styles.legendLabel}>{s.charAt(0).toUpperCase() + s.slice(1)}</Text>
+            <Text style={styles.legendLabel}>{t(s as TranslationKey, language)}</Text>
           </View>
         ))}
       </ScrollView>
@@ -140,6 +144,7 @@ export default function OperatorCalendarScreen() {
                   }
                 }}
                 accessibilityLabel={`${format(day, 'MMMM d')}, ${dayBookings.length} bookings`}
+                accessibilityRole="button"
               >
                 <Text style={[styles.dayNum, isToday && styles.dayNumToday]}>
                   {format(day, 'd')}
@@ -156,7 +161,7 @@ export default function OperatorCalendarScreen() {
         </View>
 
         {/* Month booking list */}
-        <Text style={styles.listTitle}>Bookings this month</Text>
+        <Text style={styles.listTitle}>{t('opBkBookingsMonth', language)}</Text>
         {bookings
           .filter(b => {
             const start = new Date(b.start_date)
@@ -177,14 +182,14 @@ export default function OperatorCalendarScreen() {
                   {format(new Date(b.start_date), 'MMM d')} – {format(new Date(b.end_date), 'MMM d')}
                 </Text>
               </View>
-              <Text style={styles.bookingStatus}>{b.status}</Text>
+              <Text style={styles.bookingStatus}>{t(b.status as TranslationKey, language)}</Text>
             </TouchableOpacity>
           ))}
         {bookings.filter(b => {
           const start = new Date(b.start_date)
           return start >= monthStart && start <= monthEnd
         }).length === 0 && (
-          <Text style={styles.emptyMonth}>No bookings this month</Text>
+          <Text style={styles.emptyMonth}>{t('opBkNoBookingsMonth', language)}</Text>
         )}
       </ScrollView>
     </SafeAreaView>

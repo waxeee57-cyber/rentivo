@@ -18,35 +18,47 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
 
 function OperatorSetupWizard({ onStart, onSkip }: { onStart: () => void; onSkip: () => void }) {
   const C = useColors()
+  const { language } = useAuthStore()
   const wizardStyles = useMemo(() => makeWizardStyles(C), [C])
   return (
     <View style={wizardStyles.container}>
       <View style={wizardStyles.card}>
         <Text style={wizardStyles.emoji}>🎉</Text>
-        <Text style={wizardStyles.title}>Welcome to Rentivo!</Text>
-        <Text style={wizardStyles.subtitle}>Let's get you set up in 3 steps so you can start receiving bookings.</Text>
+        <Text style={wizardStyles.title}>{t('opFleetWelcomeTitle', language)}</Text>
+        <Text style={wizardStyles.subtitle}>{t('opFleetWelcomeSub', language)}</Text>
         <View style={wizardStyles.steps}>
           <View style={wizardStyles.step}>
             <Text style={wizardStyles.stepNum}>1</Text>
-            <Text style={wizardStyles.stepText}>Add your first vehicle</Text>
+            <Text style={wizardStyles.stepText}>{t('opFleetWizardStep1', language)}</Text>
           </View>
           <View style={wizardStyles.step}>
             <Text style={wizardStyles.stepNum}>2</Text>
-            <Text style={wizardStyles.stepText}>Set your availability</Text>
+            <Text style={wizardStyles.stepText}>{t('opFleetWizardStep2', language)}</Text>
           </View>
           <View style={wizardStyles.step}>
             <Text style={wizardStyles.stepNum}>3</Text>
-            <Text style={wizardStyles.stepText}>Share your listing</Text>
+            <Text style={wizardStyles.stepText}>{t('opFleetWizardStep3', language)}</Text>
           </View>
         </View>
-        <TouchableOpacity style={wizardStyles.startBtn} onPress={onStart}>
-          <Text style={wizardStyles.startBtnText}>Start setup →</Text>
+        <TouchableOpacity
+          style={wizardStyles.startBtn}
+          onPress={onStart}
+          accessibilityLabel={t('opFleetWizardStart', language)}
+          accessibilityRole="button"
+        >
+          <Text style={wizardStyles.startBtnText}>{t('opFleetWizardStart', language)}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={wizardStyles.skipBtn} onPress={onSkip}>
-          <Text style={wizardStyles.skipBtnText}>Skip for now</Text>
+        <TouchableOpacity
+          style={wizardStyles.skipBtn}
+          onPress={onSkip}
+          accessibilityLabel={t('opFleetWizardSkip', language)}
+          accessibilityRole="button"
+        >
+          <Text style={wizardStyles.skipBtnText}>{t('opFleetWizardSkip', language)}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -131,8 +143,8 @@ export default function FleetScreen() {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: 'Check out my vehicle listing on Rentivo!',
-        title: 'My Rentivo listing',
+        message: t('opFleetShareMessage', language),
+        title: t('opFleetShareTitle', language),
       })
     } catch { /* user dismissed share sheet — not an error */ }
   }
@@ -141,7 +153,7 @@ export default function FleetScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Text style={styles.title}>Fleet</Text>
+          <Text style={styles.title}>{t('fleetTitle', language)}</Text>
         </View>
         <View style={styles.list}>{Array(3).fill(null).map((_, i) => <SkeletonCard key={i} />)}</View>
       </SafeAreaView>
@@ -152,7 +164,7 @@ export default function FleetScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Text style={styles.title}>Fleet</Text>
+          <Text style={styles.title}>{t('fleetTitle', language)}</Text>
         </View>
         <OperatorSetupWizard
           onStart={() => {
@@ -169,22 +181,22 @@ export default function FleetScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Fleet</Text>
+        <Text style={styles.title}>{t('fleetTitle', language)}</Text>
         <HelpTooltip
-          title="Your fleet"
-          description="Manage all your vehicles here. Toggle availability, edit details, and track bookings."
+          title={t('opFleetHelpTitle', language)}
+          description={t('opFleetHelpDesc', language)}
           faqs={[
-            { q: 'How do I pause a vehicle?', a: 'Toggle the switch on the vehicle card to make it unavailable.' },
-            { q: 'Can I add multiple vehicles?', a: 'Yes — tap the + button to add as many as you need.' },
+            { q: t('opFleetFaqPauseQ', language), a: t('opFleetFaqPauseA', language) },
+            { q: t('opFleetFaqMultiQ', language), a: t('opFleetFaqMultiA', language) },
           ]}
         />
       </View>
       {fleet.length === 0 ? (
         <EmptyState
           emoji="🚗"
-          title="Your fleet is empty"
-          subtitle="Add your first vehicle to start getting bookings"
-          action={{ label: '+ Add vehicle', onPress: () => router.push('/(operator)/fleet/new' as Parameters<typeof router.push>[0]) }}
+          title={t('opFleetEmptyTitle', language)}
+          subtitle={t('opFleetEmptySub', language)}
+          action={{ label: t('opFleetAddVehicleBtn', language), onPress: () => router.push('/(operator)/fleet/new' as Parameters<typeof router.push>[0]) }}
         />
       ) : (
         <FlatList
@@ -208,18 +220,18 @@ export default function FleetScreen() {
               <TouchableOpacity
                 style={styles.shareRow}
                 onPress={handleShare}
-                accessibilityLabel="Share my listing"
+                accessibilityLabel={t('opFleetShareListing', language)}
                 accessibilityRole="button"
               >
-                <Text style={styles.shareText}>🔗 Share my listing</Text>
+                <Text style={styles.shareText}>🔗 {t('opFleetShareListing', language)}</Text>
               </TouchableOpacity>
               <View style={styles.rentalOsCard}>
                 <View style={styles.rentalOsLeft}>
-                  <Text style={styles.rentalOsTitle}>🔄 Import from RentalOS</Text>
-                  <Text style={styles.rentalOsSubtitle}>Sync your fleet in 1 tap — no double bookings</Text>
+                  <Text style={styles.rentalOsTitle}>🔄 {t('rentalOsImport', language)}</Text>
+                  <Text style={styles.rentalOsSubtitle}>{t('opFleetRentalOsSub', language)}</Text>
                 </View>
                 <View style={styles.soonBadge}>
-                  <Text style={styles.soonText}>Soon</Text>
+                  <Text style={styles.soonText}>{t('opFleetSoon', language)}</Text>
                 </View>
               </View>
             </>
@@ -231,7 +243,7 @@ export default function FleetScreen() {
                 onEdit={() => router.push(`/(operator)/fleet/${item.id}`)}
                 onToggleAvailable={available => {
                   toggleAvailability(item.id, available)
-                  showToast({ message: available ? 'Vehicle is now live!' : 'Vehicle paused.', type: 'info' })
+                  showToast({ message: available ? t('opFleetToastVehicleLive', language) : t('opFleetToastVehiclePaused', language), type: 'info' })
                 }}
               />
               <View style={[
@@ -242,9 +254,7 @@ export default function FleetScreen() {
                   styles.availBadgeText,
                   item.available ? styles.availBadgeTextLive : styles.availBadgeTextPaused,
                 ]}>
-                  {item.available
-                    ? (language === 'hu' ? 'Aktív' : 'Live')
-                    : (language === 'hu' ? 'Szüneteltetve' : 'Paused')}
+                  {item.available ? t('fleetLive', language) : t('opFleetBadgePaused', language)}
                 </Text>
               </View>
             </View>
@@ -257,7 +267,7 @@ export default function FleetScreen() {
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
           router.push('/(operator)/fleet/new' as Parameters<typeof router.push>[0])
         }}
-        accessibilityLabel="Add new vehicle"
+        accessibilityLabel={t('addVehicle', language)}
         accessibilityRole="button"
       >
         <Text style={styles.fabText}>+</Text>

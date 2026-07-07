@@ -207,7 +207,16 @@ serve(async (req) => {
       return jsonError('Owner is not set up to receive payments', 400)
     }
 
-    const platformFeeCents = Math.round(amountCents * platformCut)
+    // Connect destination split: the owner is paid their RENTAL price (subtotal);
+    // the platform keeps everything else the customer pays on top — the service fee
+    // (serverFee), the insurance package, and minus any promo the PLATFORM ran. That
+    // residual equals (total − subtotal), which matches the customer-facing breakdown
+    // (Subtotal + Service fee + Insurance) and keeps insurance revenue on the platform
+    // (it funds the Model B deposit waiver). Charging 10% of the GROSS total instead
+    // would transfer ~90% of the service fee + insurance to the owner. Clamp to
+    // [0, amountCents] so an oversized fixed promo (total < subtotal) stays valid.
+    const subtotalCents = Math.round(serverSubtotal * 100)
+    const platformFeeCents = Math.min(amountCents, Math.max(0, amountCents - subtotalCents))
     // Currency is server-fixed (EUR-only platform); never trust booking.currency —
     // a zero-decimal currency (KRW/JPY/VND) would otherwise re-denominate the charge.
     const currency = 'eur'

@@ -7,9 +7,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Spacing, Radius } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 export default function CookiePolicyScreen() {
   const C = useColors()
+  const { language } = useAuthStore()
   const styles = useMemo(() => makeStyles(C), [C])
   const [analytics, setAnalytics] = useState(false)
   const [marketing, setMarketing] = useState(false)
@@ -21,7 +24,7 @@ export default function CookiePolicyScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Cookie Policy" />
+      <ScreenHeader title={t('cookiePolicy', language)} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.intro}>
           We use cookies and similar technologies to operate our service and enhance your experience. Manage your preferences below.
@@ -69,7 +72,7 @@ export default function CookiePolicyScreen() {
           Your preferences are saved locally. For more information, see our Privacy Policy. Changing these settings takes effect on next app launch.
         </Text>
 
-        <Button title="Save Preferences" onPress={handleSave} fullWidth style={{ marginTop: Spacing.xl }} />
+        <Button title={t('legSavePreferences', language)} onPress={handleSave} fullWidth style={{ marginTop: Spacing.xl }} />
         <View style={{ height: Spacing.xxxl }} />
       </ScrollView>
     </SafeAreaView>

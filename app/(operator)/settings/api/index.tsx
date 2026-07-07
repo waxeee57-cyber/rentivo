@@ -13,6 +13,9 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+
+const tr = t
 
 interface ApiKey {
   id: string
@@ -65,7 +68,7 @@ const WEBHOOK_EVENTS = [
 export default function ApiSettingsScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
-  const { operator } = useAuthStore()
+  const { operator, language } = useAuthStore()
   const { showToast } = useToastStore()
   const [apiKeys, setApiKeys] = useState<ApiKey[]>(MOCK_API_KEYS)
   const [webhooks, setWebhooks] = useState<Webhook[]>(MOCK_WEBHOOKS)
@@ -91,10 +94,10 @@ export default function ApiSettingsScreen() {
   }, [operator?.id, loadData])
 
   const revokeKey = (keyId: string) => {
-    Alert.alert('Revoke API Key', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(tr('opSetRevokeApiKey', language), tr('opSetCannotBeUndone', language), [
+      { text: t('cancel', language), style: 'cancel' },
       {
-        text: 'Revoke',
+        text: tr('opSetRevoke', language),
         style: 'destructive',
         onPress: async () => {
           if (!Config.useMock) {
@@ -104,7 +107,7 @@ export default function ApiSettingsScreen() {
               .eq('id', keyId)
           }
           setApiKeys(prev => prev.map(k => k.id === keyId ? { ...k, is_active: false } : k))
-          showToast({ message: 'API key revoked', type: 'success' })
+          showToast({ message: tr('opSetApiKeyRevoked', language), type: 'success' })
         },
       },
     ])
@@ -112,7 +115,7 @@ export default function ApiSettingsScreen() {
 
   const addWebhook = async () => {
     if (!newWebhookUrl.trim().startsWith('https://')) {
-      showToast({ message: 'URL must start with https://', type: 'error' })
+      showToast({ message: tr('opSetUrlHttpsRequired', language), type: 'error' })
       return
     }
     setAddingWebhook(true)
@@ -138,9 +141,9 @@ export default function ApiSettingsScreen() {
       }
       setNewWebhookUrl('')
       setShowAddWebhook(false)
-      showToast({ message: 'Webhook added', type: 'success' })
+      showToast({ message: tr('opSetWebhookAdded', language), type: 'success' })
     } catch {
-      showToast({ message: 'Failed to add webhook', type: 'error' })
+      showToast({ message: tr('opSetWebhookAddFailed', language), type: 'error' })
     } finally {
       setAddingWebhook(false)
     }
@@ -154,11 +157,11 @@ export default function ApiSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="API & Webhooks" onBack={() => router.back()} />
+      <ScreenHeader title={tr('opSetApiWebhooks', language)} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content}>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>API KEYS</Text>
+          <Text style={styles.sectionTitle}>{tr('opSetApiKeysTitle', language)}</Text>
           {apiKeys.map(key => (
             <View key={key.id}>
               <View style={styles.keyRow}>
@@ -171,17 +174,17 @@ export default function ApiSettingsScreen() {
                 </View>
                 <View style={styles.keyActions}>
                   <Badge
-                    label={key.is_active ? 'Active' : 'Revoked'}
+                    label={key.is_active ? t('active', language) : tr('opSetRevoked', language)}
                     variant={key.is_active ? 'success' : 'neutral'}
                   />
                   {key.is_active && (
                     <TouchableOpacity
                       onPress={() => revokeKey(key.id)}
                       style={styles.revokeBtn}
-                      accessibilityLabel="Revoke key"
+                      accessibilityLabel={tr('opSetRevokeKey', language)}
                       accessibilityRole="button"
                     >
-                      <Text style={styles.revokeBtnText}>Revoke</Text>
+                      <Text style={styles.revokeBtnText}>{tr('opSetRevoke', language)}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -189,18 +192,18 @@ export default function ApiSettingsScreen() {
               <Divider />
             </View>
           ))}
-          <Text style={styles.infoText}>Contact support to generate new API keys.</Text>
+          <Text style={styles.infoText}>{tr('opSetContactSupportInfo', language)}</Text>
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>WEBHOOKS</Text>
+          <Text style={styles.sectionTitle}>{tr('opSetWebhooksTitle', language)}</Text>
           {webhooks.map(hook => (
             <View key={hook.id} style={styles.webhookRow}>
               <Text style={styles.webhookUrl} numberOfLines={1}>{hook.url}</Text>
               <Text style={styles.webhookEvents}>{hook.events.join(', ')}</Text>
               <View style={styles.webhookMeta}>
                 <Badge
-                  label={hook.is_active ? 'Active' : 'Inactive'}
+                  label={hook.is_active ? t('active', language) : tr('opSetInactive', language)}
                   variant={hook.is_active ? 'success' : 'neutral'}
                 />
                 {hook.failure_count > 0 && (
@@ -221,7 +224,7 @@ export default function ApiSettingsScreen() {
                 autoCapitalize="none"
                 keyboardType="url"
               />
-              <Text style={styles.eventsLabel}>Events:</Text>
+              <Text style={styles.eventsLabel}>{tr('opSetEvents', language)}</Text>
               <View style={styles.eventsRow}>
                 {WEBHOOK_EVENTS.map(ev => (
                   <TouchableOpacity
@@ -238,9 +241,9 @@ export default function ApiSettingsScreen() {
                 ))}
               </View>
               <View style={styles.addBtns}>
-                <Button title="Cancel" onPress={() => setShowAddWebhook(false)} variant="secondary" />
+                <Button title={t('cancel', language)} onPress={() => setShowAddWebhook(false)} variant="secondary" />
                 <Button
-                  title={addingWebhook ? 'Adding...' : 'Add Webhook'}
+                  title={addingWebhook ? tr('opSetAdding', language) : tr('opSetAddWebhook', language)}
                   onPress={() => void addWebhook()}
                   loading={addingWebhook}
                 />
@@ -250,10 +253,10 @@ export default function ApiSettingsScreen() {
             <TouchableOpacity
               style={styles.addWebhookBtn}
               onPress={() => setShowAddWebhook(true)}
-              accessibilityLabel="Add webhook"
+              accessibilityLabel={tr('opSetAddWebhook', language)}
               accessibilityRole="button"
             >
-              <Text style={styles.addWebhookBtnText}>+ Add Webhook</Text>
+              <Text style={styles.addWebhookBtnText}>+ {tr('opSetAddWebhook', language)}</Text>
             </TouchableOpacity>
           )}
         </Card>

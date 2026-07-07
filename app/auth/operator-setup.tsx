@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Spacing } from '@/constants/colors'
+import { t } from '@/constants/i18n'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
@@ -16,11 +17,11 @@ export default function OperatorSetupScreen() {
   const [city, setCity] = useState('')
   const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
-  const { session, setOperator } = useAuthStore()
+  const { session, setOperator, language } = useAuthStore()
 
   const handleCreate = async () => {
     if (!name.trim() || !city.trim()) {
-      Alert.alert('Please fill in all required fields')
+      Alert.alert(t('authSetupRequired', language))
       return
     }
     setLoading(true)
@@ -45,7 +46,7 @@ export default function OperatorSetupScreen() {
       setOperator(data)
       router.replace('/(operator)/dashboard')
     } catch (e) {
-      Alert.alert('Error', String(e))
+      Alert.alert(t('authError', language), String(e))
     } finally {
       setLoading(false)
     }
@@ -54,14 +55,14 @@ export default function OperatorSetupScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>Set up your business</Text>
-        <Text style={styles.subtitle}>Tell us about your rental business to get started.</Text>
+        <Text style={styles.title}>{t('authSetupTitle', language)}</Text>
+        <Text style={styles.subtitle}>{t('authSetupSubtitle', language)}</Text>
 
-        <Input label="Business name *" value={name} onChangeText={setName} placeholder="e.g. CostaSol Car Rent" />
-        <Input label="City *" value={city} onChangeText={setCity} placeholder="e.g. Marbella" />
-        <Input label="Phone" value={phone} onChangeText={setPhone} placeholder="+34 600 000 000" keyboardType="phone-pad" />
+        <Input label={t('authSetupBusinessName', language)} value={name} onChangeText={setName} placeholder={t('authSetupBusinessNamePlaceholder', language)} />
+        <Input label={t('hostLCityReq', language)} value={city} onChangeText={setCity} placeholder={t('hostLCityMarbella', language)} />
+        <Input label={t('authSetupPhone', language)} value={phone} onChangeText={setPhone} placeholder={t('authPhonePlaceholder', language)} keyboardType="phone-pad" />
 
-        <Button title="Get started →" onPress={handleCreate} loading={loading} fullWidth style={{ marginTop: Spacing.xl }} />
+        <Button title={t('authSetupGetStarted', language)} onPress={handleCreate} loading={loading} fullWidth style={{ marginTop: Spacing.xl }} />
       </View>
     </SafeAreaView>
   )

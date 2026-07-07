@@ -11,21 +11,41 @@ import { Button } from '@/components/ui/Button'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import { useColors } from '@/lib/hooks/useColors'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
+import type { TranslationKey } from '@/constants/i18n'
+
+// Wrapper to allow pending cpr keys before i18n.ts is updated
+const cprT = (key: string, lang: 'en' | 'es' | 'hu'): string =>
+  t(key as unknown as TranslationKey, lang)
 
 type Step = 1 | 2 | 3
-
-const STEP_LABELS: Record<Step, { title: string; subtitle: string; icon: string }> = {
-  1: { title: "Driver's License (Front)", subtitle: 'Take a clear photo of the FRONT of your license', icon: '🪪' },
-  2: { title: "Driver's License (Back)", subtitle: 'Take a clear photo of the BACK of your license', icon: '🪪' },
-  3: { title: 'Selfie with License', subtitle: 'Take a selfie holding your driver\'s license clearly visible', icon: '🤳' },
-}
 
 export default function VerifyScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const { language } = useAuthStore()
   const [step, setStep] = useState<Step>(1)
   const [photos, setPhotos] = useState<Record<Step, string | null>>({ 1: null, 2: null, 3: null })
   const [submitted, setSubmitted] = useState(false)
+
+  const stepLabels: Record<Step, { title: string; subtitle: string; icon: string }> = {
+    1: {
+      title: cprT('cprStep1Title', language),
+      subtitle: cprT('cprStep1Subtitle', language),
+      icon: '🪪',
+    },
+    2: {
+      title: cprT('cprStep2Title', language),
+      subtitle: cprT('cprStep2Subtitle', language),
+      icon: '🪪',
+    },
+    3: {
+      title: cprT('cprStep3Title', language),
+      subtitle: cprT('cprStep3Subtitle', language),
+      icon: '🤳',
+    },
+  }
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchCameraAsync({
@@ -51,7 +71,10 @@ export default function VerifyScreen() {
 
   const handleNext = () => {
     if (!photos[step]) {
-      Alert.alert('Photo required', 'Please take a photo before continuing')
+      Alert.alert(
+        cprT('cprPhotoRequired', language),
+        cprT('cprPhotoRequiredDesc', language),
+      )
       return
     }
     if (step < 3) {
@@ -69,7 +92,7 @@ export default function VerifyScreen() {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
-        Alert.alert('Error', 'Please log in to verify your identity')
+        Alert.alert(t('opFleet2Error', language), cprT('cprLoginToVerify', language))
         return
       }
       const userId = session.user.id
@@ -101,7 +124,7 @@ export default function VerifyScreen() {
 
       setSubmitted(true)
     } catch {
-      Alert.alert('Error', 'Could not submit documents. Please try again.')
+      Alert.alert(t('opFleet2Error', language), cprT('cprSubmitDocsFailed', language))
     }
   }
 
@@ -111,15 +134,17 @@ export default function VerifyScreen() {
         <View style={styles.successContainer}>
           <Text style={styles.successIcon}>✅</Text>
           <Text style={styles.successTitle}>
-            {Config.useMock ? 'Verified!' : 'Submitted for Review'}
+            {Config.useMock
+              ? cprT('cprVerified', language)
+              : cprT('cprSubmittedForReview', language)}
           </Text>
           <Text style={styles.successSubtitle}>
             {Config.useMock
-              ? 'Your identity has been verified (demo mode)'
-              : 'Your documents are under review — usually takes 2 hours'}
+              ? cprT('cprVerifiedMockDesc', language)
+              : cprT('cprSubmittedForReviewDesc', language)}
           </Text>
           <Button
-            title="Back to Profile"
+            title={cprT('cprBackToProfile', language)}
             onPress={() => router.back()}
             fullWidth
             style={{ marginTop: Spacing.xl }}
@@ -129,12 +154,12 @@ export default function VerifyScreen() {
     )
   }
 
-  const stepInfo = STEP_LABELS[step]
+  const stepInfo = stepLabels[step]
   const currentPhoto = photos[step]
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Identity Verification" />
+      <ScreenHeader title={t('identityVerification', language)} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Progress */}
@@ -150,6 +175,7 @@ export default function VerifyScreen() {
             </View>
           ))}
         </View>
+        {/* "Step X of 3" — dynamic number interpolation, not translated */}
         <Text style={styles.stepLabel}>Step {step} of 3</Text>
 
         {/* Step header */}
@@ -163,28 +189,44 @@ export default function VerifyScreen() {
         {currentPhoto ? (
           <View style={styles.photoPreview}>
             <Image source={{ uri: currentPhoto }} style={styles.photoImage} />
-            <TouchableOpacity style={styles.retakeBtn} onPress={() => setPhotos(prev => ({ ...prev, [step]: null }))}>
-              <Text style={styles.retakeText}>↺ Retake</Text>
+            <TouchableOpacity
+              style={styles.retakeBtn}
+              onPress={() => setPhotos(prev => ({ ...prev, [step]: null }))}
+              accessibilityRole="button"
+              accessibilityLabel={cprT('cprRetake', language)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.retakeText}>{cprT('cprRetake', language)}</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.photoPlaceholder}>
             <Text style={styles.photoPlaceholderIcon}>📷</Text>
-            <Text style={styles.photoPlaceholderText}>No photo taken</Text>
+            <Text style={styles.photoPlaceholderText}>{cprT('cprNoPhotoTaken', language)}</Text>
           </View>
         )}
 
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.galleryBtn} onPress={pickFromGallery}>
-            <Text style={styles.galleryBtnText}>📁 Gallery</Text>
+          <TouchableOpacity
+            style={styles.galleryBtn}
+            onPress={pickFromGallery}
+            accessibilityRole="button"
+            accessibilityLabel={cprT('cprGallery', language)}
+          >
+            <Text style={styles.galleryBtnText}>{cprT('cprGallery', language)}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.cameraBtn} onPress={pickPhoto}>
-            <Text style={styles.cameraBtnText}>📷 Camera</Text>
+          <TouchableOpacity
+            style={styles.cameraBtn}
+            onPress={pickPhoto}
+            accessibilityRole="button"
+            accessibilityLabel={cprT('cprCamera', language)}
+          >
+            <Text style={styles.cameraBtnText}>{cprT('cprCamera', language)}</Text>
           </TouchableOpacity>
         </View>
 
         <Button
-          title={step < 3 ? 'Next →' : 'Submit for Verification'}
+          title={step < 3 ? cprT('cprNext', language) : cprT('cprSubmitForVerification', language)}
           onPress={handleNext}
           fullWidth
           style={{ marginTop: Spacing.xl }}
@@ -235,7 +277,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   photoPlaceholderText: { fontSize: 14, color: C.textTertiary },
   photoPreview: { marginBottom: Spacing.base },
   photoImage: { width: '100%', height: 200, borderRadius: Radius.xl, resizeMode: 'cover' },
-  retakeBtn: { marginTop: Spacing.sm, alignSelf: 'center' },
+  retakeBtn: { marginTop: Spacing.sm, alignSelf: 'center', minHeight: 44, justifyContent: 'center' },
   retakeText: { fontSize: 14, color: C.primary, fontWeight: '600' },
   buttonRow: { flexDirection: 'row', gap: Spacing.md },
   galleryBtn: {
@@ -246,6 +288,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     borderWidth: 1,
     borderColor: C.border,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   galleryBtnText: { fontSize: 14, color: C.textSecondary, fontWeight: '600' },
   cameraBtn: {
@@ -256,6 +300,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     borderWidth: 1,
     borderColor: C.primary,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   cameraBtnText: { fontSize: 14, color: C.primaryDark, fontWeight: '600' },
   successContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xl },

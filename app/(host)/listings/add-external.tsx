@@ -116,6 +116,8 @@ export default function AddExternalListingScreen() {
                   key={p.key}
                   style={[styles.platformCard, selectedPlatform === p.key && styles.platformCardActive]}
                   onPress={() => setSelectedPlatform(p.key)}
+                  accessibilityRole="button"
+                  accessibilityLabel={p.label}
                 >
                   <Text style={styles.platformEmoji}>{p.emoji}</Text>
                   <Text
@@ -135,7 +137,7 @@ export default function AddExternalListingScreen() {
         {/* STEP 2 — Alap adatok */}
         {step === 2 && (
           <View>
-            <Text style={styles.stepTitle}>Listing details</Text>
+            <Text style={styles.stepTitle}>{t('hostLListingDetails', language)}</Text>
             <Text style={styles.stepSubtitle}>
               You fill these in — Rentivo does not scrape data from {platformLabel}.
             </Text>
@@ -151,16 +153,16 @@ export default function AddExternalListingScreen() {
               keyboardType="url"
             />
 
-            <Text style={styles.fieldLabel}>Listing name *</Text>
+            <Text style={styles.fieldLabel}>{t('hostLListingNameLabel', language)}</Text>
             <TextInput
               style={styles.input}
               value={title}
               onChangeText={setTitle}
-              placeholder="pl. Cozy Villa in Marbella"
+              placeholder={t('hostLListingNamePlaceholder', language)}
               placeholderTextColor={C.textTertiary}
             />
 
-            <Text style={styles.fieldLabel}>Category</Text>
+            <Text style={styles.fieldLabel}>{t('opFleetCategory', language)}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
               <View style={styles.categoryRow}>
                 {CATEGORIES.map(c => (
@@ -168,6 +170,8 @@ export default function AddExternalListingScreen() {
                     key={c.key}
                     style={[styles.categoryPill, category === c.key && styles.categoryPillActive]}
                     onPress={() => setCategory(c.key)}
+                    accessibilityRole="button"
+                    accessibilityLabel={c.label}
                   >
                     <Text style={[styles.categoryPillText, category === c.key && styles.categoryPillTextActive]}>
                       {c.emoji} {c.label}
@@ -177,22 +181,22 @@ export default function AddExternalListingScreen() {
               </View>
             </ScrollView>
 
-            <Text style={styles.fieldLabel}>Price / day (EUR, optional)</Text>
+            <Text style={styles.fieldLabel}>{t('hostLPricePerDayOptional', language)}</Text>
             <TextInput
               style={styles.input}
               value={price}
               onChangeText={setPrice}
-              placeholder="e.g. 85"
+              placeholder={t('hostLPricePlaceholder', language)}
               placeholderTextColor={C.textTertiary}
               keyboardType="numeric"
             />
 
-            <Text style={styles.fieldLabel}>City *</Text>
+            <Text style={styles.fieldLabel}>{t('hostLCityReq', language)}</Text>
             <TextInput
               style={styles.input}
               value={city}
               onChangeText={setCity}
-              placeholder="e.g. Marbella"
+              placeholder={t('hostLCityMarbella', language)}
               placeholderTextColor={C.textTertiary}
             />
           </View>
@@ -201,7 +205,7 @@ export default function AddExternalListingScreen() {
         {/* STEP 3 — iCal szinkronizáció */}
         {step === 3 && (
           <View>
-            <Text style={styles.stepTitle}>Availability sync</Text>
+            <Text style={styles.stepTitle}>{t('hostLAvailabilitySync', language)}</Text>
             <Text style={styles.stepSubtitle}>
               Optional: provide your iCal URL and Rentivo will automatically sync
               blocked dates from your {platformLabel} calendar.
@@ -210,24 +214,26 @@ export default function AddExternalListingScreen() {
             <TouchableOpacity
               style={[styles.optionCard, wantsIcal === true && styles.optionCardActive]}
               onPress={() => setWantsIcal(true)}
+              accessibilityRole="button"
+              accessibilityLabel={t('hostLSyncYes', language)}
             >
               <Text style={styles.optionEmoji}>🔄</Text>
               <View style={styles.optionText}>
-                <Text style={styles.optionTitle}>Yes, sync availability</Text>
-                <Text style={styles.optionDesc}>
-                  Auto-updates every 4 hours — 0 double bookings
-                </Text>
+                <Text style={styles.optionTitle}>{t('hostLSyncYes', language)}</Text>
+                <Text style={styles.optionDesc}>{t('hostLSyncYesDesc', language)}</Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.optionCard, wantsIcal === false && styles.optionCardActive]}
               onPress={() => setWantsIcal(false)}
+              accessibilityRole="button"
+              accessibilityLabel={t('opFleetWizardSkip', language)}
             >
               <Text style={styles.optionEmoji}>⏭️</Text>
               <View style={styles.optionText}>
-                <Text style={styles.optionTitle}>Skip for now</Text>
-                <Text style={styles.optionDesc}>You can set this up later when editing the listing</Text>
+                <Text style={styles.optionTitle}>{t('opFleetWizardSkip', language)}</Text>
+                <Text style={styles.optionDesc}>{t('hostLSkipForNowDesc', language)}</Text>
               </View>
             </TouchableOpacity>
 
@@ -235,8 +241,12 @@ export default function AddExternalListingScreen() {
               <View style={styles.icalSection}>
                 <View style={styles.icalLabelRow}>
                   <Text style={styles.fieldLabel}>iCal URL</Text>
-                  <TouchableOpacity onPress={() => setShowIcalHelp(true)}>
-                    <Text style={styles.helpLink}>How do I find it? →</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowIcalHelp(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('hostLICalHowToFind', language)}
+                  >
+                    <Text style={styles.helpLink}>{t('hostLICalHowToFind', language)}</Text>
                   </TouchableOpacity>
                 </View>
                 <TextInput
@@ -252,10 +262,12 @@ export default function AddExternalListingScreen() {
                   style={[styles.testBtn, (!icalUrl.trim() || icalTesting) && styles.testBtnDisabled]}
                   onPress={() => { void handleTestIcal() }}
                   disabled={!icalUrl.trim() || icalTesting}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('hostLTestConnection', language)}
                 >
                   {icalTesting
                     ? <ActivityIndicator size="small" color={C.textInverse} />
-                    : <Text style={styles.testBtnText}>Test connection</Text>}
+                    : <Text style={styles.testBtnText}>{t('hostLTestConnection', language)}</Text>}
                 </TouchableOpacity>
 
                 {icalResult !== null && (
@@ -276,27 +288,29 @@ export default function AddExternalListingScreen() {
         {step === 4 && (
           <View style={styles.successContainer}>
             <Text style={styles.successEmoji}>🎉</Text>
-            <Text style={styles.successTitle}>Listing published!</Text>
+            <Text style={styles.successTitle}>{t('hostLListingPublished', language)}</Text>
             <Text style={styles.successSubtitle}>
               Your listing is now visible on Rentivo's explore page.
               When guests book, they'll be directed to {platformLabel}.
             </Text>
 
             <View style={styles.infoBox}>
-              <Text style={styles.infoTitle}>What to expect</Text>
+              <Text style={styles.infoTitle}>{t('hostLWhatToExpect', language)}</Text>
               <Text style={styles.infoItem}>✅ Listing shows a "{platformLabel} via Rentivo" badge</Text>
               <Text style={styles.infoItem}>✅ The "Book" button links to your {platformLabel} listing</Text>
               <Text style={styles.infoItem}>✅ Rentivo does not handle the booking — {platformLabel} does</Text>
               {wantsIcal && icalResult?.error === null && (
-                <Text style={styles.infoItem}>✅ iCal sync active (updates every 4 hours)</Text>
+                <Text style={styles.infoItem}>{t('hostLICalSyncActive', language)}</Text>
               )}
             </View>
 
             <TouchableOpacity
               style={styles.doneBtn}
               onPress={() => router.replace('/(host)/listings' as Parameters<typeof router.replace>[0])}
+              accessibilityRole="button"
+              accessibilityLabel={t('hostLBackToListings', language)}
             >
-              <Text style={styles.doneBtnText}>Back to my listings →</Text>
+              <Text style={styles.doneBtnText}>{t('hostLBackToListings', language)}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -310,6 +324,8 @@ export default function AddExternalListingScreen() {
               style={[styles.nextBtn, !canProceedStep1 && styles.nextBtnDisabled]}
               disabled={!canProceedStep1}
               onPress={next}
+              accessibilityRole="button"
+              accessibilityLabel={t('nextStep', language)}
             >
               <Text style={styles.nextBtnText}>{t('nextStep', language)}</Text>
             </TouchableOpacity>
@@ -319,23 +335,25 @@ export default function AddExternalListingScreen() {
               style={[styles.nextBtn, !canProceedStep2 && styles.nextBtnDisabled]}
               disabled={!canProceedStep2}
               onPress={next}
+              accessibilityRole="button"
+              accessibilityLabel={t('nextStep', language)}
             >
               <Text style={styles.nextBtnText}>{t('nextStep', language)}</Text>
             </TouchableOpacity>
           )}
           {step === 3 && (
             <View>
-              <Text style={styles.gdprText}>
-                I confirm this is my own listing and I have the right to add it.
-              </Text>
+              <Text style={styles.gdprText}>{t('hostLConfirmOwnership', language)}</Text>
               <TouchableOpacity
                 style={[styles.nextBtn, saving && styles.nextBtnDisabled]}
                 disabled={saving}
                 onPress={() => { void handleSave() }}
+                accessibilityRole="button"
+                accessibilityLabel={t('hostLSaveAndPublish', language)}
               >
                 {saving
                   ? <ActivityIndicator size="small" color={C.textInverse} />
-                  : <Text style={styles.nextBtnText}>Save and publish</Text>}
+                  : <Text style={styles.nextBtnText}>{t('hostLSaveAndPublish', language)}</Text>}
               </TouchableOpacity>
             </View>
           )}

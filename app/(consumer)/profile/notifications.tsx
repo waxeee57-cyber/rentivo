@@ -16,6 +16,12 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import type { TranslationKey } from '@/constants/i18n'
+
+// Wrapper to allow pending cpr keys before i18n.ts is updated
+const cprT = (key: string, lang: 'en' | 'es' | 'hu'): string =>
+  t(key as unknown as TranslationKey, lang)
 
 interface NotificationPrefs {
   booking_confirmed: boolean
@@ -37,20 +43,50 @@ const DEFAULT_PREFS: NotificationPrefs = {
   promotions: false,
 }
 
+interface SectionDef {
+  titleKey: string
+  items: Array<{ key: keyof NotificationPrefs; labelKey: string; descKey: string }>
+}
+
+const SECTIONS: SectionDef[] = [
+  {
+    titleKey: 'cprSectionBookings',
+    items: [
+      { key: 'booking_confirmed', labelKey: 'cprNtfBookingConfirmed', descKey: 'cprNtfBookingConfirmedDesc' },
+      { key: 'booking_cancelled', labelKey: 'cprNtfBookingCancelled', descKey: 'cprNtfBookingCancelledDesc' },
+      { key: 'booking_reminder', labelKey: 'cprNtfBookingReminder', descKey: 'cprNtfBookingReminderDesc' },
+    ],
+  },
+  {
+    titleKey: 'cprSectionCommunication',
+    items: [
+      { key: 'new_message', labelKey: 'cprNtfNewMessage', descKey: 'cprNtfNewMessageDesc' },
+      { key: 'review_received', labelKey: 'cprNtfNewReview', descKey: 'cprNtfNewReviewDesc' },
+    ],
+  },
+  {
+    titleKey: 'cprSectionPayments',
+    items: [
+      { key: 'payment_received', labelKey: 'cprNtfPaymentReceived', descKey: 'cprNtfPaymentReceivedDesc' },
+    ],
+  },
+  {
+    titleKey: 'cprSectionMarketing',
+    items: [
+      { key: 'promotions', labelKey: 'cprNtfPromotions', descKey: 'cprNtfPromotionsDesc' },
+    ],
+  },
+]
+
 export default function NotificationsScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const { language } = useAuthStore()
   const insets = useSafeAreaInsets()
-  const isHu = language === 'hu'
-  const isEs = language === 'es'
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS)
-
-  const label = (hu: string, es: string, en: string) =>
-    isHu ? hu : isEs ? es : en
 
   const loadPrefs = useCallback(async () => {
     if (Config.useMock) {
@@ -106,110 +142,13 @@ export default function NotificationsScreen() {
         )
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Error'
-      Alert.alert(isHu ? 'Hiba' : isEs ? 'Error' : 'Error', msg)
+      Alert.alert(t('opFleet2Error', language), msg)
       // revert optimistic update
       setPrefs(prev => ({ ...prev, [key]: !value }))
     } finally {
       setSaving(false)
     }
   }
-
-  const sections: Array<{
-    titleHu: string; titleEs: string; titleEn: string;
-    items: Array<{ key: keyof NotificationPrefs; labelHu: string; labelEs: string; labelEn: string; descHu: string; descEs: string; descEn: string }>
-  }> = [
-    {
-      titleHu: 'FOGLALÁSOK',
-      titleEs: 'RESERVAS',
-      titleEn: 'BOOKINGS',
-      items: [
-        {
-          key: 'booking_confirmed',
-          labelHu: 'Foglalás visszaigazolva',
-          labelEs: 'Reserva confirmada',
-          labelEn: 'Booking confirmed',
-          descHu: 'Amikor a foglalásodat visszaigazolják',
-          descEs: 'Cuando tu reserva sea confirmada',
-          descEn: 'When your booking is confirmed',
-        },
-        {
-          key: 'booking_cancelled',
-          labelHu: 'Foglalás lemondva',
-          labelEs: 'Reserva cancelada',
-          labelEn: 'Booking cancelled',
-          descHu: 'Ha egy foglalást lemondanak',
-          descEs: 'Si una reserva es cancelada',
-          descEn: 'If a booking is cancelled',
-        },
-        {
-          key: 'booking_reminder',
-          labelHu: 'Bérlési emlékeztető',
-          labelEs: 'Recordatorio de reserva',
-          labelEn: 'Booking reminder',
-          descHu: '24 órával az átvétel előtt',
-          descEs: '24 horas antes de la recogida',
-          descEn: '24 hours before pickup',
-        },
-      ],
-    },
-    {
-      titleHu: 'KOMMUNIKÁCIÓ',
-      titleEs: 'COMUNICACIÓN',
-      titleEn: 'COMMUNICATION',
-      items: [
-        {
-          key: 'new_message',
-          labelHu: 'Új üzenet',
-          labelEs: 'Nuevo mensaje',
-          labelEn: 'New message',
-          descHu: 'Amikor új üzeneted érkezik',
-          descEs: 'Cuando recibas un nuevo mensaje',
-          descEn: 'When you receive a new message',
-        },
-        {
-          key: 'review_received',
-          labelHu: 'Új értékelés',
-          labelEs: 'Nueva reseña',
-          labelEn: 'New review',
-          descHu: 'Amikor értékelést kapsz',
-          descEs: 'Cuando recibas una reseña',
-          descEn: 'When you receive a review',
-        },
-      ],
-    },
-    {
-      titleHu: 'FIZETÉSEK',
-      titleEs: 'PAGOS',
-      titleEn: 'PAYMENTS',
-      items: [
-        {
-          key: 'payment_received',
-          labelHu: 'Befizetés érkezett',
-          labelEs: 'Pago recibido',
-          labelEn: 'Payment received',
-          descHu: 'Sikeres fizetés esetén',
-          descEs: 'Cuando se recibe un pago',
-          descEn: 'When a payment is processed',
-        },
-      ],
-    },
-    {
-      titleHu: 'MARKETING',
-      titleEs: 'MARKETING',
-      titleEn: 'MARKETING',
-      items: [
-        {
-          key: 'promotions',
-          labelHu: 'Akciók és ajánlatok',
-          labelEs: 'Promociones y ofertas',
-          labelEn: 'Promotions & offers',
-          descHu: 'Rentivo ajánlatok és hírek',
-          descEs: 'Ofertas y noticias de Rentivo',
-          descEn: 'Rentivo deals and news',
-        },
-      ],
-    },
-  ]
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + Spacing.base }]}>
@@ -218,28 +157,21 @@ export default function NotificationsScreen() {
         <TouchableOpacity
           style={[styles.back, { paddingTop: insets.top + Spacing.sm }]}
           onPress={() => router.back()}
-          accessibilityLabel={label('Vissza', 'Volver', 'Go back')}
+          accessibilityLabel={t('opFleet2GoBack', language)}
           accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.backText}>← {label('Vissza', 'Volver', 'Back')}</Text>
+          <Text style={styles.backText}>← {t('opBkBack', language)}</Text>
         </TouchableOpacity>
 
         <View style={styles.content}>
-          <Text style={styles.title}>
-            {label('Értesítési beállítások', 'Configuración de notificaciones', 'Notification Settings')}
-          </Text>
-          <Text style={styles.subtitle}>
-            {label(
-              'Válaszd ki, milyen értesítéseket szeretnél kapni.',
-              'Elige qué notificaciones deseas recibir.',
-              'Choose which notifications you want to receive.',
-            )}
-          </Text>
+          <Text style={styles.title}>{cprT('cprNotificationSettings', language)}</Text>
+          <Text style={styles.subtitle}>{cprT('cprNotificationSettingsSubtitle', language)}</Text>
 
           {saving && (
             <View style={styles.savingBadge}>
               <ActivityIndicator color={C.primary} size="small" />
-              <Text style={styles.savingText}>{label('Mentés...', 'Guardando...', 'Saving...')}</Text>
+              <Text style={styles.savingText}>{t('opFleet2Saving', language)}</Text>
             </View>
           )}
 
@@ -248,10 +180,10 @@ export default function NotificationsScreen() {
               <ActivityIndicator color={C.primary} size="large" />
             </View>
           ) : (
-            sections.map(section => (
-              <View key={section.titleEn} style={styles.section}>
+            SECTIONS.map(section => (
+              <View key={section.titleKey} style={styles.section}>
                 <Text style={styles.sectionLabel}>
-                  {label(section.titleHu, section.titleEs, section.titleEn)}
+                  {cprT(section.titleKey, language)}
                 </Text>
 
                 {section.items.map((item, idx) => (
@@ -260,10 +192,10 @@ export default function NotificationsScreen() {
                     <View style={styles.switchRow}>
                       <View style={styles.switchContent}>
                         <Text style={styles.switchTitle}>
-                          {label(item.labelHu, item.labelEs, item.labelEn)}
+                          {cprT(item.labelKey, language)}
                         </Text>
                         <Text style={styles.switchDesc}>
-                          {label(item.descHu, item.descEs, item.descEn)}
+                          {cprT(item.descKey, language)}
                         </Text>
                       </View>
                       <Switch
@@ -271,7 +203,7 @@ export default function NotificationsScreen() {
                         onValueChange={(value) => void updatePref(item.key, value)}
                         trackColor={{ false: C.border, true: C.primary }}
                         thumbColor={C.white}
-                        accessibilityLabel={label(item.labelHu, item.labelEs, item.labelEn)}
+                        accessibilityLabel={cprT(item.labelKey, language)}
                       />
                     </View>
                   </React.Fragment>
@@ -280,13 +212,7 @@ export default function NotificationsScreen() {
             ))
           )}
 
-          <Text style={styles.footer}>
-            {label(
-              'A push értesítések kezeléséhez az eszközöd beállításait is ellenőrizd.',
-              'Para gestionar notificaciones push, también revisa la configuración de tu dispositivo.',
-              'To manage push notifications, also check your device settings.',
-            )}
-          </Text>
+          <Text style={styles.footer}>{cprT('cprNotificationFooter', language)}</Text>
         </View>
       </ScrollView>
     </View>

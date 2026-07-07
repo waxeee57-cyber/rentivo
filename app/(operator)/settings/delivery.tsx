@@ -19,6 +19,9 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+
+const tr = t
 
 const RADIUS_OPTIONS = [5, 10, 20, 50] as const
 type RadiusOption = typeof RADIUS_OPTIONS[number]
@@ -26,7 +29,7 @@ type RadiusOption = typeof RADIUS_OPTIONS[number]
 export default function DeliverySettingsScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
-  const { operator } = useAuthStore()
+  const { operator, language } = useAuthStore()
   const { showToast } = useToastStore()
 
   const operatorId = Config.useMock ? 'op-001' : (operator?.id ?? '')
@@ -61,7 +64,7 @@ export default function DeliverySettingsScreen() {
           .maybeSingle()
 
         if (error) {
-          showToast({ message: 'Failed to load delivery settings', type: 'error' })
+          showToast({ message: tr('opSetDeliveryLoadFailed', language), type: 'error' })
           return
         }
         if (data) {
@@ -82,7 +85,7 @@ export default function DeliverySettingsScreen() {
     const trimmed = newZone.trim()
     if (!trimmed) return
     if (zones.includes(trimmed)) {
-      showToast({ message: 'Zone already added', type: 'info' })
+      showToast({ message: tr('opSetZoneAlreadyAdded', language), type: 'info' })
       return
     }
     setZones(prev => [...prev, trimmed])
@@ -102,12 +105,12 @@ export default function DeliverySettingsScreen() {
 
       if (Config.useMock) {
         await new Promise<void>(r => setTimeout(r, 800))
-        showToast({ message: 'Delivery settings saved', type: 'success' })
+        showToast({ message: tr('opSetDeliverySaved', language), type: 'success' })
         return
       }
 
       if (!operatorId) {
-        showToast({ message: 'Operator ID missing', type: 'error' })
+        showToast({ message: tr('opSetOperatorIdMissing', language), type: 'error' })
         return
       }
 
@@ -122,10 +125,10 @@ export default function DeliverySettingsScreen() {
         .eq('id', operatorId)
 
       if (error) {
-        showToast({ message: 'Failed to save delivery settings', type: 'error' })
+        showToast({ message: tr('opSetDeliverySaveFailed', language), type: 'error' })
         return
       }
-      showToast({ message: 'Delivery settings saved', type: 'success' })
+      showToast({ message: tr('opSetDeliverySaved', language), type: 'success' })
     } finally {
       setSaving(false)
     }
@@ -134,7 +137,7 @@ export default function DeliverySettingsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <ScreenHeader title="Delivery Settings" />
+        <ScreenHeader title={tr('opSetDeliverySettings', language)} />
         <View style={styles.centered}>
           <ActivityIndicator color={C.primary} size="large" />
         </View>
@@ -144,7 +147,7 @@ export default function DeliverySettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScreenHeader title="Delivery Settings" />
+      <ScreenHeader title={tr('opSetDeliverySettings', language)} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -155,9 +158,9 @@ export default function DeliverySettingsScreen() {
         <Card style={styles.card}>
           <View style={styles.toggleRow}>
             <View style={styles.toggleInfo}>
-              <Text style={styles.toggleLabel}>Enable Delivery</Text>
+              <Text style={styles.toggleLabel}>{tr('opSetEnableDelivery', language)}</Text>
               <Text style={styles.toggleSub}>
-                Offer vehicle delivery to your customers
+                {tr('opSetEnableDeliveryDesc', language)}
               </Text>
             </View>
             <Switch
@@ -165,7 +168,7 @@ export default function DeliverySettingsScreen() {
               onValueChange={setDeliveryEnabled}
               trackColor={{ false: C.border, true: C.primary }}
               thumbColor={C.white}
-              accessibilityLabel="Enable delivery"
+              accessibilityLabel={tr('opSetEnableDelivery', language)}
             />
           </View>
         </Card>
@@ -174,9 +177,9 @@ export default function DeliverySettingsScreen() {
           <>
             {/* Delivery Radius */}
             <Card style={styles.card}>
-              <Text style={styles.sectionLabel}>Delivery Radius</Text>
+              <Text style={styles.sectionLabel}>{tr('opSetDeliveryRadius', language)}</Text>
               <Text style={styles.sectionSub}>
-                Maximum distance you will deliver to
+                {tr('opSetDeliveryRadiusDesc', language)}
               </Text>
               <View style={styles.radiusRow}>
                 {RADIUS_OPTIONS.map(km => (
@@ -198,9 +201,9 @@ export default function DeliverySettingsScreen() {
 
             {/* Delivery Fee */}
             <Card style={styles.card}>
-              <Text style={styles.sectionLabel}>Delivery Fee (EUR)</Text>
+              <Text style={styles.sectionLabel}>{tr('opSetDeliveryFee', language)}</Text>
               <Text style={styles.sectionSub}>
-                Fee charged per delivery
+                {tr('opSetDeliveryFeeDesc', language)}
               </Text>
               <View style={styles.feeRow}>
                 <Text style={styles.feePrefix}>€</Text>
@@ -211,16 +214,16 @@ export default function DeliverySettingsScreen() {
                   keyboardType="decimal-pad"
                   placeholder="0.00"
                   placeholderTextColor={C.textTertiary}
-                  accessibilityLabel="Delivery fee in EUR"
+                  accessibilityLabel={tr('opSetDeliveryFeeLabel', language)}
                 />
               </View>
             </Card>
 
             {/* Delivery Zones */}
             <Card style={styles.card}>
-              <Text style={styles.sectionLabel}>Delivery Zones</Text>
+              <Text style={styles.sectionLabel}>{tr('opSetDeliveryZones', language)}</Text>
               <Text style={styles.sectionSub}>
-                Specific locations or areas you deliver to
+                {tr('opSetDeliveryZonesDesc', language)}
               </Text>
 
               {/* Add zone input */}
@@ -231,23 +234,23 @@ export default function DeliverySettingsScreen() {
                   onChangeText={setNewZone}
                   placeholder="e.g. Marbella Airport"
                   placeholderTextColor={C.textTertiary}
-                  accessibilityLabel="New delivery zone"
+                  accessibilityLabel={tr('opSetNewZone', language)}
                   returnKeyType="done"
                   onSubmitEditing={handleAddZone}
                 />
                 <TouchableOpacity
                   style={styles.addBtn}
                   onPress={handleAddZone}
-                  accessibilityLabel="Add delivery zone"
+                  accessibilityLabel={tr('opSetAddZone', language)}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.addBtnText}>Add</Text>
+                  <Text style={styles.addBtnText}>{tr('opSetAdd', language)}</Text>
                 </TouchableOpacity>
               </View>
 
               {/* Zone list */}
               {zones.length === 0 ? (
-                <Text style={styles.emptyZones}>No delivery zones added yet</Text>
+                <Text style={styles.emptyZones}>{tr('opSetZonesEmpty', language)}</Text>
               ) : (
                 <View style={styles.zoneList}>
                   {zones.map(zone => (
@@ -271,12 +274,12 @@ export default function DeliverySettingsScreen() {
         )}
 
         <Button
-          title={saving ? 'Saving...' : 'Save Settings'}
+          title={saving ? tr('opSetSaving', language) : tr('opSetSaveSettings', language)}
           onPress={() => void handleSave()}
           loading={saving}
           fullWidth
           style={styles.saveBtn}
-          accessibilityLabel="Save delivery settings"
+          accessibilityLabel={tr('opSetSaveSettings', language)}
         />
 
         <View style={{ height: Spacing.xxxl }} />

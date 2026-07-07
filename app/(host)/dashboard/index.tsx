@@ -10,6 +10,7 @@ import { useHostBookings } from '@/lib/hooks/useBookings'
 import { formatEURDecimal, formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { Config } from '@/constants/config'
+import { t } from '@/constants/i18n'
 
 function DashboardSkeleton() {
   const C = useColors()
@@ -96,39 +97,39 @@ export default function HostDashboardScreen() {
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, styles.statCardPrimary]}>
             <Text style={styles.statValuePrimary}>{formatEURDecimal(monthlyEarnings)}</Text>
-            <Text style={styles.statLabelLight}>Earned this month</Text>
+            <Text style={styles.statLabelLight}>{t('earnedThisMonth', language)}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{upcomingPickups}</Text>
-            <Text style={styles.statLabel}>Upcoming pickups</Text>
+            <Text style={styles.statLabel}>{t('hostBUpcomingPickups', language)}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{activeRentals}</Text>
-            <Text style={styles.statLabel}>Active rentals</Text>
+            <Text style={styles.statLabel}>{t('activeRentals', language)}</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statValue}>★{rating.toFixed(1)}</Text>
-            <Text style={styles.statLabel}>Rating</Text>
+            <Text style={styles.statLabel}>{t('rating', language)}</Text>
           </View>
         </View>
 
         {/* Earnings overview */}
         <View style={styles.earningsCard}>
-          <Text style={styles.earningsTitle}>Earnings overview</Text>
+          <Text style={styles.earningsTitle}>{t('hostBEarningsOverview', language)}</Text>
           <View style={styles.earningsRow}>
             <View style={styles.earningsItem}>
               <Text style={styles.earningsAmount}>{formatEURDecimal(monthlyEarnings)}</Text>
-              <Text style={styles.earningsLabel}>This month</Text>
+              <Text style={styles.earningsLabel}>{t('hostBThisMonth', language)}</Text>
             </View>
             <View style={styles.earningsDivider} />
             <View style={styles.earningsItem}>
               <Text style={styles.earningsAmount}>{formatEURDecimal(Config.useMock ? 38500 : 0)}</Text>
-              <Text style={styles.earningsLabel}>Last month</Text>
+              <Text style={styles.earningsLabel}>{t('hostBLastMonth', language)}</Text>
             </View>
             <View style={styles.earningsDivider} />
             <View style={styles.earningsItem}>
               <Text style={styles.earningsAmount}>{formatEURDecimal(Config.useMock ? 420000 : 0)}</Text>
-              <Text style={styles.earningsLabel}>All time</Text>
+              <Text style={styles.earningsLabel}>{t('hostBAllTime', language)}</Text>
             </View>
           </View>
         </View>
@@ -136,9 +137,13 @@ export default function HostDashboardScreen() {
         {/* Your listings */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Your listings</Text>
-            <TouchableOpacity onPress={() => router.push('/(host)/listings')} accessibilityLabel="See all listings" accessibilityRole="button">
-              <Text style={styles.seeAll}>See all →</Text>
+            <Text style={styles.sectionTitle}>{t('hostBYourListings', language)}</Text>
+            <TouchableOpacity
+              onPress={() => router.push('/(host)/listings')}
+              accessibilityLabel={t('hostBSeeAllListings', language)}
+              accessibilityRole="button"
+            >
+              <Text style={styles.seeAll}>{t('hostBSeeAll', language)}</Text>
             </TouchableOpacity>
           </View>
 
@@ -163,39 +168,43 @@ export default function HostDashboardScreen() {
                 </View>
               </View>
               <View style={styles.listingBadge}>
-                <Text style={styles.listingBadgeText}>Live</Text>
+                <Text style={styles.listingBadgeText}>{t('fleetLive', language)}</Text>
               </View>
             </TouchableOpacity>
           ) : (
             <View style={styles.emptyListings}>
               <Text style={styles.emptyEmoji}>🚗</Text>
-              <Text style={styles.emptyText}>No listings yet</Text>
+              <Text style={styles.emptyText}>{t('hostBNoListingsYet', language)}</Text>
             </View>
           )}
 
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => router.push('/(host)/listings/new')}
-            accessibilityLabel="Add new listing"
+            accessibilityLabel={t('hostBAddListing', language)}
             accessibilityRole="button"
           >
-            <Text style={styles.addBtnText}>+ Add listing</Text>
+            <Text style={styles.addBtnText}>{t('hostBAddListing', language)}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Recent bookings */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent bookings</Text>
-            <TouchableOpacity onPress={() => router.push('/(host)/bookings')} accessibilityLabel="See all bookings" accessibilityRole="button">
-              <Text style={styles.seeAll}>See all →</Text>
+            <Text style={styles.sectionTitle}>{t('recentBookings', language)}</Text>
+            <TouchableOpacity
+              onPress={() => router.push('/(host)/bookings')}
+              accessibilityLabel={t('hostBSeeAllBookings', language)}
+              accessibilityRole="button"
+            >
+              <Text style={styles.seeAll}>{t('hostBSeeAll', language)}</Text>
             </TouchableOpacity>
           </View>
 
           {recentBookings.length === 0 ? (
             <View style={styles.emptyListings}>
               <Text style={styles.emptyEmoji}>📅</Text>
-              <Text style={styles.emptyText}>No bookings yet</Text>
+              <Text style={styles.emptyText}>{t('noBookingsYet', language)}</Text>
             </View>
           ) : recentBookings.map(b => (
             <TouchableOpacity
@@ -229,14 +238,14 @@ export default function HostDashboardScreen() {
 
         {/* Tips */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tips for better ratings</Text>
+          <Text style={styles.sectionTitle}>{t('hostBTipsTitle', language)}</Text>
           <View style={styles.tipsBox}>
             {[
-              { emoji: '📸', tip: 'Add more photos for higher booking rates' },
-              { emoji: '⚡', tip: 'Respond to guests within 1 hour' },
-              { emoji: '📅', tip: 'Keep your calendar updated' },
+              { emoji: '📸', tip: t('hostBTip1', language) },
+              { emoji: '⚡', tip: t('hostBTip2', language) },
+              { emoji: '📅', tip: t('hostBTip3', language) },
             ].map(({ emoji, tip }) => (
-              <View key={tip} style={styles.tipRow}>
+              <View key={emoji} style={styles.tipRow}>
                 <Text style={styles.tipEmoji}>{emoji}</Text>
                 <Text style={styles.tipText}>{tip}</Text>
               </View>

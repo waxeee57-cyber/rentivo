@@ -11,9 +11,11 @@ import { Config } from '@/constants/config'
 import { MOCK_CONVERSATIONS } from '@/lib/mockData'
 import { supabase } from '@/lib/supabase'
 import { useNotificationStore } from '@/lib/store/useNotificationStore'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 import type { Conversation } from '@/types'
 import { format } from 'date-fns'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
 
 function formatTime(iso: string): string {
   try {
@@ -30,6 +32,7 @@ export default function OperatorMessagesScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const router = useRouter()
+  const { language } = useAuthStore()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const { setOperatorUnreadCount } = useNotificationStore()
@@ -70,7 +73,7 @@ export default function OperatorMessagesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Messages" />
+      <ScreenHeader title={t('messagesTitle', language)} />
       <FlatList
         data={conversations}
         keyExtractor={c => c.id}
@@ -114,8 +117,8 @@ export default function OperatorMessagesScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyIcon}>💬</Text>
-            <Text style={styles.emptyTitle}>No messages yet</Text>
-            <Text style={styles.emptySubtitle}>Messages from guests will appear here</Text>
+            <Text style={styles.emptyTitle}>{t('messagesEmpty', language)}</Text>
+            <Text style={styles.emptySubtitle}>{t('messagesEmptyGuests', language)}</Text>
           </View>
         }
         ItemSeparatorComponent={() => <View style={styles.separator} />}

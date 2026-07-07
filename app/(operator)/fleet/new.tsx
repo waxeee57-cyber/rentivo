@@ -24,6 +24,7 @@ import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
 import type { RentalCategory } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
 
 const FEATURE_OPTIONS = ['AC', 'GPS', 'Bluetooth', 'USB', 'Leather seats', 'Sunroof', 'Convertible', '4WD', 'Child seat']
 
@@ -34,7 +35,6 @@ export default function NewListingScreen() {
   const { showPhotoOptions } = useCamera()
   const { showToast } = useToastStore()
   const opId = Config.useMock ? MOCK_OPERATOR.id : (operator?.id ?? '')
-  const isHu = language === 'hu'
 
   const [step, setStep] = useState(1)
   const [category, setCategory] = useState<RentalCategory>('car')
@@ -127,21 +127,21 @@ export default function NewListingScreen() {
           <View style={styles.publishedCircle}>
             <Text style={styles.publishedCheck}>✓</Text>
           </View>
-          <Text style={styles.publishedTitle}>Vehicle is live! 🎉</Text>
-          <Text style={styles.publishedSub}>Travellers can now discover and book your vehicle.</Text>
+          <Text style={styles.publishedTitle}>{t('opFleetVehicleLive', language)}</Text>
+          <Text style={styles.publishedSub}>{t('opFleetVehicleLiveSub', language)}</Text>
           <WhatNextScreen
             steps={[
-              { icon: '🔔', text: 'You receive instant push notifications for new bookings' },
-              { icon: '✓', text: 'Confirm bookings in 1 tap — no double bookings possible' },
-              { icon: '💰', text: `Payout: 2 business days after pickup` },
-              { icon: '🔄', text: 'RentalOS sync available soon — zero manual work' },
+              { icon: '🔔', text: t('opFleetNextStep1', language) },
+              { icon: '✓', text: t('opFleetNextStep2', language) },
+              { icon: '💰', text: t('opFleetNextStep3', language) },
+              { icon: '🔄', text: t('opFleetNextStep4', language) },
             ]}
             primaryAction={{
-              label: 'Go to Fleet',
+              label: t('opFleetGoToFleet', language),
               onPress: () => router.replace('/(operator)/fleet'),
             }}
             secondaryAction={{
-              label: 'View bookings',
+              label: t('opFleetViewBookings', language),
               onPress: () => router.replace('/(operator)/bookings'),
             }}
           />
@@ -153,20 +153,25 @@ export default function NewListingScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader
-        title="Add Vehicle"
+        title={t('addVehicle', language)}
         onBack={() => step > 1 ? setStep(s => s - 1) : router.back()}
       />
       <StepIndicator
         totalSteps={4}
         currentStep={step}
-        labels={['Info', 'Price', 'Photos', 'Details']}
+        labels={[
+          t('opFleetStepInfo', language),
+          t('opFleetStepPrice', language),
+          t('opFleetPhotos', language),
+          t('opFleetStepDetails', language),
+        ]}
       />
 
       <ScrollView contentContainerStyle={styles.content}>
         {step === 1 && (
           <>
-            <Text style={styles.stepTitle}>Basic Info</Text>
-            <Text style={styles.fieldLabel}>Category</Text>
+            <Text style={styles.stepTitle}>{t('opFleetStepBasicInfo', language)}</Text>
+            <Text style={styles.fieldLabel}>{t('opFleetCategory', language)}</Text>
             <View style={styles.categories}>
               {CATEGORIES.map(c => (
                 <CategoryPill
@@ -179,14 +184,14 @@ export default function NewListingScreen() {
                 />
               ))}
             </View>
-            <Input label="Title *" value={title} onChangeText={setTitle} placeholder="e.g. BMW 3 Series 2023" />
-            <Input label="Make" value={make} onChangeText={setMake} placeholder="e.g. BMW" />
-            <Input label="Model" value={model} onChangeText={setModel} placeholder="e.g. 3 Series" />
-            <Input label="Year" value={year} onChangeText={setYear} placeholder="e.g. 2023" keyboardType="numeric" />
+            <Input label={t('opFleetTitleLabel', language)} value={title} onChangeText={setTitle} placeholder={t('opFleetTitlePlaceholder', language)} />
+            <Input label={t('opFleetMake', language)} value={make} onChangeText={setMake} placeholder={t('opFleetMakePlaceholder', language)} />
+            <Input label={t('opFleetModel', language)} value={model} onChangeText={setModel} placeholder={t('opFleetModelPlaceholder', language)} />
+            <Input label={t('opFleetYear', language)} value={year} onChangeText={setYear} placeholder={t('opFleetYearPlaceholder', language)} keyboardType="numeric" />
             <Button
-              title="Continue →"
+              title={t('opFleetContinue', language)}
               onPress={() => {
-                if (!title.trim()) { showToast({ message: 'Please enter a title for your vehicle.', type: 'error' }); return }
+                if (!title.trim()) { showToast({ message: t('opFleetToastEnterTitle', language), type: 'error' }); return }
                 setStep(2)
               }}
               fullWidth
@@ -197,13 +202,13 @@ export default function NewListingScreen() {
 
         {step === 2 && (
           <>
-            <Text style={styles.stepTitle}>Pricing</Text>
-            <Input label="Price per day (€) *" value={pricePerDay} onChangeText={setPricePerDay} placeholder="85" keyboardType="decimal-pad" />
-            <Input label="Security deposit (€)" value={deposit} onChangeText={setDeposit} placeholder="500" keyboardType="decimal-pad" />
+            <Text style={styles.stepTitle}>{t('opFleetStepPricing', language)}</Text>
+            <Input label={t('opFleetPricePerDayReq', language)} value={pricePerDay} onChangeText={setPricePerDay} placeholder="85" keyboardType="decimal-pad" />
+            <Input label={t('opFleetDepositLabel', language)} value={deposit} onChangeText={setDeposit} placeholder="500" keyboardType="decimal-pad" />
             <Button
-              title="Continue →"
+              title={t('opFleetContinue', language)}
               onPress={() => {
-                if (!pricePerDay) { showToast({ message: 'Please enter a price per day.', type: 'error' }); return }
+                if (!pricePerDay) { showToast({ message: t('opFleetToastEnterPrice', language), type: 'error' }); return }
                 setStep(3)
               }}
               fullWidth
@@ -214,50 +219,56 @@ export default function NewListingScreen() {
 
         {step === 3 && (
           <>
-            <Text style={styles.stepTitle}>Photos</Text>
-            <Text style={styles.fieldLabel}>Add vehicle photos</Text>
+            <Text style={styles.stepTitle}>{t('opFleetPhotos', language)}</Text>
+            <Text style={styles.fieldLabel}>{t('opFleetAddPhotos', language)}</Text>
             <View style={styles.photoGrid}>
               {Array.from({ length: 6 }, (_, i) => (
-                <TouchableOpacity key={i} style={styles.photoSlot} onPress={() => handlePickPhoto(i)}>
+                <TouchableOpacity
+                  key={i}
+                  style={styles.photoSlot}
+                  onPress={() => handlePickPhoto(i)}
+                  accessibilityRole="button"
+                  accessibilityLabel={photos[i] ? `${t('opFleetChangePhoto', language)} ${i + 1}` : `${t('opFleetAddPhoto', language)} ${i + 1}`}
+                >
                   {photos[i] ? (
                     <Image source={{ uri: photos[i]! }} style={styles.photoSlotImage} contentFit="cover" />
                   ) : (
                     <>
                       <Ionicons name="camera-outline" size={24} color={C.textTertiary} />
-                      <Text style={styles.photoSlotLabel}>{i === 0 ? 'Cover' : `Photo ${i + 1}`}</Text>
+                      <Text style={styles.photoSlotLabel}>
+                        {i === 0 ? t('opFleetPhotoCover', language) : `${t('opFleetPhotoN', language)} ${i + 1}`}
+                      </Text>
                     </>
                   )}
                 </TouchableOpacity>
               ))}
             </View>
-            <Button title="Continue →" onPress={() => setStep(4)} fullWidth style={{ marginTop: Spacing.md }} />
+            <Button title={t('opFleetContinue', language)} onPress={() => setStep(4)} fullWidth style={{ marginTop: Spacing.md }} />
           </>
         )}
 
         {step === 4 && (
           <>
-            <Text style={styles.stepTitle}>Details & Features</Text>
-            <Input label="Description" value={description} onChangeText={setDescription} placeholder="Tell renters about this vehicle..." multiline numberOfLines={4} />
+            <Text style={styles.stepTitle}>{t('opFleetDetailsFeatures', language)}</Text>
+            <Input label={t('opFleetDescription', language)} value={description} onChangeText={setDescription} placeholder={t('opFleetDescPlaceholder2', language)} multiline numberOfLines={4} />
             {category === 'villa' && (
               <>
                 <Text style={styles.fieldLabel}>
-                  {isHu ? 'STR regisztrációs szám' : 'STR Registration Number'}
+                  {t('opFleetStrNumber', language)}
                 </Text>
                 <Text style={styles.strHint}>
-                  {isHu
-                    ? 'EU STR rendelet 2024/1028 — kötelező rövid távú bérbeadásnál'
-                    : 'EU STR Regulation 2024/1028 — required for short-term rentals'}
+                  {t('opFleetStrHint', language)}
                 </Text>
                 <Input
                   label=""
                   value={strNumber}
                   onChangeText={setStrNumber}
                   placeholder="HU-12345-678"
-                  accessibilityLabel={isHu ? 'STR regisztrációs szám' : 'STR registration number'}
+                  accessibilityLabel={t('opFleetStrNumber', language)}
                 />
               </>
             )}
-            <Text style={styles.fieldLabel}>Features</Text>
+            <Text style={styles.fieldLabel}>{t('opFleetFeatures', language)}</Text>
             <View style={styles.featureGrid}>
               {FEATURE_OPTIONS.map(f => (
                 <CategoryPill
@@ -269,7 +280,7 @@ export default function NewListingScreen() {
                 />
               ))}
             </View>
-            <Button title="Publish listing" onPress={handlePublish} loading={saving} fullWidth style={{ marginTop: Spacing.xl }} />
+            <Button title={t('opFleetPublish', language)} onPress={handlePublish} loading={saving} fullWidth style={{ marginTop: Spacing.xl }} />
           </>
         )}
       </ScrollView>

@@ -20,6 +20,8 @@ import { Config } from '@/constants/config'
 import type { PhotoSlot } from '@/components/damage/DamagePhotoGrid'
 import type { FuelLevel } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 const REQUIRED_SLOTS: PhotoSlot[] = ['front', 'back', 'left', 'right', 'interior', 'extra']
 
@@ -36,6 +38,7 @@ export default function ReturnDamageScreen() {
   const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
   const bkId = Config.useMock ? 'bk-003' : (bookingId ?? '')
+  const { language } = useAuthStore()
 
   const [photos, setPhotos] = useState<Partial<Record<PhotoSlot, string | null>>>({})
   const [mileage, setMileage] = useState('')
@@ -76,7 +79,7 @@ export default function ReturnDamageScreen() {
       return
     }
     if (!operatorSig || !consumerSig) {
-      showToast({ message: 'Both signatures required before submitting.', type: 'error' })
+      showToast({ message: t('cdmgBothSigsRequired', language), type: 'error' })
       return
     }
     setShowConfirm(true)
@@ -89,7 +92,7 @@ export default function ReturnDamageScreen() {
       if (Config.useMock) {
         await new Promise(r => setTimeout(r, 1000))
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        showToast({ message: 'Return inspection complete! ✓', type: 'success' })
+        showToast({ message: t('cdmgReturnComplete', language), type: 'success' })
         router.back()
         return
       }
@@ -134,10 +137,10 @@ export default function ReturnDamageScreen() {
       }
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      showToast({ message: 'Return inspection complete! ✓', type: 'success' })
+      showToast({ message: t('cdmgReturnComplete', language), type: 'success' })
       router.back()
     } catch {
-      showToast({ message: 'Something went wrong. Please try again.', type: 'error' })
+      showToast({ message: t('cdmgSomethingWentWrong', language), type: 'error' })
     } finally {
       setSubmitting(false)
     }
@@ -145,18 +148,18 @@ export default function ReturnDamageScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Return Inspection" />
+      <ScreenHeader title={t('returnInspection', language)} />
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.subtitle}>Document the vehicle condition at return.</Text>
+        <Text style={styles.subtitle}>{t('cdmgDocumentConditionReturn', language)}</Text>
 
-        <Text style={styles.sectionTitle}>Photos (6 required)</Text>
+        <Text style={styles.sectionTitle}>{t('cdmgPhotos6Required', language)}</Text>
         <DamagePhotoGrid photos={photos} onPhoto={handlePhoto} />
 
         {aiAnalyzing && (
           <View style={styles.aiLoadingContainer}>
             <ActivityIndicator color={C.primary} />
-            <Text style={styles.aiLoadingText}>AI analyzing photos...</Text>
+            <Text style={styles.aiLoadingText}>{t('cdmgAiAnalyzing', language)}</Text>
           </View>
         )}
         {aiResult && (
@@ -168,21 +171,22 @@ export default function ReturnDamageScreen() {
               styles.aiResultTitle,
               { color: aiResult.has_damage ? C.error : C.success },
             ]}>
-              {aiResult.has_damage ? 'Damage Detected' : 'No New Damage'}
+              {aiResult.has_damage ? t('cdmgDamageDetected', language) : t('cdmgNoDamage', language)}
             </Text>
             <Text style={styles.aiResultText}>{aiResult.analysis}</Text>
           </View>
         )}
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Mileage & Fuel</Text>
+          <Text style={styles.sectionTitle}>{t('cdmgMileageAndFuel', language)}</Text>
           <TextInput
             style={styles.mileageInput}
-            placeholder="Enter current mileage (km)"
+            placeholder={t('cdmgMileagePlaceholder', language)}
             value={mileage}
             onChangeText={setMileage}
             keyboardType="numeric"
             placeholderTextColor={C.textTertiary}
+            accessibilityLabel={t('cdmgCurrentMileageA11y', language)}
           />
           <View style={styles.fuelRow}>
             {FUEL_LEVELS.map(f => (
@@ -190,6 +194,8 @@ export default function ReturnDamageScreen() {
                 key={f.key}
                 style={[styles.fuelBtn, fuelLevel === f.key && styles.fuelBtnActive]}
                 onPress={() => setFuelLevel(f.key)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: fuelLevel === f.key }}
               >
                 <Text style={[styles.fuelText, fuelLevel === f.key && styles.fuelTextActive]}>
                   {f.label}
@@ -201,31 +207,33 @@ export default function ReturnDamageScreen() {
 
         <Card style={styles.card}>
           <View style={styles.damageRow}>
-            <Text style={styles.damageLabel}>Any damage found?</Text>
+            <Text style={styles.damageLabel}>{t('cdmgAnyDamageFound', language)}</Text>
             <Switch
               value={damageFound}
               onValueChange={setDamageFound}
               trackColor={{ true: C.error, false: C.border }}
+              accessibilityLabel={t('cdmgDamageFoundToggle', language)}
             />
           </View>
           {damageFound && (
             <TextInput
               style={styles.textArea}
-              placeholder="Describe the damage..."
+              placeholder={t('cdmgDescribeDamage', language)}
               value={damageNotes}
               onChangeText={setDamageNotes}
               multiline
               numberOfLines={4}
               placeholderTextColor={C.textTertiary}
+              accessibilityLabel={t('cdmgDamageDescriptionA11y', language)}
             />
           )}
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>General Notes</Text>
+          <Text style={styles.sectionTitle}>{t('cdmgGeneralNotes', language)}</Text>
           <TextInput
             style={styles.textArea}
-            placeholder="Any other notes..."
+            placeholder={t('cdmgAnyOtherNotes', language)}
             value={notes}
             onChangeText={setNotes}
             multiline
@@ -235,25 +243,25 @@ export default function ReturnDamageScreen() {
         </Card>
 
         <Card style={styles.card}>
-          <Text style={styles.sectionTitle}>Signatures</Text>
-          <Text style={styles.sigSubtitle}>Both parties must sign to confirm the vehicle condition.</Text>
+          <Text style={styles.sectionTitle}>{t('cdmgSignaturesTitle', language)}</Text>
+          <Text style={styles.sigSubtitle}>{t('cdmgBothPartiesMustSign', language)}</Text>
           <SignatureCanvas
-            label="Operator Signature"
+            label={t('cdmgOperatorSignature', language)}
             onSave={setOperatorSig}
             saved={!!operatorSig}
           />
           <SignatureCanvas
-            label="Renter Signature"
+            label={t('cdmgRenterSignature', language)}
             onSave={setConsumerSig}
             saved={!!consumerSig}
           />
           <Text style={styles.sigConfirm}>
-            I confirm this accurately reflects the vehicle condition at return.
+            {t('cdmgSignConfirmReturn', language)}
           </Text>
         </Card>
 
         <Button
-          title="Complete Return Inspection"
+          title={t('cdmgCompleteReturn', language)}
           onPress={handleSubmitPress}
           loading={submitting}
           fullWidth
@@ -264,9 +272,9 @@ export default function ReturnDamageScreen() {
 
       <ConfirmSheet
         visible={showConfirm}
-        title="Submit return inspection?"
-        message="Both parties have signed. This cannot be changed after submission."
-        confirmLabel="Submit report"
+        title={t('cdmgSubmitReturnTitle', language)}
+        message={t('cdmgBothPartiesSigned', language)}
+        confirmLabel={t('cdmgSubmitReport', language)}
         onConfirm={handleSubmit}
         onCancel={() => setShowConfirm(false)}
       />

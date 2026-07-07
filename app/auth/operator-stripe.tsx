@@ -7,17 +7,28 @@ import { Button } from '@/components/ui/Button'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import { useColors } from '@/lib/hooks/useColors'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
+import type { TranslationKey } from '@/constants/i18n'
 
 type StepStatus = 'done' | 'pending' | 'active'
 
-const STEPS: { label: string; status: StepStatus }[] = [
-  { label: 'Account created', status: 'done' },
-  { label: 'Connect bank account', status: 'pending' },
-  { label: 'Verify identity', status: 'pending' },
-  { label: 'Start accepting payments', status: 'pending' },
+const STEP_KEYS: { labelKey: string; status: StepStatus }[] = [
+  { labelKey: 'auth2StepAccountCreated', status: 'done' },
+  { labelKey: 'auth2StepConnectBank', status: 'pending' },
+  { labelKey: 'auth2StepVerifyIdentity', status: 'pending' },
+  { labelKey: 'auth2StepStartPayments', status: 'pending' },
 ]
 
-function StepRow({ label, status }: { label: string; status: StepStatus }) {
+function StepRow({
+  labelKey,
+  status,
+  language,
+}: {
+  labelKey: string
+  status: StepStatus
+  language: 'en' | 'es' | 'hu'
+}) {
   const C = useColors()
   const stepStyles = useMemo(() => makeStepStyles(C), [C])
   return (
@@ -31,7 +42,7 @@ function StepRow({ label, status }: { label: string; status: StepStatus }) {
         </Text>
       </View>
       <Text style={[stepStyles.label, status === 'done' && stepStyles.labelDone]}>
-        {label}
+        {t(labelKey as TranslationKey, language)}
       </Text>
     </View>
   )
@@ -57,6 +68,7 @@ function makeStepStyles(C: ReturnType<typeof useColors>) { return StyleSheet.cre
 export default function OperatorStripeScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const { language } = useAuthStore()
   const [connecting, setConnecting] = useState(false)
 
   const handleConnect = async () => {
@@ -76,8 +88,8 @@ export default function OperatorStripeScreen() {
       }
       router.replace('/(operator)/dashboard')
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Could not start Stripe onboarding'
-      Alert.alert('Connection error', msg)
+      const msg = e instanceof Error ? e.message : t('auth2StripeOnboardingError', language)
+      Alert.alert(t('auth2ConnectionError', language), msg)
     } finally {
       setConnecting(false)
     }
@@ -94,32 +106,39 @@ export default function OperatorStripeScreen() {
           <Text style={styles.icon}>💳</Text>
         </View>
 
-        <Text style={styles.title}>Set up payouts</Text>
+        <Text style={styles.title}>{t('auth2SetupPayouts', language)}</Text>
         <Text style={styles.subtitle}>
-          Get paid directly to your bank account when guests book your vehicles.
+          {t('auth2OperatorPayoutsSubtitle', language)}
         </Text>
 
         <View style={styles.stepsCard}>
-          {STEPS.map(step => (
-            <StepRow key={step.label} label={step.label} status={step.status} />
+          {STEP_KEYS.map(step => (
+            <StepRow key={step.labelKey} labelKey={step.labelKey} status={step.status} language={language} />
           ))}
         </View>
 
         <View style={styles.stripeNote}>
           <Text style={styles.stripeNoteText}>
-            🔒  Your payouts are processed securely by Stripe. Rentivo never holds your money.
+            {t('auth2StripeSecureNote', language)}
           </Text>
         </View>
 
         <Button
-          title={connecting ? 'Connecting...' : 'Connect with Stripe'}
+          title={connecting
+            ? t('auth2Connecting', language)
+            : t('auth2ConnectStripe', language)}
           onPress={handleConnect}
           fullWidth
           style={styles.connectBtn}
         />
 
-        <TouchableOpacity onPress={handleSkip} style={styles.skipBtn}>
-          <Text style={styles.skipText}>Set up later →</Text>
+        <TouchableOpacity
+          onPress={handleSkip}
+          style={styles.skipBtn}
+          accessibilityRole="button"
+          accessibilityLabel={t('auth2SetupLater', language)}
+        >
+          <Text style={styles.skipText}>{t('auth2SetupLater', language)}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -163,7 +182,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   stripeNoteText: { fontSize: 13, color: C.info, lineHeight: 20 },
   connectBtn: { marginBottom: Spacing.md },
-  skipBtn: { paddingVertical: Spacing.md },
+  skipBtn: { paddingVertical: Spacing.md, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   skipText: { fontSize: 14, color: C.textTertiary },
   })
 }

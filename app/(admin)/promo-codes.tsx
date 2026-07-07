@@ -9,6 +9,8 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 interface PromoCodeAdmin {
   id: string
@@ -27,6 +29,7 @@ const MOCK_PROMOS: PromoCodeAdmin[] = [
 
 export default function AdminPromoCodesScreen() {
   const C = useColors()
+  const { language } = useAuthStore()
   const styles = useMemo(() => makeStyles(C), [C])
   const [promos, setPromos] = useState<PromoCodeAdmin[]>(Config.useMock ? MOCK_PROMOS : [])
   const { showToast } = useToastStore()
@@ -49,7 +52,7 @@ export default function AdminPromoCodesScreen() {
         .update({ is_active: !p.is_active })
         .eq('id', p.id)
       if (error) {
-        showToast({ message: 'Failed to update', type: 'error' })
+        showToast({ message: t('admFailUpdate', language), type: 'error' })
         return
       }
     }
@@ -57,10 +60,10 @@ export default function AdminPromoCodesScreen() {
       prev.map((x) => (x.id === p.id ? { ...x, is_active: !x.is_active } : x))
     )
     showToast({
-      message: p.is_active ? 'Promo deactivated' : 'Promo activated',
+      message: p.is_active ? t('admPromoDeactivated', language) : t('admPromoActivated', language),
       type: 'success',
     })
-  }, [showToast])
+  }, [showToast, language])
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<PromoCodeAdmin>) => (
@@ -72,29 +75,29 @@ export default function AdminPromoCodesScreen() {
             {item.max_uses != null ? ` / ${item.max_uses}` : ''}
           </Text>
           <Badge
-            label={item.is_active ? 'Active' : 'Inactive'}
+            label={item.is_active ? t('active', language) : t('admInactive', language)}
             variant={item.is_active ? 'success' : 'neutral'}
           />
         </View>
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => void toggleActive(item)}
-          accessibilityLabel={item.is_active ? 'Deactivate promo' : 'Activate promo'}
+          accessibilityLabel={item.is_active ? t('admDeactivatePromo', language) : t('admActivatePromo', language)}
           accessibilityRole="button"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Text style={styles.actionBtnText}>
-            {item.is_active ? 'Disable' : 'Enable'}
+            {item.is_active ? t('admDeactivate', language) : t('admActivate', language)}
           </Text>
         </TouchableOpacity>
       </View>
     ),
-    [toggleActive]
+    [toggleActive, language]
   )
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Promo Codes" onBack={() => router.back()} />
+      <ScreenHeader title={t('admPromoCodes', language)} onBack={() => router.back()} />
       <FlatList
         data={promos}
         keyExtractor={(p) => p.id}

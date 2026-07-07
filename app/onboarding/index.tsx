@@ -10,30 +10,39 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { Spacing, Radius, Typography, Shadow } from '@/constants/colors'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
+import type { TranslationKey } from '@/constants/i18n'
 
 const { width, height } = Dimensions.get('window')
 
-const SLIDES = [
+const SLIDES: {
+  id: string
+  emoji: string
+  titleKey: string
+  subtitleKey: string
+  gradient: [string, string]
+}[] = [
   {
     id: '1',
     emoji: '🌊',
-    title: 'Rent anything in\nthe Mediterranean',
-    subtitle: 'Cars, bikes, yachts — from verified local operators',
-    gradient: ['#0A1628', '#0D1F38'] as [string, string],
+    titleKey: 'auth2Slide1Title',
+    subtitleKey: 'auth2Slide1Subtitle',
+    gradient: ['#0A1628', '#0D1F38'],
   },
   {
     id: '2',
     emoji: '📋',
-    title: 'Digital contracts &\ndamage protection',
-    subtitle: 'Every rental is covered. Photos, signatures, zero disputes.',
-    gradient: ['#0A1628', '#091520'] as [string, string],
+    titleKey: 'auth2Slide2Title',
+    subtitleKey: 'auth2Slide2Subtitle',
+    gradient: ['#0A1628', '#091520'],
   },
   {
     id: '3',
     emoji: '⚡',
-    title: 'Live in 48 hours if\nyou\'re an operator',
-    subtitle: 'List your fleet and start accepting bookings today',
-    gradient: ['#0A1628', '#12150A'] as [string, string],
+    titleKey: 'auth2Slide3Title',
+    subtitleKey: 'auth2Slide3Subtitle',
+    gradient: ['#0A1628', '#12150A'],
   },
 ]
 
@@ -44,6 +53,7 @@ async function markOnboardingDone() {
 export default function OnboardingScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const { language } = useAuthStore()
   const [activeIndex, setActiveIndex] = useState(0)
   const listRef = useRef<FlatList>(null)
   const scrollX = useRef(new Animated.Value(0)).current
@@ -102,21 +112,21 @@ export default function OnboardingScreen() {
               <View style={styles.emojiCircle}>
                 <Text style={styles.emoji}>{item.emoji}</Text>
               </View>
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.subtitle}>{item.subtitle}</Text>
+              <Text style={styles.title}>{t(item.titleKey as TranslationKey, language)}</Text>
+              <Text style={styles.subtitle}>{t(item.subtitleKey as TranslationKey, language)}</Text>
 
               {/* Trust badges on slide 1 */}
               {item.id === '1' && (
                 <View style={styles.trustBadges}>
-                  <View style={styles.trustBadge}>
-                    <Text style={styles.trustBadgeText}>🔒 Insured</Text>
-                  </View>
-                  <View style={styles.trustBadge}>
-                    <Text style={styles.trustBadgeText}>⚡ Instant</Text>
-                  </View>
-                  <View style={styles.trustBadge}>
-                    <Text style={styles.trustBadgeText}>⭐ Verified</Text>
-                  </View>
+                  {([
+                    t('auth2TrustInsured', language),
+                    t('auth2TrustInstant', language),
+                    t('auth2TrustVerified', language),
+                  ]).map(badge => (
+                    <View key={badge} style={styles.trustBadge}>
+                      <Text style={styles.trustBadgeText}>{badge}</Text>
+                    </View>
+                  ))}
                 </View>
               )}
             </View>
@@ -152,11 +162,15 @@ export default function OnboardingScreen() {
         <TouchableOpacity
           style={styles.primaryBtn}
           onPress={handleNext}
-          accessibilityLabel={isLast ? 'Get started' : 'Next slide'}
+          accessibilityLabel={isLast
+            ? t('auth2GetStarted', language)
+            : t('auth2NextSlide', language)}
           accessibilityRole="button"
         >
           <Text style={styles.primaryBtnText}>
-            {isLast ? 'Get started →' : 'Next →'}
+            {isLast
+              ? `${t('auth2GetStarted', language)} →`
+              : t('nextStep', language)}
           </Text>
         </TouchableOpacity>
 
@@ -164,10 +178,10 @@ export default function OnboardingScreen() {
           <TouchableOpacity
             style={styles.skipBtn}
             onPress={handleSkip}
-            accessibilityLabel="Sign in to existing account"
+            accessibilityLabel={t('auth2SignInExisting', language)}
             accessibilityRole="button"
           >
-            <Text style={styles.skipBtnText}>Sign in</Text>
+            <Text style={styles.skipBtnText}>{t('auth2SignIn', language)}</Text>
           </TouchableOpacity>
         )}
       </View>

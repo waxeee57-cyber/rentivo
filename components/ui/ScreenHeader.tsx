@@ -16,6 +16,7 @@ interface ScreenHeaderProps {
   transparent?: boolean
   variant?: Variant
   showBack?: boolean
+  backAccessibilityLabel?: string
 }
 
 export function ScreenHeader({
@@ -26,6 +27,7 @@ export function ScreenHeader({
   transparent = false,
   variant,
   showBack = true,
+  backAccessibilityLabel = 'Back',
 }: ScreenHeaderProps) {
   const C = useColors()
   const insets = useSafeAreaInsets()
@@ -39,6 +41,8 @@ export function ScreenHeader({
             onPress={onBack ?? (() => router.back())}
             style={styles.circleBtn}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={backAccessibilityLabel}
           >
             <Ionicons name="chevron-back" size={22} color={C.text} />
           </TouchableOpacity>
@@ -74,6 +78,8 @@ export function ScreenHeader({
           onPress={onBack ?? (() => router.back())}
           style={[styles.surfaceCircleBtn, { backgroundColor: C.surface, borderColor: C.border }]}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel={backAccessibilityLabel}
         >
           <Ionicons name="chevron-back" size={22} color={C.text} />
         </TouchableOpacity>

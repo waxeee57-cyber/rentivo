@@ -7,6 +7,8 @@ import { Card } from '@/components/ui/Card'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 interface DashboardStats {
   users: number
@@ -22,15 +24,15 @@ const MOCK_STATS: DashboardStats = {
   revenueEur: 48200,
 }
 
-const sections = [
-  { title: 'Operators', route: '/(admin)/operators' },
-  { title: 'Users', route: '/(admin)/users' },
-  { title: 'Promo Codes', route: '/(admin)/promo-codes' },
-]
-
 export default function AdminDashboard() {
   const C = useColors()
+  const { language } = useAuthStore()
   const styles = useMemo(() => makeStyles(C), [C])
+  const sections = [
+    { title: t('admOperators', language), route: '/(admin)/operators' },
+    { title: t('admUsers', language), route: '/(admin)/users' },
+    { title: t('admPromoCodes', language), route: '/(admin)/promo-codes' },
+  ]
   const [stats, setStats] = useState<DashboardStats | null>(Config.useMock ? MOCK_STATS : null)
   const [loading, setLoading] = useState(!Config.useMock)
 
@@ -66,16 +68,16 @@ export default function AdminDashboard() {
   }, [])
 
   const statItems = stats ? [
-    { label: 'Users', value: stats.users.toLocaleString() },
-    { label: 'Operators', value: stats.operators.toLocaleString() },
-    { label: 'Active Bookings', value: stats.activeBookings.toLocaleString() },
-    { label: 'Revenue (EUR)', value: `€${stats.revenueEur.toLocaleString()}` },
+    { label: t('admUsers', language), value: stats.users.toLocaleString() },
+    { label: t('admOperators', language), value: stats.operators.toLocaleString() },
+    { label: t('admActiveBookings', language), value: stats.activeBookings.toLocaleString() },
+    { label: t('admRevenueEur', language), value: `€${stats.revenueEur.toLocaleString()}` },
   ] : []
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Admin Panel</Text>
+        <Text style={styles.title}>{t('admDashboardTitle', language)}</Text>
         {loading ? (
           <ActivityIndicator color={C.primary} style={{ marginVertical: Spacing.xl }} />
         ) : (
@@ -90,7 +92,7 @@ export default function AdminDashboard() {
         )}
         {sections.map((s) => (
           <TouchableOpacity
-            key={s.title}
+            key={s.route}
             style={styles.navCard}
             onPress={() => router.push(s.route as Parameters<typeof router.push>[0])}
             accessibilityLabel={s.title}

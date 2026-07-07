@@ -23,6 +23,8 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import type { BookingStatus } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 export default function OperatorBookingDetailScreen() {
   const C = useColors()
@@ -31,12 +33,13 @@ export default function OperatorBookingDetailScreen() {
   const bookingId = Config.useMock ? (id ?? 'bk-001') : (id ?? '')
   const { booking, loading, error } = useBooking(bookingId)
   const { showToast } = useToastStore()
+  const { language } = useAuthStore()
   const [confirming, setConfirming] = useState(false)
   const [showDeclineSheet, setShowDeclineSheet] = useState(false)
   const [statusChanging, setStatusChanging] = useState(false)
 
   if (loading) return <SafeAreaView style={styles.container}><SkeletonCard /></SafeAreaView>
-  if (error || !booking) return <ErrorState message={error ?? 'Not found'} />
+  if (error || !booking) return <ErrorState message={error ?? t('opBkNotFound', language)} />
 
   const handleConfirm = async () => {
     setConfirming(true)
@@ -44,9 +47,9 @@ export default function OperatorBookingDetailScreen() {
     try {
       await updateBookingStatus(booking.id, 'confirmed')
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      showToast({ message: '✓ Booking confirmed! Guest will be notified.', type: 'success' })
+      showToast({ message: `✓ ${t('opBkToastConfirmed', language)}`, type: 'success' })
     } catch {
-      showToast({ message: 'Failed to confirm booking', type: 'error' })
+      showToast({ message: t('opBkToastConfirmFail', language), type: 'error' })
     } finally {
       setConfirming(false)
       setStatusChanging(false)
@@ -58,10 +61,10 @@ export default function OperatorBookingDetailScreen() {
     try {
       await updateBookingStatus(booking.id, 'cancelled')
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
-      showToast({ message: 'Booking declined', type: 'error' })
+      showToast({ message: t('opBkToastDeclined', language), type: 'error' })
       router.back()
     } catch {
-      showToast({ message: 'Failed to decline booking', type: 'error' })
+      showToast({ message: t('opBkToastDeclineFail', language), type: 'error' })
     } finally {
       setStatusChanging(false)
     }
@@ -73,7 +76,7 @@ export default function OperatorBookingDetailScreen() {
       await updateBookingStatus(booking.id, status)
       showToast({ message: `Booking marked as ${status}`, type: 'success' })
     } catch {
-      showToast({ message: 'Failed to update status', type: 'error' })
+      showToast({ message: t('opBkToastStatusFail', language), type: 'error' })
     } finally {
       setStatusChanging(false)
     }
@@ -93,8 +96,8 @@ export default function OperatorBookingDetailScreen() {
       {/* FIRST THING VISIBLE: prominent confirm banner for pending */}
       {booking.status === 'pending' && (
         <View style={styles.actionBanner}>
-          <Text style={styles.actionTitle}>📅 New booking request</Text>
-          <Text style={styles.actionSubtitle}>Respond within 24 hours</Text>
+          <Text style={styles.actionTitle}>{`📅 ${t('opBkNewRequest', language)}`}</Text>
+          <Text style={styles.actionSubtitle}>{t('opBkRespond24h', language)}</Text>
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={styles.declineBtn}
@@ -103,7 +106,7 @@ export default function OperatorBookingDetailScreen() {
               accessibilityLabel="Decline booking"
               accessibilityRole="button"
             >
-              <Text style={styles.declineBtnText}>Decline</Text>
+              <Text style={styles.declineBtnText}>{t('declineBooking', language)}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.confirmBtn, (confirming || statusChanging) && styles.confirmBtnDisabled]}
@@ -113,12 +116,12 @@ export default function OperatorBookingDetailScreen() {
               accessibilityRole="button"
             >
               <Text style={styles.confirmBtnText}>
-                {confirming ? 'Confirming...' : '✓ Confirm booking'}
+                {confirming ? t('opBkConfirming', language) : `✓ ${t('confirmBooking', language)}`}
               </Text>
             </TouchableOpacity>
           </View>
           <Text style={styles.payoutPreview}>
-            You receive: {formatEURDecimal(operatorPayout)} · 2 business days after pickup
+            {t('youReceive', language)}: {formatEURDecimal(operatorPayout)} · {t('payoutInfo', language)}
           </Text>
         </View>
       )}
@@ -130,11 +133,11 @@ export default function OperatorBookingDetailScreen() {
         </View>
 
         <Card style={{ marginBottom: Spacing.base }}>
-          <Text style={styles.sectionTitle}>Guest</Text>
+          <Text style={styles.sectionTitle}>{t('opBkGuest', language)}</Text>
           <Text style={styles.guestName}>{booking.guest_name}</Text>
-          {booking.guest_nationality && <Text style={styles.detail}>Nationality: {booking.guest_nationality}</Text>}
-          {booking.guest_email && <Text style={styles.detail}>Email: {booking.guest_email}</Text>}
-          {booking.driver_license_no && <Text style={styles.detail}>License: {booking.driver_license_no}</Text>}
+          {booking.guest_nationality && <Text style={styles.detail}>{t('opBkNationality', language)}: {booking.guest_nationality}</Text>}
+          {booking.guest_email && <Text style={styles.detail}>{t('opBkEmail', language)}: {booking.guest_email}</Text>}
+          {booking.driver_license_no && <Text style={styles.detail}>{t('opBkLicense', language)}: {booking.driver_license_no}</Text>}
           {booking.guest_phone && (
             <TouchableOpacity
               style={styles.callBtn}
@@ -142,68 +145,68 @@ export default function OperatorBookingDetailScreen() {
               accessibilityLabel={`Call ${booking.guest_phone}`}
               accessibilityRole="button"
             >
-              <Text style={styles.callBtnText}>📞 Call {booking.guest_phone}</Text>
+              <Text style={styles.callBtnText}>{`📞 ${t('opBkCall', language)} ${booking.guest_phone}`}</Text>
             </TouchableOpacity>
           )}
         </Card>
 
         <Card style={{ marginBottom: Spacing.base }}>
-          <Text style={styles.sectionTitle}>Rental</Text>
+          <Text style={styles.sectionTitle}>{t('opBkRental', language)}</Text>
           <Text style={styles.detail}>{booking.listing?.title}</Text>
           <Text style={styles.detail}>{formatDateRange(booking.start_date, booking.end_date)}</Text>
-          <Text style={styles.detail}>{booking.total_days} days</Text>
+          <Text style={styles.detail}>{booking.total_days} {t('days', language)}</Text>
           <Divider />
           <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Total</Text>
+            <Text style={styles.priceLabel}>{t('total', language)}</Text>
             <Text style={styles.priceVal}>{formatEURDecimal(booking.total_amount)}</Text>
           </View>
         </Card>
 
         <Card style={{ marginBottom: Spacing.base }}>
-          <Text style={styles.sectionTitle}>Inspection</Text>
+          <Text style={styles.sectionTitle}>{t('opBkInspection', language)}</Text>
           <View style={styles.inspRow}>
-            <Text style={styles.detail}>Pickup</Text>
-            <Badge label={booking.pickup_damage_done ? 'Done' : 'Pending'} variant={booking.pickup_damage_done ? 'success' : 'warning'} />
+            <Text style={styles.detail}>{t('opBkPickup', language)}</Text>
+            <Badge label={booking.pickup_damage_done ? t('opBkDone', language) : t('pending', language)} variant={booking.pickup_damage_done ? 'success' : 'warning'} />
           </View>
           <Divider style={{ marginVertical: Spacing.sm }} />
           <View style={styles.inspRow}>
-            <Text style={styles.detail}>Return</Text>
-            <Badge label={booking.return_damage_done ? 'Done' : 'Pending'} variant={booking.return_damage_done ? 'success' : 'warning'} />
+            <Text style={styles.detail}>{t('opBkReturn', language)}</Text>
+            <Badge label={booking.return_damage_done ? t('opBkDone', language) : t('pending', language)} variant={booking.return_damage_done ? 'success' : 'warning'} />
           </View>
         </Card>
 
         {/* Payout breakdown */}
         <Card style={{ marginBottom: Spacing.base }}>
-          <Text style={styles.sectionTitle}>Your payout</Text>
+          <Text style={styles.sectionTitle}>{t('opBkYourPayout', language)}</Text>
           <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>Guest pays</Text>
+            <Text style={styles.priceLabel}>{t('opBkGuestPays', language)}</Text>
             <Text style={styles.priceVal}>{formatEURDecimal(booking.total_amount)}</Text>
           </View>
           <View style={[styles.priceRow, { marginTop: 4 }]}>
-            <Text style={styles.detail}>Platform fee (2.5%)</Text>
+            <Text style={styles.detail}>{t('opBkPlatformFee', language)}</Text>
             <Text style={styles.detail}>–{formatEURDecimal(booking.total_amount - operatorPayout)}</Text>
           </View>
           <Divider style={{ marginVertical: Spacing.sm }} />
           <View style={styles.priceRow}>
-            <Text style={styles.payoutLabel}>You receive</Text>
+            <Text style={styles.payoutLabel}>{t('youReceive', language)}</Text>
             <Text style={styles.payoutVal}>{formatEURDecimal(operatorPayout)}</Text>
           </View>
-          <Text style={styles.payoutNote}>Transfer: 2 business days after pickup</Text>
+          <Text style={styles.payoutNote}>{t('opBkTransferNote', language)}</Text>
         </Card>
 
         {/* Flight info */}
         {booking.flight_number != null && (
           <View style={flightStyles.flightCard}>
-            <Text style={flightStyles.flightTitle}>✈️ Flight Info</Text>
+            <Text style={flightStyles.flightTitle}>{`✈️ ${t('opBkFlightInfo', language)}`}</Text>
             <Text style={flightStyles.flightNum}>{booking.flight_number}</Text>
             {booking.flight_arrival_time != null && (
               <Text style={flightStyles.flightArrival}>
-                Arrival: {new Date(booking.flight_arrival_time).toLocaleTimeString()}
+                {t('opBkArrival', language)}: {new Date(booking.flight_arrival_time).toLocaleTimeString()}
               </Text>
             )}
             <View style={[flightStyles.statusBadge, { backgroundColor: booking.flight_status === 'on_time' ? C.successSurface : C.warningSurface }]}>
               <Text style={[flightStyles.statusText, { color: booking.flight_status === 'on_time' ? C.success : C.warning }]}>
-                {booking.flight_status === 'on_time' ? '✅ On Time' : booking.flight_status === 'delayed' ? '⚠️ Delayed' : '⏳ Tracking...'}
+                {booking.flight_status === 'on_time' ? `✅ ${t('opBkOnTime', language)}` : booking.flight_status === 'delayed' ? `⚠️ ${t('opBkDelayed', language)}` : `⏳ ${t('opBkTracking', language)}`}
               </Text>
             </View>
           </View>
@@ -217,7 +220,7 @@ export default function OperatorBookingDetailScreen() {
           accessibilityRole="button"
         >
           <Ionicons name="chatbubble-outline" size={16} color={C.primary} />
-          <Text style={styles.messageBtnText}>💬 Message Guest</Text>
+          <Text style={styles.messageBtnText}>{`💬 ${t('opBkMessageGuest', language)}`}</Text>
         </TouchableOpacity>
 
         {(booking.status === 'completed' || booking.status === 'active') && (
@@ -227,14 +230,14 @@ export default function OperatorBookingDetailScreen() {
             accessibilityLabel="Open a dispute"
             accessibilityRole="button"
           >
-            <Text style={styles.disputeBtnText}>⚠️ Open a Dispute</Text>
+            <Text style={styles.disputeBtnText}>{`⚠️ ${t('opBkOpenDispute', language)}`}</Text>
           </TouchableOpacity>
         )}
 
         <View style={styles.actions}>
           {booking.status === 'confirmed' && (
             <Button
-              title="Mark as active (guest picked up)"
+              title={t('opBkMarkActive', language)}
               onPress={() => void handleStatusChange('active')}
               loading={statusChanging}
               fullWidth
@@ -242,7 +245,7 @@ export default function OperatorBookingDetailScreen() {
           )}
           {booking.status === 'active' && (
             <Button
-              title="Complete rental (returned)"
+              title={t('opBkMarkCompleted', language)}
               onPress={() => void handleStatusChange('completed')}
               loading={statusChanging}
               fullWidth
@@ -253,9 +256,9 @@ export default function OperatorBookingDetailScreen() {
 
       <ConfirmSheet
         visible={showDeclineSheet}
-        title="Decline this booking?"
-        message="The guest will be notified and any payment will be refunded."
-        confirmLabel="Decline"
+        title={t('opBkDeclineTitle', language)}
+        message={t('opBkDeclineMsg', language)}
+        confirmLabel={t('declineBooking', language)}
         onConfirm={() => { setShowDeclineSheet(false); void handleDecline() }}
         onCancel={() => setShowDeclineSheet(false)}
       />

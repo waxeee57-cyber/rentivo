@@ -9,6 +9,8 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 interface AdminOperator {
   id: string
@@ -27,6 +29,7 @@ const MOCK_OPERATORS: AdminOperator[] = [
 
 export default function AdminOperatorsScreen() {
   const C = useColors()
+  const { language } = useAuthStore()
   const styles = useMemo(() => makeStyles(C), [C])
   const [operators, setOperators] = useState<AdminOperator[]>(Config.useMock ? MOCK_OPERATORS : [])
   const [loadingList, setLoadingList] = useState(!Config.useMock)
@@ -42,7 +45,7 @@ export default function AdminOperatorsScreen() {
           .select('id, name, city, approved, suspended, tier')
           .order('created_at', { ascending: false })
           .limit(100)
-        if (error) { showToast({ message: 'Failed to load operators', type: 'error' }); return }
+        if (error) { showToast({ message: t('admFailLoadOperators', language), type: 'error' }); return }
         setOperators(
           (data ?? []).map(o => ({
             id: o.id as string,
@@ -67,13 +70,13 @@ export default function AdminOperatorsScreen() {
         .update({ approved: true })
         .eq('id', op.id)
       if (error) {
-        showToast({ message: 'Failed to approve', type: 'error' })
+        showToast({ message: t('admFailApprove', language), type: 'error' })
         return
       }
     }
     setOperators(prev => prev.map(o => o.id === op.id ? { ...o, approved: true } : o))
-    showToast({ message: 'Operator approved', type: 'success' })
-  }, [showToast])
+    showToast({ message: t('admOperatorApproved', language), type: 'success' })
+  }, [showToast, language])
 
   const toggleSuspend = useCallback(async (op: AdminOperator) => {
     if (!Config.useMock) {
@@ -82,7 +85,7 @@ export default function AdminOperatorsScreen() {
         .update({ suspended: !op.suspended })
         .eq('id', op.id)
       if (error) {
-        showToast({ message: 'Failed to update', type: 'error' })
+        showToast({ message: t('admFailUpdate', language), type: 'error' })
         return
       }
     }
@@ -90,10 +93,10 @@ export default function AdminOperatorsScreen() {
       prev.map((o) => (o.id === op.id ? { ...o, suspended: !o.suspended } : o))
     )
     showToast({
-      message: op.suspended ? 'Operator unsuspended' : 'Operator suspended',
+      message: op.suspended ? t('admOperatorUnsuspended', language) : t('admOperatorSuspended', language),
       type: 'success',
     })
-  }, [showToast])
+  }, [showToast, language])
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<AdminOperator>) => (
@@ -103,10 +106,10 @@ export default function AdminOperatorsScreen() {
           <Text style={styles.city}>{item.city} · {item.tier}</Text>
           <View style={styles.badges}>
             <Badge
-              label={item.approved ? 'Approved' : 'Pending'}
+              label={item.approved ? t('admApproved', language) : t('pending', language)}
               variant={item.approved ? 'success' : 'warning'}
             />
-            {item.suspended && <Badge label="Suspended" variant="error" />}
+            {item.suspended && <Badge label={t('admSuspended', language)} variant="error" />}
           </View>
         </View>
         <View style={styles.actions}>
@@ -114,32 +117,34 @@ export default function AdminOperatorsScreen() {
             <TouchableOpacity
               style={styles.approveBtn}
               onPress={() => void approveOperator(item)}
-              accessibilityLabel="Approve operator"
+              accessibilityLabel={t('admApproveOperator', language)}
               accessibilityRole="button"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.approveBtnText}>Approve</Text>
+              <Text style={styles.approveBtnText}>{t('admApprove', language)}</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
             style={[styles.actionBtn, item.suspended && styles.actionBtnActive]}
             onPress={() => void toggleSuspend(item)}
-            accessibilityLabel={item.suspended ? 'Unsuspend operator' : 'Suspend operator'}
+            accessibilityLabel={item.suspended ? t('admUnsuspendOperator', language) : t('admSuspendOperator', language)}
             accessibilityRole="button"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={[styles.actionBtnText, item.suspended && styles.actionBtnTextActive]}>
-              {item.suspended ? 'Unsuspend' : 'Suspend'}
+              {item.suspended ? t('admUnsuspend', language) : t('admSuspend', language)}
             </Text>
           </TouchableOpacity>
         </View>
       </View>
     ),
-    [toggleSuspend, approveOperator]
+    [toggleSuspend, approveOperator, language]
   )
 
   if (loadingList) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
-        <ScreenHeader title="Operators" onBack={() => router.back()} />
+        <ScreenHeader title={t('admOperators', language)} onBack={() => router.back()} />
         <ActivityIndicator style={{ marginTop: 40 }} color={C.primary} />
       </SafeAreaView>
     )
@@ -147,7 +152,7 @@ export default function AdminOperatorsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title="Operators" onBack={() => router.back()} />
+      <ScreenHeader title={t('admOperators', language)} onBack={() => router.back()} />
       <FlatList
         data={operators}
         keyExtractor={(o) => o.id}

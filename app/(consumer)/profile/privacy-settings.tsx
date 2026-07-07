@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
 
 function PrivacySettingsSkeleton() {
   const C = useColors()
@@ -60,7 +61,6 @@ export default function PrivacySettingsScreen() {
   const styles = useMemo(() => makeStyles(C), [C])
   const { language } = useAuthStore()
   const insets = useSafeAreaInsets()
-  const isHu = language === 'hu'
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -124,7 +124,7 @@ export default function PrivacySettingsScreen() {
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Error'
-      Alert.alert(isHu ? 'Hiba' : 'Error', msg)
+      Alert.alert(t('opFleet2Error', language), msg)
     } finally {
       setSaving(false)
     }
@@ -147,10 +147,8 @@ export default function PrivacySettingsScreen() {
 
   const handleExport = () => {
     Alert.alert(
-      isHu ? 'Adatexport' : 'Data Export',
-      isHu
-        ? 'Adataidat elküldjük az email-címedre 30 napon belül. GDPR 20. cikk — adathordozhatóság.'
-        : 'We will send your data to your email within 30 days. GDPR Article 20 — data portability.',
+      t('cprDataExportTitle', language),
+      t('cprDataExportBody', language),
       [{ text: 'OK' }],
     )
   }
@@ -165,51 +163,38 @@ export default function PrivacySettingsScreen() {
         <TouchableOpacity
           style={[styles.back, { paddingTop: insets.top + Spacing.sm }]}
           onPress={() => router.back()}
-          accessibilityLabel={isHu ? 'Vissza' : 'Go back'}
+          accessibilityLabel={t('opFleet2GoBack', language)}
           accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Text style={styles.backText}>← {isHu ? 'Vissza' : 'Back'}</Text>
+          <Text style={styles.backText}>← {t('opBkBack', language)}</Text>
         </TouchableOpacity>
 
         <View style={styles.content}>
-          <Text style={styles.title}>
-            {isHu ? 'Adatvédelmi beállítások' : 'Privacy Settings'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {isHu
-              ? 'A GDPR alapján bármikor módosíthatod hozzájárulásaidat.'
-              : 'Under GDPR, you can modify your consent preferences at any time.'}
-          </Text>
+          <Text style={styles.title}>{t('cprPrivacySettings', language)}</Text>
+          <Text style={styles.subtitle}>{t('cprPrivacySettingsSubtitle', language)}</Text>
 
           {saving && (
             <View style={styles.savingBadge}>
               <ActivityIndicator color={C.primary} size="small" />
-              <Text style={styles.savingText}>{isHu ? 'Mentés...' : 'Saving...'}</Text>
+              <Text style={styles.savingText}>{t('opFleet2Saving', language)}</Text>
             </View>
           )}
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>
-              {isHu ? 'MARKETING' : 'MARKETING'}
-            </Text>
+            <Text style={styles.sectionLabel}>{t('cprSectionMarketing', language)}</Text>
 
             <View style={styles.switchRow}>
               <View style={styles.switchContent}>
-                <Text style={styles.switchTitle}>
-                  {isHu ? 'Marketing e-mailek' : 'Marketing emails'}
-                </Text>
-                <Text style={styles.switchMeta}>
-                  {isHu
-                    ? 'Ajánlatok, hírek és tippek emailben'
-                    : 'Offers, news and tips by email'}
-                </Text>
+                <Text style={styles.switchTitle}>{t('cprMarketingEmails', language)}</Text>
+                <Text style={styles.switchMeta}>{t('cprMarketingEmailsDesc', language)}</Text>
               </View>
               <Switch
                 value={marketingEmail}
                 onValueChange={handleMarketingEmail}
                 trackColor={{ false: C.border, true: C.primary }}
                 thumbColor={C.white}
-                accessibilityLabel={isHu ? 'Marketing e-mailek kapcsoló' : 'Marketing emails toggle'}
+                accessibilityLabel={t('cprMarketingEmailsToggle', language)}
               />
             </View>
 
@@ -217,65 +202,49 @@ export default function PrivacySettingsScreen() {
 
             <View style={styles.switchRow}>
               <View style={styles.switchContent}>
-                <Text style={styles.switchTitle}>
-                  {isHu ? 'Push értesítések' : 'Push notifications'}
-                </Text>
-                <Text style={styles.switchMeta}>
-                  {isHu
-                    ? 'Ajánlatok és frissítések push értesítésben'
-                    : 'Offers and updates via push'}
-                </Text>
+                <Text style={styles.switchTitle}>{t('cprPushNotifications', language)}</Text>
+                <Text style={styles.switchMeta}>{t('cprPushNotificationsDesc', language)}</Text>
               </View>
               <Switch
                 value={marketingPush}
                 onValueChange={handleMarketingPush}
                 trackColor={{ false: C.border, true: C.primary }}
                 thumbColor={C.white}
-                accessibilityLabel={isHu ? 'Push értesítések kapcsoló' : 'Push notifications toggle'}
+                accessibilityLabel={t('cprPushNotificationsToggle', language)}
               />
             </View>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>
-              {isHu ? 'ANALITIKA' : 'ANALYTICS'}
-            </Text>
+            <Text style={styles.sectionLabel}>{t('cprSectionAnalytics', language)}</Text>
 
             <View style={styles.switchRow}>
               <View style={styles.switchContent}>
-                <Text style={styles.switchTitle}>
-                  {isHu ? 'Analitika' : 'Analytics'}
-                </Text>
-                <Text style={styles.switchMeta}>
-                  {isHu
-                    ? 'Segíts javítani a Rentivo-t névtelen adatokkal'
-                    : 'Help improve Rentivo with anonymous data'}
-                </Text>
+                <Text style={styles.switchTitle}>{t('cprAnalytics', language)}</Text>
+                <Text style={styles.switchMeta}>{t('cprAnalyticsDesc', language)}</Text>
               </View>
               <Switch
                 value={analytics}
                 onValueChange={handleAnalytics}
                 trackColor={{ false: C.border, true: C.primary }}
                 thumbColor={C.white}
-                accessibilityLabel={isHu ? 'Analitika kapcsoló' : 'Analytics toggle'}
+                accessibilityLabel={t('cprAnalyticsToggle', language)}
               />
             </View>
           </View>
 
           {/* Data portability */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>
-              {isHu ? 'ADATOK' : 'DATA'}
-            </Text>
+            <Text style={styles.sectionLabel}>{t('cprSectionData', language)}</Text>
 
             <TouchableOpacity
               style={styles.actionRow}
               onPress={handleExport}
-              accessibilityLabel={isHu ? 'Adataim exportálása' : 'Export my data'}
+              accessibilityLabel={t('cprExportMyData', language)}
               accessibilityRole="button"
             >
               <Text style={styles.actionText}>
-                📤 {isHu ? 'Adataim exportálása' : 'Export my data'}
+                {'📤 '}{t('cprExportMyData', language)}
               </Text>
               <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
@@ -285,21 +254,17 @@ export default function PrivacySettingsScreen() {
             <TouchableOpacity
               style={styles.actionRow}
               onPress={() => router.push('/(consumer)/profile/delete-account' as Href)}
-              accessibilityLabel={isHu ? 'Fiók törlése' : 'Delete account'}
+              accessibilityLabel={t('cprDeleteAccount', language)}
               accessibilityRole="button"
             >
               <Text style={[styles.actionText, styles.dangerText]}>
-                🗑️ {isHu ? 'Fiók törlése' : 'Delete account'}
+                {'🗑️ '}{t('cprDeleteAccount', language)}
               </Text>
               <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.gdprNote}>
-            {isHu
-              ? 'GDPR jogaid: tájékoztatás, hozzáférés, helyesbítés, törlés, hordozhatóság, tiltakozás. Kérdéssel írj: privacy@rentivo.app'
-              : 'Your GDPR rights: information, access, rectification, erasure, portability, objection. Questions: privacy@rentivo.app'}
-          </Text>
+          <Text style={styles.gdprNote}>{t('cprGdprNote', language)}</Text>
         </View>
       </ScrollView>
     </View>
