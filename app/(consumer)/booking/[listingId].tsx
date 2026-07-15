@@ -318,6 +318,7 @@ export default function BookingFlowScreen() {
         })
 
         if (stripeError) {
+          console.error('[BOOKING] confirmPayment error =', JSON.stringify(stripeError))
           showToast({ message: stripeError.message ?? getError('payment_failed'), type: 'error' })
           return
         }
@@ -352,8 +353,18 @@ export default function BookingFlowScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       setSubmitted(true)
       router.replace(`/(consumer)/booking/confirmation/${bookingId}`)
-    } catch {
-      showToast({ message: getError('payment_failed'), type: 'error' })
+    } catch (e) {
+      console.error('[BOOKING] payment flow threw:', e instanceof Error ? `${e.name}: ${e.message}\n${e.stack ?? ''}` : JSON.stringify(e))
+      // BUGFIX (was: new-account payment always showed generic "Payment failed" toast,
+      // hiding the real reason). create-booking / create-payment-intent throw
+      // Error(message) where `message` is the edge function's own human-readable
+      // jsonError body (e.g. "Owner is not set up to receive payments", "These dates
+      // are no longer available") — never a raw stack trace or technical string, so
+      // it is safe and correct to show directly. Mirrors the stripeError.message
+      // pattern already used above. Falls back to the generic copy only for truly
+      // unexpected errors (network blips, JS exceptions with no thrown message).
+      const serverMessage = e instanceof Error && e.message ? e.message : null
+      showToast({ message: serverMessage ?? getError('payment_failed'), type: 'error' })
     } finally {
       setSubmitting(false)
     }

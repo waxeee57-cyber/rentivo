@@ -1,0 +1,102 @@
+appId: com.domrol.rentivo
+name: "Booking payment E2E — real card, new Stripe account"
+tags:
+  - payment
+  - e2e
+---
+# Full renter booking + card payment against the LIVE (test-mode) new Stripe account.
+# Requires a logged-in consumer session already on the device (OTA build, useMock=false).
+# Success = confirmation screen. Failure = "Something went wrong" (the bug this catches).
+
+- launchApp
+
+# ── Navigate: Explore → BMW listing → Book ──
+- extendedWaitUntil:
+    visible:
+      text: "BMW 5 Series"
+    timeout: 12000
+- tapOn:
+    text: "BMW 5 Series"
+- extendedWaitUntil:
+    visible:
+      text: "Select dates"
+    timeout: 12000
+- tapOn:
+    text: "Select dates"
+
+# ── Date picker: pick a 2-day range (→ €330) then apply ──
+- extendedWaitUntil:
+    visible:
+      text: "Select your dates"
+    timeout: 10000
+- tapOn:
+    text: "20"
+- tapOn:
+    text: "22"
+- scrollUntilVisible:
+    element:
+      text: "Apply"
+    direction: DOWN
+    timeout: 6000
+- tapOn:
+    text: "Apply"
+- waitForAnimationToEnd
+
+# ── Back on listing detail, dates set → "Book now" opens booking with dates ──
+- extendedWaitUntil:
+    visible:
+      text: "Book now"
+    timeout: 8000
+- tapOn:
+    text: "Book now"
+- waitForAnimationToEnd
+
+# ── Step 1: guest info — swipe up to reveal the form, then fill ──
+- swipe:
+    start: 50%, 78%
+    end: 50%, 22%
+- swipe:
+    start: 50%, 78%
+    end: 50%, 40%
+- tapOn: "John Smith"
+- inputText: "Maestro Tester"
+- hideKeyboard
+- swipe:
+    start: 50%, 70%
+    end: 50%, 42%
+- tapOn:
+    text: ".*600 000 000.*"
+- inputText: "+36301234567"
+- hideKeyboard
+- swipe:
+    start: 50%, 78%
+    end: 50%, 25%
+- tapOn:
+    text: "Continue to payment.*"
+- waitForAnimationToEnd
+
+# ── Step 2: enter the 4242 test card into the Stripe CardField ──
+- extendedWaitUntil:
+    visible:
+      text: "Card details"
+    timeout: 10000
+- tapOn:
+    id: "card_number_edit_text"
+- inputText: "4242424242424242"
+- inputText: "1234"
+- inputText: "123"
+- hideKeyboard
+
+# ── Pay ──
+- tapOn:
+    text: "Pay €"
+- takeScreenshot: "payment-after-tap"
+
+# ── Verdict ──
+- extendedWaitUntil:
+    visible:
+      text: "Booking Confirmed"
+    timeout: 25000
+- assertNotVisible:
+    text: "Something went wrong"
+- takeScreenshot: "booking-payment-success"
