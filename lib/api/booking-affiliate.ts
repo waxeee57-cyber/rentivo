@@ -19,6 +19,7 @@
  * 3. Production: ~100 foglalás/hó kell
  */
 
+import { captureException } from '@/lib/sentry'
 import type { ExternalListing, PlatformType } from '@/types'
 
 const BOOKING_BASE_URL = 'https://demandapi.booking.com/3.1'
@@ -160,7 +161,9 @@ export async function searchBookingAccommodations(
     if (!response.ok) throw new Error(`Booking API error: ${response.status}`)
     const data = await response.json() as { data?: BookingAPIItem[] }
     return (data.data ?? []).map(mapBookingItem)
-  } catch {
+  } catch (err) {
+    // Degrade gracefully to no external results, but keep the failure observable.
+    captureException(err, { scope: 'booking-affiliate.accommodations', city: params.city })
     return []
   }
 }
@@ -202,7 +205,9 @@ export async function searchBookingCarRentals(
     if (!response.ok) throw new Error(`Booking Cars API error: ${response.status}`)
     const data = await response.json() as { data?: BookingCarItem[] }
     return (data.data ?? []).map(item => mapBookingCarItem(item, params.pickupLocation))
-  } catch {
+  } catch (err) {
+    // Degrade gracefully to no external results, but keep the failure observable.
+    captureException(err, { scope: 'booking-affiliate.cars', location: params.pickupLocation })
     return []
   }
 }

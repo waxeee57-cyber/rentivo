@@ -1,5 +1,6 @@
 import { fetchListings } from './listings'
 import { searchBookingAccommodations, searchBookingCarRentals } from './booking-affiliate'
+import { captureException } from '@/lib/sentry'
 import type { Listing, ExternalListing, SearchFilters, AnyListing } from '@/types'
 
 interface UnifiedSearchParams extends SearchFilters {
@@ -18,31 +19,41 @@ export async function searchAllSources(
   let externalPromise: Promise<AnyListing[]> = Promise.resolve([])
 
   const affiliateId = process.env.EXPO_PUBLIC_BOOKING_AFFILIATE_ID
-  const apiToken = process.env.BOOKING_API_TOKEN ?? ''
-  const hasCredentials = Boolean(affiliateId) || process.env.EXPO_PUBLIC_USE_MOCK === 'true'
+  const isMock = process.env.EXPO_PUBLIC_USE_MOCK === 'true'
 
-  if (
+  // Booking.com Demand API needs a SECRET bearer token. It must never be shipped
+  // in the client bundle — with no EXPO_PUBLIC_ prefix `process.env.BOOKING_API_TOKEN`
+  // is ALWAYS undefined at runtime here, so any live authenticated request would 401.
+  // Live external search therefore requires a server-side proxy (Supabase Edge
+  // Function) — tracked in CLAUDE.md "JÖVŐBENI KAPUK: Booking.com Affiliate API".
+  // Until that proxy exists we only serve external results in mock mode. In a real
+  // build we cleanly skip the doomed request instead of firing it and swallowing
+  // the 401 silently.
+  const externalEnabled =
     filters.includeExternal !== false &&
-    filters.checkIn &&
-    filters.checkOut &&
-    hasCredentials
-  ) {
+    Boolean(filters.checkIn && filters.checkOut) &&
+    isMock
+
+  if (externalEnabled) {
     const city = filters.city ?? 'Marbella'
+    const checkIn = filters.checkIn as string
+    const checkOut = filters.checkOut as string
 
     externalPromise = Promise.all([
-      searchBookingAccommodations(
-        { city, checkIn: filters.checkIn, checkOut: filters.checkOut },
-        affiliateId ?? '',
-        apiToken,
-      ),
+      searchBookingAccommodations({ city, checkIn, checkOut }, affiliateId ?? '', ''),
       searchBookingCarRentals(
-        { pickupLocation: city, pickupDate: filters.checkIn, returnDate: filters.checkOut },
+        { pickupLocation: city, pickupDate: checkIn, returnDate: checkOut },
         affiliateId ?? '',
-        apiToken,
+        '',
       ),
     ]).then(([accom, cars]): AnyListing[] =>
       [...accom, ...cars].map((l: ExternalListing) => ({ ...l, sourceType: 'external' as const })),
-    ).catch((): AnyListing[] => [])
+    ).catch((err): AnyListing[] => {
+      // Never fail the whole search because an external source broke — but do NOT
+      // swallow it silently: surface to telemetry so the failure is observable.
+      captureException(err, { scope: 'unifiedSearch.external' })
+      return []
+    })
   }
 
   const [native, external] = await Promise.all([nativePromise, externalPromise])
