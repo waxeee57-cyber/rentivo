@@ -102,6 +102,7 @@ export default function HostLayout() {
       {/* Hidden screens */}
       <Tabs.Screen name="dashboard" options={{ href: null }} />
       <Tabs.Screen name="listings/new" options={{ href: null }} />
+      <Tabs.Screen name="listings/add-external" options={{ href: null }} />
       <Tabs.Screen name="bookings/[id]" options={{ href: null }} />
     </Tabs>
   )

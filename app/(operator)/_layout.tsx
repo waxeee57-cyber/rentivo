@@ -127,6 +127,7 @@ export default function OperatorLayout() {
       <Tabs.Screen name="bookings/calendar" options={{ href: null }} />
       <Tabs.Screen name="fleet/new" options={{ href: null }} />
       <Tabs.Screen name="fleet/[id]" options={{ href: null }} />
+      <Tabs.Screen name="fleet/ical-sync/[id]" options={{ href: null }} />
       <Tabs.Screen name="damage/[bookingId]" options={{ href: null }} />
       <Tabs.Screen name="profile/team" options={{ href: null }} />
       <Tabs.Screen name="settings/delivery" options={{ href: null }} />

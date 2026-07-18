@@ -135,6 +135,7 @@ export default function ConsumerLayout() {
       {/* Hidden screens */}
       <Tabs.Screen name="wishlist" options={{ href: null }} />
       <Tabs.Screen name="listing/[id]" options={{ href: null }} />
+      <Tabs.Screen name="listing/reviews/[id]" options={{ href: null }} />
       <Tabs.Screen name="booking/[listingId]" options={{ href: null }} />
       <Tabs.Screen name="booking/confirmation/[id]" options={{ href: null }} />
       <Tabs.Screen name="bookings/[id]" options={{ href: null }} />
