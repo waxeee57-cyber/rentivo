@@ -12,8 +12,10 @@ tags:
 - runFlow:
     file: ../helpers/login-demo.yaml
 
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
 # Profile tab megnyitása
 - tapOn:
@@ -27,28 +29,28 @@ tags:
 # Scroll az Appearance szekciához
 - scrollUntilVisible:
     element:
-      text: "Dark mode"
+      text: ".*Dark mode.*"
     direction: DOWN
-    timeout: 5000
+    timeout: 30000
 
 # Dark mode switch látható
 - assertVisible:
-    text: "Dark mode"
+    text: ".*Dark mode.*"
 
-# Switch tap → light módra váltás
+# Switch tap → dark módra váltás (a Switch elemet célozzuk, nem a címkét)
 - tapOn:
-    text: "Dark mode"
+    text: "Toggle dark mode"
 - waitForAnimationToEnd
 
 # Nincs crash, UI megmaradt
 - assertVisible:
-    text: "Dark mode"
+    text: ".*Dark mode.*"
 - assertNotVisible:
     text: "Render Error"
 
-# Visszaváltás dark módra
+# Visszaváltás light módra
 - tapOn:
-    text: "Dark mode"
+    text: "Toggle dark mode"
 - waitForAnimationToEnd
 
 # Még mindig intact a profil

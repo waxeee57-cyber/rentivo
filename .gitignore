@@ -52,3 +52,17 @@ google-play-service-account.json
 *.exe
 __pycache__/
 *.pyc
+
+# --- baseline-audit 2026-07-18: hiányzó kötelező minimum ---
+# FONTOS: a fenti `.env.*` szabály a `.env.example`-t is kizárná — ez a negáció
+# engedi vissza a példafájlt, hogy a repóban maradhasson.
+!.env.example
+build/
+.vercel/
+coverage/
+*.log
+Thumbs.db
+
+# Release signing
+android/keystore.properties
+android/app/rentivo-release.keystore

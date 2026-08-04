@@ -11,12 +11,14 @@ tags:
 - runFlow:
     file: ../helpers/login-demo.yaml
 
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
-# Bookings tab tappolás
+# My Trips tab tappolás (consumer-oldali név: Trips, nem Bookings)
 - tapOn:
-    text: "Bookings"
+    text: "My Trips"
 - waitForAnimationToEnd
 
 # Bookings képernyő betölt
@@ -35,7 +37,9 @@ tags:
 - tapOn:
     text: "Explore"
 - waitForAnimationToEnd
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
 - takeScreenshot: "11-bookings-list"

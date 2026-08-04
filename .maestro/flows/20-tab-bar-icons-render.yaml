@@ -13,8 +13,10 @@ tags:
     file: ../helpers/login-demo.yaml
 
 # Tab bar látható — Explore aktív
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
 # Nincs ▼ fallback ikon karakter (Ionicons betöltési hiba)
 - assertNotVisible:
@@ -22,7 +24,7 @@ tags:
 
 # Bookings tab ikon megjelenik (szöveg alapján)
 - assertVisible:
-    text: "Bookings"
+    text: "My Trips"
 
 # Assistant tab
 - assertVisible:
@@ -38,7 +40,7 @@ tags:
 
 # Tab váltogatás — minden tab betölt
 - tapOn:
-    text: "Bookings"
+    text: "My Trips"
 - waitForAnimationToEnd
 - assertNotVisible:
     text: "▼"

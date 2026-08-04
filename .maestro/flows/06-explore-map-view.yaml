@@ -11,13 +11,17 @@ tags:
     file: ../helpers/login-demo.yaml
 
 # Map nézet alapból aktív
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 - waitForAnimationToEnd
 
 # City picker gomb látható
-- assertVisible:
-    text: "Marbella"
+- extendedWaitUntil:
+    visible:
+      text: "Marbella"
+    timeout: 15000
 
 # NEM jelenik meg eltört ikon karakter
 - assertNotVisible:

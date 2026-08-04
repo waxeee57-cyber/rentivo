@@ -11,8 +11,10 @@ tags:
 - runFlow:
     file: ../helpers/login-demo.yaml
 
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
 # Assistant tab
 - tapOn:
@@ -25,18 +27,18 @@ tags:
 - assertVisible:
     text: "Ask me anything about rentals"
 
-# Welcome üzenet látható
+# Welcome üzenet látható (teljes szöveg regex-szel — a Maestro full-match-el)
 - assertVisible:
-    text: "Hi! I am your Rentivo AI assistant"
+    text: "Hi! I am your Rentivo AI assistant.*"
 
 # Suggestion chip tap
 - tapOn:
-    text: "Find a car in Marbella"
+    text: ".*Find a car in Marbella.*"
 - waitForAnimationToEnd
 
 # Üzenet megjelent
 - assertVisible:
-    text: "Find a car in Marbella"
+    text: ".*Find a car in Marbella.*"
 
 # Nincs crash
 - assertNotVisible:
@@ -44,11 +46,13 @@ tags:
 
 # Vissza navigáció a ← gombbal
 - tapOn:
-    accessibilityLabel: "Go back"
+    text: "Go back"
 - waitForAnimationToEnd
 
 # Visszakerültünk az Explore-ra
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
 - takeScreenshot: "12-assistant-back-nav"

@@ -10,27 +10,50 @@ tags:
     clearState: true
 - waitForAnimationToEnd
 
-- assertVisible:
-    text: "Rent anything."
+# Privacy/GDPR consent modal - shows once on genuinely fresh AsyncStorage
+- extendedWaitUntil:
+    visible:
+      text: "Accept & Continue"
+    timeout: 45000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        text: "Accept & Continue"
+    commands:
+      - tapOn:
+          text: "Accept & Continue"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Rent anything."
+    timeout: 45000
 - tapOn:
     text: "Get started →"
 - waitForAnimationToEnd
 
-- assertVisible:
-    text: "How it works"
+- extendedWaitUntil:
+    visible:
+      text: "How it works"
+    timeout: 15000
 - tapOn:
     text: "Next →"
 - waitForAnimationToEnd
 
-- assertVisible:
-    text: "I own something to rent"
+- extendedWaitUntil:
+    visible:
+      text: "I own something to rent"
+    timeout: 15000
 - tapOn:
     text: "I own something to rent"
 - waitForAnimationToEnd
 
 # Host listings főképernyő
-- assertVisible:
-    text: "My Listings"
+- extendedWaitUntil:
+    visible:
+      text: "Your vehicles"
+    timeout: 15000
 
 # Nincs crash
 - assertNotVisible:

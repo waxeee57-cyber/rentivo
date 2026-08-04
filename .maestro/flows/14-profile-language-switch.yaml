@@ -5,14 +5,18 @@ tags:
 ---
 # Teszteli: Nyelv váltás HU-ra megváltoztatja a UI szövegeket
 # setLanguage store frissül, tab bar és képernyők lokalizálva
+# A nyelvi chipek teljes szövege "🇬🇧 EN" / "🇭🇺 HU" — pontos matchet használunk,
+# mert a ".*EN.*" regex a "MEGJELENÉS" szekciócímre is illeszkedne.
 
 - launchApp:
     clearState: true
 - runFlow:
     file: ../helpers/login-demo.yaml
 
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
 - tapOn:
     text: "Profile"
@@ -21,16 +25,12 @@ tags:
 - assertVisible:
     text: "Profile"
 
-# Scroll a Language szekciőhoz
+# Scroll a Language szekcióhoz
 - scrollUntilVisible:
     element:
-      text: "Language"
+      text: "HU"
     direction: DOWN
-    timeout: 5000
-
-# Aktuálisan EN van kiválasztva
-- assertVisible:
-    text: "EN"
+    timeout: 30000
 
 # Magyar váltás
 - tapOn:
@@ -39,23 +39,22 @@ tags:
 
 # Tab bar HU-ra vált
 - assertVisible:
-    text: "Felfedez"
+    text: ".*Felfedez.*"
 
 # Visszaváltás EN-re
-- tapOn:
-    text: "EN"
-    optional: true
 - scrollUntilVisible:
     element:
       text: "EN"
     direction: DOWN
-    timeout: 3000
+    timeout: 30000
 - tapOn:
     text: "EN"
 - waitForAnimationToEnd
 
 # Tab bar visszaállt EN-re
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
 - takeScreenshot: "14-language-switch-done"

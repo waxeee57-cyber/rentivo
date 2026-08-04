@@ -1,0 +1,14 @@
+{
+  "contrast_pairs_below_AA": 0,
+  "i18n_missing_keys": 0,
+  "i18n_untranslated_values": 1,
+  "text_styles_without_fontFamily": 0,
+  "fontFamily_with_fontWeight": 0,
+  "colour_emoji_lines": 0,
+  "unbounded_select_queries": 10,
+  "mutations_without_mock_gate": 0,
+  "lists_clipped_by_dock": 0,
+  "secrets_in_tree": 0,
+  "console_calls": 4,
+  "type_escapes_any": 0
+}

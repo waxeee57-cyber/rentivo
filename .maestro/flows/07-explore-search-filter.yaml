@@ -10,8 +10,10 @@ tags:
 - runFlow:
     file: ../helpers/login-demo.yaml
 
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
 # City picker megnyitása
 - tapOn:
@@ -19,8 +21,10 @@ tags:
 - waitForAnimationToEnd
 
 # City picker sheet látható
-- assertVisible:
-    text: "Marbella"
+- extendedWaitUntil:
+    visible:
+      text: "Marbella"
+    timeout: 15000
 
 # Bezárás (tap kívülre vagy close gomb)
 - back

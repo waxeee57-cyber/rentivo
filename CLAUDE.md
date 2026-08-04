@@ -149,3 +149,60 @@ docs/           audits/, ops/, requirements.md
 
 > TODO: ismeretlen — pótolni: tesztek tényleges zöld/piros státusza (a maestro E2E
 > és az itest scriptek futási eredményét nem mértem, csak a létezésüket).
+
+---
+
+## MINŐSÉGI KAPU (2026-08-04)
+
+```bash
+node scripts/quality-check.mjs            # riport + exit 1 regresszióra
+node scripts/quality-check.mjs --update   # baseline újraírása (szándékos változásnál)
+```
+
+Minden ellenőrzés egy **valóban megtalált** defektet őriz, nem elméleti szabályt:
+
+| metrika | mit őriz |
+|---|---|
+| `contrast_pairs_below_AA` | a törzsszöveg 2.61:1-en volt világos módban, a primary gomb felirata 3.76:1-en |
+| `text_styles_without_fontFamily` | az app hónapokig Robotóban ment: a `Fonts` token létezett, 342 címsor-stílus sosem hivatkozta |
+| `fontFamily_with_fontWeight` | a kettő együtt fals-bold-ot szintetizál Androidon egy már eleve bold arcra |
+| `i18n_missing_keys` / `untranslated` | háromnyelvű app, kulcsparitás nélkül |
+| `colour_emoji_lines` | színes emoji monoline Ionicons mellett |
+| `unbounded_select_queries` | `fetchListings` MINDEN aktív hirdetést lehúzott, nested joinnal, lapozás nélkül |
+| `mutations_without_mock_gate` | mock módban éles írások; a supabase-js **nem ad hibát** 0 soros UPDATE-re, így a UI sikert jelzett |
+| `lists_clipped_by_dock` | a lebegő dock ~90px — kevesebb alsó padding végleg elrejti az utolsó sort |
+| `secrets_in_tree` | csak a **verziókövetett** fát nézi; a `.env` szándékosan kimarad (gitignore-olt) |
+
+**Fontos:** ha egy szám romlik, az vagy hiba, vagy szándékos — de sosem észrevétlen. A `--update` szándéknyilatkozat.
+
+## KÖRNYEZETI TUDÁS (ne kelljen újra felfedezni)
+
+```powershell
+$adb = 'C:\Users\waxee\AppData\Local\Android\Sdk\platform-tools\adb.exe'
+$mo  = 'C:\Users\waxee\maestro\bin\maestro.bat'
+
+# Gradle — MINDIG ez a 3 env
+$env:JAVA_HOME = 'C:\Program Files\Microsoft\jdk-21.0.11.10-hotspot'  # JDK25 töri a Kotlin DSL-t
+$env:ANDROID_HOME = 'C:\Users\waxee\AppData\Local\Android\Sdk'
+$env:SENTRY_DISABLE_AUTO_UPLOAD = 'true'                              # különben sentry.gradle:149 elhasal
+```
+
+- **Emulátor:** az AVD fizikailag 320×640/160dpi. Minden hidegindítás után kell:
+  `adb shell wm size 1080x1920` + `adb shell wm density 440`. Enélkül ldpi-n renderel, és minden
+  screenshot „elmosódott, kiegyenesedő körvonalakkal" jön vissza.
+- **Boot után várj ~25s** a `sys.boot_completed=1` UTÁN is, mielőtt appot indítasz — a SystemUI ANR-ezik
+  swiftshader szoftveres GPU-n, és utána az egész futás használhatatlan. Ellenőrzés: `dumpsys window | Select-String mCurrentFocus`.
+- **Screenshot:** a PowerShell `>` **korruptálja a binárist**. Csak így:
+  `adb shell screencap -p /sdcard/s.png; adb pull /sdcard/s.png <cél>`
+- **Ékezetes fájlírás:** a `Set-Content` mojibake-et csinál. `[System.IO.File]::WriteAllText($p,$c,(New-Object System.Text.UTF8Encoding($false)))`
+- **Hosszú build/teszt:** `Start-Process -RedirectStandardOutput` + logfájl tailelése. Az MCP shell 60s-nél timeoutol.
+- **Új modul-fájl nem jön át fast refresh-sel** → `adb shell am force-stop` + újraindítás kell.
+
+## E2E (Maestro)
+
+- **Soha ne írj fájlt futás közben** — a Metro hot-reload eltöri a maradék flow-kat. Sorrend:
+  kódmódosítás → `tsc` → app újraindítás → Maestro.
+- A flow-k a listing kártyát **`id: "listing-card"`** testID-vel célozzák.
+  Korábban `text: ".*€.*"` volt — „az első euró-jeles szöveg a képernyőn" —, ami némán átcélzott egy
+  nem-kattintható ár-feliratra, amint a feed fölé került egy „From €25/day" horgony. Szándékra célzunk, ne szövegre.
+- Utolsó teljes futás: **20/20 zöld** (17 az első körben + 3 a selector-javítás után), ~14 perc.

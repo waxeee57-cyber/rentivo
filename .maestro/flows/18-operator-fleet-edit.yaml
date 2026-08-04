@@ -9,27 +9,50 @@ tags:
     clearState: true
 - waitForAnimationToEnd
 
-- assertVisible:
-    text: "Rent anything."
+# Privacy/GDPR consent modal - shows once on genuinely fresh AsyncStorage
+- extendedWaitUntil:
+    visible:
+      text: "Accept & Continue"
+    timeout: 45000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        text: "Accept & Continue"
+    commands:
+      - tapOn:
+          text: "Accept & Continue"
+      - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "Rent anything."
+    timeout: 45000
 - tapOn:
     text: "Get started →"
 - waitForAnimationToEnd
 
-- assertVisible:
-    text: "How it works"
+- extendedWaitUntil:
+    visible:
+      text: "How it works"
+    timeout: 15000
 - tapOn:
     text: "Next →"
 - waitForAnimationToEnd
 
-- assertVisible:
-    text: "I run a rental business"
+- extendedWaitUntil:
+    visible:
+      text: "I run a rental business"
+    timeout: 15000
 - tapOn:
     text: "I run a rental business"
 - waitForAnimationToEnd
 
 # Operator dashboard
-- assertVisible:
-    text: "Dashboard"
+- extendedWaitUntil:
+    visible:
+      text: "Dashboard"
+    timeout: 15000
 
 # Fleet tab megnyitása
 - tapOn:

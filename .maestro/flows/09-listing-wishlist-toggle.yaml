@@ -10,8 +10,10 @@ tags:
 - runFlow:
     file: ../helpers/login-demo.yaml
 
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
 # Listing megnyitása
 - extendedWaitUntil:
@@ -21,23 +23,24 @@ tags:
 
 - scrollUntilVisible:
     element:
-      text: "€"
+      id: "listing-card"
     direction: DOWN
     timeout: 8000
 
+# testID, nem ár-regex — lásd a 08-as flow indoklását.
 - tapOn:
-    text: "€"
+    id: "listing-card"
 - waitForAnimationToEnd
 
 # Listing detail megnyílt
 - extendedWaitUntil:
     visible:
-      text: "Book"
+      text: "Select dates|Book now"
     timeout: 5000
 
 # Szív gomb tap — wishlist hozzáadás
 - tapOn:
-    accessibilityLabel: "Add to favorites"
+    text: "Add to favorites"
     optional: true
 - waitForAnimationToEnd
 
@@ -46,8 +49,10 @@ tags:
 - waitForAnimationToEnd
 
 # Wishlist tab ellenőrzése (ha van)
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 - assertNotVisible:
     text: "Render Error"
 

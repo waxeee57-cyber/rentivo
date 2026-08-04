@@ -12,8 +12,10 @@ tags:
 - runFlow:
     file: ../helpers/login-demo.yaml
 
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
 # Listing megnyitása
 - extendedWaitUntil:
@@ -23,22 +25,23 @@ tags:
 
 - scrollUntilVisible:
     element:
-      text: "€"
+      id: "listing-card"
     direction: DOWN
     timeout: 8000
 
+# testID, nem ár-regex — lásd a 08-as flow indoklását.
 - tapOn:
-    text: "€"
+    id: "listing-card"
 - waitForAnimationToEnd
 
 - extendedWaitUntil:
     visible:
-      text: "Book"
+      text: "Select dates|Book now"
     timeout: 5000
 
 # "Book" gomb tap — DatePickerSheet nyílik (dátum nincs megadva)
 - tapOn:
-    text: "Book"
+    text: "Select dates|Book now"
 - waitForAnimationToEnd
 
 # P1-1 fix: DatePickerSheet jelenik meg, NEM router.back()

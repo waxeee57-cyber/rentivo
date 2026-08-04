@@ -5,12 +5,36 @@
 # Használat a szülő flow-ban:
 #   - runFlow:
 #       file: ../helpers/login-demo.yaml
-
-- waitForAnimationToEnd
-- assertVisible:
-    text: "Rent anything."
+appId: com.domrol.rentivo
+---
+# Cold clearState launch against a live Metro dev server re-fetches the full
+# JS bundle (~2800 modules, 20-25s on this machine) before anything renders —
+# far past Maestro's default assertVisible timeout. extendedWaitUntil below
+# absorbs that cold-start cost; a release/embedded-bundle build wouldn't need it.
+- extendedWaitUntil:
+    visible:
+      text: "Accept & Continue"
+    timeout: 45000
+    optional: true
+# Privacy/GDPR consent modal — shows once on genuinely fresh AsyncStorage
+# (i.e. after clearState:true). Handled defensively in case it doesn't fire
+# (e.g. state wasn't actually cleared).
+- runFlow:
+    when:
+      visible:
+        text: "Accept & Continue"
+    commands:
+      - tapOn:
+          text: "Accept & Continue"
+      - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible:
+      text: "Rent anything."
+    timeout: 45000
 - tapOn:
     text: "Skip"
 - waitForAnimationToEnd
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000

@@ -11,32 +11,57 @@ tags:
     clearState: true
 - waitForAnimationToEnd
 
+# Privacy/GDPR consent modal — shows once on genuinely fresh AsyncStorage
+- extendedWaitUntil:
+    visible:
+      text: "Accept & Continue"
+    timeout: 45000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        text: "Accept & Continue"
+    commands:
+      - tapOn:
+          text: "Accept & Continue"
+      - waitForAnimationToEnd
+
 # Screen1
-- assertVisible:
-    text: "Rent anything."
+- extendedWaitUntil:
+    visible:
+      text: "Rent anything."
+    timeout: 45000
 - tapOn:
     text: "Get started →"
 - waitForAnimationToEnd
 
 # Screen2: How it works
-- assertVisible:
-    text: "How it works"
+- extendedWaitUntil:
+    visible:
+      text: "How it works"
+    timeout: 15000
 - tapOn:
     text: "Next →"
 - waitForAnimationToEnd
 
 # Screen3: Role selection
-- assertVisible:
-    text: "How will you use"
-- assertVisible:
-    text: "I want to rent something"
+- extendedWaitUntil:
+    visible:
+      text: "How will you use.*"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      text: "I want to rent something"
+    timeout: 15000
 - tapOn:
     text: "I want to rent something"
 - waitForAnimationToEnd
 
 # Explore képernyőn vagyunk
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 - assertNotVisible:
     text: "Render Error"
 

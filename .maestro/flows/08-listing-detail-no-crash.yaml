@@ -14,8 +14,10 @@ tags:
     file: ../helpers/login-demo.yaml
 
 # Explore képernyőn vagyunk
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
 # Lista nézetbe váltás hogy kártyák legyenek kattinthatóak
 - extendedWaitUntil:
@@ -33,19 +35,24 @@ tags:
 # Ha map nézetben vagyunk, lapozzunk le a preview-ra
 - scrollUntilVisible:
     element:
-      text: "€"
+      id: "listing-card"
     direction: DOWN
     timeout: 8000
 
-# Listing card tap (bármelyik ami tartalmaz árat)
+# Listing card tap a kártya testID-jével.
+# ELŐTTE: `text: ".*€.*"` — "az első euró-jeles szöveg a képernyőn". Ez néma
+# módon átcélzott egy nem-kattintható ár-feliratra, amint a feed fölé került
+# egy "From €25/day" horgony: a flow egy <Text>-re koppintott, sosem jutott el
+# a detail képernyőre, és a hiba úgy jelentkezett, mintha a Book gomb tűnt
+# volna el. A szándékra célzunk, nem a szövegre.
 - tapOn:
-    text: "€"
+    id: "listing-card"
 - waitForAnimationToEnd
 
 # 3 másodperc várakozás — ez volt a crash window
 - extendedWaitUntil:
     visible:
-      text: "Book"
+      text: "Select dates|Book now"
     timeout: 5000
 
 # KRITIKUS ASSERTEK
@@ -58,7 +65,7 @@ tags:
 
 # Hero és ár látható
 - assertVisible:
-    text: "Book"
+    text: "Select dates|Book now"
 
 # Scroll le — similar listings renderelés (ez volt a hook crash forrása)
 - scroll

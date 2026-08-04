@@ -12,16 +12,21 @@ tags:
     file: ../helpers/login-demo.yaml
 
 # Explore betölt — alapértelmezett: map nézet
-- assertVisible:
-    text: "Explore"
+- extendedWaitUntil:
+    visible:
+      text: "Explore"
+    timeout: 15000
 
 # Keresés sor / city picker látható
-- assertVisible:
-    text: "Marbella"
+- extendedWaitUntil:
+    visible:
+      text: "Marbella"
+    timeout: 15000
 
-# Kategória chipek láthatóak
+# Forrás-váltó látható (a "Cars & villas…" discovery-szöveg csak üres
+# listánál renderel — élő adatokkal a lista jelenik meg helyette)
 - assertVisible:
-    text: "Cars & villas from €35/day"
+    text: ".*All platforms.*"
 
 # Lista nézetre váltás (lista ikon jobbra)
 - tapOn:
