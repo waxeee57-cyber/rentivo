@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Rentivo</title>
+<meta name="description" content="How Rentivo collects, uses and protects your personal data. GDPR privacy policy for the Rentivo rental marketplace.">
+<meta name="robots" content="index, follow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1A1F2B; --ink-2:#4A525F; --ink-3:#6E7681;
+    --bg:#FAF9F7; --surface:#FFFFFF; --warm:#F3F1ED;
+    --line:#E4E0D9; --line-strong:#C8C2B8;
+    --accent:#C4400A;
+    --radius:14px;
+    --maxw:760px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --ink:#F2F0EB; --ink-2:#B4BCC8; --ink-3:#8B94A3;
+      --bg:#0A1220; --surface:#141D2E; --warm:#1D2839;
+      --line:#26334A; --line-strong:#3D4A63;
+      --accent:#F0B15C;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    font-size:17px; line-height:1.65; letter-spacing:-0.005em;
+  }
+  .skip{position:absolute;left:-9999px;top:0;background:var(--accent);color:#fff;padding:12px 18px;border-radius:0 0 var(--radius) 0;z-index:99}
+  .skip:focus{left:0}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+
+  header{border-bottom:1px solid var(--line);background:var(--surface)}
+  .bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:800;font-size:19px;letter-spacing:-0.03em;color:var(--ink);text-decoration:none}
+  .brand svg{display:block}
+  .langs{display:flex;gap:6px}
+  .langs button{
+    font:inherit;font-size:13px;font-weight:600;letter-spacing:0.02em;
+    padding:8px 14px;min-height:44px;border-radius:999px;cursor:pointer;
+    background:transparent;color:var(--ink-2);border:1px solid var(--line-strong);
+  }
+  .langs button:hover{background:var(--warm)}
+  .langs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .langs button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+  main{padding:44px 0 80px}
+  h1{font-size:clamp(30px,6vw,42px);line-height:1.12;letter-spacing:-0.035em;font-weight:800;margin:0 0 10px}
+  .meta{color:var(--ink-3);font-size:14px;margin:0 0 28px}
+  .lede{font-size:19px;line-height:1.6;color:var(--ink-2);margin:0 0 34px}
+  h2{font-size:21px;line-height:1.3;letter-spacing:-0.02em;font-weight:700;margin:40px 0 12px;scroll-margin-top:20px}
+  h3{font-size:16px;font-weight:700;margin:24px 0 8px}
+  p{margin:0 0 15px;color:var(--ink-2)}
+  strong{color:var(--ink);font-weight:600}
+  a{color:var(--accent);text-underline-offset:3px}
+  a:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:3px}
+  ul{margin:0 0 15px;padding-left:20px;color:var(--ink-2)}
+  li{margin-bottom:7px}
+  li::marker{color:var(--ink-3)}
+
+  .toc{background:var(--warm);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;margin:0 0 40px}
+  .toc h2{font-size:12px;letter-spacing:0.09em;text-transform:uppercase;color:var(--ink-3);margin:0 0 10px;font-weight:700}
+  .toc ol{margin:0;padding-left:20px;columns:2;column-gap:26px}
+  .toc li{margin-bottom:5px;font-size:14.5px;break-inside:avoid}
+  @media(max-width:560px){.toc ol{columns:1}}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:4px 20px 8px;margin:0 0 18px}
+
+  table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:14.5px;display:block;overflow-x:auto}
+  th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-weight:700;color:var(--ink);font-size:12.5px;letter-spacing:0.05em;text-transform:uppercase;white-space:nowrap}
+  td{color:var(--ink-2)}
+  tr:last-child td{border-bottom:none}
+
+  .callout{border-left:3px solid var(--accent);background:var(--warm);border-radius:0 var(--radius) var(--radius) 0;padding:16px 18px;margin:0 0 20px}
+  .callout p:last-child{margin-bottom:0}
+
+  /* Fields only the operator can supply. Deliberately loud: a privacy policy
+     published with a placeholder controller identity is worse than none. */
+  .todo{
+    display:inline-block;background:#FFE8C2;color:#7A4A00;border:1px dashed #C08A2E;
+    border-radius:5px;padding:1px 7px;font-weight:700;font-size:0.92em;letter-spacing:0.01em;
+  }
+  @media (prefers-color-scheme: dark){ .todo{background:#3A2C10;color:#F0C878;border-color:#8A6A2E} }
+  .draft{background:#FFF4E0;border:1px solid #E8C88A;color:#6B4A10;border-radius:var(--radius);padding:14px 16px;margin:0 0 26px;font-size:15px}
+  @media (prefers-color-scheme: dark){ .draft{background:#2E2410;border-color:#6A5424;color:#E8CE9A} }
+  .draft strong{color:inherit}
+
+  footer{border-top:1px solid var(--line);padding:28px 0 44px;color:var(--ink-3);font-size:14px}
+  footer p{color:var(--ink-3);margin:0 0 6px}
+
+  [data-lang]{display:none}
+  [data-lang].on{display:block}
+
+  @media print{
+    header,.langs,.skip{display:none}
+    body{background:#fff;color:#000;font-size:11pt}
+    .card,.toc,.callout{border:1px solid #ccc;background:#fff}
+    a{color:#000;text-decoration:underline}
+    h2{page-break-after:avoid}
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#doc">Skip to content</a>
+
+<header>
+  <div class="wrap bar">
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+        <rect width="26" height="26" rx="7" fill="#C4400A"/>
+        <path d="M7 17.5c1.6 1.2 3.6 1.8 6 1.8s4.4-.6 6-1.8M8.5 8.2h9l1.2 4.6c.2.7-.3 1.4-1 1.4H8.3c-.7 0-1.2-.7-1-1.4l1.2-4.6Z" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      Rentivo
+    </div>
+    <div class="langs" role="group" aria-label="Language / Idioma / Nyelv">
+      <button type="button" data-set="en" aria-pressed="true">English</button>
+      <button type="button" data-set="es" aria-pressed="false">Español</button>
+      <button type="button" data-set="hu" aria-pressed="false">Magyar</button>
+    </div>
+  </div>
+</header>
+
+<main id="doc" class="wrap">
+
+<!-- ══════════════════════════ ENGLISH ══════════════════════════ -->
+<div data-lang="en" class="on">
+  <h1>Privacy Policy</h1>
+  <p class="meta">Last updated: 4 August 2026 · Version 2.0</p>
+  <p class="lede">Rentivo is a marketplace for renting cars, boats, bikes and holiday homes around the Mediterranean. Renting a vehicle means handing over real documents and real money, so this page states plainly what we collect, why we are allowed to, who else sees it, and how to make us stop.</p>
+  <div class="draft"><strong>Before publishing:</strong> the highlighted fields must be completed with the operator's real registered identity. A privacy policy that names the wrong controller — or none — is not merely incomplete, it is invalid. This draft has not been reviewed by a lawyer.</div>
+
+  <nav class="toc" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#en-1">Who we are</a></li>
+      <li><a href="#en-2">What we collect and why</a></li>
+      <li><a href="#en-3">Identity verification</a></li>
+      <li><a href="#en-4">Who else processes your data</a></li>
+      <li><a href="#en-5">Where your data is stored</a></li>
+      <li><a href="#en-6">How long we keep it</a></li>
+      <li><a href="#en-7">Your rights</a></li>
+      <li><a href="#en-8">Automated decisions and AI</a></li>
+      <li><a href="#en-9">Security</a></li>
+      <li><a href="#en-10">Children</a></li>
+      <li><a href="#en-11">Changes</a></li>
+      <li><a href="#en-12">Contact</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="en-1">1. Who we are</h2>
+  <p>Rentivo is operated by a sole trader registered in Hungary. The data controller is:</p>
+  <p><span class="todo">FULL LEGAL NAME</span>, sole trader (<em>egyéni vállalkozó</em>)<br>
+  <span class="todo">REGISTERED SEAT ADDRESS</span>, Hungary<br>
+  Registration number: <span class="todo">EV NYILVÁNTARTÁSI SZÁM</span> · Tax number: <span class="todo">ADÓSZÁM</span><br>
+  Email: <a href="mailto:privacy@rentivo.app">privacy@rentivo.app</a></p>
+  <p>Rentivo connects renters with independent rental operators and private hosts. When you book, the operator is a separate controller for the rental contract itself; we are the controller for your account, the booking record and the payment.</p>
+
+  <h2 id="en-2">2. What we collect and why</h2>
+  <p>We do not collect data speculatively. Each category below exists because a specific part of the service cannot work without it.</p>
+  <table>
+    <thead><tr><th>Data</th><th>Why</th><th>Legal basis (GDPR Art. 6)</th></tr></thead>
+    <tbody>
+      <tr><td>Name, email, phone</td><td>Create your account, confirm bookings, let the operator reach you</td><td>Performance of a contract</td></tr>
+      <tr><td>Card details</td><td>Take payment and hold a deposit. Handled by Stripe — <strong>we never see or store your card number</strong></td><td>Performance of a contract</td></tr>
+      <tr><td>Driving licence and ID document details</td><td>Confirm you may legally rent the vehicle; prevent fraud</td><td>Contract + legal obligation</td></tr>
+      <tr><td>Approximate location</td><td>Show vehicles near you on the map</td><td>Your consent — you can refuse and still use the app</td></tr>
+      <tr><td>Vehicle condition photos</td><td>Evidence of the vehicle's state at pickup and return, so a deposit dispute has facts in it</td><td>Contract + our legitimate interest in resolving disputes fairly</td></tr>
+      <tr><td>Messages with the operator</td><td>Deliver your messages; translate them if you and the operator use different languages</td><td>Performance of a contract</td></tr>
+      <tr><td>Booking and invoice records</td><td>Accounting and tax</td><td>Legal obligation</td></tr>
+      <tr><td>Push notification token</td><td>Tell you when a booking is confirmed or a vehicle is ready</td><td>Your consent</td></tr>
+      <tr><td>Crash and error diagnostics</td><td>Find and fix faults</td><td>Our legitimate interest in a working app</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="en-3">3. Identity verification</h2>
+  <div class="callout">
+    <p>Verifying who you are involves a photo of your ID document and a selfie. Facial data is <strong>biometric data</strong> — a special category under Article 9 GDPR — so we ask for your <strong>explicit consent</strong> before the check begins. If you do not consent, you cannot complete a rental that requires verification, but nothing else in the app is affected.</p>
+  </div>
+  <p>The check is run by our verification provider, Didit. The document image and the facial scan are processed by Didit and are <strong>not stored on Rentivo's systems</strong>. What we receive and keep is only the result:</p>
+  <ul>
+    <li>document type, issuing country, document number and expiry date;</li>
+    <li>the name and date of birth printed on the document;</li>
+    <li>a numeric face-match score and a pass/fail liveness result.</li>
+  </ul>
+  <p>We keep this so we do not have to ask you to verify again, and so we can show an operator that you are eligible to rent.</p>
+
+  <h2 id="en-4">4. Who else processes your data</h2>
+  <p>These are our processors. Each is bound by a data processing agreement and may only act on our instructions.</p>
+  <table>
+    <thead><tr><th>Provider</th><th>What for</th><th>Location</th></tr></thead>
+    <tbody>
+      <tr><td>Supabase</td><td>Database, sign-in, file storage</td><td>EU (Ireland)</td></tr>
+      <tr><td>Stripe Payments Europe</td><td>Payments, deposits, operator payouts</td><td>EU (Ireland)</td></tr>
+      <tr><td>Didit</td><td>Identity and document verification</td><td>EU</td></tr>
+      <tr><td>Anthropic</td><td>AI assistant, message translation, damage-photo analysis, price suggestions</td><td>USA — SCCs</td></tr>
+      <tr><td>Resend</td><td>Transactional email</td><td>USA — SCCs</td></tr>
+      <tr><td>Expo</td><td>Push notifications</td><td>USA — SCCs</td></tr>
+      <tr><td>Sentry</td><td>Crash and error monitoring</td><td>USA — SCCs</td></tr>
+      <tr><td>CARTO / OpenStreetMap</td><td>Map tiles (receives your IP address)</td><td>EU / global</td></tr>
+    </tbody>
+  </table>
+  <p>Where a provider is outside the European Economic Area, the transfer is covered by the European Commission's <strong>Standard Contractual Clauses</strong>. We do not sell your personal data, and we do not share it for advertising.</p>
+
+  <h2 id="en-5">5. Where your data is stored</h2>
+  <p>Your account, bookings, messages and photos are stored in the <strong>European Union (Ireland)</strong>. Payment data stays with Stripe in the EU. The exceptions are the US providers listed above, which receive only the specific data they need for their function.</p>
+
+  <h2 id="en-6">6. How long we keep it</h2>
+  <ul>
+    <li><strong>Account data</strong> — while your account exists. Delete your account in the app and we erase it within 30 days, apart from what the law requires us to keep.</li>
+    <li><strong>Bookings and invoices</strong> — for as long as accounting law requires. Under Hungarian law (Act C of 2000 on Accounting, § 169) accounting records must be kept for <strong>eight years</strong>.</li>
+    <li><strong>Vehicle condition photos</strong> — 12 months after the rental ends, so a late damage claim can still be settled on evidence.</li>
+    <li><strong>Identity verification results</strong> — until the document expires or you delete your account.</li>
+    <li><strong>Crash diagnostics</strong> — 90 days.</li>
+  </ul>
+
+  <h2 id="en-7">7. Your rights</h2>
+  <p>Under GDPR you may ask us to:</p>
+  <ul>
+    <li><strong>Give you a copy</strong> of the personal data we hold about you;</li>
+    <li><strong>Correct</strong> anything inaccurate;</li>
+    <li><strong>Erase</strong> your data — the app has a Delete Account function that starts this immediately;</li>
+    <li><strong>Restrict</strong> or <strong>object to</strong> processing based on legitimate interest;</li>
+    <li><strong>Port</strong> your data to another service in a machine-readable format;</li>
+    <li><strong>Withdraw consent</strong> at any time, for location, notifications or biometric verification, without affecting what was lawful beforehand.</li>
+  </ul>
+  <p>Write to <a href="mailto:privacy@rentivo.app">privacy@rentivo.app</a>. We answer within one month.</p>
+  <p>If you think we have got it wrong, you can complain to the Hungarian supervisory authority — <a href="https://naih.hu" rel="noopener">NAIH</a> (Nemzeti Adatvédelmi és Információszabadság Hatóság), 1055 Budapest, Falk Miksa utca 9–11, <a href="mailto:ugyfelszolgalat@naih.hu">ugyfelszolgalat@naih.hu</a>, +36 1 391 1400 — or to the data protection authority of the EU country where you live.</p>
+
+  <h2 id="en-8">8. Automated decisions and AI</h2>
+  <p>Identity verification is partly automated. AI is also used to draft assistant replies, translate messages between you and an operator, suggest prices to operators, and flag possible damage in inspection photos.</p>
+  <p><strong>No decision with legal or similarly significant effect on you is made by a machine alone.</strong> In particular, an AI damage flag is a suggestion to the operator — a person must review it before any charge is made against your deposit, and you can contest any charge through the app's dispute flow. You may always ask for a human review of an automated outcome.</p>
+
+  <h2 id="en-9">9. Security</h2>
+  <p>Data is encrypted in transit (TLS) and at rest. Access to production data is restricted and logged. Database access is governed row by row, so one user's records are not reachable from another user's session. Card numbers never touch our servers — Stripe collects them directly.</p>
+  <p>If a breach ever puts your rights at risk, we notify the supervisory authority within 72 hours and tell you without undue delay.</p>
+
+  <h2 id="en-10">10. Children</h2>
+  <p>Rentivo is not intended for anyone under 18, and renting a vehicle requires a valid driving licence. We do not knowingly collect data from children. If you believe a child has given us data, write to us and we will delete it.</p>
+
+  <h2 id="en-11">11. Changes</h2>
+  <p>If we change this policy we update the date at the top and raise the version. For changes that materially affect your rights we notify you in the app or by email before they take effect.</p>
+
+  <h2 id="en-12">12. Contact</h2>
+  <p><span class="todo">FULL LEGAL NAME</span>, sole trader · <span class="todo">REGISTERED SEAT ADDRESS</span>, Hungary<br>
+  Privacy enquiries: <a href="mailto:privacy@rentivo.app">privacy@rentivo.app</a></p>
+</div>
+
+<!-- ══════════════════════════ ESPAÑOL ══════════════════════════ -->
+<div data-lang="es">
+  <h1>Política de Privacidad</h1>
+  <p class="meta">Última actualización: 4 de agosto de 2026 · Versión 2.0</p>
+  <p class="lede">Rentivo es un marketplace para alquilar coches, barcos, bicicletas y casas de vacaciones por el Mediterráneo. Alquilar un vehículo implica entregar documentos reales y dinero real, así que esta página explica con claridad qué recogemos, con qué base legal, quién más lo ve y cómo pedirnos que dejemos de hacerlo.</p>
+
+  <nav class="toc" aria-label="Contenido">
+    <h2>Contenido</h2>
+    <ol>
+      <li><a href="#es-1">Quiénes somos</a></li>
+      <li><a href="#es-2">Qué recogemos y por qué</a></li>
+      <li><a href="#es-3">Verificación de identidad</a></li>
+      <li><a href="#es-4">Quién más trata tus datos</a></li>
+      <li><a href="#es-5">Dónde se almacenan</a></li>
+      <li><a href="#es-6">Cuánto tiempo los conservamos</a></li>
+      <li><a href="#es-7">Tus derechos</a></li>
+      <li><a href="#es-8">Decisiones automatizadas e IA</a></li>
+      <li><a href="#es-9">Seguridad</a></li>
+      <li><a href="#es-10">Menores</a></li>
+      <li><a href="#es-11">Cambios</a></li>
+      <li><a href="#es-12">Contacto</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="es-1">1. Quiénes somos</h2>
+  <p>Rentivo lo opera un trabajador autónomo registrado en Hungría. El responsable del tratamiento es:</p>
+  <p><span class="todo">NOMBRE LEGAL COMPLETO</span>, autónomo (<em>egyéni vállalkozó</em>)<br>
+  <span class="todo">DOMICILIO SOCIAL</span>, Hungría<br>
+  Número de registro: <span class="todo">EV NYILVÁNTARTÁSI SZÁM</span> · NIF: <span class="todo">ADÓSZÁM</span><br>
+  Email: <a href="mailto:privacy@rentivo.app">privacy@rentivo.app</a></p>
+  <p>Rentivo conecta a inquilinos con operadores de alquiler independientes y anfitriones particulares. Al reservar, el operador es responsable del contrato de alquiler en sí; nosotros lo somos de tu cuenta, del registro de la reserva y del pago.</p>
+
+  <h2 id="es-2">2. Qué recogemos y por qué</h2>
+  <p>No recogemos datos por si acaso. Cada categoría existe porque una parte concreta del servicio no funciona sin ella.</p>
+  <table>
+    <thead><tr><th>Dato</th><th>Para qué</th><th>Base legal (art. 6 RGPD)</th></tr></thead>
+    <tbody>
+      <tr><td>Nombre, email, teléfono</td><td>Crear tu cuenta, confirmar reservas, que el operador pueda contactarte</td><td>Ejecución de un contrato</td></tr>
+      <tr><td>Datos de tarjeta</td><td>Cobrar y retener la fianza. Los gestiona Stripe: <strong>nunca vemos ni almacenamos tu número de tarjeta</strong></td><td>Ejecución de un contrato</td></tr>
+      <tr><td>Datos del carnet de conducir y del documento de identidad</td><td>Confirmar que puedes alquilar legalmente; prevenir el fraude</td><td>Contrato + obligación legal</td></tr>
+      <tr><td>Ubicación aproximada</td><td>Mostrarte vehículos cercanos en el mapa</td><td>Tu consentimiento — puedes negarlo y seguir usando la app</td></tr>
+      <tr><td>Fotos del estado del vehículo</td><td>Prueba del estado en la entrega y la devolución, para que una disputa de fianza se resuelva con hechos</td><td>Contrato + interés legítimo en resolver disputas con equidad</td></tr>
+      <tr><td>Mensajes con el operador</td><td>Entregar tus mensajes y traducirlos si habláis idiomas distintos</td><td>Ejecución de un contrato</td></tr>
+      <tr><td>Reservas y facturas</td><td>Contabilidad e impuestos</td><td>Obligación legal</td></tr>
+      <tr><td>Token de notificaciones</td><td>Avisarte cuando se confirma una reserva o el vehículo está listo</td><td>Tu consentimiento</td></tr>
+      <tr><td>Diagnósticos de errores</td><td>Detectar y corregir fallos</td><td>Interés legítimo en que la app funcione</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="es-3">3. Verificación de identidad</h2>
+  <div class="callout">
+    <p>Verificar tu identidad requiere una foto de tu documento y un selfie. Los datos faciales son <strong>datos biométricos</strong>, categoría especial del artículo 9 del RGPD, por lo que pedimos tu <strong>consentimiento explícito</strong> antes de iniciar la comprobación. Si no lo das, no podrás completar un alquiler que exija verificación, pero nada más en la app se ve afectado.</p>
+  </div>
+  <p>La comprobación la realiza nuestro proveedor de verificación, Didit. La imagen del documento y el escaneo facial los trata Didit y <strong>no se almacenan en los sistemas de Rentivo</strong>. Lo que recibimos y conservamos es únicamente el resultado:</p>
+  <ul>
+    <li>tipo de documento, país emisor, número y fecha de caducidad;</li>
+    <li>el nombre y la fecha de nacimiento impresos en el documento;</li>
+    <li>una puntuación numérica de coincidencia facial y un resultado de prueba de vida.</li>
+  </ul>
+  <p>Lo conservamos para no pedirte que te verifiques de nuevo y para poder acreditar ante un operador que puedes alquilar.</p>
+
+  <h2 id="es-4">4. Quién más trata tus datos</h2>
+  <p>Estos son nuestros encargados del tratamiento. Cada uno está vinculado por un contrato de tratamiento y solo puede actuar siguiendo nuestras instrucciones.</p>
+  <table>
+    <thead><tr><th>Proveedor</th><th>Para qué</th><th>Ubicación</th></tr></thead>
+    <tbody>
+      <tr><td>Supabase</td><td>Base de datos, acceso, almacenamiento de archivos</td><td>UE (Irlanda)</td></tr>
+      <tr><td>Stripe Payments Europe</td><td>Pagos, fianzas, liquidaciones a operadores</td><td>UE (Irlanda)</td></tr>
+      <tr><td>Didit</td><td>Verificación de identidad y documentos</td><td>UE</td></tr>
+      <tr><td>Anthropic</td><td>Asistente IA, traducción de mensajes, análisis de fotos de daños, sugerencias de precio</td><td>EE. UU. — CCT</td></tr>
+      <tr><td>Resend</td><td>Correo transaccional</td><td>EE. UU. — CCT</td></tr>
+      <tr><td>Expo</td><td>Notificaciones push</td><td>EE. UU. — CCT</td></tr>
+      <tr><td>Sentry</td><td>Monitorización de errores</td><td>EE. UU. — CCT</td></tr>
+      <tr><td>CARTO / OpenStreetMap</td><td>Mapas (recibe tu dirección IP)</td><td>UE / global</td></tr>
+    </tbody>
+  </table>
+  <p>Cuando un proveedor está fuera del Espacio Económico Europeo, la transferencia se ampara en las <strong>Cláusulas Contractuales Tipo</strong> de la Comisión Europea. No vendemos tus datos personales ni los compartimos con fines publicitarios.</p>
+
+  <h2 id="es-5">5. Dónde se almacenan</h2>
+  <p>Tu cuenta, reservas, mensajes y fotos se almacenan en la <strong>Unión Europea (Irlanda)</strong>. Los datos de pago permanecen en Stripe dentro de la UE. Las excepciones son los proveedores estadounidenses citados arriba, que reciben solo los datos concretos que necesitan.</p>
+
+  <h2 id="es-6">6. Cuánto tiempo los conservamos</h2>
+  <ul>
+    <li><strong>Datos de la cuenta</strong> — mientras exista tu cuenta. Si la eliminas desde la app, los borramos en 30 días, salvo lo que la ley nos obligue a conservar.</li>
+    <li><strong>Reservas y facturas</strong> — el plazo que exija la normativa contable. Conforme a la ley húngara (Ley C de 2000 de Contabilidad, § 169) los registros contables se conservan <strong>ocho años</strong>.</li>
+    <li><strong>Fotos del estado del vehículo</strong> — 12 meses tras finalizar el alquiler, para poder resolver con pruebas una reclamación tardía.</li>
+    <li><strong>Resultados de verificación</strong> — hasta que caduque el documento o elimines tu cuenta.</li>
+    <li><strong>Diagnósticos de errores</strong> — 90 días.</li>
+  </ul>
+
+  <h2 id="es-7">7. Tus derechos</h2>
+  <p>Conforme al RGPD puedes pedirnos:</p>
+  <ul>
+    <li><strong>Una copia</strong> de los datos personales que tenemos sobre ti;</li>
+    <li><strong>Rectificar</strong> lo que sea inexacto;</li>
+    <li><strong>Suprimir</strong> tus datos — la app incluye una función de eliminar cuenta que lo inicia de inmediato;</li>
+    <li><strong>Limitar</strong> el tratamiento u <strong>oponerte</strong> al basado en interés legítimo;</li>
+    <li><strong>Portar</strong> tus datos a otro servicio en formato legible por máquina;</li>
+    <li><strong>Retirar el consentimiento</strong> en cualquier momento para ubicación, notificaciones o verificación biométrica, sin afectar a la licitud del tratamiento previo.</li>
+  </ul>
+  <p>Escribe a <a href="mailto:privacy@rentivo.app">privacy@rentivo.app</a>. Respondemos en el plazo de un mes.</p>
+  <p>Si consideras que no lo hemos hecho bien, puedes reclamar ante la autoridad de control húngara — <a href="https://naih.hu" rel="noopener">NAIH</a>, 1055 Budapest, Falk Miksa utca 9–11, <a href="mailto:ugyfelszolgalat@naih.hu">ugyfelszolgalat@naih.hu</a> — o ante la autoridad de protección de datos del país de la UE en el que residas, por ejemplo la <a href="https://www.aepd.es" rel="noopener">AEPD</a> en España.</p>
+
+  <h2 id="es-8">8. Decisiones automatizadas e IA</h2>
+  <p>La verificación de identidad está parcialmente automatizada. También usamos IA para redactar respuestas del asistente, traducir mensajes entre tú y el operador, sugerir precios a los operadores y señalar posibles daños en las fotos de inspección.</p>
+  <p><strong>Ninguna decisión con efectos jurídicos o similarmente significativos se toma únicamente por medios automatizados.</strong> En concreto, una señal de daño generada por IA es una sugerencia al operador: una persona debe revisarla antes de cualquier cargo contra tu fianza, y puedes impugnar cualquier cargo mediante el flujo de disputas de la app. Siempre puedes solicitar la revisión humana de un resultado automatizado.</p>
+
+  <h2 id="es-9">9. Seguridad</h2>
+  <p>Los datos se cifran en tránsito (TLS) y en reposo. El acceso a datos de producción está restringido y registrado. El acceso a la base de datos se controla fila a fila, de modo que los registros de un usuario no son accesibles desde la sesión de otro. Los números de tarjeta nunca pasan por nuestros servidores: los recoge Stripe directamente.</p>
+  <p>Si una brecha llegara a poner en riesgo tus derechos, lo notificamos a la autoridad de control en 72 horas y te informamos sin dilación indebida.</p>
+
+  <h2 id="es-10">10. Menores</h2>
+  <p>Rentivo no está dirigido a menores de 18 años, y alquilar un vehículo exige un carnet de conducir válido. No recogemos datos de menores de forma consciente. Si crees que un menor nos ha facilitado datos, escríbenos y los eliminaremos.</p>
+
+  <h2 id="es-11">11. Cambios</h2>
+  <p>Si modificamos esta política actualizamos la fecha superior y subimos la versión. Cuando un cambio afecte materialmente a tus derechos, te avisamos en la app o por correo antes de que entre en vigor.</p>
+
+  <h2 id="es-12">12. Contacto</h2>
+  <p><span class="todo">NOMBRE LEGAL COMPLETO</span>, autónomo · <span class="todo">DOMICILIO SOCIAL</span>, Hungría<br>
+  Consultas de privacidad: <a href="mailto:privacy@rentivo.app">privacy@rentivo.app</a></p>
+</div>
+
+<!-- ══════════════════════════ MAGYAR ══════════════════════════ -->
+<div data-lang="hu">
+  <h1>Adatvédelmi tájékoztató</h1>
+  <p class="meta">Utolsó frissítés: 2026. augusztus 4. · 2.0 verzió</p>
+  <p class="lede">A Rentivo autók, hajók, kerékpárok és nyaralók bérlésére szolgáló piactér a Mediterráneumban. Egy jármű bérlése valódi okmányok és valódi pénz átadását jelenti, ezért ez az oldal világosan leírja, mit gyűjtünk, milyen jogalapon, ki lát még bele, és hogyan kérheted, hogy hagyjuk abba.</p>
+
+  <nav class="toc" aria-label="Tartalom">
+    <h2>Tartalom</h2>
+    <ol>
+      <li><a href="#hu-1">Kik vagyunk</a></li>
+      <li><a href="#hu-2">Mit gyűjtünk és miért</a></li>
+      <li><a href="#hu-3">Személyazonosság-ellenőrzés</a></li>
+      <li><a href="#hu-4">Ki kezeli még az adataid</a></li>
+      <li><a href="#hu-5">Hol tároljuk</a></li>
+      <li><a href="#hu-6">Meddig őrizzük</a></li>
+      <li><a href="#hu-7">A jogaid</a></li>
+      <li><a href="#hu-8">Automatizált döntések és MI</a></li>
+      <li><a href="#hu-9">Biztonság</a></li>
+      <li><a href="#hu-10">Gyermekek</a></li>
+      <li><a href="#hu-11">Változások</a></li>
+      <li><a href="#hu-12">Kapcsolat</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="hu-1">1. Kik vagyunk</h2>
+  <p>A Rentivót magyarországi egyéni vállalkozó üzemelteti. Az adatkezelő:</p>
+  <p><span class="todo">TELJES NÉV</span> egyéni vállalkozó<br>
+  <span class="todo">SZÉKHELY CÍME</span>, Magyarország<br>
+  Nyilvántartási szám: <span class="todo">EV NYILVÁNTARTÁSI SZÁM</span> · Adószám: <span class="todo">ADÓSZÁM</span><br>
+  E-mail: <a href="mailto:privacy@rentivo.app">privacy@rentivo.app</a></p>
+  <p>A Rentivo bérlőket köt össze független bérbeadó cégekkel és magánszemélyekkel. Foglaláskor magára a bérleti szerződésre nézve a bérbeadó önálló adatkezelő; mi a fiókodért, a foglalás nyilvántartásáért és a fizetésért felelünk.</p>
+
+  <h2 id="hu-2">2. Mit gyűjtünk és miért</h2>
+  <p>Nem gyűjtünk adatot előre, minden esetre. Minden alábbi kategória azért van, mert a szolgáltatás egy konkrét része nélküle nem működik.</p>
+  <table>
+    <thead><tr><th>Adat</th><th>Mire</th><th>Jogalap (GDPR 6. cikk)</th></tr></thead>
+    <tbody>
+      <tr><td>Név, e-mail, telefonszám</td><td>Fiók létrehozása, foglalás visszaigazolása, hogy a bérbeadó elérjen</td><td>Szerződés teljesítése</td></tr>
+      <tr><td>Kártyaadatok</td><td>Fizetés és kaució zárolása. A Stripe kezeli — <strong>a kártyaszámot soha nem látjuk és nem tároljuk</strong></td><td>Szerződés teljesítése</td></tr>
+      <tr><td>Jogosítvány és személyazonosító okmány adatai</td><td>Annak igazolása, hogy jogszerűen bérelhetsz; csalásmegelőzés</td><td>Szerződés + jogi kötelezettség</td></tr>
+      <tr><td>Hozzávetőleges tartózkodási hely</td><td>A közeledben lévő járművek megjelenítése a térképen</td><td>Hozzájárulásod — megtagadhatod, az app így is használható</td></tr>
+      <tr><td>Járműállapot-fotók</td><td>Bizonyíték az átvételi és visszaadási állapotról, hogy egy kaució-vita tényeken dőljön el</td><td>Szerződés + jogos érdek a viták tisztességes rendezéséhez</td></tr>
+      <tr><td>Üzenetek a bérbeadóval</td><td>Az üzenetek kézbesítése és fordítása, ha eltérő nyelvet beszéltek</td><td>Szerződés teljesítése</td></tr>
+      <tr><td>Foglalási és számlaadatok</td><td>Könyvelés és adózás</td><td>Jogi kötelezettség</td></tr>
+      <tr><td>Push-értesítési azonosító</td><td>Értesítés a foglalás visszaigazolásáról vagy a jármű készenlétéről</td><td>Hozzájárulásod</td></tr>
+      <tr><td>Hibadiagnosztika</td><td>Hibák felderítése és javítása</td><td>Jogos érdek a működő alkalmazáshoz</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="hu-3">3. Személyazonosság-ellenőrzés</h2>
+  <div class="callout">
+    <p>A személyazonosság ellenőrzéséhez fénykép kell az okmányodról és egy szelfi. Az arcadat <strong>biometrikus adat</strong> — a GDPR 9. cikke szerinti különleges kategória —, ezért az ellenőrzés megkezdése előtt <strong>kifejezett hozzájárulásodat</strong> kérjük. Ha nem járulsz hozzá, az ellenőrzést igénylő bérlést nem tudod befejezni, de az app többi része érintetlen marad.</p>
+  </div>
+  <p>Az ellenőrzést a Didit nevű szolgáltatónk végzi. Az okmányképet és az arcszkennelést a Didit kezeli, és azok <strong>nem kerülnek a Rentivo rendszereibe</strong>. Amit megkapunk és megőrzünk, az kizárólag az eredmény:</p>
+  <ul>
+    <li>az okmány típusa, kibocsátó országa, száma és lejárati dátuma;</li>
+    <li>az okmányon szereplő név és születési dátum;</li>
+    <li>egy számszerű arcegyezési pontszám és egy élőség-vizsgálati eredmény.</li>
+  </ul>
+  <p>Ezt azért őrizzük meg, hogy ne kelljen újra ellenőrizned magad, és hogy egy bérbeadó felé igazolni tudjuk: jogosult vagy a bérlésre.</p>
+
+  <h2 id="hu-4">4. Ki kezeli még az adataid</h2>
+  <p>Az alábbiak az adatfeldolgozóink. Mindegyiket adatfeldolgozói szerződés köti, és kizárólag a mi utasításunkra járhat el.</p>
+  <table>
+    <thead><tr><th>Szolgáltató</th><th>Mire</th><th>Hely</th></tr></thead>
+    <tbody>
+      <tr><td>Supabase</td><td>Adatbázis, bejelentkezés, fájltárolás</td><td>EU (Írország)</td></tr>
+      <tr><td>Stripe Payments Europe</td><td>Fizetés, kaució, bérbeadói kifizetés</td><td>EU (Írország)</td></tr>
+      <tr><td>Didit</td><td>Személyazonosság- és okmányellenőrzés</td><td>EU</td></tr>
+      <tr><td>Anthropic</td><td>MI-asszisztens, üzenetfordítás, kárfotó-elemzés, árjavaslat</td><td>USA — SCC</td></tr>
+      <tr><td>Resend</td><td>Tranzakciós e-mail</td><td>USA — SCC</td></tr>
+      <tr><td>Expo</td><td>Push-értesítések</td><td>USA — SCC</td></tr>
+      <tr><td>Sentry</td><td>Hibafigyelés</td><td>USA — SCC</td></tr>
+      <tr><td>CARTO / OpenStreetMap</td><td>Térképcsempék (megkapja az IP-címed)</td><td>EU / globális</td></tr>
+    </tbody>
+  </table>
+  <p>Ahol a szolgáltató az Európai Gazdasági Térségen kívül van, az adattovábbítást az Európai Bizottság <strong>általános szerződési feltételei (SCC)</strong> fedik. Személyes adataidat nem adjuk el, és reklámcélra nem osztjuk meg.</p>
+
+  <h2 id="hu-5">5. Hol tároljuk</h2>
+  <p>A fiókod, a foglalásaid, az üzeneteid és a fotóid az <strong>Európai Unióban (Írország)</strong> tárolódnak. A fizetési adatok a Stripe-nál maradnak, az EU-n belül. Kivételt a fenti amerikai szolgáltatók jelentenek, amelyek csak a funkciójukhoz szükséges konkrét adatot kapják meg.</p>
+
+  <h2 id="hu-6">6. Meddig őrizzük</h2>
+  <ul>
+    <li><strong>Fiókadatok</strong> — amíg a fiókod létezik. Ha az appban törlöd, 30 napon belül töröljük, azon kívül, amit jogszabály őrizni rendel.</li>
+    <li><strong>Foglalások és számlák</strong> — ameddig a számviteli jogszabály előírja. A számvitelről szóló 2000. évi C. törvény 169. §-a alapján a számviteli bizonylatokat <strong>nyolc évig</strong> kell megőrizni.</li>
+    <li><strong>Járműállapot-fotók</strong> — a bérlés végétől számított 12 hónapig, hogy egy később bejelentett kárigény is bizonyíték alapján dőljön el.</li>
+    <li><strong>Ellenőrzési eredmények</strong> — az okmány lejártáig vagy a fiókod törléséig.</li>
+    <li><strong>Hibadiagnosztika</strong> — 90 nap.</li>
+  </ul>
+
+  <h2 id="hu-7">7. A jogaid</h2>
+  <p>A GDPR alapján kérheted, hogy:</p>
+  <ul>
+    <li><strong>Adjunk másolatot</strong> a rólad kezelt személyes adatokról;</li>
+    <li><strong>Helyesbítsük</strong> a pontatlan adatokat;</li>
+    <li><strong>Töröljük</strong> az adataidat — az appban van Fiók törlése funkció, ami ezt azonnal elindítja;</li>
+    <li><strong>Korlátozzuk</strong> a kezelést, vagy <strong>tiltakozz</strong> a jogos érdeken alapuló kezelés ellen;</li>
+    <li><strong>Hordozd</strong> az adataidat másik szolgáltatóhoz géppel olvasható formátumban;</li>
+    <li><strong>Vond vissza a hozzájárulásod</strong> bármikor — helymeghatározás, értesítések vagy biometrikus ellenőrzés esetén —, ez a korábbi kezelés jogszerűségét nem érinti.</li>
+  </ul>
+  <p>Írj a <a href="mailto:privacy@rentivo.app">privacy@rentivo.app</a> címre. Egy hónapon belül válaszolunk.</p>
+  <p>Ha úgy látod, hibáztunk, panaszt tehetsz a <a href="https://naih.hu" rel="noopener">Nemzeti Adatvédelmi és Információszabadság Hatóságnál (NAIH)</a> — 1055 Budapest, Falk Miksa utca 9–11., <a href="mailto:ugyfelszolgalat@naih.hu">ugyfelszolgalat@naih.hu</a>, +36 1 391 1400 —, vagy bírósághoz fordulhatsz a lakóhelyed szerinti törvényszéken.</p>
+
+  <h2 id="hu-8">8. Automatizált döntések és MI</h2>
+  <p>A személyazonosság-ellenőrzés részben automatizált. MI-t használunk továbbá az asszisztens válaszainak megfogalmazásához, a köztetek folyó üzenetek fordításához, a bérbeadóknak szóló árjavaslatokhoz, és a kárfotókon lehetséges sérülések megjelöléséhez.</p>
+  <p><strong>Rád nézve joghatással vagy hasonlóan jelentős hatással járó döntést gép önmagában nem hoz.</strong> Az MI kárjelzése kifejezetten javaslat a bérbeadó felé: ember bírálja el, mielőtt bármilyen terhelés érné a kauciód, és minden terhelést megtámadhatsz az app vitarendezési folyamatában. Automatizált eredmény esetén bármikor kérheted az emberi felülvizsgálatot.</p>
+
+  <h2 id="hu-9">9. Biztonság</h2>
+  <p>Az adatok átvitel közben (TLS) és nyugalmi állapotban is titkosítottak. Az éles adatokhoz való hozzáférés korlátozott és naplózott. Az adatbázis-hozzáférés soronként szabályozott, így egyik felhasználó rekordjai sem érhetők el egy másik felhasználó munkamenetéből. A kártyaszámok soha nem érintik a szervereinket — azokat közvetlenül a Stripe gyűjti.</p>
+  <p>Ha egy adatvédelmi incidens veszélyeztetné a jogaidat, 72 órán belül értesítjük a felügyeleti hatóságot, téged pedig indokolatlan késedelem nélkül.</p>
+
+  <h2 id="hu-10">10. Gyermekek</h2>
+  <p>A Rentivo nem 18 év alattiaknak készült, és a jármű bérlése érvényes vezetői engedélyt igényel. Tudatosan nem gyűjtünk adatot gyermekektől. Ha úgy véled, gyermek adott meg nekünk adatot, írj, és töröljük.</p>
+
+  <h2 id="hu-11">11. Változások</h2>
+  <p>Ha módosítjuk a tájékoztatót, frissítjük a fenti dátumot és emeljük a verziószámot. A jogaidat érdemben érintő változásról a hatálybalépés előtt értesítünk az appban vagy e-mailben.</p>
+
+  <h2 id="hu-12">12. Kapcsolat</h2>
+  <p><span class="todo">TELJES NÉV</span> egyéni vállalkozó · <span class="todo">SZÉKHELY CÍME</span>, Magyarország<br>
+  Adatvédelmi megkeresések: <a href="mailto:privacy@rentivo.app">privacy@rentivo.app</a></p>
+</div>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>© 2026 Rentivo</p>
+    <p data-lang="en" class="on">Also available in <a href="?lang=es">Español</a> and <a href="?lang=hu">Magyar</a>.</p>
+    <p data-lang="es">Disponible también en <a href="?lang=en">English</a> y <a href="?lang=hu">Magyar</a>.</p>
+    <p data-lang="hu">Elérhető <a href="?lang=en">angolul</a> és <a href="?lang=es">spanyolul</a> is.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var LANGS = ['en','es','hu'];
+  function pick(){
+    var q = new URLSearchParams(location.search).get('lang');
+    var h = (location.hash || '').replace('#','');
+    var c = q || h;
+    if (LANGS.indexOf(c) > -1) return c;
+    var nav = (navigator.language || 'en').slice(0,2).toLowerCase();
+    return LANGS.indexOf(nav) > -1 ? nav : 'en';
+  }
+  function apply(lang){
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-lang]').forEach(function(el){
+      el.classList.toggle('on', el.getAttribute('data-lang') === lang);
+    });
+    document.querySelectorAll('.langs button').forEach(function(b){
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-set') === lang));
+    });
+    var titles = {
+      en:'Privacy Policy — Rentivo',
+      es:'Política de Privacidad — Rentivo',
+      hu:'Adatvédelmi tájékoztató — Rentivo'
+    };
+    document.title = titles[lang];
+  }
+  document.querySelectorAll('.langs button').forEach(function(b){
+    b.addEventListener('click', function(){
+      var l = b.getAttribute('data-set');
+      apply(l);
+      history.replaceState(null, '', '?lang=' + l);
+    });
+  });
+  apply(pick());
+})();
+</script>
+</body>
+</html>

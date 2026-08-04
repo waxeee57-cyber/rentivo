@@ -41,7 +41,10 @@ export function PriceBreakdown({
       />
       {insuranceTotal !== null && insuranceName !== undefined && (
         <Row
-          label={`${insuranceName} ${t('insurance', language).toLowerCase()}`}
+          // Category first, tier second: "Damage waiver — Premium". The old
+          // "{tier} {category}" order produced ungrammatical Spanish/Hungarian
+          // once the category stopped being the single word "insurance".
+          label={`${t('insurance', language)} — ${insuranceName}`}
           value={formatEURDecimal(insuranceTotal)}
         />
       )}

@@ -93,7 +93,9 @@ export const MOCK_LISTINGS: Listing[] = [
     id: 'lst-001',
     operator_id: 'op-001',
     title: 'BMW 3 Series',
-    description: 'Luxurious BMW 3 Series perfect for exploring the Costa del Sol in style. Includes full insurance and 24/7 roadside assistance.',
+    // Mock listings render verbatim when Config.useMock is on, so this demo copy
+    // must not make the insurance claim the real product no longer makes.
+    description: 'Luxurious BMW 3 Series perfect for exploring the Costa del Sol in style. Optional damage waiver available at checkout.',
     category: 'car',
     subcategory: null,
     price_per_day: 150,

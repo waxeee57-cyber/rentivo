@@ -403,16 +403,17 @@ export default function ListingDetailScreen() {
             </>
           )}
 
-          {/* Insurance */}
+          {/* Damage waiver. The body copy was a hardcoded English claim of
+              "TPL up to €500,000 / €500 excess" — no insurer underwrites it and
+              Rentivo is not a registered intermediary (IDD 2016/97), so it is
+              replaced by a translated, factual note with no cover ceiling. */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('insurance', language)}</Text>
             <View style={styles.insuranceBox}>
               <Ionicons name="shield-checkmark" size={22} color={C.success} />
               <View style={styles.insuranceInfo}>
                 <Text style={styles.insuranceTitle}>{t('insuranceIncluded', language)}</Text>
-                <Text style={styles.insuranceText}>
-                  Third-party liability up to €500,000. Vehicle damage excess €500 (reducible with deposit waiver).
-                </Text>
+                <Text style={styles.insuranceText}>{t('insuranceCoverageNote', language)}</Text>
               </View>
             </View>
           </View>

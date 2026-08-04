@@ -151,7 +151,8 @@ export default function BookingDetailScreen() {
           )}
         </Card>
 
-        {/* Insurance */}
+        {/* Damage waiver (i18n keys keep the legacy `insurance*` names — they are
+            internal ids shared with the DB column, only the copy changed). */}
         <Card style={{ marginBottom: Spacing.base }}>
           <Text style={styles.sectionTitle}>{t('insurance', language)}</Text>
           <View style={styles.insuranceRow}>

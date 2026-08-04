@@ -6,6 +6,15 @@ import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { Config } from '@/constants/config'
+
+// The contract must quote the fee actually charged. Section 3 said "2.5%" while
+// Config.platformCut defaults to 0.10 — a contract that contradicts the charge.
+// Formatted exactly like components/booking/PriceBreakdown.tsx so the Terms and
+// the checkout line can never drift apart.
+const PLATFORM_FEE_PCT = (Config.platformCut * 100).toFixed(
+  Number.isInteger(Config.platformCut * 100) ? 0 : 1,
+)
 
 const SECTIONS = [
   {
@@ -18,15 +27,20 @@ const SECTIONS = [
   },
   {
     title: '3. Payments',
-    body: 'All payments are processed securely via Stripe. Rentivo charges a platform fee of 2.5% on each transaction. The security deposit is held as an authorization and released within 7 days of return if no damage is reported.',
+    body: `All payments are processed securely via Stripe. Rentivo charges a platform fee of ${PLATFORM_FEE_PCT}% on each transaction. The security deposit is held as an authorization and released within 7 days of return if no damage is reported.`,
   },
   {
     title: '4. Cancellation Policy',
     body: 'Each listing has its own cancellation policy (Flexible, Moderate, or Strict). The applicable policy is shown on the listing and at checkout. Rentivo\'s platform fee is non-refundable in all cases.',
   },
   {
-    title: '5. Insurance & Liability',
-    body: 'Every Rentivo booking includes basic rental insurance with third-party liability coverage up to €500,000. Vehicle damage excess is €500 (reducible with a deposit waiver). Rentivo is not liable for indirect or consequential damages.',
+    // Rentivo has no underwriter and no insurance-intermediary registration, so
+    // the old "€500,000 third-party liability / €500 excess" promise was a
+    // regulated insurance claim it could not honour (IDD 2016/97). Third-party
+    // liability belongs to the Operator's compulsory motor policy; the Rentivo
+    // product is a contractual damage waiver, capped by the deposit it replaces.
+    title: '5. Damage Waiver & Liability',
+    body: 'Rentivo is not an insurer and does not distribute insurance. Third-party liability for a rented vehicle is covered by that vehicle\'s own compulsory motor insurance, which the Operator is legally required to hold. Rentivo separately offers an optional paid damage waiver: where a paid waiver is taken, the security deposit is set to €0 and Rentivo reduces or releases the Consumer\'s own liability for damage to the rented item, up to the deposit amount that would otherwise have applied. Without a paid waiver the full security deposit applies and the Consumer remains liable for damage. Rentivo is not liable for indirect or consequential damages.',
   },
   {
     title: '6. Damage & Disputes',

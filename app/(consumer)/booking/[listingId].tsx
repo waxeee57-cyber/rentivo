@@ -241,9 +241,10 @@ export default function BookingFlowScreen() {
     ? hourlySubtotal + insuranceTotalCost
     : priceCalc.total + insuranceTotalCost
   const grandTotal = Math.max(0, baseTotal - promoDiscount)
-  // Deposit Model B cap: waived when a paid insurance package covers damage,
-  // otherwise the listing's deposit. Must match the deposit_amount we persist on
-  // the booking below so the disclosure shows the exact charge ceiling.
+  // Deposit Model B cap: waived when a paid DAMAGE WAIVER tier is selected (the
+  // platform, not an insurer, takes the damage risk), otherwise the listing's
+  // deposit. Must match the deposit_amount we persist on the booking below so the
+  // disclosure shows the exact charge ceiling.
   const effectiveDeposit = selectedInsurance.price > 0 ? 0 : listing.deposit_amount
 
   const applyPromo = async () => {
@@ -641,10 +642,12 @@ export default function BookingFlowScreen() {
                   </View>
                 </>
               )}
+              {/* Category first, tier second — matches PriceBreakdown and stays
+                  grammatical in es/hu now that the category is a phrase. */}
               {selectedInsurance.price > 0 && (
                 <View style={styles.priceRow}>
                   <Text style={styles.priceLabel}>
-                    {`${t(selectedInsurance.nameKey, language)} ${t('insurance', language)}`}
+                    {`${t('insurance', language)} — ${t(selectedInsurance.nameKey, language)}`}
                   </Text>
                   <Text style={styles.priceValue}>{formatEURDecimal(insuranceTotalCost)}</Text>
                 </View>

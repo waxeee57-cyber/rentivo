@@ -346,8 +346,13 @@ export type AnyListing =
   | (Listing & { sourceType: 'native' })
   | (ExternalListing & { sourceType: 'external' })
 
-// ── Insurance ────────────────────────────────────────────────────────────────
-
+// ── Damage waiver (tier ids persisted as `insurance_id`) ─────────────────────
+// User-visible copy calls this a DAMAGE WAIVER, never insurance: there is no
+// underwriter and Rentivo is not a registered insurance intermediary (IDD
+// 2016/97). The identifiers below stay `INSURANCE_*` / `InsuranceId` on purpose —
+// they map 1:1 to the `insurance_id` DB column, the create-booking request field
+// and INSURANCE_PRICES in the edge functions, so renaming them would require a
+// data migration. Only the i18n VALUES behind nameKey/descKey changed.
 export const INSURANCE_PACKAGES = [
   {
     id: 'basic' as const,

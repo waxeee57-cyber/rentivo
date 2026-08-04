@@ -29,7 +29,10 @@ export function InsuranceSelector({ selected, onSelect, language }: InsuranceSel
             key={pkg.id}
             style={[styles.card, isSelected && styles.cardSelected]}
             onPress={() => onSelect(pkg.id)}
-            accessibilityLabel={`${name} insurance${pkg.price > 0 ? `, ${formatEURDecimal(pkg.price)} per day` : ', free'}`}
+            // Screen-reader copy is user-visible too, so it carries the same
+            // damage-waiver wording — and the localised category, not a hardcoded
+            // English "insurance" the rest of the UI no longer claims.
+            accessibilityLabel={`${t('insurance', language)} — ${name}${pkg.price > 0 ? `, ${formatEURDecimal(pkg.price)} ${t('insurancePerDay', language)}` : ''}`}
             accessibilityRole="radio"
             accessibilityState={{ checked: isSelected }}
             activeOpacity={0.75}
