@@ -144,12 +144,20 @@ export async function updateBookingStatus(id: string, status: BookingStatus): Pr
   // (and against production data at that). `createBooking` above already gates here.
   if (Config.useMock) return
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('rentivo_bookings')
     .update({ status, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .select('id')
 
   if (error) throw error
+  // A zero-row UPDATE is NOT an error to supabase-js — an RLS denial or a stale id
+  // returned `{ error: null }` and every operator screen showed "Booking confirmed"
+  // over a booking whose status never moved. `.select()` returns the affected rows,
+  // so an empty array is exactly the silent failure this call used to report as success.
+  if (!data || data.length === 0) {
+    throw new Error('Booking not found, or you are not permitted to change it')
+  }
 }
 
 /**

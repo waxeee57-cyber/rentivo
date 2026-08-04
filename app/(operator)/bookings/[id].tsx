@@ -24,6 +24,7 @@ import { Config } from '@/constants/config'
 import type { BookingStatus } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
+import { ownerPayout } from '@/lib/utils/payout'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 
 export default function OperatorBookingDetailScreen() {
@@ -74,7 +75,12 @@ export default function OperatorBookingDetailScreen() {
     setStatusChanging(true)
     try {
       await updateBookingStatus(booking.id, status)
-      showToast({ message: `Booking marked as ${status}`, type: 'success' })
+      // Was hardcoded English. The status token itself is already translated
+      // via the shared status labels, so the sentence localises cleanly.
+      showToast({
+        message: t('bookingMarkedAs', language).replace('{status}', t(status as never, language)),
+        type: 'success',
+      })
     } catch {
       showToast({ message: t('opBkToastStatusFail', language), type: 'error' })
     } finally {
@@ -82,9 +88,11 @@ export default function OperatorBookingDetailScreen() {
     }
   }
 
-  // Payout = 97.5% after 2.5% platform fee; operator net = ~92% after Stripe
-  const operatorPayout = Math.round(booking.total_amount * 0.975)
-  const operatorNet = Math.round(booking.total_amount * 0.92)
+  // Stripe transfers the rental SUBTOTAL to the owner (see lib/utils/payout.ts);
+  // the service fee is charged to the renter on top, not deducted from here.
+  // Was `total_amount * 0.975`, which both used a rate that has never been
+  // configured and took it off the wrong base — inflating the figure ~7%.
+  const operatorPayout = ownerPayout(booking)
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>

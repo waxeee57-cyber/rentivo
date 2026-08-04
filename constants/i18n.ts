@@ -57,6 +57,9 @@ export const translations = {
     insurancePremiumDesc: 'Security deposit set to €0 and Rentivo waives your liability for damage to the vehicle.',
     insuranceRecommended: 'Recommended',
     insurancePerDay: '/ day',
+    // Price label for the €0 waiver tier. Was a hardcoded English "Free" in
+    // InsuranceSelector, so es/hu users saw one untranslated word in a price column.
+    insuranceFree: 'Free',
     cancellationPolicy: 'Cancellation Policy',
     clFlexible: 'Flexible — Free cancellation up to 24h before',
     clModerate: 'Moderate — 50% refund 24–48h before',
@@ -81,6 +84,9 @@ export const translations = {
     depositPickupNote: 'Handled directly with the operator at pickup and returned after the vehicle is checked back in, if no damage is reported.',
     depositHoldLabel: 'Security deposit (held, not charged)',
     depositHoldNote: 'We securely save your card now. No deposit is charged. If damage is assessed at return, the operator may charge up to {amount} to this card — never more.',
+    // Status line on an existing booking: the hold is live on the guest's card. Was
+    // hardcoded English in app/(consumer)/bookings/[id].tsx.
+    depositHoldActive: '{amount} deposit hold active',
     // Low-price anchor. The catalogue runs €25/day (kayaks) to €350/day (yachts),
     // but every first-impression surface showed only the top of that range, so
     // price-sensitive users self-selected out before reading a word.
@@ -109,6 +115,12 @@ export const translations = {
     selectDatesFirst: 'Select dates first',
     days: 'days',
     hoursShort: 'h',
+    // The one line on this screen that states a monetary consequence — it was
+    // hardcoded English in a trilingual app, on the cancellation decision.
+    perMonth: 'month',
+    ifYouCancelNow: 'If you cancel now:',
+    refundPercentLabel: '{percent}% refund',
+    bookingMarkedAs: 'Booking marked as {status}',
     yourTotal: 'Your total',
     totalNow: 'Total now',
     noDepositRequired: 'No deposit required',
@@ -1276,6 +1288,7 @@ export const translations = {
     insurancePremiumDesc: 'Fianza a €0 y Rentivo asume tu responsabilidad por daños al vehículo.',
     insuranceRecommended: 'Recomendado',
     insurancePerDay: '/ día',
+    insuranceFree: 'Gratis',
     cancellationPolicy: 'Política de Cancelación',
     clFlexible: 'Flexible — Cancelación gratuita hasta 24h antes',
     clModerate: 'Moderada — 50% de reembolso 24–48h antes',
@@ -1300,6 +1313,7 @@ export const translations = {
     depositPickupNote: 'Se gestiona directamente con el operador en la recogida y se devuelve tras la inspección de entrega, si no hay daños.',
     depositHoldLabel: 'Fianza (retenida, no cobrada)',
     depositHoldNote: 'Guardamos tu tarjeta de forma segura ahora. No se cobra ninguna fianza. Si se detectan daños en la devolución, el operador podrá cobrar hasta {amount} a esta tarjeta, nunca más.',
+    depositHoldActive: 'Retención de fianza de {amount} activa',
     fromPricePerDay: 'Desde {price}/día',
     operatorProofRentalsRating: '{count} alquileres · {rating}★',
     operatorProofRentals: '{count} alquileres',
@@ -1322,6 +1336,10 @@ export const translations = {
     selectDatesFirst: 'Primero selecciona fechas',
     days: 'días',
     hoursShort: 'h',
+    perMonth: 'mes',
+    ifYouCancelNow: 'Si cancelas ahora:',
+    refundPercentLabel: 'reembolso del {percent}%',
+    bookingMarkedAs: 'Reserva marcada como {status}',
     yourTotal: 'Tu total',
     totalNow: 'Total ahora',
     noDepositRequired: 'Sin fianza',
@@ -2460,6 +2478,7 @@ export const translations = {
     insurancePremiumDesc: 'A kaució 0 €, és a járműben okozott kárért viselt felelősségedet a Rentivo átvállalja.',
     insuranceRecommended: 'Ajánlott',
     insurancePerDay: '/ nap',
+    insuranceFree: 'Ingyenes',
     cancellationPolicy: 'Lemondási szabályzat',
     clFlexible: 'Rugalmas — Ingyenes lemondás 24 órával előtte',
     clModerate: 'Mérsékelt — 50% visszatérítés 24–48 órával előtte',
@@ -2484,6 +2503,7 @@ export const translations = {
     depositPickupNote: 'Az átvételkor az operátorral egyeztetve, a jármű visszaadás-ellenőrzése után visszajár, ha nincs kár.',
     depositHoldLabel: 'Kaució (zárolva, nem terhelve)',
     depositHoldNote: 'A kártyádat most biztonságosan elmentjük. Kauciót nem vonunk le. Ha visszaadáskor kárt állapítanak meg, az operátor legfeljebb {amount} összeget terhelhet erre a kártyára — soha többet.',
+    depositHoldActive: '{amount} kaució zárolva',
     fromPricePerDay: '{price}/naptól',
     operatorProofRentalsRating: '{count} bérlés · {rating}★',
     operatorProofRentals: '{count} bérlés',
@@ -2506,6 +2526,10 @@ export const translations = {
     selectDatesFirst: 'Először válassz dátumot',
     days: 'nap',
     hoursShort: 'ó',
+    perMonth: 'hó',
+    ifYouCancelNow: 'Ha most mondod le:',
+    refundPercentLabel: '{percent}% visszatérítés',
+    bookingMarkedAs: 'Foglalás státusza: {status}',
     yourTotal: 'Végösszeg',
     totalNow: 'Most fizetendő',
     noDepositRequired: 'Nem kell kaució',

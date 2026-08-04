@@ -5,10 +5,10 @@
   "text_styles_without_fontFamily": 0,
   "fontFamily_with_fontWeight": 0,
   "colour_emoji_lines": 0,
-  "unbounded_select_queries": 10,
+  "unbounded_select_queries": 0,
   "mutations_without_mock_gate": 0,
   "lists_clipped_by_dock": 0,
   "secrets_in_tree": 0,
-  "console_calls": 4,
+  "console_calls": 1,
   "type_escapes_any": 0
 }

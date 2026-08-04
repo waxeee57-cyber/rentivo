@@ -9,6 +9,16 @@ const corsHeaders = {
 const EXPO_PUSH_API = 'https://exp.host/--/api/v2/push/send'
 const BATCH_SIZE = 100
 
+// Rows pulled per DB round-trip while collecting tokens. This function fans out to
+// the ENTIRE user base, so the recipient selects below are PAGED rather than capped:
+// a broadcast must reach everyone, but loading the whole table into one response is
+// what eventually trips PostgREST's row ceiling / the function's memory limit. Paging
+// keeps peak cost to one page of rows regardless of how large the tables grow.
+const DB_PAGE_SIZE = 500
+// 400 pages = 200 000 recipients per audience. A stop condition that does not depend
+// on the server ever returning a short page — a paranoia guard against an infinite loop.
+const DB_MAX_PAGES = 400
+
 interface BroadcastPayload {
   title: string
   body: string
@@ -48,29 +58,46 @@ serve(async (req) => {
     const tokens: string[] = []
 
     if (audience === 'users' || audience === 'all') {
-      let q = supabase
-        .from('rentivo_users')
-        .select('push_token')
-        .not('push_token', 'is', null)
-      if (payload.segment?.city) q = q.ilike('city', payload.segment.city)
-      if (payload.segment?.country) q = q.eq('country', payload.segment.country)
-      const { data } = await q
-      for (const row of data ?? []) {
-        if (row.push_token) tokens.push(row.push_token as string)
+      for (let page = 0; page < DB_MAX_PAGES; page++) {
+        const from = page * DB_PAGE_SIZE
+        let q = supabase
+          .from('rentivo_users')
+          .select('push_token')
+          .not('push_token', 'is', null)
+          // Order by the primary key: `.range()` without a deterministic sort can
+          // repeat or skip rows between pages, which would double-send or silently
+          // drop recipients.
+          .order('id', { ascending: true })
+          .range(from, from + DB_PAGE_SIZE - 1)
+        if (payload.segment?.city) q = q.ilike('city', payload.segment.city)
+        if (payload.segment?.country) q = q.eq('country', payload.segment.country)
+        const { data, error } = await q
+        if (error) throw error
+        for (const row of data ?? []) {
+          if (row.push_token) tokens.push(row.push_token as string)
+        }
+        if ((data?.length ?? 0) < DB_PAGE_SIZE) break
       }
     }
 
     if (audience === 'operators' || audience === 'all') {
-      let q = supabase
-        .from('rentivo_operators')
-        .select('push_token')
-        .not('push_token', 'is', null)
-        .eq('approved', true)
-      if (payload.segment?.city) q = q.ilike('city', payload.segment.city)
-      if (payload.segment?.country) q = q.eq('country', payload.segment.country)
-      const { data } = await q
-      for (const row of data ?? []) {
-        if (row.push_token) tokens.push(row.push_token as string)
+      for (let page = 0; page < DB_MAX_PAGES; page++) {
+        const from = page * DB_PAGE_SIZE
+        let q = supabase
+          .from('rentivo_operators')
+          .select('push_token')
+          .not('push_token', 'is', null)
+          .eq('approved', true)
+          .order('id', { ascending: true })
+          .range(from, from + DB_PAGE_SIZE - 1)
+        if (payload.segment?.city) q = q.ilike('city', payload.segment.city)
+        if (payload.segment?.country) q = q.eq('country', payload.segment.country)
+        const { data, error } = await q
+        if (error) throw error
+        for (const row of data ?? []) {
+          if (row.push_token) tokens.push(row.push_token as string)
+        }
+        if ((data?.length ?? 0) < DB_PAGE_SIZE) break
       }
     }
 

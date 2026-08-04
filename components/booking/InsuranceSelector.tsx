@@ -63,7 +63,9 @@ export function InsuranceSelector({ selected, onSelect, language }: InsuranceSel
                     <Text style={styles.priceUnit}>{t('insurancePerDay', language)}</Text>
                   </>
                 ) : (
-                  <Text style={[styles.priceFree, isSelected && styles.priceSelected]}>Free</Text>
+                  // The €0 tier's price label is copy like any other — it was the one
+                  // hardcoded English word left in this localised column.
+                  <Text style={[styles.priceFree, isSelected && styles.priceSelected]}>{t('insuranceFree', language)}</Text>
                 )}
               </View>
             </View>

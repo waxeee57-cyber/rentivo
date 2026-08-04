@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications'
 import { Platform } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
+import { captureException } from '@/lib/sentry'
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -50,16 +51,21 @@ export async function savePushToken(
   // write looked successful whether or not it hit anything.
   if (Config.useMock) return
   const payload: Record<string, string> = { push_token: token }
-  if (isOperator) {
-    await supabase
-      .from('rentivo_operators')
-      .update(payload)
-      .eq('auth_id', userId)
-  } else {
-    await supabase
-      .from('rentivo_users')
-      .update(payload)
-      .eq('auth_id', userId)
+  // `.select()` is what makes the write observable: neither branch looked at the
+  // result, and supabase-js returns no error for an UPDATE that matched zero rows —
+  // so a stale auth_id or an RLS denial stored no token at all and push simply went
+  // quiet for that device, with nothing anywhere to say why.
+  const { data, error } = isOperator
+    ? await supabase.from('rentivo_operators').update(payload).eq('auth_id', userId).select('auth_id')
+    : await supabase.from('rentivo_users').update(payload).eq('auth_id', userId).select('auth_id')
+
+  // Called as `void savePushToken(...)` from app/_layout.tsx, so this must REPORT and
+  // never throw — an unhandled rejection during boot is worse than a missing token.
+  // `extra` deliberately omits userId and the token itself.
+  if (error) {
+    captureException(error, { scope: 'savePushToken', isOperator })
+  } else if (!data || data.length === 0) {
+    captureException(new Error('savePushToken matched no row'), { scope: 'savePushToken', isOperator })
   }
 }
 
@@ -167,12 +173,21 @@ export async function sendChatNotification(params: {
   if (Config.useMock) return
 
   try {
-    const { data: tokenData } = await supabase
+    const { data: tokenData, error } = await supabase
       .from('rentivo_push_tokens')
       .select('token')
       .eq('auth_id', params.recipientUserId)
       .maybeSingle()
 
+    // A query error is NOT "this user has no push token". An RLS denial or a dropped
+    // connection would otherwise be indistinguishable from a genuine opt-out, and
+    // notifications would go quiet for everyone with nothing to show for it. Report
+    // it, then bail — delivery is best-effort and must never fail the send that
+    // triggered it.
+    if (error) {
+      captureException(error, { scope: 'sendChatNotification.tokenLookup', bookingId: params.bookingId })
+      return
+    }
     if (!tokenData?.token) return
 
     await fetch(EXPO_PUSH_API, {
@@ -196,8 +211,12 @@ export async function sendChatNotification(params: {
       }),
     })
   } catch (error) {
-    if (__DEV__) console.error('Push notification error:', error)
-    // else Sentry.captureException(error)
+    // Deliberately NOT console.*: everything in scope here is either the guest's
+    // chat text or a device push token, and a console call ships to the release
+    // build's device log (adb logcat / Console.app), readable by any other app's
+    // developer on the same handset. Sentry is the controlled destination. `extra`
+    // carries the booking id only — enough to trace, no message body, no token.
+    captureException(error, { scope: 'sendChatNotification', bookingId: params.bookingId })
   }
 }
 
@@ -211,12 +230,18 @@ export async function sendBookingNotification(params: {
   if (Config.useMock) return
 
   try {
-    const { data: tokenData } = await supabase
+    const { data: tokenData, error } = await supabase
       .from('rentivo_push_tokens')
       .select('token')
       .eq('auth_id', params.recipientUserId)
       .maybeSingle()
 
+    // Same reasoning as sendChatNotification: an infrastructure failure must not be
+    // read as "opted out of push".
+    if (error) {
+      captureException(error, { scope: 'sendBookingNotification.tokenLookup', bookingId: params.bookingId, type: params.type })
+      return
+    }
     if (!tokenData?.token) return
 
     await fetch(EXPO_PUSH_API, {
@@ -237,8 +262,10 @@ export async function sendBookingNotification(params: {
       }),
     })
   } catch (error) {
-    if (__DEV__) console.error('Push notification error:', error)
-    // else Sentry.captureException(error)
+    // No console.*: `params.title` / `params.body` are rendered booking copy (guest
+    // name, vehicle, dates) and `tokenData.token` is a device token — none of it
+    // belongs in a shipped build's device log. `extra` stays to non-identifying ids.
+    captureException(error, { scope: 'sendBookingNotification', bookingId: params.bookingId, type: params.type })
   }
 }
 

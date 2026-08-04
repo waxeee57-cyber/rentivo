@@ -178,25 +178,38 @@ export async function createListing(listing: Omit<Listing, 'id' | 'created_at' |
 export async function updateListing(id: string, updates: Partial<Listing>, operatorId: string): Promise<void> {
   if (Config.useMock) return
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('rentivo_listings')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
     .eq('operator_id', operatorId)
+    .select('id')
 
   if (error) throw error
+  // The ownership predicate above is only defence in depth if a MISS is noticed:
+  // supabase-js reports no error for a zero-row UPDATE, so passing someone else's
+  // listing id (or a stale one) saved nothing and the editor still said "Updated".
+  if (!data || data.length === 0) {
+    throw new Error('Listing not found, or not owned by this operator')
+  }
 }
 
 export async function deleteListing(id: string, operatorId: string): Promise<void> {
   if (Config.useMock) return
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('rentivo_listings')
     .delete()
     .eq('id', id)
     .eq('operator_id', operatorId)
+    .select('id')
 
   if (error) throw error
+  // Same silent-miss as updateListing: a DELETE that matched nothing is not an error,
+  // so the fleet screen used to navigate away announcing a vehicle it never removed.
+  if (!data || data.length === 0) {
+    throw new Error('Listing not found, or not owned by this operator')
+  }
 }
 
 /**

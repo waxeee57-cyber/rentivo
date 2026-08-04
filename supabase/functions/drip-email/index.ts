@@ -13,6 +13,15 @@ const DRIP_SEQUENCE = [
   { daysAfter: 14, template: 'operator_day14_growth' },
 ] as const
 
+// Rows per DB round-trip. This is a cron blast over the whole operator base, so the
+// recipient select is PAGED rather than capped — every eligible operator must get the
+// step, but one response holding the entire cohort is what OOMs the function on a
+// busy signup day. Paging keeps peak memory flat as the table grows.
+const DB_PAGE_SIZE = 500
+// 200 pages = 100 000 operators in a single 2-hour signup window. Purely a guard so a
+// server that never returns a short page cannot spin forever.
+const DB_MAX_PAGES = 200
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -48,35 +57,47 @@ serve(async (req) => {
       to.setDate(to.getDate() - step.daysAfter)
       to.setHours(to.getHours() + 1)
 
-      const { data: operators } = await supabase
-        .from('rentivo_operators')
-        .select('id, name, email, city, created_at')
-        .gte('created_at', from.toISOString())
-        .lte('created_at', to.toISOString())
-        .not('email', 'is', null)
-        .eq('approved', true)
+      for (let page = 0; page < DB_MAX_PAGES; page++) {
+        const offset = page * DB_PAGE_SIZE
+        const { data: operators, error } = await supabase
+          .from('rentivo_operators')
+          .select('id, name, email, city, created_at')
+          .gte('created_at', from.toISOString())
+          .lte('created_at', to.toISOString())
+          .not('email', 'is', null)
+          .eq('approved', true)
+          // Deterministic sort is required for `.range()` paging: without it the
+          // server may reorder between round-trips and an operator gets the same
+          // drip step twice (or never).
+          .order('id', { ascending: true })
+          .range(offset, offset + DB_PAGE_SIZE - 1)
 
-      for (const op of operators ?? []) {
-        if (!op.email) continue
+        if (error) throw error
 
-        await fetch(sendEmailUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${anonKey}`,
-            'X-Internal-Secret': internalSecret,
-          },
-          body: JSON.stringify({
-            to: op.email,
-            template: step.template,
-            data: {
-              name: op.name ?? 'there',
-              city: op.city ?? '',
+        for (const op of operators ?? []) {
+          if (!op.email) continue
+
+          await fetch(sendEmailUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${anonKey}`,
+              'X-Internal-Secret': internalSecret,
             },
-          }),
-        })
+            body: JSON.stringify({
+              to: op.email,
+              template: step.template,
+              data: {
+                name: op.name ?? 'there',
+                city: op.city ?? '',
+              },
+            }),
+          })
 
-        totalSent++
+          totalSent++
+        }
+
+        if ((operators?.length ?? 0) < DB_PAGE_SIZE) break
       }
     }
 

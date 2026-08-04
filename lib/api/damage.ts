@@ -53,10 +53,17 @@ export async function updateDamageReport(id: string, updates: Partial<DamageRepo
   // Same reason as createDamageReport: no production writes while mocking.
   if (Config.useMock) return
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('rentivo_damage_reports')
     .update(updates)
     .eq('id', id)
+    .select('id')
 
   if (error) throw error
+  // Zero rows matched is not an error to supabase-js. On a damage report that means
+  // an assessment the operator believes they filed was never written — the evidence
+  // for a deposit charge. It has to surface.
+  if (!data || data.length === 0) {
+    throw new Error('Damage report not found, or you are not permitted to change it')
+  }
 }

@@ -12,6 +12,9 @@ interface WebhookPayload {
   data: Record<string, unknown>
 }
 
+/** See the comment on the webhook select below. */
+const MAX_WEBHOOKS_PER_OPERATOR = 50
+
 interface WebhookRow {
   id: string
   url: string
@@ -55,6 +58,12 @@ serve(async (req) => {
       .select('id, url, secret, events')
       .eq('operator_id', operator_id)
       .eq('is_active', true)
+      // Bounded window, not paging: these are ONE operator's hand-registered
+      // integration endpoints, so the real number is single digits. Every matching
+      // row is fanned out to below, and each fan-out is an outbound HTTP POST — so
+      // the ceiling doubles as a blast-radius limit if a bug ever mass-inserts
+      // webhook rows for an operator.
+      .limit(MAX_WEBHOOKS_PER_OPERATOR)
 
     if (error) throw error
 

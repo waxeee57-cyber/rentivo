@@ -11,6 +11,7 @@ import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { useColors } from '@/lib/hooks/useColors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
+import { ownerPayout } from '@/lib/utils/payout'
 
 function BookingDetailSkeleton() {
   const C = useColors()
@@ -58,7 +59,9 @@ export default function HostBookingDetailScreen() {
     )
   }
 
-  const earnings = Math.round(booking.total_amount * 0.975)
+  // Stripe transfers the rental subtotal; the service fee sits on top of what
+  // the renter pays. See lib/utils/payout.ts for why `total * 0.975` was wrong.
+  const earnings = ownerPayout(booking)
   const payoutDate = new Date(booking.end_date)
   payoutDate.setDate(payoutDate.getDate() + 1)
 

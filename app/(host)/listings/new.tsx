@@ -18,6 +18,8 @@ import { createListing } from '@/lib/api/listings'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
+import { formatEUR } from '@/lib/utils/formatCurrency'
+import { estimatedDailyPayout } from '@/lib/utils/payout'
 import type { Listing } from '@/types'
 
 const CATEGORIES: { key: string; icon: React.ComponentProps<typeof Ionicons>['name']; label: string }[] = [
@@ -434,8 +436,13 @@ export default function NewHostListingScreen() {
                     <Ionicons name="cash-outline" size={14} color={C.success} importantForAccessibility="no" />
                     <Text style={styles.earningsTitle}>{t('estimatedEarnings', language)}</Text>
                   </View>
+                  {/* The owner receives their listed price in full — the service
+                      fee is added to what the RENTER pays. This card previously
+                      showed `price × 8 × 0.975`, an earnings promise ~7% above
+                      what Stripe actually transfers, on the screen a prospective
+                      host decides to join on. */}
                   <Text style={styles.earningsValue}>
-                    ~€{Math.round(parseFloat(pricePerDay) * 8 * 0.975)}/month
+                    ~{formatEUR(estimatedDailyPayout(parseFloat(pricePerDay)) * 8)}/{t('perMonth', language)}
                   </Text>
                   <Text style={styles.earningsNote}>{t('hostLEarningsNote', language)}</Text>
                 </View>

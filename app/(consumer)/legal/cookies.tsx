@@ -1,99 +1,16 @@
-import React, { useState, useMemo } from 'react'
-import { View, Text, ScrollView, StyleSheet, Switch } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { router } from 'expo-router'
-import { ScreenHeader } from '@/components/ui/ScreenHeader'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Spacing, Radius, Fonts } from '@/constants/colors'
-import { Button } from '@/components/ui/Button'
-import { useColors } from '@/lib/hooks/useColors'
-import { t } from '@/constants/i18n'
-import { useAuthStore } from '@/lib/store/useAuthStore'
+import React from 'react'
+import { LegalDocumentScreen } from '@/components/legal/LegalDocumentScreen'
 
+// The text is NOT here — see constants/legal.ts.
+//
+// The three toggles this screen used to show (Essential / Analytics / Marketing
+// "cookies") wrote to an AsyncStorage key `cookie_preferences` that NOTHING in
+// the codebase ever read, so they controlled nothing: a consent UI that only
+// pretends to record consent is worse than no UI. Real, server-persisted
+// consent already lives in Profile → Privacy Settings, which upserts
+// rentivo_consent and clears the push token on withdrawal; the document now
+// points there. The copy is also corrected for a native app — this is device
+// key-value storage and push/location identifiers, not browser cookies.
 export default function CookiePolicyScreen() {
-  const C = useColors()
-  const { language } = useAuthStore()
-  const styles = useMemo(() => makeStyles(C), [C])
-  const [analytics, setAnalytics] = useState(false)
-  const [marketing, setMarketing] = useState(false)
-
-  const handleSave = async () => {
-    await AsyncStorage.setItem('cookie_preferences', JSON.stringify({ essential: true, analytics, marketing }))
-    router.back()
-  }
-
-  return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScreenHeader title={t('cookiePolicy', language)} />
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.intro}>
-          We use cookies and similar technologies to operate our service and enhance your experience. Manage your preferences below.
-        </Text>
-
-        <View style={styles.cookieCard}>
-          <View style={styles.cookieRow}>
-            <View style={styles.cookieInfo}>
-              <Text style={styles.cookieName}>Essential Cookies</Text>
-              <Text style={styles.cookieDesc}>Required for authentication and core app functionality. Cannot be disabled.</Text>
-            </View>
-            <Switch value={true} disabled trackColor={{ true: C.success }} />
-          </View>
-        </View>
-
-        <View style={styles.cookieCard}>
-          <View style={styles.cookieRow}>
-            <View style={styles.cookieInfo}>
-              <Text style={styles.cookieName}>Analytics Cookies</Text>
-              <Text style={styles.cookieDesc}>Help us understand how the app is used to improve performance and features.</Text>
-            </View>
-            <Switch
-              value={analytics}
-              onValueChange={setAnalytics}
-              trackColor={{ true: C.primary }}
-            />
-          </View>
-        </View>
-
-        <View style={styles.cookieCard}>
-          <View style={styles.cookieRow}>
-            <View style={styles.cookieInfo}>
-              <Text style={styles.cookieName}>Marketing Cookies</Text>
-              <Text style={styles.cookieDesc}>Used to show relevant promotions and personalized offers within the app.</Text>
-            </View>
-            <Switch
-              value={marketing}
-              onValueChange={setMarketing}
-              trackColor={{ true: C.primary }}
-            />
-          </View>
-        </View>
-
-        <Text style={styles.note}>
-          Your preferences are saved locally. For more information, see our Privacy Policy. Changing these settings takes effect on next app launch.
-        </Text>
-
-        <Button title={t('legSavePreferences', language)} onPress={handleSave} fullWidth style={{ marginTop: Spacing.xl }} />
-        <View style={{ height: Spacing.xxxl }} />
-      </ScrollView>
-    </SafeAreaView>
-  )
-}
-
-function makeStyles(C: ReturnType<typeof useColors>) {
-  return StyleSheet.create({
-  container: { flex: 1, backgroundColor: C.background },
-  content: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
-  intro: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
-  cookieCard: {
-    backgroundColor: C.surface,
-    borderRadius: Radius.lg,
-    padding: Spacing.base,
-    marginBottom: Spacing.md,
-  },
-  cookieRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  cookieInfo: { flex: 1 },
-  cookieName: { fontSize: 15, fontFamily: Fonts.bold, color: C.text, marginBottom: 4 },
-  cookieDesc: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, lineHeight: 19 },
-  note: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, lineHeight: 18, marginTop: Spacing.md },
-  })
+  return <LegalDocumentScreen docId="cookies" titleKey="cookiePolicy" />
 }

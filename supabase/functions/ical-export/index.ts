@@ -12,6 +12,12 @@ const corsHeaders = {
 function icalSafe(v: string): string {
   return String(v ?? '').replace(/[^0-9A-Za-z@._-]/g, '')
 }
+// How much history the feed keeps. Calendar clients only care about what is still
+// blocking; anything that ended before this is noise that grows forever.
+const ICAL_HISTORY_DAYS = 30
+// See the select below: a backstop, not the bound.
+const ICAL_MAX_EVENTS = 2000
+
 // Dates -> digits only (YYYYMMDD).
 function icalDate(v: string): string {
   return String(v ?? '').replace(/[^0-9]/g, '').slice(0, 8)
@@ -34,11 +40,27 @@ serve(async (req) => {
   // PII REMOVED: guest_name is intentionally NOT selected or exported. An external
   // calendar only needs the blocked date ranges; SUMMARY is a constant 'Unavailable'.
   // This closes the guest-PII leak even if the feed URL is shared with a third party.
+  //
+  // Bounded by DATE WINDOW, not by row count: an .ics feed has to carry the whole
+  // forward calendar, so truncating to "the first N bookings" would silently hide
+  // real unavailability from whatever calendar app subscribed — the one failure mode
+  // this feed must not have. Nobody syncs history, so everything that ended more than
+  // 30 days ago is dropped instead; that turns "every booking ever" into a window
+  // whose size is set by how far ahead the operator takes reservations.
+  const horizon = new Date()
+  horizon.setDate(horizon.getDate() - ICAL_HISTORY_DAYS)
+
   const { data: bookings, error } = await supabase
     .from('rentivo_bookings')
     .select('id, start_date, end_date')
     .eq('listing_id', listingId)
     .in('status', ['confirmed', 'active', 'completed'])
+    .gte('end_date', horizon.toISOString().split('T')[0])
+    .order('start_date', { ascending: true })
+    // Backstop only — the date window above is the real bound. Sorted soonest-first
+    // so that if a listing ever did exceed this, the events dropped are the most
+    // distant ones rather than an arbitrary slice.
+    .limit(ICAL_MAX_EVENTS)
 
   if (error) {
     return new Response('DB error', { status: 500, headers: corsHeaders })

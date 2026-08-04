@@ -16,6 +16,18 @@ export interface OperatorAnalytics {
 
 type Period = 'week' | 'month' | 'quarter' | 'year'
 
+/** Rows per round-trip while accumulating an operator's bookings for a period. */
+const ANALYTICS_PAGE_SIZE = 500
+
+/**
+ * Safety ceiling — 40 pages ≈ 20 000 bookings for ONE operator in ONE period, well
+ * past any real fleet. The select below is paged rather than capped because these
+ * numbers are revenue: truncating to a single page would silently under-report an
+ * operator's earnings, which is worse than a slightly slower screen. The ceiling
+ * exists only so a pathological account cannot pull the table into memory.
+ */
+const ANALYTICS_MAX_PAGES = 40
+
 function getPeriodStart(period: Period): Date {
   const now = new Date()
   switch (period) {
@@ -73,28 +85,37 @@ export async function getOperatorAnalytics(
 
   const periodStart = getPeriodStart(period)
 
-  const { data, error } = await supabase
-    .from('rentivo_bookings')
-    .select('*, listing:rentivo_listings(id,title)')
-    .eq('operator_id', operatorId)
-    .in('status', ['completed', 'confirmed'])
-    .gte('created_at', periodStart.toISOString())
-    .order('created_at', { ascending: true })
+  const bookings: Booking[] = []
+  for (let page = 0; page < ANALYTICS_MAX_PAGES; page++) {
+    const from = page * ANALYTICS_PAGE_SIZE
+    const { data, error } = await supabase
+      .from('rentivo_bookings')
+      .select('*, listing:rentivo_listings(id,title)')
+      .eq('operator_id', operatorId)
+      .in('status', ['completed', 'confirmed'])
+      .gte('created_at', periodStart.toISOString())
+      .order('created_at', { ascending: true })
+      .range(from, from + ANALYTICS_PAGE_SIZE - 1)
 
-  if (error != null || data == null) {
-    return {
-      totalRevenue: 0,
-      totalBookings: 0,
-      avgBookingValue: 0,
-      occupancyRate: 0,
-      bestListingId: null,
-      bestListingTitle: null,
-      bestListingRevenue: 0,
-      revenueByPeriod: [],
+    if (error != null || data == null) {
+      return {
+        totalRevenue: 0,
+        totalBookings: 0,
+        avgBookingValue: 0,
+        occupancyRate: 0,
+        bestListingId: null,
+        bestListingTitle: null,
+        bestListingRevenue: 0,
+        revenueByPeriod: [],
+      }
     }
+
+    bookings.push(...(data as Booking[]))
+    // A short page is the last page. Ordering is stable (created_at asc) so pages
+    // cannot overlap or skip rows between round-trips.
+    if (data.length < ANALYTICS_PAGE_SIZE) break
   }
 
-  const bookings = data as Booking[]
   const totalRevenue = bookings.reduce((s, b) => s + (b.total_amount ?? 0), 0)
 
   // Best listing by revenue

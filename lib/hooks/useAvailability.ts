@@ -21,6 +21,11 @@ export function useAvailability(listingId: string) {
       .eq('listing_id', listingId)
       .gte('blocked_date', today)
       .lte('blocked_date', max)
+      // Bounded window, not paging: the two `blocked_date` predicates above already
+      // clamp this to today..+6 months — at most ~184 rows for one listing, and the
+      // calendar needs every one of them, so paging would be wrong here. 400 leaves
+      // headroom for duplicate rows per date while still capping the worst case.
+      .limit(400)
       .then(({ data }) => {
         setBlockedDates((data ?? []).map(r => r.blocked_date as string))
         setLoading(false)

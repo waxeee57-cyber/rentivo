@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { Listing } from '@/types'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
+import { captureException } from '@/lib/sentry'
 
 interface WishlistState {
   items: Listing[]
@@ -47,30 +48,61 @@ export async function toggleWishlistItem(listing: Listing, userId: string) {
     return
   }
 
+  // The local flip is optimistic. Neither branch below used to inspect `error`, so a
+  // rejected write left the heart showing a state the server never agreed with — and
+  // the next `syncWishlistFromSupabase` silently undid it, which reads to the user as
+  // the app losing their saved listings. Reverting keeps what they see equal to what
+  // was stored. Called as `void toggleWishlistItem(...)` from the listing screen, so
+  // it must REPORT rather than throw.
+  //
+  // Row counts are deliberately NOT checked here: a delete matching zero rows is the
+  // normal outcome when the item was only ever saved locally (added offline), and an
+  // upsert is idempotent by definition. Only a real error means the write failed.
   if (isWishlisted) {
     store.remove(listing.id)
-    await supabase
+    const { error } = await supabase
       .from('rentivo_wishlist')
       .delete()
       .eq('user_id', userId)
       .eq('listing_id', listing.id)
+    if (error) {
+      store.toggle(listing)
+      captureException(error, { scope: 'toggleWishlistItem.remove', listingId: listing.id })
+    }
   } else {
     store.toggle(listing)
-    await supabase
+    const { error } = await supabase
       .from('rentivo_wishlist')
       .upsert({ user_id: userId, listing_id: listing.id })
+    if (error) {
+      store.remove(listing.id)
+      captureException(error, { scope: 'toggleWishlistItem.add', listingId: listing.id })
+    }
   }
 }
 
+/** See the comment on the select in `syncWishlistFromSupabase`. */
+const WISHLIST_MAX_ROWS = 500
+
 export async function syncWishlistFromSupabase(userId: string) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('rentivo_wishlist')
     .select('listing_id')
     .eq('user_id', userId)
+    // Bounded window, not paging: a wishlist is one person's hand-curated list, so
+    // 500 is far past any real one. It has to be a COMPLETE read though — the
+    // response below PRUNES the local store, so a truncated page would delete saved
+    // listings. Hence the ceiling plus the guard underneath.
+    .limit(WISHLIST_MAX_ROWS)
 
-  if (data) {
-    useWishlistStore.setState(state => ({
-      items: state.items.filter(item => data.some(d => d.listing_id === item.id)),
-    }))
-  }
+  // An error (offline, RLS denial) is not "your wishlist is empty" — pruning against
+  // a failed read would wipe every locally saved listing. Same for a response that
+  // reached the ceiling: we cannot tell a complete list from a truncated one, so we
+  // leave the local store alone rather than delete rows we simply did not fetch.
+  if (error || !data) return
+  if (data.length >= WISHLIST_MAX_ROWS) return
+
+  useWishlistStore.setState(state => ({
+    items: state.items.filter(item => data.some(d => d.listing_id === item.id)),
+  }))
 }

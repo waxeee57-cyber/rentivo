@@ -144,8 +144,10 @@ export default function BookingDetailScreen() {
           {booking.deposit_amount > 0 && (
             <View style={styles.depositInfoRow}>
               <Ionicons name="lock-closed" size={12} color={C.info} importantForAccessibility="no" />
+              {/* Localised: the amount is interpolated so es/hu can put the figure
+                  where their grammar needs it, not just where English does. */}
               <Text style={styles.depositInfo}>
-                {formatEURDecimal(booking.deposit_amount)} deposit hold active
+                {t('depositHoldActive', language, { amount: formatEURDecimal(booking.deposit_amount) })}
               </Text>
             </View>
           )}
@@ -171,7 +173,10 @@ export default function BookingDetailScreen() {
             </View>
             <Divider style={{ marginVertical: Spacing.sm }} />
             <Text style={styles.refundNote}>
-              If you cancel now: <Text style={{ fontFamily: Fonts.bold }}>{refundCalc.refundPercent}% refund</Text>
+              {t('ifYouCancelNow', language)}{' '}
+              <Text style={{ fontFamily: Fonts.bold }}>
+                {t('refundPercentLabel', language).replace('{percent}', String(refundCalc.refundPercent))}
+              </Text>
               {refundCalc.refundAmount > 0 ? ` (${formatEURDecimal(refundCalc.refundAmount)})` : ''}
             </Text>
             <Text style={styles.refundMessage}>{refundCalc.message}</Text>
