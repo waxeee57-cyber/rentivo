@@ -27,10 +27,14 @@ appId: com.domrol.rentivo
       - tapOn:
           text: "Accept & Continue"
       - waitForAnimationToEnd
+# Measured 2026-08-04: cold start (pm clear -> first UI) is 16.2s against a warm
+# Metro. 45s was still enough on paper, but this screen is the heaviest render in
+# the app and it flaked 1-in-20 under the sustained emulator load of a full
+# 20-flow run on a software GPU. 90s costs nothing when the assertion passes.
 - extendedWaitUntil:
     visible:
       text: "Rent anything."
-    timeout: 45000
+    timeout: 90000
 - tapOn:
     text: "Skip"
 - waitForAnimationToEnd

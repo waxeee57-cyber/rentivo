@@ -85,8 +85,21 @@ function HeroRotation() {
 
   useEffect(() => {
     if (reduceMotion !== false) return
+    // ONE PASS, then rest on the last frame. An indefinite loop on the app's
+    // first screen has three costs and no benefit once the point is made:
+    //  · the screen is never visually idle, so Maestro's animation-settling
+    //    never completes — this made the P0 listing-detail flow flake 1-in-20,
+    //    with a 45s wait for the hero title timing out on an otherwise healthy
+    //    16.2s cold start;
+    //  · it burns CPU and battery for as long as the user reads the screen;
+    //  · a hero that never stops moving reads as restless, not premium.
+    // Showing each category once still does the whole job: proving the
+    // catalogue is not just villas.
+    let step = 0
     const id = setInterval(() => {
-      active.value = (active.value + 1) % HERO_SLIDES.length
+      step += 1
+      active.value = step
+      if (step >= HERO_SLIDES.length - 1) clearInterval(id)
     }, HERO_DWELL_MS)
     // Onboarding unmounts the moment the user taps through — leaving this timer
     // running would keep mutating a shared value on a dead tree.
