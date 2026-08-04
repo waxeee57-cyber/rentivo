@@ -55,7 +55,7 @@ serve(async (req) => {
     // ── Load the listing (pricing + ownership are SERVER truth, never the body).
     const { data: listing, error: listingError } = await supabase
       .from('rentivo_listings')
-      .select('id, operator_id, host_id, owner_user_id, available, price_per_day, price_per_week, price_per_hour, deposit_amount, hourly_rental_enabled')
+      .select('id, operator_id, host_id, owner_user_id, available, price_per_day, price_per_week, price_per_hour, deposit_amount, hourly_rental_enabled, min_rental_days, min_rental_hours')
       .eq('id', listing_id)
       .maybeSingle()
     if (listingError) return jsonError('Failed to load listing', 500)
@@ -71,15 +71,63 @@ serve(async (req) => {
     }
     const days = Math.max(1, Math.round((endMs - startMs) / MS_PER_DAY))
 
-    // ── Availability: reject if the requested range overlaps any block.
-    const { data: blocks } = await supabase
-      .from('rentivo_availability')
+    // ── Reject past dates. The client's "This weekend" quick-select resolves to
+    //    yesterday when tapped on a Sunday, and nothing downstream caught it —
+    //    past-dated bookings were accepted and charged.
+    const todayUtcMs = Date.parse(new Date().toISOString().slice(0, 10))
+    if (startMs < todayUtcMs) return jsonError('Start date cannot be in the past', 400)
+
+    // ── Minimum rental length (operators configure it; nothing enforced it).
+    const minDays = Number(listing.min_rental_days ?? 1)
+    if (rentalType !== 'hourly' && Number.isFinite(minDays) && minDays > 1 && days < minDays) {
+      return jsonError(`This vehicle requires a minimum rental of ${minDays} days`, 400)
+    }
+    const minHours = Number(listing.min_rental_hours ?? 0)
+    if (rentalType === 'hourly' && Number.isFinite(minHours) && minHours > 0
+        && numOr0(total_hours) < minHours) {
+      return jsonError(`This vehicle requires a minimum rental of ${minHours} hours`, 400)
+    }
+
+    // ── Availability blocks. Ranged blocks carry end_date; manual single-day
+    //    blocks leave it NULL (migration 046). The old single query used
+    //    `.gte('end_date', start_date)`, and `NULL >= x` is NULL — so every
+    //    single-day block was silently filtered out and never enforced.
+    //    Ranges are half-open [start, end): a rental ending on the 12th frees
+    //    the 12th, matching the day-count math above.
+    const [ranged, singles] = await Promise.all([
+      supabase.from('rentivo_availability').select('id')
+        .eq('listing_id', listing_id)
+        .not('end_date', 'is', null)
+        .lt('blocked_date', end_date)
+        .gt('end_date', start_date)
+        .limit(1),
+      supabase.from('rentivo_availability').select('id')
+        .eq('listing_id', listing_id)
+        .is('end_date', null)
+        .gte('blocked_date', start_date)
+        .lt('blocked_date', end_date)
+        .limit(1),
+    ])
+    if ((ranged.data?.length ?? 0) > 0 || (singles.data?.length ?? 0) > 0) {
+      return jsonError('Selected dates are not available', 409)
+    }
+
+    // ── Double-booking guard. Nothing in the codebase checked whether another
+    //    renter already paid for this vehicle on these dates, so every confirmed
+    //    booking stayed sellable forever. Unpaid `pending` rows are abandoned
+    //    carts and deliberately do NOT hold inventory.
+    const { data: clash } = await supabase
+      .from('rentivo_bookings')
       .select('id')
       .eq('listing_id', listing_id)
-      .lte('blocked_date', end_date)
-      .gte('end_date', start_date)
+      .neq('status', 'cancelled')
+      .in('payment_status', ['paid', 'processing'])
+      .lt('start_date', end_date)
+      .gt('end_date', start_date)
       .limit(1)
-    if (blocks && blocks.length > 0) return jsonError('Selected dates are not available', 409)
+    if (clash && clash.length > 0) {
+      return jsonError('These dates are no longer available', 409)
+    }
 
     // ── Hourly: must have the data to price it; never silently fall back.
     let perHour: number | null = listing.price_per_hour != null ? numOr0(listing.price_per_hour) : null
@@ -116,12 +164,15 @@ serve(async (req) => {
     if (promo_code && typeof promo_code === 'string') {
       const { data: promo } = await supabase
         .from('rentivo_promo_codes')
-        .select('code, discount_type, discount_value, max_uses, current_uses, valid_until, min_booking_value')
+        .select('code, discount_type, discount_value, max_uses, current_uses, valid_from, valid_until, min_booking_value')
         .eq('code', promo_code.toUpperCase().trim())
         .maybeSingle()
       if (
         promo &&
         Number(promo.current_uses) < Number(promo.max_uses) &&
+        // valid_from exists on the table and was never checked — a campaign
+        // scheduled for next month was live the moment the row was inserted.
+        (!promo.valid_from || new Date(promo.valid_from) <= new Date()) &&
         (!promo.valid_until || new Date(promo.valid_until) >= new Date()) &&
         baseTotal >= numOr0(promo.min_booking_value)
       ) {
@@ -199,7 +250,38 @@ serve(async (req) => {
       .single()
 
     if (insertError || !inserted) {
+      // The exclusion constraint (migration 20260804001) is the last line of
+      // defence against a double sale that slipped past the checks above.
+      if (insertError?.message?.includes('rentivo_bookings_no_overlap')) {
+        return jsonError('These dates are no longer available', 409)
+      }
       return jsonError(insertError?.message ?? 'Failed to create booking', 500)
+    }
+
+    // ── Redeem the promo. Nothing incremented current_uses before this, so
+    //    max_uses was decorative. If redemption fails (exhausted between our
+    //    read and now), strip the discount from the booking rather than honour
+    //    a code the campaign no longer has budget for.
+    if (appliedPromoCode) {
+      const { data: redeemed } = await supabase.rpc('increment_promo_use', { p_code: appliedPromoCode })
+      if (redeemed === false) {
+        promoDiscount = 0
+        appliedPromoCode = null
+        const repricedTotal = Math.max(0, round2(baseTotal))
+        await supabase.from('rentivo_bookings')
+          .update({ promo_code: null, promo_discount: 0, total_amount: repricedTotal })
+          .eq('id', inserted.id)
+        return new Response(
+          JSON.stringify({
+            booking_id: inserted.id,
+            total_amount: repricedTotal,
+            deposit_amount: depositAmount,
+            subtotal, platform_fee: platformFee, promo_discount: 0,
+            promo_rejected: true,
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
     }
 
     return new Response(

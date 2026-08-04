@@ -73,14 +73,16 @@ serve(async (req) => {
     // Ownership: the caller must be the traveler who owns this booking.
     if (booking.user_id !== user.id) return jsonError('Booking does not belong to caller', 403)
 
-    // Idempotency: if this booking already has a PaymentIntent, return its
-    // client_secret instead of creating a second intent (double-charge guard).
-    if (booking.payment_intent_id) {
-      const existing = await stripe.paymentIntents.retrieve(booking.payment_intent_id)
-      return new Response(
-        JSON.stringify({ client_secret: existing.client_secret, payment_intent_id: existing.id }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    // Idempotency: an existing PaymentIntent IS reused — but only after the
+    // server-authoritative amount is known (further down). Returning it here
+    // unconditionally was a real mis-charge: after a failed/abandoned attempt the
+    // user could go back, switch insurance tier or drop a promo, see the NEW total
+    // on the Pay button, and be charged the OLD intent's amount.
+    const existingIntent = booking.payment_intent_id
+      ? await stripe.paymentIntents.retrieve(booking.payment_intent_id)
+      : null
+    if (existingIntent && (existingIntent.status === 'succeeded' || existingIntent.status === 'processing')) {
+      return jsonError('Booking is already paid', 409)
     }
 
     // State guard: only an unpaid booking may open a fresh intent.
@@ -221,6 +223,67 @@ serve(async (req) => {
     // a zero-decimal currency (KRW/JPY/VND) would otherwise re-denominate the charge.
     const currency = 'eur'
 
+    // ── Last-moment double-booking re-check. create-booking checked at cart time;
+    //    someone else may have paid in the seconds since. Cheaper to fail here
+    //    than to refund a duplicate sale later.
+    const { data: clash } = await supabase
+      .from('rentivo_bookings')
+      .select('id')
+      .eq('listing_id', booking.listing_id)
+      .neq('id', booking_id)
+      .neq('status', 'cancelled')
+      .in('payment_status', ['paid', 'processing'])
+      .lt('start_date', booking.end_date)
+      .gt('end_date', booking.start_date)
+      .limit(1)
+    if (clash && clash.length > 0) {
+      return jsonError('These dates are no longer available', 409)
+    }
+
+    // Healed financial columns, shared by the reuse/repair and create paths.
+    const healedColumns = {
+      currency: 'EUR',
+      subtotal: serverSubtotal,
+      platform_fee: serverFee,
+      promo_discount: matchedDiscount,
+      total_amount: authoritativeTotal,
+      deposit_amount: matchedInsurance > 0 ? 0 : numOr0(listing.deposit_amount),
+    }
+
+    // ── Reuse, repair, or replace the existing intent now that the authoritative
+    //    amount is known.
+    if (existingIntent) {
+      if (existingIntent.amount === amountCents) {
+        await supabase.from('rentivo_bookings').update(healedColumns).eq('id', booking_id)
+        return new Response(
+          JSON.stringify({ client_secret: existingIntent.client_secret, payment_intent_id: existingIntent.id }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      const repairable =
+        existingIntent.status === 'requires_payment_method' ||
+        existingIntent.status === 'requires_confirmation' ||
+        existingIntent.status === 'requires_action'
+      if (repairable) {
+        const repaired = await stripe.paymentIntents.update(existingIntent.id, {
+          amount: amountCents,
+          application_fee_amount: platformFeeCents,
+        })
+        await supabase
+          .from('rentivo_bookings')
+          .update({ ...healedColumns, payment_intent_id: repaired.id })
+          .eq('id', booking_id)
+        return new Response(
+          JSON.stringify({ client_secret: repaired.client_secret, payment_intent_id: repaired.id }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      // Terminal (cancelled / requires_capture we don't use) — drop it and mint a
+      // fresh intent below. The idempotency key carries the amount so Stripe
+      // treats a different price as a different request.
+      try { await stripe.paymentIntents.cancel(existingIntent.id) } catch { /* already terminal */ }
+    }
+
     const paymentIntent = await stripe.paymentIntents.create(
       {
         amount: amountCents,
@@ -235,7 +298,9 @@ serve(async (req) => {
           platform: 'rentivo',
         },
       },
-      { idempotencyKey: `rentivo_pi_${booking_id}` }
+      // Amount is part of the key: a re-priced booking is a genuinely different
+      // request, and Stripe rejects a key replay with changed parameters.
+      { idempotencyKey: `rentivo_pi_${booking_id}_${amountCents}` }
     )
 
     // ── Heal the booking's financial columns to the SERVER-authoritative values at
@@ -243,18 +308,9 @@ serve(async (req) => {
     //    persists the exact charged total AND corrects the deposit to the tier the
     //    charge accepted — closing the client-insertable deposit_amount waiver
     //    (basic rental + deposit_amount=0) before create-deposit-setup reads it.
-    const expectedDeposit = matchedInsurance > 0 ? 0 : numOr0(listing.deposit_amount)
     await supabase
       .from('rentivo_bookings')
-      .update({
-        payment_intent_id: paymentIntent.id,
-        currency: 'EUR',
-        subtotal: serverSubtotal,
-        platform_fee: serverFee,
-        promo_discount: matchedDiscount,
-        total_amount: authoritativeTotal,
-        deposit_amount: expectedDeposit,
-      })
+      .update({ ...healedColumns, payment_intent_id: paymentIntent.id })
       .eq('id', booking_id)
 
     return new Response(
