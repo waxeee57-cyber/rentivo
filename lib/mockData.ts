@@ -466,7 +466,7 @@ export const MOCK_REVIEWS: Review[] = [
     user_id: 'usr-004',
     rating: 5,
     comment: 'Absolutely perfect experience. Car was immaculate, pickup was smooth. CostaSol team was incredibly helpful. Will definitely book again!',
-    reply: 'Thank you so much! It was a pleasure having you as our guest. See you next time in Marbella! 🌊',
+    reply: 'Thank you so much! It was a pleasure having you as our guest. See you next time in Marbella!',
     reply_at: new Date(Date.now() - 86400000).toISOString(),
     created_at: new Date(Date.now() - 172800000).toISOString(),
   },

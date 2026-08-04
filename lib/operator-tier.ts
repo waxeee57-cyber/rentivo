@@ -1,11 +1,11 @@
 import type { Operator } from '@/types'
+import { DarkColors } from '@/constants/colors'
 
 export type OperatorTier = 'new' | 'verified' | 'top' | 'elite'
 
 export interface TierDefinition {
   tier: OperatorTier
   label: string
-  icon: string
   color: string
   minBookings: number
   minRating: number
@@ -16,7 +16,6 @@ export const OPERATOR_TIERS: TierDefinition[] = [
   {
     tier: 'elite',
     label: 'Elite',
-    icon: '💎',
     color: '#4A9EE8',
     minBookings: 100,
     minRating: 4.8,
@@ -25,8 +24,10 @@ export const OPERATOR_TIERS: TierDefinition[] = [
   {
     tier: 'top',
     label: 'Top',
-    icon: '⭐',
-    color: '#E8A44A',
+    // Palette token, not a loose hex — this used to be a fourth brand orange
+    // defined outside both palettes. Dark value by default; getTierBadge()
+    // swaps in the light-mode gold when a caller passes its palette.
+    color: DarkColors.gold,
     minBookings: 25,
     minRating: 4.5,
     minResponseRate: 90,
@@ -34,7 +35,6 @@ export const OPERATOR_TIERS: TierDefinition[] = [
   {
     tier: 'verified',
     label: 'Verified',
-    icon: '✅',
     color: '#2D9B6F',
     minBookings: 5,
     minRating: 4.0,
@@ -43,7 +43,6 @@ export const OPERATOR_TIERS: TierDefinition[] = [
   {
     tier: 'new',
     label: 'New',
-    icon: '🆕',
     color: '#9DAFC5',
     minBookings: 0,
     minRating: 0,
@@ -68,8 +67,13 @@ export function calculateTier(operator: Partial<Operator>): OperatorTier {
   return 'new'
 }
 
-export function getTierBadge(tier: OperatorTier): TierDefinition {
-  return OPERATOR_TIERS.find(t => t.tier === tier) ?? OPERATOR_TIERS[OPERATOR_TIERS.length - 1]
+export function getTierBadge(tier: OperatorTier, C?: { gold: string }): TierDefinition {
+  const def = OPERATOR_TIERS.find(t => t.tier === tier) ?? OPERATOR_TIERS[OPERATOR_TIERS.length - 1]
+  // The 'top' accent is the shared tier gold, which has to darken in light mode
+  // to stay legible (the dark value is only 2.13:1 on white). Callers that can
+  // see the theme pass their palette in; the param is optional so existing
+  // callers — and non-React code — keep the dark-palette default.
+  return C && def.tier === 'top' ? { ...def, color: C.gold } : def
 }
 
 export function getTierProgress(operator: Partial<Operator>): {

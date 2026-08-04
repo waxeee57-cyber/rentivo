@@ -16,13 +16,29 @@ export async function fetchDamageReport(bookingId: string, type: 'pickup' | 'ret
     .eq('type', type)
     .single()
 
-  if (error) return null
+  // PGRST116 = "no rows returned" — the genuine not-found case. Any other error
+  // (RLS denial, network drop) must surface instead of masquerading as "no report",
+  // which would let a return inspection start without its pickup baseline.
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    throw error
+  }
   return data as DamageReport
 }
 
 export async function createDamageReport(
   report: Omit<DamageReport, 'id' | 'created_at'>,
 ): Promise<DamageReport> {
+  // Mock mode must not write to production: `fetchDamageReport` above honours the
+  // flag, this insert did not.
+  if (Config.useMock) {
+    return {
+      ...report,
+      id: `mock-${Math.random().toString(36).slice(2, 8)}`,
+      created_at: new Date().toISOString(),
+    } as DamageReport
+  }
+
   const { data, error } = await supabase
     .from('rentivo_damage_reports')
     .insert(report)
@@ -34,6 +50,9 @@ export async function createDamageReport(
 }
 
 export async function updateDamageReport(id: string, updates: Partial<DamageReport>): Promise<void> {
+  // Same reason as createDamageReport: no production writes while mocking.
+  if (Config.useMock) return
+
   const { error } = await supabase
     .from('rentivo_damage_reports')
     .update(updates)

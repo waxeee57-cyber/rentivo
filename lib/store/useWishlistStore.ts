@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { Listing } from '@/types'
 import { supabase } from '@/lib/supabase'
+import { Config } from '@/constants/config'
 
 interface WishlistState {
   items: Listing[]
@@ -36,6 +37,15 @@ export const useWishlistStore = create<WishlistState>()(
 export async function toggleWishlistItem(listing: Listing, userId: string) {
   const store = useWishlistStore.getState()
   const isWishlisted = store.isWishlisted(listing.id)
+
+  // The local (persisted) toggle is the source of truth for the UI; only the
+  // remote mirror is gated. In mock builds we still flip local state — the heart
+  // must respond — but never write to the real wishlist table.
+  if (Config.useMock) {
+    if (isWishlisted) store.remove(listing.id)
+    else store.toggle(listing)
+    return
+  }
 
   if (isWishlisted) {
     store.remove(listing.id)

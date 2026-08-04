@@ -7,10 +7,17 @@ export function useLocation() {
 
   useEffect(() => {
     void (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') return
-      const loc = await Location.getCurrentPositionAsync({})
-      setLocation(loc.coords.latitude, loc.coords.longitude)
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync()
+        if (status !== 'granted') return
+        const servicesOn = await Location.hasServicesEnabledAsync()
+        if (!servicesOn) return
+        const loc = await Location.getCurrentPositionAsync({})
+        setLocation(loc.coords.latitude, loc.coords.longitude)
+      } catch {
+        // Location unavailable (services off, emulator without GPS, denied at OS level, etc.)
+        // — silently fall back to no-location state instead of an uncaught rejection.
+      }
     })()
   }, [setLocation])
 

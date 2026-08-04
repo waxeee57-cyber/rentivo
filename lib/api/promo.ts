@@ -76,7 +76,18 @@ export async function validatePromoCode(
     .eq('code', code.toUpperCase().trim())
     .maybeSingle()
 
-  if (error || !data) return { valid: false, code: null, discount: 0, error: 'Invalid promo code' }
+  // An infrastructure failure (network drop, RLS denial) is NOT a wrong code. Telling
+  // the guest "Invalid promo code" makes them give up on a discount that is actually
+  // valid; the distinct message invites a retry instead.
+  if (error) {
+    return {
+      valid: false,
+      code: null,
+      discount: 0,
+      error: "Couldn't check the code right now — please try again",
+    }
+  }
+  if (!data) return { valid: false, code: null, discount: 0, error: 'Invalid promo code' }
 
   const promo = data as PromoCode
 

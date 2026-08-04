@@ -55,6 +55,3 @@ export function getCancellationPolicyColor(policy: CancellationPolicy): string {
   return policy === 'flexible' ? '#2D9B6F' : policy === 'moderate' ? '#E8A44A' : '#E05252'
 }
 
-export function getCancellationPolicyEmoji(policy: CancellationPolicy): string {
-  return policy === 'flexible' ? '🟢' : policy === 'moderate' ? '🟡' : '🔴'
-}

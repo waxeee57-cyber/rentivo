@@ -3,13 +3,53 @@ import { Config } from '@/constants/config'
 import { MOCK_LISTINGS, MOCK_OPERATOR } from '@/lib/mockData'
 import type { Listing, SearchFilters } from '@/types'
 
-export async function fetchListings(filters?: SearchFilters): Promise<Listing[]> {
+/** Rows per page for the paginated marketplace list (explore / search). */
+export const LISTINGS_PAGE_SIZE = 20
+
+/**
+ * Hard cap for callers that ask for no explicit page. Every select in this file used
+ * to be unbounded, so one request pulled the whole `rentivo_listings` table together
+ * with its nested operator join. A bounded default keeps legacy call sites working
+ * while making the worst case a fixed cost instead of a table scan.
+ */
+export const LISTINGS_MAX_ROWS = 100
+
+/** 0-based paging window. */
+export interface PagingOptions {
+  page?: number
+  pageSize?: number
+}
+
+export interface PagedListings {
+  data: Listing[]
+  hasMore: boolean
+}
+
+/**
+ * Overloaded on purpose: passing `paging` opts into the `{ data, hasMore }` shape the
+ * infinite-scroll hook needs, while the historic single-argument form still returns a
+ * plain array so existing callers (e.g. lib/api/unifiedSearch.ts) compile unchanged.
+ */
+export async function fetchListings(filters?: SearchFilters): Promise<Listing[]>
+export async function fetchListings(
+  filters: SearchFilters | undefined,
+  paging: PagingOptions,
+): Promise<PagedListings>
+export async function fetchListings(
+  filters?: SearchFilters,
+  paging?: PagingOptions,
+): Promise<Listing[] | PagedListings> {
+  const page = Math.max(0, paging?.page ?? 0)
+  const pageSize = paging?.pageSize ?? (paging ? LISTINGS_PAGE_SIZE : LISTINGS_MAX_ROWS)
+  const from = page * pageSize
+
   if (Config.useMock) {
     let result = [...MOCK_LISTINGS]
     if (filters?.category) result = result.filter(l => l.category === filters.category)
     if (filters?.minPrice) result = result.filter(l => l.price_per_day >= (filters.minPrice ?? 0))
     if (filters?.maxPrice) result = result.filter(l => l.price_per_day <= (filters.maxPrice ?? Infinity))
-    return result
+    const slice = result.slice(from, from + pageSize)
+    return paging ? { data: slice, hasMore: from + pageSize < result.length } : slice
   }
 
   let query = supabase
@@ -25,9 +65,16 @@ export async function fetchListings(filters?: SearchFilters): Promise<Listing[]>
   else if (filters?.sortBy === 'rating') query = query.order('rating', { ascending: false })
   else query = query.order('created_at', { ascending: false })
 
+  // Ask for one row beyond the page: if it comes back there is at least one more page.
+  // Cheaper than a second `count` round-trip on every scroll.
+  query = query.range(from, from + pageSize)
+
   const { data, error } = await query
   if (error) throw error
-  return (data as Listing[]) ?? []
+  const rows = (data as Listing[]) ?? []
+  const hasMore = rows.length > pageSize
+  const pageRows = hasMore ? rows.slice(0, pageSize) : rows
+  return paging ? { data: pageRows, hasMore } : pageRows
 }
 
 export async function fetchListing(id: string): Promise<Listing | null> {
@@ -41,26 +88,78 @@ export async function fetchListing(id: string): Promise<Listing | null> {
     .eq('id', id)
     .single()
 
-  if (error) return null
+  // PGRST116 = "no rows returned", the only error that genuinely means "not found".
+  // Anything else (RLS denial, network drop, malformed query) used to be swallowed
+  // into `null`, which the detail screens render as an empty "not found" page.
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    throw error
+  }
   return data as Listing
 }
 
-export async function fetchOperatorListings(operatorId: string): Promise<Listing[]> {
+export async function fetchOperatorListings(operatorId: string, paging?: PagingOptions): Promise<Listing[]> {
   if (Config.useMock) {
     return MOCK_LISTINGS.filter(l => l.operator_id === operatorId)
   }
+
+  const page = Math.max(0, paging?.page ?? 0)
+  const pageSize = paging?.pageSize ?? LISTINGS_MAX_ROWS
+  const from = page * pageSize
 
   const { data, error } = await supabase
     .from('rentivo_listings')
     .select('*')
     .eq('operator_id', operatorId)
     .order('created_at', { ascending: false })
+    // Bounded: a large fleet must not be pulled down in a single response.
+    .range(from, from + pageSize - 1)
+
+  if (error) throw error
+  return (data as Listing[]) ?? []
+}
+
+/**
+ * Listings owned by a HOST (C2C). Hosts are stored on the same table as operator
+ * listings but keyed by `host_id` — `operator_id` is empty for them (see
+ * app/(host)/listings/new.tsx), so `fetchOperatorListings` can never find them.
+ */
+export async function fetchHostListings(hostId: string, paging?: PagingOptions): Promise<Listing[]> {
+  if (Config.useMock) {
+    // The mock auth store does not always carry a host record, so an empty id falls
+    // back to every host-owned mock listing rather than rendering an empty screen.
+    return MOCK_LISTINGS.filter(l => l.owner_type === 'host' && (!hostId || l.host_id === hostId))
+  }
+
+  const page = Math.max(0, paging?.page ?? 0)
+  const pageSize = paging?.pageSize ?? LISTINGS_MAX_ROWS
+  const from = page * pageSize
+
+  const { data, error } = await supabase
+    .from('rentivo_listings')
+    .select('*')
+    .eq('host_id', hostId)
+    .order('created_at', { ascending: false })
+    .range(from, from + pageSize - 1)
 
   if (error) throw error
   return (data as Listing[]) ?? []
 }
 
 export async function createListing(listing: Omit<Listing, 'id' | 'created_at' | 'rating' | 'review_count' | 'booking_count'>): Promise<Listing> {
+  // Mock mode must never touch production data — the read siblings above already
+  // short-circuit here, this write did not and hit Supabase for real.
+  if (Config.useMock) {
+    return {
+      ...listing,
+      id: `mock-${Math.random().toString(36).slice(2, 8)}`,
+      created_at: new Date().toISOString(),
+      rating: 0,
+      review_count: 0,
+      booking_count: 0,
+    } as Listing
+  }
+
   const { data, error } = await supabase
     .from('rentivo_listings')
     .insert(listing)
@@ -71,21 +170,26 @@ export async function createListing(listing: Omit<Listing, 'id' | 'created_at' |
   return data as Listing
 }
 
-export async function updateListing(id: string, updates: Partial<Listing>, operatorId?: string): Promise<void> {
-  let query = supabase
+/**
+ * `operatorId` is REQUIRED: it was optional and every caller that omitted it produced
+ * an UPDATE with no ownership predicate, leaving defence entirely to RLS. Passing it
+ * keeps the owner check in the statement itself (defence in depth).
+ */
+export async function updateListing(id: string, updates: Partial<Listing>, operatorId: string): Promise<void> {
+  if (Config.useMock) return
+
+  const { error } = await supabase
     .from('rentivo_listings')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('operator_id', operatorId)
 
-  if (operatorId) {
-    query = query.eq('operator_id', operatorId)
-  }
-
-  const { error } = await query
   if (error) throw error
 }
 
 export async function deleteListing(id: string, operatorId: string): Promise<void> {
+  if (Config.useMock) return
+
   const { error } = await supabase
     .from('rentivo_listings')
     .delete()
@@ -95,8 +199,33 @@ export async function deleteListing(id: string, operatorId: string): Promise<voi
   if (error) throw error
 }
 
-export async function toggleListingAvailability(id: string, available: boolean): Promise<void> {
-  await updateListing(id, { available })
+/**
+ * Resolve the signed-in user's OWN operator id. Only used as a fallback below: it can
+ * never name anyone else's operator record, so it is safe as an ownership predicate.
+ */
+async function getSessionOperatorId(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) return null
+  const { data } = await supabase
+    .from('rentivo_operators')
+    .select('id')
+    .eq('auth_id', session.user.id)
+    .maybeSingle()
+  return (data?.id as string | undefined) ?? null
+}
+
+export async function toggleListingAvailability(
+  id: string,
+  available: boolean,
+  operatorId?: string,
+): Promise<void> {
+  if (Config.useMock) return
+  // `updateListing` now REQUIRES an owner predicate, and this used to omit it entirely.
+  // Callers should pass their operator id (saves a round-trip); when they can't — e.g.
+  // lib/hooks/useFleet.ts — it is derived from the session rather than skipped.
+  const ownerId = operatorId ?? await getSessionOperatorId()
+  if (!ownerId) throw new Error('No operator account for the signed-in user')
+  await updateListing(id, { available }, ownerId)
 }
 
 export async function getAvailableTodayListings(): Promise<Listing[]> {

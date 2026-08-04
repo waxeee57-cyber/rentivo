@@ -45,6 +45,10 @@ export async function savePushToken(
   token: string,
   isOperator = false,
 ): Promise<void> {
+  // Mock builds must not write a device push token onto a real production row.
+  // supabase-js returns no error for a zero-row UPDATE, so without this the
+  // write looked successful whether or not it hit anything.
+  if (Config.useMock) return
   const payload: Record<string, string> = { push_token: token }
   if (isOperator) {
     await supabase
@@ -73,39 +77,39 @@ export type NotificationType =
 export const NOTIFICATIONS = {
   // Consumer
   BOOKING_CONFIRMED: (listingTitle: string) => ({
-    title: '🎉 Booking confirmed!',
+    title: 'Booking confirmed!',
     body: `Your ${listingTitle} rental is confirmed. See you soon!`,
   }),
   PICKUP_REMINDER: (time: string, listingTitle: string) => ({
-    title: '🚗 Pickup reminder',
+    title: 'Pickup reminder',
     body: `${listingTitle} pickup at ${time}. Don't forget your ID!`,
   }),
   RETURN_REMINDER: (listingTitle: string) => ({
-    title: '⏰ Return reminder',
+    title: 'Return reminder',
     body: `Time to return your ${listingTitle}. Have a safe trip!`,
   }),
 
   // Operator
   NEW_BOOKING: (guestName: string, listingTitle: string, amount: string) => ({
-    title: '📅 New booking request!',
+    title: 'New booking request!',
     body: `${guestName} wants to rent ${listingTitle} for ${amount}`,
   }),
   PICKUP_TODAY: (guestName: string, time: string) => ({
-    title: '🔑 Pickup today',
+    title: 'Pickup today',
     body: `${guestName} picks up at ${time}. Vehicle ready?`,
   }),
   PAYMENT_RECEIVED: (amount: string) => ({
-    title: '💰 Payment received',
+    title: 'Payment received',
     body: `${amount} deposited to your account`,
   }),
 
   // Price/availability alerts
   PRICE_DROP: (listingTitle: string, newPrice: string) => ({
-    title: '📉 Price drop alert!',
+    title: 'Price drop alert!',
     body: `${listingTitle} is now ${newPrice}/day — check your wishlist`,
   }),
   AVAILABILITY: (listingTitle: string) => ({
-    title: '📅 Now available!',
+    title: 'Now available!',
     body: `${listingTitle} is now available for your dates`,
   }),
 }
@@ -244,35 +248,35 @@ export function getNotificationContent(
 ): { title: string; body: string } {
   const map: Record<NotificationType, { title: string; body: string }> = {
     booking_confirmed: {
-      title: '✅ Booking Confirmed',
+      title: 'Booking Confirmed',
       body: `Your ${data.vehicle ?? 'rental'} is confirmed for ${data.dates ?? ''}`,
     },
     booking_cancelled: {
-      title: '❌ Booking Cancelled',
+      title: 'Booking Cancelled',
       body: `Your booking for ${data.vehicle ?? 'rental'} has been cancelled`,
     },
     new_message: {
-      title: `💬 ${data.sender ?? 'New message'}`,
+      title: `${data.sender ?? 'New message'}`,
       body: data.message ?? '',
     },
     pickup_reminder: {
-      title: '🚗 Pickup Tomorrow',
+      title: 'Pickup Tomorrow',
       body: `Your ${data.vehicle ?? 'rental'} starts tomorrow at ${data.time ?? ''}`,
     },
     return_reminder: {
-      title: '⏰ Return Today',
+      title: 'Return Today',
       body: `Please return your ${data.vehicle ?? 'rental'} by ${data.time ?? ''}`,
     },
     review_request: {
-      title: '⭐ How was your rental?',
+      title: 'How was your rental?',
       body: `Leave a review for your ${data.vehicle ?? 'rental'}`,
     },
     new_booking: {
-      title: '🎉 New Booking',
+      title: 'New Booking',
       body: `${data.guestName ?? 'Guest'} booked ${data.vehicle ?? ''} for ${data.dates ?? ''}`,
     },
     rental_completed: {
-      title: '✅ Rental Completed',
+      title: 'Rental Completed',
       body: `${data.guestName ?? 'Guest'} has returned the ${data.vehicle ?? 'vehicle'}`,
     },
   }

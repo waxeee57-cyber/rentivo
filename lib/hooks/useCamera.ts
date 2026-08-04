@@ -28,8 +28,10 @@ export function useCamera() {
         allowsEditing: true,
         aspect: [4, 3],
       })
+      // `!canceled` does not guarantee a non-empty assets array — reading [0].uri
+      // blind crashed the damage-photo capture with a TypeError.
       if (result.canceled) return null
-      return result.assets[0].uri
+      return result.assets?.[0]?.uri ?? null
     } finally {
       setLoading(false)
     }
@@ -55,8 +57,9 @@ export function useCamera() {
         allowsEditing: true,
         aspect: [4, 3],
       })
+      // Same bounds guard as takePicture — assets can be empty on some pickers.
       if (result.canceled) return null
-      return result.assets[0].uri
+      return result.assets?.[0]?.uri ?? null
     } finally {
       setLoading(false)
     }

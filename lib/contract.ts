@@ -1,14 +1,23 @@
 import * as Print from 'expo-print'
 import * as Sharing from 'expo-sharing'
+import { format } from 'date-fns'
+import { dateLocale } from '@/lib/utils/formatDate'
 import type { Booking } from '@/types'
 
 export function generateContractHTML(
   booking: Booking,
   consumerSignature?: string,
   operatorSignature?: string,
+  // Optional + defaulted so existing call sites keep compiling.
+  language: 'en' | 'es' | 'hu' = 'en',
 ): string {
-  const startDate = new Date(booking.start_date).toLocaleDateString('en-GB')
-  const endDate = new Date(booking.end_date).toLocaleDateString('en-GB')
+  // A legal contract must not carry a date its signer can misread. The old
+  // hardcoded 'en-GB' produced "04/08/2026" for every locale — read as 4 August
+  // by a European and as 8 April by an American. 'PPP' is date-fns' locale-aware
+  // *unambiguous* long date: "August 4th, 2026" / "4 de agosto de 2026" /
+  // "2026. augusztus 4.".
+  const startDate = format(new Date(booking.start_date), 'PPP', { locale: dateLocale(language) })
+  const endDate = format(new Date(booking.end_date), 'PPP', { locale: dateLocale(language) })
   const total = `€${booking.total_amount.toFixed(2)}`
   const deposit = `€${booking.deposit_amount.toFixed(2)}`
 
