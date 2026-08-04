@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { Text, StyleSheet, Animated, TouchableOpacity } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing, Fonts } from '@/constants/colors'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { useColors } from '@/lib/hooks/useColors'
 
@@ -86,14 +86,14 @@ const styles = StyleSheet.create({
   },
   icon: {
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     width: 22,
     textAlign: 'center',
   },
   message: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     lineHeight: 20,
   },
 })

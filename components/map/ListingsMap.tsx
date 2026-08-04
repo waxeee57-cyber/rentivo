@@ -1,8 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react'
-import { StyleSheet, View, Text } from 'react-native'
+import { Fonts } from '@/constants/colors'
+import { StyleSheet, View } from 'react-native'
 import MapView, { Region } from 'react-native-maps'
 import { ListingMarker } from '@/components/map/ListingMarker'
 import { ListingPreviewSheet } from '@/components/map/ListingPreviewSheet'
+import { LeafletMap } from '@/components/map/LeafletMap'
 import type { Listing } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
 import { Config } from '@/constants/config'
@@ -42,14 +44,24 @@ export default function ListingsMap({ listings, initialRegion }: Props) {
     [listings],
   )
 
-  // Maps gate: never mount <MapView> without a native Google Maps key — it would
-  // hard-crash the app. Render a safe placeholder instead (maps are not required
-  // for the booking/payment flow). See Config.mapsEnabled.
+  // Maps gate: without a native Google Maps key <MapView> would hard-crash,
+  // so that path stays gated — but instead of a dead placeholder we serve a
+  // fully working Leaflet + OSM/CARTO map (zero API keys, zero cost) with
+  // Airbnb-style price-pill markers.
   if (!Config.mapsEnabled) {
     return (
-      <View style={[styles.container, styles.fallback]}>
-        <Text style={styles.fallbackEmoji}>🗺️</Text>
-        <Text style={styles.fallbackText}>Map view unavailable</Text>
+      <View style={styles.container}>
+        <LeafletMap
+          pins={mappableListing.map(l => ({
+            id: l.id,
+            lat: l.latitude as number,
+            lng: l.longitude as number,
+            label: `€${Math.round(l.price_per_day)}`,
+            selected: l.id === selectedId,
+          }))}
+          onPinPress={handleMarkerPress}
+        />
+        <ListingPreviewSheet listing={selectedListing} onClose={handleClose} />
       </View>
     )
   }
@@ -92,11 +104,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     gap: 8,
   },
   fallbackEmoji: {
-    fontSize: 40,
+    fontFamily: Fonts.regular, fontSize: 40,
   },
   fallbackText: {
     color: C.textSecondary,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
   },
   })
 }

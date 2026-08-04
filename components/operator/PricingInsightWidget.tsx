@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { getPricingSuggestions, type PricingSuggestion } from '@/lib/api/pricingSuggestions'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { useColors } from '@/lib/hooks/useColors'
@@ -101,28 +101,28 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.surface, borderRadius: Radius.lg, padding: Spacing.md,
     borderWidth: 1, borderColor: C.border, minHeight: 44,
   },
-  triggerIcon: { fontSize: 12, fontWeight: '700', color: C.primary },
-  triggerText: { flex: 1, fontSize: 14, color: C.primary, fontWeight: '600' },
-  triggerChevron: { fontSize: 20, color: C.textSecondary },
+  triggerIcon: { fontSize: 12, fontFamily: Fonts.bold, color: C.primary },
+  triggerText: { flex: 1, fontSize: 14, color: C.primary, fontFamily: Fonts.semibold },
+  triggerChevron: { fontFamily: Fonts.regular, fontSize: 20, color: C.textSecondary },
   loading: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, padding: Spacing.md },
-  loadingText: { fontSize: 14, color: C.textSecondary },
+  loadingText: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
   error: { padding: Spacing.md, alignItems: 'center' },
-  errorText: { fontSize: 14, color: C.error },
-  retry: { fontSize: 14, color: C.primary, fontWeight: '600', marginTop: Spacing.sm },
+  errorText: { fontFamily: Fonts.regular, fontSize: 14, color: C.error },
+  retry: { fontSize: 14, color: C.primary, fontFamily: Fonts.semibold, marginTop: Spacing.sm },
   container: {
     backgroundColor: C.surface, borderRadius: Radius.lg, padding: Spacing.base,
     borderWidth: 1, borderColor: C.border, gap: Spacing.sm,
   },
-  title: { fontSize: 13, fontWeight: '700', color: C.primary },
+  title: { fontSize: 13, fontFamily: Fonts.bold, color: C.primary },
   priceRow: { flexDirection: 'row', marginVertical: Spacing.sm },
   priceCell: { flex: 1, alignItems: 'center' },
   priceCellMid: {
     borderLeftWidth: 1, borderRightWidth: 1, borderColor: C.border,
   },
-  priceLabel: { fontSize: 11, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
-  priceVal: { fontSize: 16, fontWeight: '700', color: C.text, marginTop: 2 },
+  priceLabel: { fontFamily: Fonts.regular, fontSize: 11, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  priceVal: { fontSize: 16, fontFamily: Fonts.bold, color: C.text, marginTop: 2 },
   priceValAvg: { color: C.primary },
-  insight: { fontSize: 13, color: C.text, lineHeight: 20 },
-  meta: { fontSize: 11, color: C.textSecondary },
+  insight: { fontFamily: Fonts.regular, fontSize: 13, color: C.text, lineHeight: 20 },
+  meta: { fontFamily: Fonts.regular, fontSize: 11, color: C.textSecondary },
   })
 }

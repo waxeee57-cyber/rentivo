@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import type { Href } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
@@ -39,9 +40,13 @@ export default function OperatorProfileScreen() {
         <Text style={styles.title}>{t('profileTitle', language)}</Text>
 
         <View style={styles.profileSection}>
-          <Avatar name={op?.name} imageUrl={op?.logo_url} size={72} />
-          <Text style={styles.name}>{op?.name}</Text>
-          <Text style={styles.city}>{op?.city}, {op?.country}</Text>
+          <Avatar name={op?.name || 'Operator'} imageUrl={op?.logo_url} size={72} />
+          <Text style={styles.name}>{op?.name || t('roleOperator', language)}</Text>
+          {/* Only render the location line when there is real data — otherwise
+              it paints a stray ", " under the avatar */}
+          {op?.city ? (
+            <Text style={styles.city}>{op.city}{op.country ? `, ${op.country}` : ''}</Text>
+          ) : null}
           {op?.verified && <Text style={styles.verified}>✓ Verified operator</Text>}
         </View>
 
@@ -57,7 +62,7 @@ export default function OperatorProfileScreen() {
                 accessibilityRole="button"
               >
                 <Text style={[styles.langText, language === lang && styles.langTextActive]}>
-                  {lang === 'en' ? '🇬🇧 EN' : lang === 'es' ? '🇪🇸 ES' : '🇭🇺 HU'}
+                  {lang === 'en' ? 'EN' : lang === 'es' ? 'ES' : 'HU'}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -72,7 +77,7 @@ export default function OperatorProfileScreen() {
             accessibilityLabel="Switch to consumer view"
             accessibilityRole="button"
           >
-            <Text style={styles.switchRoleIcon}>🔍</Text>
+            <Ionicons name="search-outline" size={18} color={C.textSecondary} importantForAccessibility="no" />
             <Text style={styles.switchRoleText}>{t('roleConsumer', language)}</Text>
             <Text style={styles.switchRoleChevron}>›</Text>
           </TouchableOpacity>
@@ -80,15 +85,15 @@ export default function OperatorProfileScreen() {
 
         <Card style={styles.card}>
           <MenuItem
-            label="📊 Analytics"
+            label="Analytics"
             onPress={() => router.push('/(operator)/analytics' as Parameters<typeof router.push>[0])}
           />
           <Divider />
-          <MenuItem label={`🔗 ${t('connectedPlatforms', language)}`} onPress={() => router.push('/(consumer)/profile/connected-platforms' as Parameters<typeof router.push>[0])} />
+          <MenuItem label={`${t('connectedPlatforms', language)}`} onPress={() => router.push('/(consumer)/profile/connected-platforms' as Parameters<typeof router.push>[0])} />
           <Divider />
-          <MenuItem label="🚗 Delivery Settings" onPress={() => router.push('/(operator)/settings/delivery' as Parameters<typeof router.push>[0])} />
+          <MenuItem label="Delivery Settings" onPress={() => router.push('/(operator)/settings/delivery' as Parameters<typeof router.push>[0])} />
           <Divider />
-          <MenuItem label="🔑 API & Webhooks" onPress={() => router.push('/(operator)/settings/api' as Parameters<typeof router.push>[0])} />
+          <MenuItem label="API & Webhooks" onPress={() => router.push('/(operator)/settings/api' as Parameters<typeof router.push>[0])} />
           <Divider />
           <MenuItem label={t('businessSettings', language)} onPress={() => void Linking.openURL('https://dashboard.rentivo.app')} />
           <Divider />
@@ -133,13 +138,13 @@ function MenuItem({ label, onPress }: { label: string; onPress: () => void }) {
 function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.background },
-  title: { fontSize: 26, fontWeight: '800', color: C.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md, marginBottom: Spacing.lg },
+  title: { fontFamily: 'Manrope_800ExtraBold', fontSize: 26, letterSpacing: -0.6, color: C.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md, marginBottom: Spacing.lg },
   profileSection: { alignItems: 'center', marginBottom: Spacing.xl },
-  name: { fontSize: 20, fontWeight: '700', color: C.text, marginTop: Spacing.md },
-  city: { fontSize: 14, color: C.textSecondary, marginTop: 4 },
-  verified: { fontSize: 13, color: C.success, fontWeight: '600', marginTop: 4 },
+  name: { fontSize: 20, fontFamily: Fonts.bold, color: C.text, marginTop: Spacing.md },
+  city: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, marginTop: 4 },
+  verified: { fontSize: 13, color: C.success, fontFamily: Fonts.semibold, marginTop: 4 },
   card: { marginHorizontal: Spacing.base, marginBottom: Spacing.md },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: C.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
+  sectionTitle: { fontSize: 12, fontFamily: Fonts.bold, color: C.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
   langRow: { flexDirection: 'row', gap: Spacing.sm },
   langBtn: {
     flex: 1,
@@ -151,9 +156,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     minHeight: 44,
     justifyContent: 'center',
   },
-  langBtnActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
-  langText: { fontSize: 13, color: C.textSecondary, fontWeight: '600' },
-  langTextActive: { color: C.primaryDark },
+  langBtnActive: { backgroundColor: C.text, borderColor: C.text },
+  langText: { fontSize: 13, color: C.textSecondary, fontFamily: Fonts.semibold },
+  langTextActive: { color: C.background },
   switchRoleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -166,9 +171,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.surface,
     minHeight: 44,
   },
-  switchRoleIcon: { fontSize: 18 },
-  switchRoleText: { flex: 1, fontSize: 15, color: C.text, fontWeight: '600' },
-  switchRoleChevron: { fontSize: 20, color: C.textTertiary },
+  switchRoleText: { flex: 1, fontSize: 15, color: C.text, fontFamily: Fonts.semibold },
+  switchRoleChevron: { fontFamily: Fonts.regular, fontSize: 20, color: C.textTertiary },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -176,10 +180,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingVertical: Spacing.sm,
     minHeight: 44,
   },
-  menuLabel: { fontSize: 15, color: C.text },
-  menuChevron: { fontSize: 20, color: C.textTertiary },
+  menuLabel: { fontFamily: Fonts.regular, fontSize: 15, color: C.text },
+  menuChevron: { fontFamily: Fonts.regular, fontSize: 20, color: C.textTertiary },
   signOutBtn: { marginHorizontal: Spacing.base, marginTop: Spacing.base, padding: Spacing.base, alignItems: 'center', minHeight: 44 },
-  signOutText: { fontSize: 16, color: C.error, fontWeight: '600' },
-  appVersion: { textAlign: 'center', fontSize: 12, color: C.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
+  signOutText: { fontSize: 16, color: C.error, fontFamily: Fonts.semibold },
+  appVersion: { textAlign: 'center', fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
   })
 }

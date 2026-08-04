@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { INSURANCE_PACKAGES } from '@/types'
 import type { InsuranceId } from '@/types'
@@ -83,7 +83,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.text,
     marginBottom: Spacing.base,
     marginTop: Spacing.xl,
@@ -119,7 +119,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
   },
   icon: {
-    fontSize: 18,
+    fontFamily: Fonts.regular, fontSize: 18,
   },
   cardBody: {
     flex: 1,
@@ -133,7 +133,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   name: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.text,
   },
   nameSelected: {
@@ -147,13 +147,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   recommendedText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textInverse,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   desc: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: C.textSecondary,
     lineHeight: 16,
   },
@@ -163,7 +163,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   price: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.text,
   },
   priceSelected: {
@@ -171,13 +171,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   priceFree: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     color: C.success,
   },
   priceUnit: {
     fontSize: 10,
     color: C.textTertiary,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
   },
   radioOuter: {
     width: 20,

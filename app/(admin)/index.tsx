@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Card } from '@/components/ui/Card'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
@@ -116,7 +116,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   title: {
     fontSize: 26,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     padding: Spacing.base,
     paddingBottom: Spacing.md,
@@ -135,11 +135,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   statValue: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.primary,
   },
   statLabel: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: C.textSecondary,
     marginTop: 4,
   },
@@ -159,10 +159,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   navTitle: {
     fontSize: 16,
     color: C.text,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
   },
   chevron: {
-    fontSize: 22,
+    fontFamily: Fonts.regular, fontSize: 22,
     color: C.textTertiary,
   },
   })

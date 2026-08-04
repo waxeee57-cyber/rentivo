@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -115,7 +115,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   card: { gap: Spacing.sm },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -130,14 +130,14 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
   },
   reasonBtnActive: { borderColor: C.primary, backgroundColor: C.primarySurface },
-  reasonText: { fontSize: 14, color: C.text },
-  reasonTextActive: { color: C.primaryDark, fontWeight: '600' },
+  reasonText: { fontFamily: Fonts.regular, fontSize: 14, color: C.text },
+  reasonTextActive: { color: C.primaryDark, fontFamily: Fonts.semibold },
   textArea: {
     backgroundColor: C.background,
     borderRadius: Radius.md,
     padding: Spacing.md,
     color: C.text,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     borderWidth: 1,
     borderColor: C.border,
     minHeight: 100,
@@ -150,6 +150,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.border,
   },
-  infoText: { fontSize: 13, color: C.textSecondary, lineHeight: 20 },
+  infoText: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, lineHeight: 20 },
   })
 }

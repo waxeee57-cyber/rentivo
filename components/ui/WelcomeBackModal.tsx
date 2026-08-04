@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface WelcomeBackModalProps {
@@ -19,12 +20,11 @@ export function WelcomeBackModal({
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onDismiss}>
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
-          <Text style={styles.emoji}>👋</Text>
           <Text style={styles.title}>Welcome back!</Text>
           <View style={styles.updates}>
             {newVehicleCount > 0 && (
               <View style={styles.updateRow}>
-                <Text style={styles.updateIcon}>🚗</Text>
+                <Ionicons name="car-sport-outline" size={20} color={C.text} importantForAccessibility="no" />
                 <Text style={styles.updateText}>
                   We've added {newVehicleCount} new vehicles in Marbella
                 </Text>
@@ -32,7 +32,7 @@ export function WelcomeBackModal({
             )}
             {wishlistPriceDrop && (
               <View style={styles.updateRow}>
-                <Text style={styles.updateIcon}>📉</Text>
+                <Ionicons name="trending-down-outline" size={20} color={C.text} importantForAccessibility="no" />
                 <Text style={styles.updateText}>
                   1 listing in your wishlist has a price drop
                 </Text>
@@ -67,8 +67,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     borderTopWidth: 1, borderTopColor: C.border,
   },
-  emoji: { fontSize: 56, marginBottom: Spacing.md },
-  title: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.xl },
+  emoji: { fontFamily: Fonts.regular, fontSize: 56, marginBottom: Spacing.md },
+  title: { fontSize: 26, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.xl },
   updates: { width: '100%', gap: Spacing.md, marginBottom: Spacing.xl },
   updateRow: {
     flexDirection: 'row', alignItems: 'flex-start',
@@ -76,12 +76,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     padding: Spacing.base, gap: Spacing.md,
     borderWidth: 1, borderColor: C.border,
   },
-  updateIcon: { fontSize: 20 },
-  updateText: { flex: 1, fontSize: 14, color: C.text, lineHeight: 22 },
+  updateIcon: { fontFamily: Fonts.regular, fontSize: 20 },
+  updateText: { flex: 1, fontFamily: Fonts.regular, fontSize: 14, color: C.text, lineHeight: 22 },
   ctaBtn: {
     backgroundColor: C.primary, borderRadius: Radius.pill,
     paddingHorizontal: Spacing.xxxl, paddingVertical: Spacing.base,
   },
-  ctaText: { fontSize: 16, fontWeight: '800', color: C.textInverse },
+  ctaText: { fontSize: 16, fontFamily: Fonts.extrabold, color: C.textInverse },
   })
 }

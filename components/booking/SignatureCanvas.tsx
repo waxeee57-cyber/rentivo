@@ -1,6 +1,6 @@
 import React, { useRef, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import { Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface SignatureCanvasProps {
@@ -60,7 +60,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   label: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -74,6 +74,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.successSurface,
     borderColor: C.success,
   },
-  savedText: { color: C.success, fontWeight: '700', fontSize: 16 },
+  savedText: { color: C.success, fontFamily: Fonts.bold, fontSize: 16 },
   })
 }

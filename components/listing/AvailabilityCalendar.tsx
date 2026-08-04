@@ -3,8 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval,
   startOfWeek, endOfWeek, isSameDay, isBefore, isWithinInterval,
   addMonths, startOfDay } from 'date-fns'
-import { Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
+import { formatMonthYear, dateLocale } from '@/lib/utils/formatDate'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 interface AvailabilityCalendarProps {
   blockedDates?: string[]
@@ -21,6 +24,7 @@ export function AvailabilityCalendar({
 }: AvailabilityCalendarProps) {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const language = useAuthStore(s => s.language)
   const [displayMonth, setDisplayMonth] = useState(new Date())
   const [pickingStart, setPickingStart] = useState(!selectedStart)
 
@@ -62,23 +66,45 @@ export function AvailabilityCalendar({
     }
   }
 
-  const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+  // Weekday initials were hardcoded English ('Mo Tu We…') in a trilingual app.
+  // Derived from the calendar's own Monday-first week using the active locale.
+  const WEEKDAYS = useMemo(
+    () => eachDayOfInterval({
+      start: startOfWeek(new Date(), { weekStartsOn: 1 }),
+      end: endOfWeek(new Date(), { weekStartsOn: 1 }),
+    }).map(d => format(d, 'EEEEEE', { locale: dateLocale(language) })),
+    [language],
+  )
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => setDisplayMonth(m => addMonths(m, -1))} style={styles.navBtn}>
+        <TouchableOpacity
+          onPress={() => setDisplayMonth(m => addMonths(m, -1))}
+          style={styles.navBtn}
+          // The '‹' glyph is announced as raw punctuation by a screen reader,
+          // and the button was ~26×42 — under the 44×44 minimum.
+          accessibilityRole="button"
+          accessibilityLabel={t('prevMonth', language)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
           <Text style={styles.navText}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.monthLabel}>{format(displayMonth, 'MMMM yyyy')}</Text>
-        <TouchableOpacity onPress={() => setDisplayMonth(m => addMonths(m, 1))} style={styles.navBtn}>
+        <Text style={styles.monthLabel}>{formatMonthYear(displayMonth, language)}</Text>
+        <TouchableOpacity
+          onPress={() => setDisplayMonth(m => addMonths(m, 1))}
+          style={styles.navBtn}
+          accessibilityRole="button"
+          accessibilityLabel={t('nextMonth', language)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
           <Text style={styles.navText}>›</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.weekdays}>
-        {WEEKDAYS.map(d => (
-          <Text key={d} style={styles.weekday}>{d}</Text>
+        {WEEKDAYS.map((d, i) => (
+          <Text key={i} style={styles.weekday}>{d}</Text>
         ))}
       </View>
 
@@ -132,15 +158,23 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingHorizontal: Spacing.base,
     marginBottom: Spacing.md,
   },
-  navBtn: { padding: Spacing.sm },
-  navText: { fontSize: 22, color: C.primary, fontWeight: '700' },
-  monthLabel: { fontSize: 16, fontWeight: '700', color: C.text },
+  // 44×44 is the minimum touch target; the old `padding: Spacing.sm` alone
+  // produced roughly 26×42 around the chevron.
+  navBtn: {
+    padding: Spacing.sm,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navText: { fontSize: 22, color: C.primary, fontFamily: Fonts.bold },
+  monthLabel: { fontSize: 16, fontFamily: Fonts.bold, color: C.text },
   weekdays: { flexDirection: 'row', paddingHorizontal: Spacing.sm, marginBottom: Spacing.sm },
   weekday: {
     width: DAY_SIZE,
     textAlign: 'center',
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     color: C.textTertiary,
     textTransform: 'uppercase',
   },
@@ -157,10 +191,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   dayInRange: { backgroundColor: C.primarySurface, borderRadius: 0 },
   dayDisabled: { opacity: 0.4 },
   dayOutOfMonth: { opacity: 0.25 },
-  dayText: { fontSize: 14, color: C.text, fontWeight: '500' },
-  dayTextSelected: { color: C.textInverse, fontWeight: '700' },
+  dayText: { fontSize: 14, color: C.text, fontFamily: Fonts.medium },
+  dayTextSelected: { color: C.textInverse, fontFamily: Fonts.bold },
   dayTextDisabled: { textDecorationLine: 'line-through' },
   dayTextOutOfMonth: { color: C.textTertiary },
-  blockedX: { position: 'absolute', fontSize: 8, color: C.error, bottom: 2 },
+  blockedX: { position: 'absolute', fontFamily: Fonts.regular, fontSize: 8, color: C.error, bottom: 2 },
   })
 }

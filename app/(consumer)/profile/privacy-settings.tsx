@@ -5,7 +5,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import type { Href } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
@@ -243,9 +244,10 @@ export default function PrivacySettingsScreen() {
               accessibilityLabel={t('cprExportMyData', language)}
               accessibilityRole="button"
             >
-              <Text style={styles.actionText}>
-                {'📤 '}{t('cprExportMyData', language)}
-              </Text>
+              <View style={styles.actionLabelRow}>
+                <Ionicons name="download-outline" size={16} color={C.text} importantForAccessibility="no" />
+                <Text style={styles.actionText}>{t('cprExportMyData', language)}</Text>
+              </View>
               <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
 
@@ -257,9 +259,10 @@ export default function PrivacySettingsScreen() {
               accessibilityLabel={t('cprDeleteAccount', language)}
               accessibilityRole="button"
             >
-              <Text style={[styles.actionText, styles.dangerText]}>
-                {'🗑️ '}{t('cprDeleteAccount', language)}
-              </Text>
+              <View style={styles.actionLabelRow}>
+                <Ionicons name="trash-outline" size={16} color={C.error} importantForAccessibility="no" />
+                <Text style={[styles.actionText, styles.dangerText]}>{t('cprDeleteAccount', language)}</Text>
+              </View>
               <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
           </View>
@@ -277,10 +280,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   center: { alignItems: 'center', justifyContent: 'center' },
   scroll: { flexGrow: 1 },
   back: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm },
-  backText: { fontSize: 16, color: C.primary, fontWeight: '600' },
+  // Navigation, not a primary action → muted ink (5.67:1 light, 8.61:1 dark).
+  backText: { fontSize: 16, color: C.textSecondary, fontFamily: Fonts.semibold },
   content: { padding: Spacing.base },
-  title: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
-  subtitle: { fontSize: 15, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
+  title: { fontSize: 26, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.sm },
+  subtitle: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
   savingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -292,7 +296,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignSelf: 'flex-start',
     marginBottom: Spacing.md,
   },
-  savingText: { fontSize: 12, color: C.primary, fontWeight: '600' },
+  savingText: { fontSize: 12, color: C.primary, fontFamily: Fonts.semibold },
   section: {
     backgroundColor: C.surface,
     borderRadius: Radius.lg,
@@ -303,7 +307,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   sectionLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textTertiary,
     letterSpacing: 0.8,
     marginBottom: Spacing.md,
@@ -315,8 +319,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingVertical: Spacing.sm,
   },
   switchContent: { flex: 1, marginRight: Spacing.md },
-  switchTitle: { fontSize: 14, fontWeight: '600', color: C.text },
-  switchMeta: { fontSize: 12, color: C.textTertiary, marginTop: 2 },
+  switchTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: C.text },
+  switchMeta: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: 2 },
   divider: { height: 1, backgroundColor: C.border, marginVertical: Spacing.sm },
   actionRow: {
     flexDirection: 'row',
@@ -325,11 +329,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingVertical: Spacing.sm,
     minHeight: 44,
   },
-  actionText: { fontSize: 15, color: C.text },
+  actionLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  actionText: { fontFamily: Fonts.regular, fontSize: 15, color: C.text },
   dangerText: { color: C.error },
-  chevron: { fontSize: 20, color: C.textTertiary },
+  chevron: { fontFamily: Fonts.regular, fontSize: 20, color: C.textTertiary },
   gdprNote: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: C.textTertiary,
     textAlign: 'center',
     lineHeight: 18,

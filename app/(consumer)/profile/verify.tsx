@@ -5,8 +5,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
+import { Ionicons } from '@expo/vector-icons'
 import * as ImagePicker from 'expo-image-picker'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
@@ -29,21 +30,21 @@ export default function VerifyScreen() {
   const [photos, setPhotos] = useState<Record<Step, string | null>>({ 1: null, 2: null, 3: null })
   const [submitted, setSubmitted] = useState(false)
 
-  const stepLabels: Record<Step, { title: string; subtitle: string; icon: string }> = {
+  const stepLabels: Record<Step, { title: string; subtitle: string; icon: React.ComponentProps<typeof Ionicons>['name'] }> = {
     1: {
       title: cprT('cprStep1Title', language),
       subtitle: cprT('cprStep1Subtitle', language),
-      icon: '🪪',
+      icon: 'card-outline',
     },
     2: {
       title: cprT('cprStep2Title', language),
       subtitle: cprT('cprStep2Subtitle', language),
-      icon: '🪪',
+      icon: 'card-outline',
     },
     3: {
       title: cprT('cprStep3Title', language),
       subtitle: cprT('cprStep3Subtitle', language),
-      icon: '🤳',
+      icon: 'person-circle-outline',
     },
   }
 
@@ -132,7 +133,7 @@ export default function VerifyScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.successContainer}>
-          <Text style={styles.successIcon}>✅</Text>
+          <Ionicons name="checkmark-circle" size={64} color={C.success} style={styles.successIcon} importantForAccessibility="no" />
           <Text style={styles.successTitle}>
             {Config.useMock
               ? cprT('cprVerified', language)
@@ -180,7 +181,7 @@ export default function VerifyScreen() {
 
         {/* Step header */}
         <View style={styles.stepHeader}>
-          <Text style={styles.stepIcon}>{stepInfo.icon}</Text>
+          <Ionicons name={stepInfo.icon} size={48} color={C.textSecondary} style={styles.stepIcon} importantForAccessibility="no" />
           <Text style={styles.stepTitle}>{stepInfo.title}</Text>
           <Text style={styles.stepSubtitle}>{stepInfo.subtitle}</Text>
         </View>
@@ -201,7 +202,7 @@ export default function VerifyScreen() {
           </View>
         ) : (
           <View style={styles.photoPlaceholder}>
-            <Text style={styles.photoPlaceholderIcon}>📷</Text>
+            <Ionicons name="camera-outline" size={40} color={C.textTertiary} style={styles.photoPlaceholderIcon} importantForAccessibility="no" />
             <Text style={styles.photoPlaceholderText}>{cprT('cprNoPhotoTaken', language)}</Text>
           </View>
         )}
@@ -213,6 +214,7 @@ export default function VerifyScreen() {
             accessibilityRole="button"
             accessibilityLabel={cprT('cprGallery', language)}
           >
+            <Ionicons name="images-outline" size={14} color={C.textSecondary} importantForAccessibility="no" />
             <Text style={styles.galleryBtnText}>{cprT('cprGallery', language)}</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -221,6 +223,7 @@ export default function VerifyScreen() {
             accessibilityRole="button"
             accessibilityLabel={cprT('cprCamera', language)}
           >
+            <Ionicons name="camera-outline" size={14} color={C.primaryDark} importantForAccessibility="no" />
             <Text style={styles.cameraBtnText}>{cprT('cprCamera', language)}</Text>
           </TouchableOpacity>
         </View>
@@ -252,16 +255,18 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  progressDotActive: { backgroundColor: C.primary },
-  progressDotText: { fontSize: 13, fontWeight: '700', color: C.textTertiary },
+  // Step indicator: ink for done/active, C.border for the rest — not a CTA.
+  // textInverse on C.text = 15:1 in both themes.
+  progressDotActive: { backgroundColor: C.text },
+  progressDotText: { fontSize: 13, fontFamily: Fonts.bold, color: C.textTertiary },
   progressDotTextActive: { color: C.textInverse },
   progressLine: { width: 40, height: 2, backgroundColor: C.border, marginHorizontal: 4 },
-  progressLineActive: { backgroundColor: C.primary },
-  stepLabel: { fontSize: 12, color: C.textTertiary, textAlign: 'center', marginBottom: Spacing.xl },
+  progressLineActive: { backgroundColor: C.text },
+  stepLabel: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, textAlign: 'center', marginBottom: Spacing.xl },
   stepHeader: { alignItems: 'center', marginBottom: Spacing.xl },
-  stepIcon: { fontSize: 48, marginBottom: Spacing.md },
-  stepTitle: { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
-  stepSubtitle: { fontSize: 14, color: C.textSecondary, textAlign: 'center', lineHeight: 20 },
+  stepIcon: { marginBottom: Spacing.md },
+  stepTitle: { fontSize: 20, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.sm },
+  stepSubtitle: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, textAlign: 'center', lineHeight: 20 },
   photoPlaceholder: {
     height: 200,
     backgroundColor: C.surfaceWarm,
@@ -273,40 +278,44 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
     marginBottom: Spacing.base,
   },
-  photoPlaceholderIcon: { fontSize: 40, marginBottom: Spacing.sm },
-  photoPlaceholderText: { fontSize: 14, color: C.textTertiary },
+  photoPlaceholderIcon: { marginBottom: Spacing.sm },
+  photoPlaceholderText: { fontFamily: Fonts.regular, fontSize: 14, color: C.textTertiary },
   photoPreview: { marginBottom: Spacing.base },
   photoImage: { width: '100%', height: 200, borderRadius: Radius.xl, resizeMode: 'cover' },
   retakeBtn: { marginTop: Spacing.sm, alignSelf: 'center', minHeight: 44, justifyContent: 'center' },
-  retakeText: { fontSize: 14, color: C.primary, fontWeight: '600' },
+  retakeText: { fontSize: 14, color: C.primary, fontFamily: Fonts.semibold },
   buttonRow: { flexDirection: 'row', gap: Spacing.md },
   galleryBtn: {
     flex: 1,
     backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
     padding: Spacing.md,
+    flexDirection: 'row',
+    gap: 6,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: C.border,
     minHeight: 44,
     justifyContent: 'center',
   },
-  galleryBtnText: { fontSize: 14, color: C.textSecondary, fontWeight: '600' },
+  galleryBtnText: { fontSize: 14, color: C.textSecondary, fontFamily: Fonts.semibold },
   cameraBtn: {
     flex: 1,
     backgroundColor: C.primarySurface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
+    flexDirection: 'row',
+    gap: 6,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: C.primary,
     minHeight: 44,
     justifyContent: 'center',
   },
-  cameraBtnText: { fontSize: 14, color: C.primaryDark, fontWeight: '600' },
+  cameraBtnText: { fontSize: 14, color: C.primaryDark, fontFamily: Fonts.semibold },
   successContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xl },
-  successIcon: { fontSize: 72, marginBottom: Spacing.xl },
-  successTitle: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.md },
-  successSubtitle: { fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22 },
+  successIcon: { marginBottom: Spacing.xl },
+  successTitle: { fontSize: 26, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.md },
+  successSubtitle: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22 },
   })
 }

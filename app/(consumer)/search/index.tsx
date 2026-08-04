@@ -1,10 +1,12 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react'
 import {
   View, Text, FlatList, StyleSheet, ScrollView, TouchableOpacity, TextInput,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { ListingCard, ListingCardSkeleton } from '@/components/listing/ListingCard'
 import { CategoryPill } from '@/components/ui/CategoryPill'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -61,7 +63,7 @@ export default function SearchScreen() {
   const { history, addSearch, clearHistory } = useSearchHistory()
 
   const filters: SearchFilters = { category: selectedCategory ?? undefined }
-  const { listings, loading } = useListings(filters)
+  const { listings, loading, loadMore, loadingMore } = useListings(filters)
 
   const searchState: SearchState = {
     query,
@@ -94,6 +96,18 @@ export default function SearchScreen() {
   }, [addSearch])
 
   const showSuggestions = focused && query.length === 0
+
+  const hasActiveFilters =
+    query.trim().length > 0 || selectedCategory !== null ||
+    instantBook || minCapacity !== null || sortBy !== 'relevance'
+
+  const clearFilters = useCallback(() => {
+    setQuery('')
+    setSelectedCategory(null)
+    setSortBy('relevance')
+    setInstantBook(false)
+    setMinCapacity(null)
+  }, [])
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: C.background }]} edges={['top']}>
@@ -180,7 +194,7 @@ export default function SearchScreen() {
               ))}
             </>
           )}
-          <Text style={styles.trendingLabel}>🔥 Trending</Text>
+          <Text style={styles.trendingLabel}>Trending</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trendingChips}>
             {POPULAR_SUGGESTIONS.map(s => (
               <TouchableOpacity key={s} style={styles.trendingChip} onPress={() => handleSuggestion(s)}>
@@ -222,14 +236,14 @@ export default function SearchScreen() {
           ))}
           <View style={[styles.sortDivider, { backgroundColor: C.border }]} />
           <CategoryPill
-            label={`⚡ ${t('filterInstant', language)}`}
+            label={t('filterInstant', language)}
             active={instantBook}
             onPress={() => setInstantBook(v => !v)}
           />
           {CAPACITY_OPTIONS.map(opt => (
             <CategoryPill
               key={String(opt.cap)}
-              label={`👥 ${t(opt.labelKey, language)}`}
+              label={t(opt.labelKey, language)}
               active={minCapacity === opt.cap}
               onPress={() => setMinCapacity(opt.cap)}
             />
@@ -249,10 +263,18 @@ export default function SearchScreen() {
         </View>
       ) : filtered.length === 0 ? (
         /* List empty state */
+        /* Dead end before: a bare "no results" message with nothing to tap. */
         <EmptyState
-          emoji="🔍"
+          icon="search-outline"
           title="No results"
           subtitle={query ? 'Try different search terms or remove filters' : 'Try a different category'}
+          action={hasActiveFilters
+            ? { label: t('clearFiltersAction', language), onPress: clearFilters }
+            : undefined}
+          secondaryAction={{
+            label: t('browseAll', language),
+            onPress: () => router.push('/(consumer)/explore' as Parameters<typeof router.push>[0]),
+          }}
         />
       ) : (
         /* List results */
@@ -268,6 +290,13 @@ export default function SearchScreen() {
           windowSize={5}
           removeClippedSubviews
           renderItem={({ item }) => <ListingCard listing={item} showAvailableBadge />}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={loadingMore ? (
+            <View style={styles.listFooter}>
+              <ActivityIndicator size="small" color={C.primary} />
+            </View>
+          ) : null}
         />
       )}
     </SafeAreaView>
@@ -284,7 +313,7 @@ function makeStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create(
     paddingTop: Spacing.md,
   },
   title: {
-    fontSize: 26, fontWeight: '800', color: C.text,
+    fontFamily: 'Manrope_800ExtraBold', fontSize: 26, letterSpacing: -0.6, color: C.text,
   },
   viewToggle: {
     flexDirection: 'row',
@@ -306,11 +335,11 @@ function makeStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create(
     justifyContent: 'center',
   },
   toggleBtnActive: {
-    backgroundColor: C.primary,
+    backgroundColor: C.text,
   },
   toggleText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     color: C.textSecondary,
   },
   searchRow: {
@@ -331,7 +360,7 @@ function makeStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create(
   searchIcon: { marginRight: 2 },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     color: C.text,
     paddingVertical: 0,
   },
@@ -353,23 +382,23 @@ function makeStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create(
     marginBottom: Spacing.sm,
   },
   suggestionsLabel: {
-    fontSize: 11, fontWeight: '700', color: C.textTertiary,
+    fontSize: 11, fontFamily: Fonts.bold, color: C.textTertiary,
     textTransform: 'uppercase', letterSpacing: 0.5,
   },
-  clearText: { fontSize: 12, color: C.primary, fontWeight: '600' },
+  clearText: { fontSize: 12, color: C.primary, fontFamily: Fonts.semibold },
   suggestionRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
     paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm,
   },
-  suggestionText: { fontSize: 14, color: C.text },
+  suggestionText: { fontFamily: Fonts.regular, fontSize: 14, color: C.text },
   trendingChips: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, gap: Spacing.sm },
   trendingChip: {
-    backgroundColor: C.primarySurface,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.pill,
     paddingHorizontal: 12, paddingVertical: 6,
-    borderWidth: 1, borderColor: C.primaryLight,
+    borderWidth: 1, borderColor: C.border,
   },
-  trendingChipText: { fontSize: 13, fontWeight: '600', color: C.primaryDark },
+  trendingChipText: { fontSize: 13, fontFamily: Fonts.semibold, color: C.text },
   // Horizontal chip rows must hug their content height; without flexGrow:0 a
   // horizontal ScrollView expands vertically in the flex column and shoves the
   // list down (the big empty gap bug).
@@ -378,7 +407,7 @@ function makeStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create(
   sortBar: { paddingHorizontal: 16, paddingVertical: Spacing.sm, alignItems: 'center' },
   trendingLabel: {
     paddingHorizontal: Spacing.base, paddingTop: Spacing.sm,
-    fontSize: 11, fontWeight: '700', color: C.textTertiary,
+    fontSize: 11, fontFamily: Fonts.bold, color: C.textTertiary,
     textTransform: 'uppercase', letterSpacing: 0.5,
   },
   sortDivider: {
@@ -393,5 +422,6 @@ function makeStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create(
   },
   list: { flex: 1 },
   grid: { padding: Spacing.base, paddingBottom: 100 },
+  listFooter: { paddingVertical: Spacing.lg, alignItems: 'center' },
   columnWrapper: { justifyContent: 'space-between' },
 }) }

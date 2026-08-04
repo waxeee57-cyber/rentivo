@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { Spacing } from '@/constants/colors'
+import { Spacing, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 export default function RentivoMap() {
@@ -16,6 +16,6 @@ export default function RentivoMap() {
 function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.surfaceWarm },
-  text: { color: C.textSecondary, fontSize: 14 },
+  text: { color: C.textSecondary, fontFamily: Fonts.regular, fontSize: 14 },
   })
 }

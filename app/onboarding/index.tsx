@@ -7,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Spacing, Radius, Typography, Shadow } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Typography, Shadow, Fonts } from '@/constants/colors'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -18,28 +19,28 @@ const { width, height } = Dimensions.get('window')
 
 const SLIDES: {
   id: string
-  emoji: string
+  icon: React.ComponentProps<typeof Ionicons>['name']
   titleKey: string
   subtitleKey: string
   gradient: [string, string]
 }[] = [
   {
     id: '1',
-    emoji: '🌊',
+    icon: 'boat-outline',
     titleKey: 'auth2Slide1Title',
     subtitleKey: 'auth2Slide1Subtitle',
     gradient: ['#0A1628', '#0D1F38'],
   },
   {
     id: '2',
-    emoji: '📋',
+    icon: 'document-text-outline',
     titleKey: 'auth2Slide2Title',
     subtitleKey: 'auth2Slide2Subtitle',
     gradient: ['#0A1628', '#091520'],
   },
   {
     id: '3',
-    emoji: '⚡',
+    icon: 'flash-outline',
     titleKey: 'auth2Slide3Title',
     subtitleKey: 'auth2Slide3Subtitle',
     gradient: ['#0A1628', '#12150A'],
@@ -110,7 +111,7 @@ export default function OnboardingScreen() {
             />
             <View style={styles.slideContent}>
               <View style={styles.emojiCircle}>
-                <Text style={styles.emoji}>{item.emoji}</Text>
+                <Ionicons name={item.icon} size={64} color={C.primary} importantForAccessibility="no" />
               </View>
               <Text style={styles.title}>{t(item.titleKey as TranslationKey, language)}</Text>
               <Text style={styles.subtitle}>{t(item.subtitleKey as TranslationKey, language)}</Text>
@@ -119,12 +120,13 @@ export default function OnboardingScreen() {
               {item.id === '1' && (
                 <View style={styles.trustBadges}>
                   {([
-                    t('auth2TrustInsured', language),
-                    t('auth2TrustInstant', language),
-                    t('auth2TrustVerified', language),
-                  ]).map(badge => (
-                    <View key={badge} style={styles.trustBadge}>
-                      <Text style={styles.trustBadgeText}>{badge}</Text>
+                    { icon: 'lock-closed', label: t('auth2TrustInsured', language) },
+                    { icon: 'flash', label: t('auth2TrustInstant', language) },
+                    { icon: 'checkmark-circle', label: t('auth2TrustVerified', language) },
+                  ] as const).map(badge => (
+                    <View key={badge.label} style={styles.trustBadge}>
+                      <Ionicons name={badge.icon} size={12} color={C.primary} importantForAccessibility="no" />
+                      <Text style={styles.trustBadgeText}>{badge.label}</Text>
                     </View>
                   ))}
                 </View>
@@ -215,7 +217,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
     marginBottom: Spacing.xl,
   },
-  emoji: { fontSize: 64 },
   title: {
     ...Typography.h1,
     color: C.white,
@@ -236,6 +237,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
   },
   trustBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: 'rgba(232,164,74,0.12)',
     borderRadius: Radius.full,
     paddingHorizontal: 12,
@@ -246,7 +250,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   trustBadgeText: {
     fontSize: 13,
     color: C.primary,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
   },
 
   controls: {
@@ -283,7 +287,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   skipBtnText: {
     fontSize: 15,
     color: C.textSecondary,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
   },
   })
 }

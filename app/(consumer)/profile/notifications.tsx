@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
@@ -224,16 +224,17 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   container: { flex: 1, backgroundColor: C.background },
   scroll: { flexGrow: 1 },
   back: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm },
-  backText: { fontSize: 16, color: C.primary, fontWeight: '600' },
+  // Navigation, not a primary action → muted ink (5.67:1 light, 8.61:1 dark).
+  backText: { fontSize: 16, color: C.textSecondary, fontFamily: Fonts.semibold },
   content: { padding: Spacing.base },
   title: {
     fontSize: 26,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     marginBottom: Spacing.sm,
   },
   subtitle: {
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     color: C.textSecondary,
     lineHeight: 22,
     marginBottom: Spacing.xl,
@@ -249,7 +250,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignSelf: 'flex-start',
     marginBottom: Spacing.md,
   },
-  savingText: { fontSize: 12, color: C.primary, fontWeight: '600' },
+  savingText: { fontSize: 12, color: C.primary, fontFamily: Fonts.semibold },
   loadingContainer: {
     paddingVertical: Spacing.xxxl,
     alignItems: 'center',
@@ -264,7 +265,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   sectionLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textTertiary,
     letterSpacing: 0.8,
     marginBottom: Spacing.md,
@@ -277,11 +278,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingVertical: Spacing.xs,
   },
   switchContent: { flex: 1, marginRight: Spacing.md },
-  switchTitle: { fontSize: 14, fontWeight: '600', color: C.text },
-  switchDesc: { fontSize: 12, color: C.textTertiary, marginTop: 2 },
+  switchTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: C.text },
+  switchDesc: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: 2 },
   divider: { height: 1, backgroundColor: C.border, marginVertical: Spacing.sm },
   footer: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: C.textTertiary,
     textAlign: 'center',
     lineHeight: 18,

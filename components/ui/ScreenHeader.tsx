@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Spacing, Radius, Typography, Shadow } from '@/constants/colors'
+import { Spacing, Radius, Typography, Shadow, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 type Variant = 'solid' | 'transparent' | 'large'
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   },
 
   solidSubtitle: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     marginTop: 1,
   },
 

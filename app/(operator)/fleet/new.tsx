@@ -10,7 +10,7 @@ import * as Haptics from 'expo-haptics'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { WhatNextScreen } from '@/components/ui/WhatNextScreen'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { CategoryPill } from '@/components/ui/CategoryPill'
@@ -131,10 +131,10 @@ export default function NewListingScreen() {
           <Text style={styles.publishedSub}>{t('opFleetVehicleLiveSub', language)}</Text>
           <WhatNextScreen
             steps={[
-              { icon: '🔔', text: t('opFleetNextStep1', language) },
-              { icon: '✓', text: t('opFleetNextStep2', language) },
-              { icon: '💰', text: t('opFleetNextStep3', language) },
-              { icon: '🔄', text: t('opFleetNextStep4', language) },
+              { icon: 'notifications-outline', text: t('opFleetNextStep1', language) },
+              { icon: 'checkmark-outline', text: t('opFleetNextStep2', language) },
+              { icon: 'cash-outline', text: t('opFleetNextStep3', language) },
+              { icon: 'sync-outline', text: t('opFleetNextStep4', language) },
             ]}
             primaryAction={{
               label: t('opFleetGoToFleet', language),
@@ -292,11 +292,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.background },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
-  stepTitle: { fontSize: 22, fontWeight: '800', color: C.text, marginBottom: Spacing.xl },
-  fieldLabel: { fontSize: 12, fontWeight: '700', color: C.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.sm },
+  stepTitle: { fontSize: 22, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.xl },
+  fieldLabel: { fontSize: 12, fontFamily: Fonts.bold, color: C.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.sm },
   categories: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: Spacing.base },
   featureGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  strHint: { fontSize: 12, color: C.textSecondary, marginBottom: Spacing.sm, lineHeight: 18 },
+  strHint: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, marginBottom: Spacing.sm, lineHeight: 18 },
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
   photoSlot: {
     width: '31%',
@@ -312,7 +312,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     gap: 4,
   },
   photoSlotImage: { width: '100%', height: '100%' },
-  photoSlotLabel: { fontSize: 10, color: C.textTertiary, fontWeight: '600' },
+  photoSlotLabel: { fontSize: 10, color: C.textTertiary, fontFamily: Fonts.semibold },
   publishedCircle: {
     width: 96,
     height: 96,
@@ -325,16 +325,16 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 3,
     borderColor: C.success,
   },
-  publishedCheck: { fontSize: 48, color: C.success },
+  publishedCheck: { fontFamily: Fonts.regular, fontSize: 48, color: C.success },
   publishedTitle: {
     fontSize: 26,
-    fontWeight: '900',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
   publishedSub: {
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     color: C.textSecondary,
     textAlign: 'center',
     marginBottom: Spacing.xl,

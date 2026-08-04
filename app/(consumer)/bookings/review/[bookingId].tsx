@@ -6,8 +6,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
+import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { useBooking } from '@/lib/hooks/useBookings'
 import { useToastStore } from '@/lib/store/useToastStore'
@@ -31,7 +32,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
   const C = useColors()
   const starStyles = useMemo(() => StyleSheet.create({
     row: { flexDirection: 'row', gap: Spacing.sm, justifyContent: 'center' },
-    star: { fontSize: 44, color: C.primary },
+    star: { fontFamily: Fonts.regular, fontSize: 44, color: C.primary },
   }), [C])
   const scales = useRef([1, 2, 3, 4, 5].map(() => new Animated.Value(1))).current
 
@@ -128,7 +129,7 @@ export default function ReviewScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.successContainer}>
-          <Text style={styles.confetti}>🎉</Text>
+          <Ionicons name="checkmark-circle" size={72} color={C.success} style={styles.confetti} importantForAccessibility="no" />
           <Text style={styles.successTitle}>{t('cbkThankYou', language)}</Text>
           <Text style={styles.successSubtitle}>
             {t('cbkReviewHelps', language)}
@@ -236,16 +237,16 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.surface, borderRadius: Radius.lg,
     padding: Spacing.base, marginBottom: Spacing.xl,
   },
-  vehicleTitle: { fontSize: 17, fontWeight: '700', color: C.text, marginBottom: 4 },
-  vehicleOp: { fontSize: 13, color: C.textSecondary, marginBottom: 2 },
-  vehicleDates: { fontSize: 12, color: C.textTertiary },
+  vehicleTitle: { fontSize: 17, fontFamily: Fonts.bold, color: C.text, marginBottom: 4 },
+  vehicleOp: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, marginBottom: 2 },
+  vehicleDates: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary },
   sectionTitle: {
-    fontSize: 12, fontWeight: '700', color: C.textTertiary,
+    fontSize: 12, fontFamily: Fonts.bold, color: C.textTertiary,
     textTransform: 'uppercase', letterSpacing: 0.5,
     marginBottom: Spacing.base, textAlign: 'center',
   },
   ratingLabel: {
-    fontSize: 16, fontWeight: '700', color: C.primary,
+    fontSize: 16, fontFamily: Fonts.bold, color: C.primary,
     textAlign: 'center', marginTop: Spacing.sm,
   },
   tagsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, justifyContent: 'center' },
@@ -256,19 +257,19 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.surface,
   },
   tagChipActive: { backgroundColor: C.primary, borderColor: C.primary },
-  tagChipText: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
+  tagChipText: { fontSize: 13, fontFamily: Fonts.semibold, color: C.textSecondary },
   tagChipTextActive: { color: C.textInverse },
   reviewInput: {
     backgroundColor: C.surface, borderRadius: Radius.lg,
-    padding: Spacing.base, fontSize: 14, color: C.text,
+    padding: Spacing.base, fontFamily: Fonts.regular, fontSize: 14, color: C.text,
     minHeight: 120, textAlignVertical: 'top',
     borderWidth: 1, borderColor: C.border, lineHeight: 22,
   },
-  charCount: { fontSize: 12, color: C.textTertiary, textAlign: 'right', marginTop: Spacing.xs },
+  charCount: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, textAlign: 'right', marginTop: Spacing.xs },
   submitBtn: { marginTop: Spacing.xl },
   successContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.xl },
-  confetti: { fontSize: 72, marginBottom: Spacing.xl },
-  successTitle: { fontSize: 28, fontWeight: '800', color: C.text, marginBottom: Spacing.md },
-  successSubtitle: { fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22 },
+  confetti: { marginBottom: Spacing.xl },
+  successTitle: { fontSize: 28, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.md },
+  successSubtitle: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22 },
   })
 }

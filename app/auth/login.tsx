@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, 
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Spacing } from '@/constants/colors'
+import { Spacing, Fonts } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -105,9 +105,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   container: { flex: 1, backgroundColor: C.background },
   flex: { flex: 1 },
   back: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
-  backText: { fontSize: 16, color: C.primary, fontWeight: '600' },
+  // Navigation, not a primary action → muted ink (5.67:1 light, 8.61:1 dark).
+  backText: { fontSize: 16, color: C.textSecondary, fontFamily: Fonts.semibold },
   content: { flexGrow: 1, padding: Spacing.xl, justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
-  subtitle: { fontSize: 15, color: C.textSecondary, marginBottom: Spacing.xl },
+  title: { fontSize: 28, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.sm },
+  subtitle: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary, marginBottom: Spacing.xl },
   })
 }

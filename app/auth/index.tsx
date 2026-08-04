@@ -2,21 +2,28 @@ import React, { useRef, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient'
+import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import { Spacing, Radius, Typography, Shadow } from '@/constants/colors'
+import { Spacing, Radius, Typography, Shadow, Fonts } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
 
+// This screen sits on a FIXED navy gradient (not theme-reactive), so hero
+// accents use fixed values from the dark palette.
+const HERO_AMBER = '#F0B15C'
+const HERO_AMBER_TINT = 'rgba(240,177,92,0.14)'
+const HERO_AMBER_BORDER = 'rgba(240,177,92,0.35)'
+
 function RoleCard({
-  emoji,
+  icon,
   title,
   desc,
   variant = 'traveler',
   onPress,
 }: {
-  emoji: string
+  icon: React.ComponentProps<typeof Ionicons>['name']
   title: string
   desc: string
   variant?: 'traveler' | 'host' | 'operator'
@@ -28,14 +35,11 @@ function RoleCard({
 
   const cardStyle = [
     styles.card,
-    variant === 'traveler' && styles.cardTraveler,
-    variant === 'host'     && styles.cardHost,
     variant === 'operator' && styles.cardOperator,
   ]
 
-  const titleStyle = [styles.cardTitle, variant === 'operator' && styles.cardTitleDark]
-  const descStyle  = [styles.cardDesc,  variant === 'operator' && styles.cardDescDark]
-  const arrowStyle = [styles.cardArrow, variant === 'operator' && styles.cardArrowDark]
+  const titleStyle = [styles.cardTitle, variant === 'operator' && styles.cardTitleOnTint]
+  const descStyle  = [styles.cardDesc,  variant === 'operator' && styles.cardDescOnTint]
 
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
@@ -48,12 +52,18 @@ function RoleCard({
         accessibilityRole="button"
         accessibilityLabel={title}
       >
-        <Text style={styles.cardEmoji}>{emoji}</Text>
+        <View style={[styles.cardIconCircle, variant === 'operator' && styles.cardIconCircleOnTint]}>
+          <Ionicons name={icon} size={22} color={variant === 'operator' ? HERO_AMBER : C.primary} />
+        </View>
         <View style={styles.cardBody}>
           <Text style={titleStyle}>{title}</Text>
           <Text style={descStyle}>{desc}</Text>
         </View>
-        <Text style={arrowStyle}>›</Text>
+        <Ionicons
+          name="chevron-forward"
+          size={18}
+          color={variant === 'operator' ? 'rgba(242,240,235,0.7)' : C.textTertiary}
+        />
       </TouchableOpacity>
     </Animated.View>
   )
@@ -86,36 +96,45 @@ export default function RoleSelectionScreen() {
       <SafeAreaView style={styles.safeArea}>
         {/* Hero */}
         <View style={styles.hero}>
-          <Text style={styles.wave}>🌊</Text>
+          <View style={styles.markCircle}>
+            <Ionicons name="boat" size={30} color={HERO_AMBER} />
+          </View>
           <Text style={styles.logo}>Rentivo</Text>
           <Text style={styles.tagline}>{t('authTagline', language)}</Text>
           <View style={styles.trustRow}>
-            <Text style={styles.trustBadge}>{t('authTrustInsured', language)}</Text>
-            <Text style={styles.trustDot}>·</Text>
-            <Text style={styles.trustBadge}>{t('authTrustInstant', language)}</Text>
-            <Text style={styles.trustDot}>·</Text>
-            <Text style={styles.trustBadge}>{t('authTrustVerified', language)}</Text>
+            <View style={styles.trustChip}>
+              <Ionicons name="shield-checkmark-outline" size={13} color={HERO_AMBER} />
+              <Text style={styles.trustBadge}>{t('authTrustInsured', language)}</Text>
+            </View>
+            <View style={styles.trustChip}>
+              <Ionicons name="flash-outline" size={13} color={HERO_AMBER} />
+              <Text style={styles.trustBadge}>{t('authTrustInstant', language)}</Text>
+            </View>
+            <View style={styles.trustChip}>
+              <Ionicons name="star" size={13} color={HERO_AMBER} />
+              <Text style={styles.trustBadge}>{t('authTrustVerified', language)}</Text>
+            </View>
           </View>
         </View>
 
         {/* Role cards */}
         <View style={styles.cards}>
           <RoleCard
-            emoji="🌴"
+            icon="car-sport-outline"
             title={t('authRoleTravelerTitle', language)}
             desc={t('authRoleTravelerDesc', language)}
             variant="traveler"
             onPress={() => handleSelect('consumer')}
           />
           <RoleCard
-            emoji="🏠"
+            icon="home-outline"
             title={t('authRoleHostTitle', language)}
             desc={t('authRoleHostDesc', language)}
             variant="host"
             onPress={() => handleSelect('host')}
           />
           <RoleCard
-            emoji="🏢"
+            icon="business-outline"
             title={t('authRoleOperatorTitle', language)}
             desc={t('authRoleOperatorDesc', language)}
             variant="operator"
@@ -144,20 +163,31 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     paddingTop: Spacing.xxxl,
   },
-  wave: {
-    fontSize: 40,
-    marginBottom: Spacing.md,
+  markCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: HERO_AMBER_TINT,
+    borderWidth: 1,
+    borderColor: HERO_AMBER_BORDER,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.base,
   },
   logo: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: C.primary,
-    letterSpacing: -1,
+    fontSize: 44,
+    fontFamily: Fonts.extrabold,
+    color: '#F2F0EB',
+    letterSpacing: -1.5,
     marginBottom: Spacing.sm,
   },
   tagline: {
+    // NOTE: this screen's background is a fixed dark-navy gradient
+    // (see LinearGradient colors above), not theme-reactive — so text here
+    // must use fixed light colors, not C.text/C.textSecondary/C.textTertiary
+    // (which flip to near-black in light theme and become unreadable).
     ...Typography.h3,
-    color: C.text,
+    color: 'rgba(245,240,232,0.95)',
     textAlign: 'center',
     marginBottom: Spacing.lg,
   },
@@ -166,13 +196,20 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     gap: Spacing.sm,
   },
-  trustBadge: {
-    fontSize: 13,
-    color: C.textSecondary,
-    fontWeight: '500',
+  trustChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
   },
-  trustDot: {
-    color: C.textTertiary,
+  trustBadge: {
+    fontSize: 12,
+    color: 'rgba(242,240,235,0.85)',
+    fontFamily: Fonts.medium,
   },
 
   cards: {
@@ -191,47 +228,39 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
     ...Shadow.sm,
   },
-  cardTraveler: {
-    borderLeftWidth: 4,
-    borderLeftColor: C.primary,
-    borderTopColor: C.border,
-    borderRightColor: C.border,
-    borderBottomColor: C.border,
-  },
-  cardHost: {
-    borderLeftWidth: 4,
-    borderLeftColor: C.white,
-    borderTopColor: C.border,
-    borderRightColor: C.border,
-    borderBottomColor: C.border,
-  },
+  // Business card: subtle amber tint over the navy (an equal member of the
+  // set — not a solid orange slab shouting over the other two)
   cardOperator: {
-    backgroundColor: C.primary,
-    borderColor: C.primary,
+    backgroundColor: HERO_AMBER_TINT,
+    borderColor: HERO_AMBER_BORDER,
   },
 
-  cardEmoji: { fontSize: 32 },
+  cardIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: C.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardIconCircleOnTint: {
+    backgroundColor: 'rgba(240,177,92,0.18)',
+  },
   cardBody: { flex: 1 },
   cardTitle: {
     ...Typography.h4,
     color: C.text,
     marginBottom: 2,
   },
-  cardTitleDark: { color: C.textInverse },
+  cardTitleOnTint: { color: '#F2F0EB' },
   cardDesc: {
     ...Typography.bodyS,
     color: C.textSecondary,
   },
-  cardDescDark: { color: 'rgba(10,22,40,0.65)' },
-  cardArrow: {
-    fontSize: 22,
-    color: C.textTertiary,
-    fontWeight: '300',
-  },
-  cardArrowDark: { color: C.textInverse },
+  cardDescOnTint: { color: 'rgba(242,240,235,0.65)' },
 
   footer: {
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: C.textTertiary,
     textAlign: 'center',
   },

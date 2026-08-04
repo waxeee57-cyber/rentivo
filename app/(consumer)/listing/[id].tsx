@@ -10,7 +10,7 @@ import { differenceInDays } from 'date-fns'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { Colors, Spacing, Radius } from '@/constants/colors'
+import { Colors, Spacing, Radius, Fonts, Typography } from '@/constants/colors'
 import { ListingCarousel } from '@/components/listing/ListingCarousel'
 import { ListingFeatures } from '@/components/listing/ListingFeatures'
 import { DatePickerSheet } from '@/components/booking/DatePickerSheet'
@@ -23,8 +23,8 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { useListing } from '@/lib/hooks/useListing'
 import { calculatePrice } from '@/lib/utils/calculatePrice'
 import { formatEUR, formatEURDecimal, formatPricePerDay } from '@/lib/utils/formatCurrency'
-import { getCategoryEmoji, getCategoryLabel } from '@/constants/categories'
-import { getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
+import { getCategoryLabel } from '@/constants/categories'
+import { getCancellationPolicyLabel } from '@/lib/utils/cancellation'
 import { Config } from '@/constants/config'
 import { MOCK_REVIEWS, MOCK_LISTINGS } from '@/lib/mockData'
 import { useReviews } from '@/lib/hooks/useReviews'
@@ -204,10 +204,18 @@ export default function ListingDetailScreen() {
           <View style={styles.heroGradient} pointerEvents="none" />
 
           <View style={styles.heroBottom} pointerEvents="none">
-            <View style={styles.catBadge}>
-              <Text style={styles.catBadgeText}>
-                {getCategoryEmoji(listing.category)} {getCategoryLabel(listing.category)}
-              </Text>
+            <View style={styles.heroBadgeRow}>
+              <View style={styles.catBadge}>
+                <Text style={styles.catBadgeText}>
+                  {getCategoryLabel(listing.category)}
+                </Text>
+              </View>
+              {listing.images && listing.images.length > 1 && (
+                <View style={styles.photoCountChip}>
+                  <Ionicons name="images-outline" size={11} color="#FFFFFF" />
+                  <Text style={styles.photoCountText}>{listing.images.length}</Text>
+                </View>
+              )}
             </View>
             <Text style={styles.heroTitle}>{listing.title}</Text>
             {listing.operator && (
@@ -294,22 +302,32 @@ export default function ListingDetailScreen() {
                 <Text style={styles.opName}>
                   {isHostListing ? listing.host?.name : listing.operator?.name}
                 </Text>
-                {(isHostListing ? listing.host?.verified : listing.operator?.verified) && (
-                  <View style={styles.verifiedPill}>
-                    <Text style={styles.verifiedText}>✓ Verified</Text>
-                  </View>
-                )}
                 {isHostListing ? (
                   <View style={[styles.verifiedPill, styles.hostPill]}>
-                    <Text style={[styles.verifiedText, styles.hostPillText]}>👤 Private host</Text>
+                    <Ionicons name="person-outline" size={10} color={C.info} />
+                    <Text style={[styles.verifiedText, styles.hostPillText]}>Private host</Text>
                   </View>
                 ) : (
                   <View style={[styles.verifiedPill, styles.bizPill]}>
-                    <Text style={[styles.verifiedText, styles.bizPillText]}>✓ Verified Business</Text>
+                    <Ionicons name="shield-checkmark" size={10} color={C.success} />
+                    <Text style={[styles.verifiedText, styles.bizPillText]}>Verified Business</Text>
                   </View>
                 )}
               </View>
               <StarRating rating={listing.rating} reviewCount={listing.review_count} size={13} />
+            </View>
+          )}
+
+          {/* Trust line — the moment the €2000 decision is made. A review-less
+              listing must say WHY it can still be trusted, not say nothing. */}
+          {(listing.review_count ?? 0) === 0 && (
+            <View style={styles.trustLine}>
+              <Ionicons name="shield-checkmark-outline" size={13} color={C.success} />
+              <Text style={styles.trustLineText}>
+                New listing · {(isHostListing ? listing.host?.verified : listing.operator?.verified)
+                  ? 'Identity & payout verified'
+                  : 'Payments held securely until pickup'}
+              </Text>
             </View>
           )}
 
@@ -318,7 +336,8 @@ export default function ListingDetailScreen() {
               <Text style={styles.priceMain}>{formatPricePerDay(listing.price_per_day, language)}</Text>
               {listing.instant_book === true && (
                 <View style={styles.instantBadge}>
-                  <Text style={styles.instantBadgeText}>⚡ {t('instantConfirmation', language)}</Text>
+                  <Ionicons name="flash" size={10} color={C.success} />
+                  <Text style={styles.instantBadgeText}>{t('instantConfirmation', language)}</Text>
                 </View>
               )}
             </View>
@@ -341,7 +360,7 @@ export default function ListingDetailScreen() {
                   accessibilityState={{ selected: rentalType === type }}
                 >
                   <Text style={[styles.typeBtnText, rentalType === type && styles.typeBtnTextActive]}>
-                    {type === 'daily' ? '📅 Daily' : '⏱ Hourly'}
+                    {type === 'daily' ? 'Daily' : 'Hourly'}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -357,13 +376,19 @@ export default function ListingDetailScreen() {
             {listing.year ? <View style={styles.infoChip}><Ionicons name="car-outline" size={13} color={C.textSecondary} /><Text style={styles.infoChipText}>{listing.year}</Text></View> : null}
             {listing.color ? <View style={styles.infoChip}><Ionicons name="color-palette-outline" size={13} color={C.textSecondary} /><Text style={styles.infoChipText}>{listing.color}</Text></View> : null}
             {listing.capacity ? <View style={styles.infoChip}><Ionicons name="people-outline" size={13} color={C.textSecondary} /><Text style={styles.infoChipText}>{listing.capacity} seats</Text></View> : null}
-            {listing.cancellation_policy != null && (
-              <View style={styles.infoChip}>
-                <Text style={styles.infoChipText}>
-                  {getCancellationPolicyEmoji(listing.cancellation_policy)} {getCancellationPolicyLabel(listing.cancellation_policy, language)}
-                </Text>
-              </View>
-            )}
+            {/* Single source for the cancellation policy — it belongs at the
+                decision point, next to the price. Uses `policy` (which defaults
+                to 'moderate'), the one thing the deleted standalone
+                CANCELLATION POLICY section added over this chip. */}
+            <View
+              style={styles.infoChip}
+              accessibilityLabel={`${t('cancellationPolicy', language)}: ${getCancellationPolicyLabel(policy, language)}`}
+            >
+              <Ionicons name="refresh-outline" size={13} color={C.textSecondary} />
+              <Text style={styles.infoChipText}>
+                {getCancellationPolicyLabel(policy, language)}
+              </Text>
+            </View>
           </View>
 
           <Divider />
@@ -389,18 +414,6 @@ export default function ListingDetailScreen() {
                   Third-party liability up to €500,000. Vehicle damage excess €500 (reducible with deposit waiver).
                 </Text>
               </View>
-            </View>
-          </View>
-
-          <Divider />
-
-          {/* Cancellation policy */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('cancellationPolicy', language)}</Text>
-            <View style={styles.policyBadge}>
-              <Text style={styles.policyBadgeText}>
-                {getCancellationPolicyEmoji(policy)} {getCancellationPolicyLabel(policy, language)}
-              </Text>
             </View>
           </View>
 
@@ -482,7 +495,8 @@ export default function ListingDetailScreen() {
             <>
               <View style={styles.section}>
                 <View style={styles.rulesBox}>
-                  <Text style={styles.rulesText}>⚠️ {listing.rules}</Text>
+                  <Ionicons name="warning-outline" size={14} color={C.warning} style={styles.rulesIcon} importantForAccessibility="no" />
+                  <Text style={styles.rulesText}>{listing.rules}</Text>
                 </View>
               </View>
               <Divider />
@@ -697,15 +711,21 @@ export default function ListingDetailScreen() {
         </View>
       </Animated.ScrollView>
 
-      {/* Sticky booking bar — glassmorphism */}
+      {/* Sticky booking bar — solid surface, single-line trust copy.
+          (Was a dark BlurView with wrapping green microcopy — read as broken
+          exactly where the user decides to pay.) */}
       <View style={[styles.bookingBar, { paddingBottom: insets.bottom + Spacing.sm }]}>
-        <BlurView intensity={75} tint="dark" style={StyleSheet.absoluteFill} />
         <View style={styles.bookingBarLeft}>
-          <Text style={styles.bookingBarPrice}>{formatEUR(listing.price_per_day)}<Text style={styles.bookingBarUnit}>{t('perDay', language)}</Text></Text>
+          <Text style={styles.bookingBarPrice}>{formatEUR(listing.price_per_day)}<Text style={styles.bookingBarUnit}> {t('perDay', language)}</Text></Text>
           {priceCalc && totalDays ? (
-            <Text style={styles.bookingBarSub}>{totalDays} {t('days', language)} · {formatEURDecimal(priceCalc.total)}</Text>
+            <Text style={styles.bookingBarSub} numberOfLines={1}>{totalDays} {t('days', language)} · {formatEURDecimal(priceCalc.total)}</Text>
           ) : (
-            <Text style={styles.bookingBarTrust}>🔒 {t('securePayment', language)} · ✓ {t('noHiddenFees', language)}</Text>
+            <View style={styles.bookingBarTrustRow}>
+              <Ionicons name="lock-closed" size={10} color={C.textTertiary} />
+              <Text style={styles.bookingBarTrust} numberOfLines={1}>
+                {t('securePayment', language)} · {t('noHiddenFees', language)}
+              </Text>
+            </View>
           )}
         </View>
         <TouchableOpacity
@@ -729,7 +749,7 @@ export default function ListingDetailScreen() {
           accessibilityLabel={startDate ? `Book ${listing.title}` : 'Select rental dates'}
           accessibilityRole="button"
         >
-          <Text style={styles.bookNowBtnText}>
+          <Text style={[styles.bookNowBtnText, !startDate && { color: '#FFFFFF' }]}>
             {startDate ? t('bookNow', language) : t('selectDates', language)}
           </Text>
         </TouchableOpacity>
@@ -774,10 +794,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.3)',
     },
-    catBadgeText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
-    heroTitle: { fontSize: 28, fontWeight: '800', color: '#FFFFFF', marginBottom: 6 },
+    catBadgeText: { fontSize: 11, fontFamily: Fonts.bold, color: '#FFFFFF' },
+    heroTitle: { fontFamily: 'Manrope_800ExtraBold', fontSize: 28, letterSpacing: -0.6, color: '#FFFFFF', marginBottom: 6 },
     heroLocation: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    heroLocationText: { fontSize: 13, color: 'rgba(255,255,255,0.85)' },
+    heroLocationText: { fontFamily: Fonts.regular, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
 
     backBtn: {
       position: 'absolute',
@@ -823,12 +843,32 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     },
 
     opRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md },
-    opInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-    opName: { fontSize: 14, fontWeight: '600', color: C.textSecondary },
-    verifiedPill: { backgroundColor: C.successSurface, borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
-    verifiedText: { fontSize: 11, fontWeight: '700', color: C.success },
-    hostPill: { backgroundColor: C.primarySurface, borderWidth: 1, borderColor: C.primaryLight },
-    hostPillText: { color: C.primaryDark },
+    opInfo: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexShrink: 1 },
+    opName: { fontSize: 14, fontFamily: Fonts.semibold, color: C.textSecondary, flexShrink: 1 },
+    verifiedPill: {
+      backgroundColor: C.successSurface, borderRadius: Radius.pill,
+      paddingHorizontal: Spacing.sm, paddingVertical: 2,
+      flexDirection: 'row', alignItems: 'center', gap: 3,
+    },
+    verifiedText: { fontSize: 11, fontFamily: Fonts.bold, color: C.success },
+    hostPill: { backgroundColor: C.infoSurface, borderWidth: 1, borderColor: C.info },
+    hostPillText: { color: C.info },
+    trustLine: {
+      flexDirection: 'row', alignItems: 'center', gap: 6,
+      backgroundColor: C.successSurface,
+      borderRadius: Radius.sm,
+      paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
+      marginBottom: Spacing.md,
+    },
+    trustLineText: { fontSize: 12, fontFamily: Fonts.semibold, color: C.success, flexShrink: 1 },
+    heroBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    photoCountChip: {
+      flexDirection: 'row', alignItems: 'center', gap: 4,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      borderRadius: Radius.pill,
+      paddingHorizontal: 8, paddingVertical: 3,
+    },
+    photoCountText: { fontSize: 11, fontFamily: Fonts.bold, color: '#FFFFFF' },
     bizPill: { backgroundColor: C.infoSurface, borderWidth: 1, borderColor: C.info },
     bizPillText: { color: C.info },
 
@@ -844,16 +884,18 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       width: 52,
       height: 52,
       borderRadius: 26,
-      backgroundColor: C.primarySurface,
+      // Identity chip, not an action — neutral ink pair, brand accent reserved
+      // for the primary CTA / active tab.
+      backgroundColor: C.surfaceWarm,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    hostAvatarText: { fontSize: 22, fontWeight: '700', color: C.primary },
-    hostName: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: 2 },
-    hostVerifiedBadge: { fontSize: 12, fontWeight: '700', color: C.success },
-    hostMeta: { fontSize: 12, color: C.textSecondary, marginBottom: 2 },
+    hostAvatarText: { fontSize: 22, fontFamily: Fonts.bold, color: C.text },
+    hostName: { fontSize: 16, fontFamily: Fonts.bold, color: C.text, marginBottom: 2 },
+    hostVerifiedBadge: { fontSize: 12, fontFamily: Fonts.bold, color: C.success },
+    hostMeta: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, marginBottom: 2 },
     hostBio: {
-      fontSize: 13,
+      fontFamily: Fonts.regular, fontSize: 13,
       color: C.textSecondary,
       fontStyle: 'italic',
       lineHeight: 20,
@@ -864,9 +906,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
 
     priceSection: { marginBottom: Spacing.base },
     priceRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, flexWrap: 'wrap' },
-    priceMain: { fontSize: 28, fontWeight: '800', color: C.primary },
-    priceUnit: { fontSize: 14, color: C.textSecondary },
-    weeklyPrice: { fontSize: 13, color: C.success, marginTop: 4 },
+    // Price in ink, tabular — the brand orange stays reserved for the CTA
+    priceMain: { fontFamily: 'Manrope_800ExtraBold', fontSize: 26, letterSpacing: -0.5, color: C.text, fontVariant: ['tabular-nums'] },
+    priceUnit: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
+    weeklyPrice: { fontFamily: Fonts.regular, fontSize: 13, color: C.success, marginTop: 4 },
     instantBadge: {
       backgroundColor: C.successSurface,
       borderRadius: Radius.full,
@@ -874,8 +917,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       paddingVertical: 3,
       borderWidth: 1,
       borderColor: C.success,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
     },
-    instantBadgeText: { fontSize: 11, fontWeight: '700', color: C.success },
+    instantBadgeText: { fontSize: 11, fontFamily: Fonts.bold, color: C.success },
 
     infoChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
     infoChip: {
@@ -889,27 +935,27 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       borderWidth: 1,
       borderColor: C.border,
     },
-    infoChipText: { fontSize: 12, color: C.textSecondary, fontWeight: '500' },
+    infoChipText: { fontSize: 12, color: C.textSecondary, fontFamily: Fonts.medium },
 
     section: { marginVertical: Spacing.base },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.md },
     seeAllReviews: { marginTop: Spacing.sm, alignSelf: 'flex-start' },
-    seeAllReviewsText: { fontSize: 14, fontWeight: '600', color: C.primary },
+    seeAllReviewsText: { fontSize: 14, fontFamily: Fonts.semibold, color: C.primary },
     sectionTitle: {
-      fontSize: 12, fontWeight: '700',
+      fontSize: 12, fontFamily: Fonts.bold,
       textTransform: 'uppercase', letterSpacing: 0.8,
       color: C.textTertiary,
       marginBottom: Spacing.sm,
     },
 
     insuranceBox: { flexDirection: 'row', gap: Spacing.md, backgroundColor: C.successSurface, borderRadius: Radius.lg, padding: Spacing.md },
-    insuranceIcon: { fontSize: 22 },
+    insuranceIcon: { fontFamily: Fonts.regular, fontSize: 22 },
     insuranceInfo: { flex: 1 },
-    insuranceTitle: { fontSize: 14, fontWeight: '700', color: C.success, marginBottom: 4 },
-    insuranceText: { fontSize: 13, color: C.textSecondary, lineHeight: 19 },
+    insuranceTitle: { fontSize: 14, fontFamily: Fonts.bold, color: C.success, marginBottom: 4 },
+    insuranceText: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, lineHeight: 19 },
 
     policyBadge: { backgroundColor: C.surfaceWarm, borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: C.border },
-    policyBadgeText: { fontSize: 14, color: C.text, fontWeight: '600' },
+    policyBadgeText: { fontSize: 14, color: C.text, fontFamily: Fonts.semibold },
 
     datePicker: {
       backgroundColor: C.surfaceWarm,
@@ -919,8 +965,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       borderColor: C.border,
     },
     datePickerActive: { borderColor: C.primary, backgroundColor: C.primarySurface },
-    datePickerText: { fontSize: 14, color: C.textSecondary, textAlign: 'center' },
-    datePickerTextActive: { color: C.primaryDark, fontWeight: '600' },
+    datePickerText: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, textAlign: 'center' },
+    datePickerTextActive: { color: C.primaryDark, fontFamily: Fonts.semibold },
 
     priceBreakdown: {
       backgroundColor: C.surfaceWarm,
@@ -930,24 +976,25 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       borderColor: C.border,
     },
     breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
-    breakdownLabel: { fontSize: 14, color: C.textSecondary },
-    breakdownValue: { fontSize: 14, color: C.text, fontWeight: '500' },
+    breakdownLabel: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
+    breakdownValue: { fontSize: 14, color: C.text, fontFamily: Fonts.medium },
     breakdownTotal: {
       borderTopWidth: 1,
       borderTopColor: C.border,
       paddingTop: Spacing.sm,
       marginBottom: 0,
     },
-    breakdownTotalLabel: { fontSize: 15, fontWeight: '700', color: C.text },
-    breakdownTotalValue: { fontSize: 15, fontWeight: '800', color: C.text },
+    breakdownTotalLabel: { fontSize: 15, fontFamily: Fonts.bold, color: C.text },
+    breakdownTotalValue: { fontSize: 15, fontFamily: Fonts.extrabold, color: C.text },
     depositNote: { marginTop: Spacing.sm, backgroundColor: C.infoSurface, borderRadius: Radius.md, padding: Spacing.sm },
-    depositNoteText: { fontSize: 12, color: C.info, fontWeight: '600' },
-    depositNoteSubtext: { fontSize: 11, color: C.textTertiary, marginTop: 2 },
+    depositNoteText: { fontSize: 12, color: C.info, fontFamily: Fonts.semibold },
+    depositNoteSubtext: { fontFamily: Fonts.regular, fontSize: 11, color: C.textTertiary, marginTop: 2 },
 
-    desc: { fontSize: 14, color: C.textSecondary, lineHeight: 22 },
-    showMore: { color: C.primary, fontWeight: '600', marginTop: Spacing.sm, fontSize: 14 },
-    rulesBox: { backgroundColor: C.warningSurface, borderRadius: Radius.lg, padding: Spacing.md },
-    rulesText: { fontSize: 13, color: C.textSecondary, lineHeight: 20 },
+    desc: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, lineHeight: 22 },
+    showMore: { color: C.primary, fontFamily: Fonts.semibold, marginTop: Spacing.sm, fontSize: 14 },
+    rulesBox: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: C.warningSurface, borderRadius: Radius.lg, padding: Spacing.md },
+    rulesIcon: { marginRight: Spacing.sm, marginTop: 2 },
+    rulesText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, lineHeight: 20 },
 
     operatorActions: {
       flexDirection: 'row',
@@ -965,7 +1012,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       borderWidth: 1,
       borderColor: C.primary,
     },
-    askQuestionText: { fontSize: 14, color: C.primary, fontWeight: '600' },
+    askQuestionText: { fontSize: 14, color: C.primary, fontFamily: Fonts.semibold },
     askQuestionBtnDisabled: { backgroundColor: C.surfaceWarm, borderColor: C.border, opacity: 0.6 },
     askQuestionTextDisabled: { color: C.textTertiary },
     callBtn: {
@@ -978,7 +1025,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       borderWidth: 1,
       borderColor: C.success,
     },
-    callBtnText: { fontSize: 14, color: C.success, fontWeight: '600' },
+    callBtnText: { fontSize: 14, color: C.success, fontFamily: Fonts.semibold },
 
     locationCard: {
       flexDirection: 'row',
@@ -994,10 +1041,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    locationMapIcon: { fontSize: 36 },
+    locationMapIcon: { fontFamily: Fonts.regular, fontSize: 36 },
     locationInfo: { flex: 1, padding: Spacing.md, justifyContent: 'center' },
-    locationAddress: { fontSize: 13, color: C.text, fontWeight: '500', lineHeight: 19, marginBottom: Spacing.xs },
-    locationDirections: { fontSize: 13, color: C.primary, fontWeight: '700' },
+    locationAddress: { fontSize: 13, color: C.text, fontFamily: Fonts.medium, lineHeight: 19, marginBottom: Spacing.xs },
+    locationDirections: { fontSize: 13, color: C.primary, fontFamily: Fonts.bold },
 
     similarScroll: { marginTop: Spacing.sm },
     similarCard: {
@@ -1016,9 +1063,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    similarFallbackText: { fontSize: 32, fontWeight: '700', color: C.textTertiary },
-    similarTitle: { fontSize: 13, fontWeight: '600', color: C.text, padding: Spacing.sm, paddingBottom: 2 },
-    similarPrice: { fontSize: 12, color: C.primary, fontWeight: '700', paddingHorizontal: Spacing.sm, paddingBottom: Spacing.sm },
+    similarFallbackText: { fontSize: 32, fontFamily: Fonts.bold, color: C.textTertiary },
+    similarTitle: { fontSize: 13, fontFamily: Fonts.semibold, color: C.text, padding: Spacing.sm, paddingBottom: 2 },
+    // Price in ink on the shared price scale (tabular numerals), never brand orange.
+    similarPrice: { ...Typography.priceS, color: C.text, paddingHorizontal: Spacing.sm, paddingBottom: Spacing.sm },
 
     typeSelector: { flexDirection: 'row', gap: 8, marginBottom: Spacing.base },
     typeBtn: {
@@ -1027,30 +1075,33 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       minHeight: 44, justifyContent: 'center',
     },
     typeBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
-    typeBtnText: { color: C.textSecondary, fontSize: 14, fontWeight: '600' },
+    typeBtnText: { color: C.textSecondary, fontSize: 14, fontFamily: Fonts.semibold },
     typeBtnTextActive: { color: C.background },
-    hourlyPrice: { color: C.primary, fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: Spacing.base },
+    // Price in ink on the shared price scale (tabular numerals), never brand orange.
+    hourlyPrice: { ...Typography.price, color: C.text, textAlign: 'center', marginBottom: Spacing.base },
 
     bookingBar: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      gap: Spacing.md,
       paddingHorizontal: Spacing.xl,
       paddingTop: Spacing.base,
+      backgroundColor: C.surface,
       borderTopWidth: 1,
-      borderTopColor: 'rgba(255,255,255,0.08)',
-      shadowColor: '#000',
+      borderTopColor: C.border,
+      shadowColor: '#0A1628',
       shadowOffset: { width: 0, height: -4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 12,
+      shadowOpacity: 0.08,
+      shadowRadius: 16,
       elevation: 8,
-      overflow: 'hidden',
     },
-    bookingBarLeft: { flex: 1 },
-    bookingBarPrice: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
-    bookingBarUnit: { fontSize: 13, fontWeight: '400', color: 'rgba(255,255,255,0.7)' },
-    bookingBarSub: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
-    bookingBarTrust: { fontSize: 11, color: C.success, marginTop: 2, fontWeight: '600' },
+    bookingBarLeft: { flex: 1, minWidth: 0 },
+    bookingBarPrice: { fontSize: 18, fontFamily: Fonts.bold, letterSpacing: -0.3, color: C.text, fontVariant: ['tabular-nums'] },
+    bookingBarUnit: { fontSize: 13, fontFamily: Fonts.regular, color: C.textSecondary },
+    bookingBarSub: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, marginTop: 2, fontVariant: ['tabular-nums'] },
+    bookingBarTrustRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+    bookingBarTrust: { fontSize: 11, color: C.textTertiary, fontFamily: Fonts.medium, flexShrink: 1 },
     bookNowBtn: {
       backgroundColor: C.primary,
       borderRadius: Radius.pill,
@@ -1062,8 +1113,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       shadowRadius: 12,
       elevation: 6,
     },
-    bookNowBtnDimmed: { backgroundColor: C.textTertiary, shadowOpacity: 0, elevation: 0 },
-    bookNowBtnText: { color: C.textInverse, fontWeight: '700', fontSize: 15 },
+    // "Select dates" is a real action (opens the picker) — navy actionable
+    // state, not disabled-gray. Orange stays reserved for the Book moment.
+    bookNowBtnDimmed: {
+      backgroundColor: C.navy, shadowOpacity: 0, elevation: 2,
+      borderWidth: 1, borderColor: C.borderWarm,
+    },
+    bookNowBtnText: { color: C.textInverse, fontFamily: Fonts.bold, fontSize: 15 },
 
     ratingSummaryRow: {
       flexDirection: 'row',
@@ -1078,12 +1134,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     },
     ratingBig: {
       fontSize: 40,
-      fontWeight: '800',
+      fontFamily: Fonts.extrabold,
       color: C.text,
       lineHeight: 44,
     },
     reviewCountLabel: {
-      fontSize: 12,
+      fontFamily: Fonts.regular, fontSize: 12,
       color: C.textTertiary,
       marginTop: 2,
     },
@@ -1098,7 +1154,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       gap: Spacing.sm,
     },
     categoryLabel: {
-      fontSize: 12,
+      fontFamily: Fonts.regular, fontSize: 12,
       color: C.textSecondary,
       width: 88,
     },
@@ -1117,7 +1173,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     categoryScore: {
       fontSize: 12,
       color: C.textSecondary,
-      fontWeight: '600',
+      fontFamily: Fonts.semibold,
       width: 28,
       textAlign: 'right',
     },
@@ -1127,16 +1183,16 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       gap: Spacing.sm,
     },
     noReviewsIcon: {
-      fontSize: 32,
+      fontFamily: Fonts.regular, fontSize: 32,
       color: C.textTertiary,
     },
     noReviewsTitle: {
       fontSize: 15,
-      fontWeight: '700',
+      fontFamily: Fonts.bold,
       color: C.textSecondary,
     },
     noReviewsSub: {
-      fontSize: 13,
+      fontFamily: Fonts.regular, fontSize: 13,
       color: C.textTertiary,
       textAlign: 'center',
     },

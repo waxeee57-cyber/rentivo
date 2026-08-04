@@ -1,24 +1,25 @@
 import React, { useMemo } from 'react'
 import { ScrollView, View, Text, StyleSheet } from 'react-native'
-import { Radius, Spacing } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Radius, Spacing, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
-const FEATURE_EMOJIS: Record<string, string> = {
-  'AC': '❄️',
-  'GPS': '🗺️',
-  'Bluetooth': '📱',
-  'USB': '🔌',
-  'Leather seats': '💺',
-  'Sunroof': '☀️',
-  'Convertible': '🌬️',
-  '4WD': '🏔️',
-  'Child seat': '👶',
-  'Cruise control': '🚗',
-  'Parking sensors': '📡',
-  'Backup camera': '📷',
-  'Heated seats': '🔥',
-  'Apple CarPlay': '🍎',
-  'Android Auto': '🤖',
+const FEATURE_ICONS: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+  'AC': 'snow-outline',
+  'GPS': 'navigate-outline',
+  'Bluetooth': 'bluetooth-outline',
+  'USB': 'hardware-chip-outline',
+  'Leather seats': 'layers-outline',
+  'Sunroof': 'sunny-outline',
+  'Convertible': 'car-sport-outline',
+  '4WD': 'trail-sign-outline',
+  'Child seat': 'person-outline',
+  'Cruise control': 'speedometer-outline',
+  'Parking sensors': 'radio-outline',
+  'Backup camera': 'camera-outline',
+  'Heated seats': 'flame-outline',
+  'Apple CarPlay': 'logo-apple',
+  'Android Auto': 'logo-android',
 }
 
 interface ListingFeaturesProps {
@@ -34,7 +35,15 @@ export function ListingFeatures({ features }: ListingFeaturesProps) {
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.container}>
       {features.map(f => (
         <View key={f} style={styles.pill}>
-          {FEATURE_EMOJIS[f] && <Text style={styles.emoji}>{FEATURE_EMOJIS[f]}</Text>}
+          {FEATURE_ICONS[f] && (
+            <Ionicons
+              name={FEATURE_ICONS[f]}
+              size={14}
+              color={C.textSecondary}
+              style={styles.icon}
+              importantForAccessibility="no"
+            />
+          )}
           <Text style={styles.label}>{f}</Text>
         </View>
       ))}
@@ -55,7 +64,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.border,
   },
-  emoji: { fontSize: 14, marginRight: 4 },
-  label: { fontSize: 13, color: C.textSecondary, fontWeight: '500' },
+  icon: { marginRight: 4 },
+  label: { fontSize: 13, color: C.textSecondary, fontFamily: Fonts.medium },
   })
 }

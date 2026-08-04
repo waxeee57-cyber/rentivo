@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, StyleSheet, ViewStyle } from 'react-native'
-import { Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing, Shadow } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface CardProps {
@@ -26,11 +26,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: Radius.xl,
     borderWidth: 1,
     borderColor: C.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 2,
+    // Shared elevation token instead of a bespoke pure-black shadow at 0.3 —
+    // 5x the design scale, which smeared grey over the warm light-mode
+    // surfaces. Shadow.sm carries its own elevation, so Android still renders.
+    ...Shadow.sm,
   },
   })
 }

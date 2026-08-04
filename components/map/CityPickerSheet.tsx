@@ -3,13 +3,16 @@ import {
   View, Text, TouchableOpacity, StyleSheet, FlatList,
   TextInput, Modal, Animated,
 } from 'react-native'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 export interface City {
   name: string
   country: string
+  /** Country flag. Empty for non-country entries, which use `icon` instead. */
   emoji: string
+  icon?: React.ComponentProps<typeof Ionicons>['name']
   lat: number | null
   lng: number | null
 }
@@ -22,7 +25,7 @@ export const CITIES: City[] = [
   { name: 'Budapest', country: 'HU', emoji: '🇭🇺', lat: 47.4979, lng: 19.0402 },
   { name: 'Balaton', country: 'HU', emoji: '🇭🇺', lat: 46.8349, lng: 17.7219 },
   { name: 'Győr', country: 'HU', emoji: '🇭🇺', lat: 47.6875, lng: 17.6504 },
-  { name: 'Near me', country: '', emoji: '📍', lat: null, lng: null },
+  { name: 'Near me', country: '', emoji: '', icon: 'locate-outline', lat: null, lng: null },
 ]
 
 interface CityPickerSheetProps {
@@ -94,7 +97,17 @@ export function CityPickerSheet({ visible, selectedCity, onSelect, onClose }: Ci
               onPress={() => { onSelect(item); setSearch(''); onClose() }}
               activeOpacity={0.7}
             >
-              <Text style={styles.cityEmoji}>{item.emoji}</Text>
+              {item.icon
+                ? (
+                  <Ionicons
+                    name={item.icon}
+                    size={22}
+                    color={C.textSecondary}
+                    style={styles.cityIcon}
+                    importantForAccessibility="no"
+                  />
+                )
+                : <Text style={styles.cityEmoji}>{item.emoji}</Text>}
               <View style={styles.cityInfo}>
                 <Text style={[styles.cityName, selectedCity === item.name && styles.cityNameActive]}>
                   {item.name}
@@ -134,7 +147,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.text,
     marginBottom: Spacing.base,
   },
@@ -143,7 +156,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: Radius.lg,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     color: C.text,
     marginBottom: Spacing.base,
     borderWidth: 1,
@@ -162,11 +175,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderLeftWidth: 3,
     borderLeftColor: C.primary,
   },
-  cityEmoji: { fontSize: 24, marginRight: Spacing.md },
+  cityEmoji: { fontFamily: Fonts.regular, fontSize: 24, marginRight: Spacing.md },
+  cityIcon: { width: 24, textAlign: 'center', marginRight: Spacing.md },
   cityInfo: { flex: 1 },
-  cityName: { fontSize: 16, fontWeight: '600', color: C.text },
+  cityName: { fontSize: 16, fontFamily: Fonts.semibold, color: C.text },
   cityNameActive: { color: C.primaryDark },
-  cityCountry: { fontSize: 12, color: C.textTertiary, marginTop: 1 },
-  chevron: { fontSize: 20, color: C.textTertiary },
+  cityCountry: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: 1 },
+  chevron: { fontFamily: Fonts.regular, fontSize: 20, color: C.textTertiary },
   })
 }

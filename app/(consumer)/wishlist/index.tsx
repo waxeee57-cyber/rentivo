@@ -27,7 +27,7 @@ export default function WishlistScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <ScreenHeader title={`❤️ ${t('savedListings', language)}`} />
+      <ScreenHeader title={t('savedListings', language)} />
 
       {syncing && items.length === 0 ? (
         <View style={styles.loadingContainer}>
@@ -35,7 +35,7 @@ export default function WishlistScreen() {
         </View>
       ) : items.length === 0 ? (
         <EmptyState
-          emoji="❤️"
+          icon="heart-outline"
           title={t('noSavedListings', language)}
           subtitle={t('wishlistEmptySub', language)}
           action={{

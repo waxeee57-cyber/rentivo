@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useLocalSearchParams } from 'expo-router'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { ReviewCard } from '@/components/listing/ReviewCard'
-import { Spacing } from '@/constants/colors'
+import { Spacing, Fonts } from '@/constants/colors'
 import { useReviews } from '@/lib/hooks/useReviews'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
@@ -92,7 +92,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     padding: Spacing.xl,
   },
   errorText: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.error,
     textAlign: 'center',
   },
@@ -102,16 +102,16 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     gap: Spacing.sm,
   },
   emptyIcon: {
-    fontSize: 40,
+    fontFamily: Fonts.regular, fontSize: 40,
     color: C.textTertiary,
   },
   emptyTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textSecondary,
   },
   emptySub: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.textTertiary,
     textAlign: 'center',
     paddingHorizontal: Spacing.xl,

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { View, Text, StyleSheet, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Spacing } from '@/constants/colors'
+import { Spacing, Fonts } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -72,7 +72,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.background },
   content: { flex: 1, padding: Spacing.xl, justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
-  subtitle: { fontSize: 15, color: C.textSecondary, marginBottom: Spacing.xl },
+  title: { fontSize: 28, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.sm },
+  subtitle: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary, marginBottom: Spacing.xl },
   })
 }

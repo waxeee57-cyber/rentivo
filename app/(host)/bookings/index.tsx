@@ -3,7 +3,8 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts, Typography } from '@/constants/colors'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
@@ -127,10 +128,14 @@ export default function HostBookingsScreen() {
     return b.status === 'completed' || b.status === 'cancelled'
   })
 
-  const EMPTY_MESSAGES: Record<Tab, { emoji: string; title: string; subtitle: string }> = {
-    pending: { emoji: '📅', title: t('hostBNoPendingRequests', language), subtitle: t('hostBNoPendingSubtitle', language) },
-    confirmed: { emoji: '💰', title: t('hostBNoConfirmedBookings', language), subtitle: t('hostBNoConfirmedSubtitle', language) },
-    past: { emoji: '📚', title: t('hostBNoPastBookings', language), subtitle: t('hostBNoPastSubtitle', language) },
+  const EMPTY_MESSAGES: Record<Tab, {
+    icon: React.ComponentProps<typeof Ionicons>['name']
+    title: string
+    subtitle: string
+  }> = {
+    pending: { icon: 'calendar-outline', title: t('hostBNoPendingRequests', language), subtitle: t('hostBNoPendingSubtitle', language) },
+    confirmed: { icon: 'cash-outline', title: t('hostBNoConfirmedBookings', language), subtitle: t('hostBNoConfirmedSubtitle', language) },
+    past: { icon: 'time-outline', title: t('hostBNoPastBookings', language), subtitle: t('hostBNoPastSubtitle', language) },
   }
 
   const handleConfirm = async (bookingId: string) => {
@@ -198,7 +203,7 @@ export default function HostBookingsScreen() {
 
       {filtered.length === 0 ? (
         <EmptyState
-          emoji={EMPTY_MESSAGES[activeTab].emoji}
+          icon={EMPTY_MESSAGES[activeTab].icon}
           title={EMPTY_MESSAGES[activeTab].title}
           subtitle={EMPTY_MESSAGES[activeTab].subtitle}
           action={activeTab === 'pending' ? {
@@ -240,7 +245,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   container: { flex: 1, backgroundColor: C.background },
   title: {
     fontSize: 26,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.md,
@@ -264,7 +269,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     minHeight: 44,
   },
   tabActive: { backgroundColor: C.primary, borderColor: C.primary },
-  tabText: { fontSize: 12, fontWeight: '600', color: C.textSecondary },
+  tabText: { fontSize: 12, fontFamily: Fonts.semibold, color: C.textSecondary },
   tabTextActive: { color: C.textInverse },
   list: { paddingHorizontal: Spacing.base, paddingBottom: 100 },
 
@@ -281,16 +286,19 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: C.primarySurface,
+    // Identity chip, not an action — neutral ink pair, brand accent reserved
+    // for the primary CTA / active tab.
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 20, fontWeight: '700', color: C.primary },
+  avatarText: { fontSize: 20, fontFamily: Fonts.bold, color: C.text },
   guestInfo: { flex: 1 },
-  guestName: { fontSize: 15, fontWeight: '700', color: C.text },
-  dates: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
-  price: { fontSize: 12, color: C.primary, fontWeight: '600', marginTop: 2 },
-  payout: { fontSize: 11, color: C.success, fontWeight: '600', marginTop: 1 },
+  guestName: { fontSize: 15, fontFamily: Fonts.bold, color: C.text },
+  dates: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, marginTop: 2 },
+  // Price in ink on the shared price scale (tabular numerals), never brand orange.
+  price: { ...Typography.priceS, color: C.text, marginTop: 2 },
+  payout: { fontSize: 11, color: C.success, fontFamily: Fonts.semibold, marginTop: 1 },
   statusBadge: {
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.sm,
@@ -301,7 +309,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   statusPending: { backgroundColor: C.warningSurface },
   statusActive: { backgroundColor: C.infoSurface },
   statusCompleted: { backgroundColor: C.surfaceWarm },
-  statusText: { fontSize: 11, fontWeight: '700', color: C.textSecondary },
+  statusText: { fontSize: 11, fontFamily: Fonts.bold, color: C.textSecondary },
 
   actions: {
     flexDirection: 'row',
@@ -322,7 +330,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.errorSurface,
     minHeight: 44,
   },
-  declineBtnText: { fontSize: 14, fontWeight: '700', color: C.error },
+  declineBtnText: { fontSize: 14, fontFamily: Fonts.bold, color: C.error },
   confirmBtn: {
     flex: 2,
     padding: Spacing.sm,
@@ -332,7 +340,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.primary,
     minHeight: 44,
   },
-  confirmBtnText: { fontSize: 14, fontWeight: '700', color: C.textInverse },
+  confirmBtnText: { fontSize: 14, fontFamily: Fonts.bold, color: C.textInverse },
 
   })
 }

@@ -1,5 +1,8 @@
 import { useEffect, useState, Fragment, useCallback, useMemo } from 'react'
 import { useFonts } from 'expo-font'
+import {
+  Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold,
+} from '@expo-google-fonts/manrope'
 import * as SplashScreen from 'expo-splash-screen'
 import { Ionicons } from '@expo/vector-icons'
 import { Stack, router, usePathname } from 'expo-router'
@@ -8,7 +11,7 @@ import { useThemeStore } from '@/lib/store/useThemeStore'
 import {
   GestureHandlerRootView,
 } from 'react-native-gesture-handler'
-import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet, Linking,
 } from 'react-native'
@@ -21,7 +24,7 @@ import { useNotificationStore } from '@/lib/store/useNotificationStore'
 import { supabase } from '@/lib/supabase'
 import { STRIPE_PUBLISHABLE_KEY } from '@/lib/stripe'
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { initSentry } from '@/lib/sentry'
 
@@ -40,27 +43,61 @@ function GdprModal({ visible, onAccept, onManage, language }: {
 }) {
   const C = useColors()
   const gdprStyles = useMemo(() => makeGdprStyles(C), [C])
+  // The card sits at the bottom of a full-screen Modal, so on notched devices
+  // the "Manage Preferences" row landed under the home indicator. The modal is
+  // outside the SafeAreaView tree, hence the explicit inset.
+  const insets = useSafeAreaInsets()
+  const hitSlop = { top: 12, bottom: 12, left: 12, right: 12 }
   return (
     <Modal transparent visible={visible} animationType="fade">
-      <View style={gdprStyles.backdrop}>
+      <View style={[gdprStyles.backdrop, { paddingBottom: Spacing.base + insets.bottom, paddingTop: insets.top }]}>
         <View style={gdprStyles.card}>
-          <Text style={gdprStyles.logo}>🌴</Text>
+          <View style={gdprStyles.logoCircle}>
+            <Ionicons name="boat" size={26} color={C.primary} />
+          </View>
           <Text style={gdprStyles.appName}>Rentivo</Text>
           <Text style={gdprStyles.title}>{t('gdprTitle', language)}</Text>
           <Text style={gdprStyles.body}>{t('gdprBody', language)}</Text>
           <View style={gdprStyles.links}>
-            <TouchableOpacity onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/privacy')}>
+            {/* These four controls gate a legal consent. They were bare
+                TouchableOpacity wrappers around 14px text: no role, no label,
+                no hitSlop — unreachable with a screen reader and under 44px. */}
+            <TouchableOpacity
+              onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/privacy')}
+              accessibilityRole="link"
+              accessibilityLabel={t('gdprOpenPrivacyA11y', language)}
+              hitSlop={hitSlop}
+              style={gdprStyles.linkBtn}
+            >
               <Text style={gdprStyles.link}>{t('privacyPolicy', language)}</Text>
             </TouchableOpacity>
             <Text style={gdprStyles.linkSep}> · </Text>
-            <TouchableOpacity onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/terms')}>
+            <TouchableOpacity
+              onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/terms')}
+              accessibilityRole="link"
+              accessibilityLabel={t('gdprOpenTermsA11y', language)}
+              hitSlop={hitSlop}
+              style={gdprStyles.linkBtn}
+            >
               <Text style={gdprStyles.link}>{t('termsOfService', language)}</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={gdprStyles.acceptBtn} onPress={onAccept}>
+          <TouchableOpacity
+            style={gdprStyles.acceptBtn}
+            onPress={onAccept}
+            accessibilityRole="button"
+            accessibilityLabel={t('gdprAccept', language)}
+            hitSlop={hitSlop}
+          >
             <Text style={gdprStyles.acceptBtnText}>{t('gdprAccept', language)}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={gdprStyles.manageBtn} onPress={onManage}>
+          <TouchableOpacity
+            style={gdprStyles.manageBtn}
+            onPress={onManage}
+            accessibilityRole="button"
+            accessibilityLabel={t('gdprManage', language)}
+            hitSlop={hitSlop}
+          >
             <Text style={gdprStyles.manageBtnText}>{t('gdprManage', language)}</Text>
           </TouchableOpacity>
         </View>
@@ -86,32 +123,61 @@ function makeGdprStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     marginBottom: Spacing.base,
   },
-  logo: { fontSize: 40, marginBottom: Spacing.sm },
-  appName: { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: Spacing.md },
-  title: { fontSize: 18, fontWeight: '700', color: C.text, marginBottom: Spacing.sm, textAlign: 'center' },
-  body: { fontSize: 14, color: C.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: Spacing.md },
+  logo: { fontFamily: Fonts.regular, fontSize: 40, marginBottom: Spacing.sm },
+  logoCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: C.primarySurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+  },
+  appName: { fontSize: 20, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.md },
+  title: { fontSize: 18, fontFamily: Fonts.bold, color: C.text, marginBottom: Spacing.sm, textAlign: 'center' },
+  body: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: Spacing.md },
   links: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.xl },
-  link: { fontSize: 13, color: C.primary, fontWeight: '600' },
-  linkSep: { fontSize: 13, color: C.textTertiary },
+  // 44×44 minimum touch target for the two legal links.
+  linkBtn: { minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center' },
+  // Legal links are navigation, not the modal's primary action (Accept) →
+  // muted ink (5.67:1 light, 8.61:1 dark).
+  link: { fontSize: 13, color: C.textSecondary, fontFamily: Fonts.semibold },
+  linkSep: { fontFamily: Fonts.regular, fontSize: 13, color: C.textTertiary },
   acceptBtn: {
     backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.xxl,
     width: '100%',
+    minHeight: 44,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: Spacing.sm,
   },
-  acceptBtnText: { fontSize: 16, fontWeight: '700', color: C.textInverse },
-  manageBtn: { paddingVertical: Spacing.sm },
-  manageBtnText: { fontSize: 14, color: C.textSecondary },
+  acceptBtnText: { fontSize: 16, fontFamily: Fonts.bold, color: C.textInverse },
+  // Was ~33px tall — under the 44px minimum for a consent-gate control.
+  manageBtn: {
+    paddingVertical: Spacing.sm,
+    minHeight: 44,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  manageBtnText: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
   })
 }
 
 
 
 function RootLayoutInner() {
-  const [fontsLoaded, fontError] = useFonts({ ...Ionicons.font })
+  const [fontsLoaded, fontError] = useFonts({
+    ...Ionicons.font,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+  })
   const isDark = useThemeStore(s => s.isDark)
 
   useEffect(() => {

@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, Linking, Animated, Share, Switch } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import type { Href } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Shadow, Fonts } from '@/constants/colors'
 import { Avatar } from '@/components/ui/Avatar'
+import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { Divider } from '@/components/ui/Divider'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -13,9 +15,23 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import { t } from '@/constants/i18n'
 import { useLoyalty } from '@/lib/hooks/useLoyalty'
+import { getTierColor } from '@/lib/loyalty'
 import { supabase } from '@/lib/supabase'
 import { useThemeStore } from '@/lib/store/useThemeStore'
 import { useColors } from '@/lib/hooks/useColors'
+
+// Loyalty perk labels come from lib/loyalty.ts as canonical EN strings —
+// translate them at render time so the perks list follows the app language.
+const PERK_LABELS: Record<string, { en: string; es: string; hu: string }> = {
+  '2.5% fee discount':  { en: '2.5% fee discount',  es: '2,5% de descuento en tarifas', hu: '2,5% díjkedvezmény' },
+  '5% fee discount':    { en: '5% fee discount',    es: '5% de descuento en tarifas',   hu: '5% díjkedvezmény' },
+  '7.5% fee discount':  { en: '7.5% fee discount',  es: '7,5% de descuento en tarifas', hu: '7,5% díjkedvezmény' },
+  '10% discount':       { en: '10% discount',       es: '10% de descuento',             hu: '10% kedvezmény' },
+  'Priority support':   { en: 'Priority support',   es: 'Soporte prioritario',          hu: 'Elsőbbségi ügyfélszolgálat' },
+  'Free cancellation':  { en: 'Free cancellation',  es: 'Cancelación gratuita',         hu: 'Ingyenes lemondás' },
+  'No deposit':         { en: 'No deposit',         es: 'Sin depósito',                 hu: 'Kaució nélkül' },
+  'Dedicated support':  { en: 'Dedicated support',  es: 'Soporte dedicado',             hu: 'Dedikált ügyfélszolgálat' },
+}
 
 export default function ProfileScreen() {
   const { user, operator, signOut, language, setLanguage, hasOperatorAccount, hasHostAccount, setRole } = useAuthStore()
@@ -176,15 +192,13 @@ export default function ProfileScreen() {
         <Card style={styles.card}>
           <View style={styles.loyaltyHeader}>
             <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>{t('loyaltyTitle', language)}</Text>
-            <View style={[styles.tierBadge, { backgroundColor: loyalty.tierInfo.color + '22', borderColor: loyalty.tierInfo.color + '66' }]}>
-              <Text style={[styles.tierBadgeText, { color: loyalty.tierInfo.color }]}>
-                {loyalty.tierInfo.label.toUpperCase()}
-              </Text>
-            </View>
+            {/* A loyalty tier is passive status, not a CTA — house neutral
+                Badge (muted ink on surfaceWarm) instead of a tier-tinted pill. */}
+            <Badge label={loyalty.tierInfo.label.toUpperCase()} variant="neutral" />
           </View>
 
           <Text
-            style={[styles.loyaltyPoints, { color: loyalty.tierInfo.color }]}
+            style={[styles.loyaltyPoints, { color: C.text }]}
             accessibilityLabel={`${loyalty.points} ${t('loyaltyPoints', language)}`}
           >
             {loyalty.points.toLocaleString()}{' '}
@@ -201,7 +215,9 @@ export default function ProfileScreen() {
               style={[
                 styles.progressFill,
                 {
-                  backgroundColor: loyalty.tierInfo.color,
+                  // Theme-resolved tier accent — reading tierInfo.color raw
+                  // always yields the DARK palette value (washed out on white).
+                  backgroundColor: getTierColor(loyalty.tierInfo, C),
                   width: progressAnim.interpolate({
                     inputRange: [0, 1],
                     outputRange: ['0%', '100%'],
@@ -213,11 +229,14 @@ export default function ProfileScreen() {
 
           {loyalty.nextTierInfo ? (
             <Text style={styles.loyaltyNextText}>
-              <Text style={{ color: loyalty.nextTierInfo.color, fontWeight: '700' }}>
+              {/* Ink, not the tier metal: these are body copy, and the metal
+                  hexes (Silver #C0C0C0, Platinum #E5E4E2) are ~1.2–1.4:1 on the
+                  light surface. Emphasis comes from the bold face. */}
+              <Text style={{ color: C.text, fontFamily: Fonts.bold }}>
                 {loyalty.pointsToNextTier}
               </Text>
               {' '}{t('loyaltyNextTier', language)}{' '}
-              <Text style={{ color: loyalty.nextTierInfo.color, fontWeight: '700' }}>
+              <Text style={{ color: C.text, fontFamily: Fonts.bold }}>
                 {loyalty.nextTierInfo.label}
               </Text>
             </Text>
@@ -231,8 +250,9 @@ export default function ProfileScreen() {
           </Text>
           {loyalty.tierInfo.perks.map((perk) => (
             <View key={perk} style={styles.perkRow}>
-              <Text style={[styles.perkDot, { color: loyalty.tierInfo.color }]}>●</Text>
-              <Text style={styles.perkText}>{perk}</Text>
+              {/* Decorative bullet → muted ink, not the tier accent. */}
+              <Text style={[styles.perkDot, { color: C.textTertiary }]}>●</Text>
+              <Text style={styles.perkText}>{PERK_LABELS[perk]?.[language] ?? perk}</Text>
             </View>
           ))}
         </Card>
@@ -249,7 +269,10 @@ export default function ProfileScreen() {
               accessibilityLabel={t('ternMyRentals', language)}
               accessibilityRole="button"
             >
-              <Text style={styles.quickIcon}>🚗</Text>
+              <View style={styles.quickIconCircle}>
+                {/* Decorative nav icon, not a CTA → muted ink. */}
+                <Ionicons name="car-sport-outline" size={20} color={C.textSecondary} />
+              </View>
               <Text style={styles.quickLabel}>
                 {t('ternMyRentals', language)}
               </Text>
@@ -260,7 +283,9 @@ export default function ProfileScreen() {
               accessibilityLabel={t('ternSaved', language)}
               accessibilityRole="button"
             >
-              <Text style={styles.quickIcon}>❤️</Text>
+              <View style={styles.quickIconCircle}>
+                <Ionicons name="heart-outline" size={20} color={C.textSecondary} />
+              </View>
               <Text style={styles.quickLabel}>
                 {t('ternSaved', language)}
               </Text>
@@ -271,7 +296,9 @@ export default function ProfileScreen() {
               accessibilityLabel={t('ternNotifications', language)}
               accessibilityRole="button"
             >
-              <Text style={styles.quickIcon}>🔔</Text>
+              <View style={styles.quickIconCircle}>
+                <Ionicons name="notifications-outline" size={20} color={C.textSecondary} />
+              </View>
               <Text style={styles.quickLabel}>
                 {t('ternNotifications', language)}
               </Text>
@@ -292,7 +319,7 @@ export default function ProfileScreen() {
                 accessibilityRole="button"
               >
                 <Text style={[styles.langText, language === lang && styles.langTextActive]}>
-                  {lang === 'en' ? '🇬🇧 EN' : lang === 'es' ? '🇪🇸 ES' : '🇭🇺 HU'}
+                  {lang === 'en' ? 'EN' : lang === 'es' ? 'ES' : 'HU'}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -309,7 +336,7 @@ export default function ProfileScreen() {
               <Text style={[styles.menuLabel, { color: C.text }]}>
                 {t('ternDarkMode', language)}
               </Text>
-              <Text style={{ fontSize: 12, color: C.textTertiary, marginTop: 2 }}>
+              <Text style={{ fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: 2 }}>
                 {isDark ? t('ternEnabled', language) : t('ternDisabled', language)}
               </Text>
             </View>
@@ -334,7 +361,7 @@ export default function ProfileScreen() {
                 accessibilityLabel="Switch to Operator Dashboard"
                 accessibilityRole="button"
               >
-                <Text style={styles.switchRoleIcon}>🏢</Text>
+                <Ionicons name="business-outline" size={18} color={C.textSecondary} importantForAccessibility="no" />
                 <Text style={[styles.switchRoleText, { color: C.text }]}>{t('roleOperator', language)}</Text>
                 <Text style={[styles.switchRoleChevron, { color: C.textTertiary }]}>›</Text>
               </TouchableOpacity>
@@ -346,7 +373,7 @@ export default function ProfileScreen() {
                 accessibilityLabel="Switch to Host Dashboard"
                 accessibilityRole="button"
               >
-                <Text style={styles.switchRoleIcon}>🏠</Text>
+                <Ionicons name="home-outline" size={18} color={C.textSecondary} importantForAccessibility="no" />
                 <Text style={[styles.switchRoleText, { color: C.text }]}>{t('roleHost', language)}</Text>
                 <Text style={[styles.switchRoleChevron, { color: C.textTertiary }]}>›</Text>
               </TouchableOpacity>
@@ -402,14 +429,14 @@ export default function ProfileScreen() {
         <Card style={styles.card}>
           <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>{t('sectionAccount', language)}</Text>
           <MenuItem
-            label={`🪪 ${t('identityVerification', language)}`}
+            label={`${t('identityVerification', language)}`}
             onPress={() => router.push('/(consumer)/profile/identity-verification' as Href)}
             textColor={C.text}
             chevronColor={C.textTertiary}
           />
           <Divider />
           <MenuItem
-            label={`💳 ${t('payoutSettings', language)}`}
+            label={`${t('payoutSettings', language)}`}
             onPress={() => {
               Alert.alert(
                 t('payoutSettings', language),
@@ -422,14 +449,14 @@ export default function ProfileScreen() {
           />
           <Divider />
           <MenuItem
-            label={`🔔 ${t('cprNotificationSettings', language)}`}
+            label={`${t('cprNotificationSettings', language)}`}
             onPress={() => router.push('/(consumer)/profile/notifications' as Href)}
             textColor={C.text}
             chevronColor={C.textTertiary}
           />
           <Divider />
           <MenuItem
-            label={`🛡️ ${t('cprPrivacySettings', language)}`}
+            label={`${t('cprPrivacySettings', language)}`}
             onPress={() => router.push('/(consumer)/profile/privacy-settings' as Href)}
             textColor={C.text}
             chevronColor={C.textTertiary}
@@ -438,21 +465,21 @@ export default function ProfileScreen() {
 
         <Card style={styles.card}>
           <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>{t('sectionLegal', language)}</Text>
-          <MenuItem label={`📄 ${t('termsOfService', language)}`} onPress={handleTermsOfService} textColor={C.text} chevronColor={C.textTertiary} />
+          <MenuItem label={`${t('termsOfService', language)}`} onPress={handleTermsOfService} textColor={C.text} chevronColor={C.textTertiary} />
           <Divider />
-          <MenuItem label={`🔒 ${t('privacyPolicy', language)}`} onPress={handlePrivacyPolicy} textColor={C.text} chevronColor={C.textTertiary} />
+          <MenuItem label={`${t('privacyPolicy', language)}`} onPress={handlePrivacyPolicy} textColor={C.text} chevronColor={C.textTertiary} />
           <Divider />
-          <MenuItem label={`🍪 ${t('cookiePolicy', language)}`} onPress={() => router.push('/(consumer)/legal/cookies' as Href)} textColor={C.text} chevronColor={C.textTertiary} />
+          <MenuItem label={`${t('cookiePolicy', language)}`} onPress={() => router.push('/(consumer)/legal/cookies' as Href)} textColor={C.text} chevronColor={C.textTertiary} />
           <Divider />
-          <MenuItem label={`🛡️ ${t('cprPrivacySettings', language)}`} onPress={() => router.push('/(consumer)/profile/privacy-settings' as Href)} textColor={C.text} chevronColor={C.textTertiary} />
+          <MenuItem label={`${t('cprPrivacySettings', language)}`} onPress={() => router.push('/(consumer)/profile/privacy-settings' as Href)} textColor={C.text} chevronColor={C.textTertiary} />
           <Divider />
-          <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={handleHelpSupport} textColor={C.text} chevronColor={C.textTertiary} />
+          <MenuItem label={`${t('helpSupport', language)}`} onPress={handleHelpSupport} textColor={C.text} chevronColor={C.textTertiary} />
         </Card>
 
         <Card style={styles.card}>
           <Text style={[styles.sectionTitle, { color: C.textTertiary }]}>{t('ternAccountDeletion', language)}</Text>
           <MenuItem
-            label={`🗑️ ${t('cprDeleteAccount', language)}`}
+            label={`${t('cprDeleteAccount', language)}`}
             onPress={() => router.push('/(consumer)/profile/delete-account' as Href)}
             danger
             textColor={C.text}
@@ -508,28 +535,29 @@ function MenuItem({
 function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.background },
-  title: { fontSize: 26, fontWeight: '800', color: C.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md, marginBottom: Spacing.lg },
+  title: { fontFamily: 'Manrope_800ExtraBold', fontSize: 26, letterSpacing: -0.6, color: C.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md, marginBottom: Spacing.lg },
   profileSection: { alignItems: 'center', marginBottom: Spacing.xl },
-  name: { fontSize: 20, fontWeight: '700', color: C.text, marginTop: Spacing.md },
-  email: { fontSize: 14, color: C.textSecondary, marginTop: 4 },
-  memberSince: { fontSize: 12, color: C.textTertiary, marginTop: 4 },
+  name: { fontSize: 20, fontFamily: Fonts.bold, color: C.text, marginTop: Spacing.md },
+  email: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, marginTop: 4 },
+  memberSince: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: 4 },
   verifyBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
     marginTop: Spacing.md,
-    backgroundColor: C.warningSurface,
+    backgroundColor: C.surface,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.xs,
     borderWidth: 1,
-    borderColor: C.warning,
+    borderColor: C.border,
     minHeight: 44,
+    ...Shadow.sm,
   },
-  verifyBannerText: { fontSize: 12, color: C.primaryDark, fontWeight: '600' },
-  verifyBannerArrow: { fontSize: 12, color: C.primaryDark },
+  verifyBannerText: { fontSize: 12, color: C.text, fontFamily: Fonts.semibold },
+  verifyBannerArrow: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary },
   card: { marginHorizontal: Spacing.base, marginBottom: Spacing.md },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: C.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
+  sectionTitle: { fontSize: 12, fontFamily: Fonts.bold, color: C.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
   quickRow: { flexDirection: 'row', gap: Spacing.sm },
   quickBtn: {
     flex: 1,
@@ -541,8 +569,18 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
     minHeight: 44,
   },
-  quickIcon: { fontSize: 22, marginBottom: 4 },
-  quickLabel: { fontSize: 11, color: C.textSecondary, fontWeight: '600', textAlign: 'center' },
+  quickIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    // Neutral chip, not the CTA tint — these are shortcuts, not the CTA.
+    backgroundColor: C.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  quickIcon: { fontFamily: Fonts.regular, fontSize: 22, marginBottom: 4 },
+  quickLabel: { fontSize: 11, color: C.textSecondary, fontFamily: Fonts.semibold, textAlign: 'center' },
   langRow: { flexDirection: 'row', gap: Spacing.sm },
   langBtn: {
     flex: 1,
@@ -554,16 +592,16 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     minHeight: 44,
     justifyContent: 'center',
   },
-  langBtnActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
-  langText: { fontSize: 13, color: C.textSecondary, fontWeight: '600' },
-  langTextActive: { color: C.primaryDark },
+  langBtnActive: { backgroundColor: C.text, borderColor: C.text },
+  langText: { fontSize: 13, color: C.textSecondary, fontFamily: Fonts.semibold },
+  langTextActive: { color: C.background },
   menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.sm, minHeight: 44 },
-  menuLabel: { fontSize: 15, color: C.text },
+  menuLabel: { fontFamily: Fonts.regular, fontSize: 15, color: C.text },
   menuLabelDanger: { color: C.error },
-  menuChevron: { fontSize: 20, color: C.textTertiary },
+  menuChevron: { fontFamily: Fonts.regular, fontSize: 20, color: C.textTertiary },
   signOutBtn: { marginHorizontal: Spacing.base, marginTop: Spacing.base, padding: Spacing.base, alignItems: 'center', minHeight: 44 },
-  signOutText: { fontSize: 16, color: C.error, fontWeight: '600' },
-  appVersion: { textAlign: 'center', fontSize: 12, color: C.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
+  signOutText: { fontSize: 16, color: C.error, fontFamily: Fonts.semibold },
+  appVersion: { textAlign: 'center', fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -579,8 +617,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     elevation: 1,
   },
   statItem: { flex: 1, alignItems: 'center' },
-  statNum: { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: 2 },
-  statLabel: { fontSize: 11, color: C.textTertiary, fontWeight: '600', textTransform: 'uppercase' },
+  statNum: { fontSize: 20, fontFamily: Fonts.extrabold, color: C.text, marginBottom: 2 },
+  statLabel: { fontSize: 11, color: C.textTertiary, fontFamily: Fonts.semibold, textTransform: 'uppercase' },
   statDivider: { width: 1, height: 32, backgroundColor: C.border },
   switchRoleColumn: { gap: Spacing.sm },
   switchRoleBtn: {
@@ -595,11 +633,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.surface,
     minHeight: 44,
   },
-  switchRoleIcon: { fontSize: 18 },
-  switchRoleText: { flex: 1, fontSize: 15, color: C.text, fontWeight: '600' },
+  // Explicit color: the "+" variant is a plain text glyph (not an emoji), so
+  // without a color it falls back to default black — invisible in dark mode.
+  switchRoleIcon: { fontFamily: Fonts.regular, fontSize: 18, color: C.primary },
+  switchRoleText: { flex: 1, fontSize: 15, color: C.text, fontFamily: Fonts.semibold },
   switchRoleTextAccent: { color: C.primary },
   switchRoleBtnAccent: { borderColor: C.primary, borderStyle: 'dashed' },
-  switchRoleChevron: { fontSize: 20, color: C.textTertiary },
+  switchRoleChevron: { fontFamily: Fonts.regular, fontSize: 20, color: C.textTertiary },
   // Referral
   referralCard: {
     backgroundColor: C.background,
@@ -608,9 +648,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.borderGold,
   },
-  referralDesc: { color: C.textSecondary, fontSize: 13, marginBottom: Spacing.md, lineHeight: 20 },
+  referralDesc: { color: C.textSecondary, fontFamily: Fonts.regular, fontSize: 13, marginBottom: Spacing.md, lineHeight: 20 },
   referralCodeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  referralCode: { color: C.primary, fontSize: 20, fontWeight: '800', letterSpacing: 2, flex: 1 },
+  referralCode: { color: C.primary, fontSize: 20, fontFamily: Fonts.extrabold, letterSpacing: 2, flex: 1 },
   shareBtn: {
     backgroundColor: C.primary,
     borderRadius: Radius.sm,
@@ -620,18 +660,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  shareBtnText: { color: C.background, fontWeight: '700', fontSize: 14 },
+  shareBtnText: { color: C.background, fontFamily: Fonts.bold, fontSize: 14 },
   // Loyalty
   loyaltyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
-  tierBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-  },
-  tierBadgeText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8 },
-  loyaltyPoints: { fontSize: 28, fontWeight: '800', marginBottom: Spacing.sm },
-  loyaltyPointsLabel: { fontSize: 14, fontWeight: '400', color: C.textSecondary },
+  loyaltyPoints: { fontSize: 28, fontFamily: Fonts.extrabold, marginBottom: Spacing.sm },
+  loyaltyPointsLabel: { fontSize: 14, fontFamily: Fonts.regular, color: C.textSecondary },
   progressTrack: {
     height: 8,
     borderRadius: Radius.pill,
@@ -640,9 +673,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginBottom: Spacing.sm,
   },
   progressFill: { height: '100%', borderRadius: Radius.pill },
-  loyaltyNextText: { fontSize: 13, color: C.textSecondary, marginBottom: Spacing.xs },
+  loyaltyNextText: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, marginBottom: Spacing.xs },
   perkRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: 4 },
-  perkDot: { fontSize: 8 },
-  perkText: { fontSize: 13, color: C.textSecondary, flex: 1 },
+  perkDot: { fontFamily: Fonts.regular, fontSize: 8 },
+  perkText: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, flex: 1 },
   })
 }

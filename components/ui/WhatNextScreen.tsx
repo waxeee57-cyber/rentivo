@@ -1,16 +1,17 @@
 import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface WhatNextStep {
-  icon: string
+  icon: React.ComponentProps<typeof Ionicons>['name']
   text: string
 }
 
 interface WhatNextProps {
   title?: string
-  emoji?: string
+  headerIcon?: React.ComponentProps<typeof Ionicons>['name']
   steps: WhatNextStep[]
   primaryAction?: { label: string; onPress: () => void }
   secondaryAction?: { label: string; onPress: () => void }
@@ -18,7 +19,7 @@ interface WhatNextProps {
 
 export function WhatNextScreen({
   title = 'What happens next',
-  emoji,
+  headerIcon,
   steps,
   primaryAction,
   secondaryAction,
@@ -27,13 +28,21 @@ export function WhatNextScreen({
   const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.card}>
-      {emoji ? <Text style={styles.emoji}>{emoji}</Text> : null}
+      {headerIcon ? (
+        <Ionicons
+          name={headerIcon}
+          size={40}
+          color={C.primary}
+          style={styles.emoji}
+          importantForAccessibility="no"
+        />
+      ) : null}
       <Text style={styles.title}>{title}</Text>
       <View style={styles.steps}>
         {steps.map((step, i) => (
           <View key={i} style={styles.step}>
             <View style={styles.stepIconWrap}>
-              <Text style={styles.stepIcon}>{step.icon}</Text>
+              <Ionicons name={step.icon} size={16} color={C.primaryDark} importantForAccessibility="no" />
             </View>
             <Text style={styles.stepText}>{step.text}</Text>
           </View>
@@ -64,13 +73,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginBottom: Spacing.base,
   },
   emoji: {
-    fontSize: 40,
     textAlign: 'center',
     marginBottom: Spacing.md,
   },
   title: {
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -91,10 +99,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
     flexShrink: 0,
   },
-  stepIcon: { fontSize: 16 },
+  stepIcon: { fontFamily: Fonts.regular, fontSize: 16 },
   stepText: {
     flex: 1,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.textSecondary,
     lineHeight: 20,
     paddingTop: 6,
@@ -108,7 +116,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   primaryBtnText: {
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.textInverse,
   },
   secondaryBtn: {
@@ -119,7 +127,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   secondaryBtnText: {
     fontSize: 14,
     color: C.textTertiary,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
   },
   })
 }

@@ -8,7 +8,7 @@ import {
   format, addMonths, subMonths, startOfMonth, endOfMonth,
   eachDayOfInterval, getDay, isSameDay,
 } from 'date-fns'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { useOperatorBookings } from '@/lib/hooks/useOperatorBookings'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -21,7 +21,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const CELL_SIZE = (SCREEN_WIDTH - Spacing.base * 2) / 7
 
 const STATUS_ICONS: Record<BookingStatus, string> = {
-  pending: '⏳',
+  pending: '○',
   confirmed: '✓',
   active: '▶',
   completed: '●',
@@ -35,7 +35,7 @@ function StatusDot({ status, color }: { status: BookingStatus; color: string }) 
   return (
     <View style={[{ width: 14, height: 14, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: 1 }, { backgroundColor: color }]}>
       {/* intentional: white text on colored dot — theme-independent */}
-      <Text style={{ fontSize: 7, color: '#FFFFFF', fontWeight: '800' }}>{STATUS_ICONS[status]}</Text>
+      <Text style={{ fontSize: 7, color: '#FFFFFF', fontFamily: Fonts.extrabold }}>{STATUS_ICONS[status]}</Text>
     </View>
   )
 }
@@ -208,17 +208,17 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.surface, alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: C.border,
   },
-  navArrow: { fontSize: 22, color: C.text, fontWeight: '700' },
-  monthTitle: { fontSize: 18, fontWeight: '800', color: C.text },
+  navArrow: { fontSize: 22, color: C.text, fontFamily: Fonts.bold },
+  monthTitle: { fontSize: 18, fontFamily: Fonts.extrabold, color: C.text },
   legend: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm, gap: Spacing.md },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendLabel: { fontSize: 12, color: C.textSecondary },
+  legendLabel: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary },
   calBody: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
   dayHeaderRow: { flexDirection: 'row' },
   dayHeader: {
     width: CELL_SIZE, textAlign: 'center',
-    fontSize: 11, fontWeight: '700', color: C.textTertiary,
+    fontSize: 11, fontFamily: Fonts.bold, color: C.textTertiary,
     paddingVertical: Spacing.sm,
   },
   grid: { flexDirection: 'row', flexWrap: 'wrap' },
@@ -228,11 +228,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     padding: 3, alignItems: 'center',
   },
   dayCellToday: { backgroundColor: C.primarySurface },
-  dayNum: { fontSize: 12, fontWeight: '600', color: C.text, marginBottom: 2 },
-  dayNumToday: { color: C.primary, fontWeight: '800' },
-  more: { fontSize: 8, color: C.textTertiary },
+  dayNum: { fontSize: 12, fontFamily: Fonts.semibold, color: C.text, marginBottom: 2 },
+  dayNumToday: { color: C.primary, fontFamily: Fonts.extrabold },
+  more: { fontFamily: Fonts.regular, fontSize: 8, color: C.textTertiary },
   listTitle: {
-    fontSize: 12, fontWeight: '700', color: C.textTertiary,
+    fontSize: 12, fontFamily: Fonts.bold, color: C.textTertiary,
     textTransform: 'uppercase', letterSpacing: 0.5,
     marginTop: Spacing.xl, marginBottom: Spacing.md,
   },
@@ -244,9 +244,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   statusBar: { width: 4, height: 36, borderRadius: 2 },
   bookingInfo: { flex: 1 },
-  bookingGuest: { fontSize: 14, fontWeight: '700', color: C.text },
-  bookingDates: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
-  bookingStatus: { fontSize: 12, color: C.textTertiary, textTransform: 'capitalize' },
-  emptyMonth: { fontSize: 14, color: C.textTertiary, textAlign: 'center', marginTop: Spacing.xl },
+  bookingGuest: { fontSize: 14, fontFamily: Fonts.bold, color: C.text },
+  bookingDates: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, marginTop: 2 },
+  bookingStatus: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, textTransform: 'capitalize' },
+  emptyMonth: { fontFamily: Fonts.regular, fontSize: 14, color: C.textTertiary, textAlign: 'center', marginTop: Spacing.xl },
   })
 }

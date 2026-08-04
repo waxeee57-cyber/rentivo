@@ -12,7 +12,7 @@ import {
 import { useLocalSearchParams, router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useColors } from '@/lib/hooks/useColors'
@@ -212,12 +212,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
   },
   backText: {
-    fontSize: 20,
+    fontFamily: Fonts.regular, fontSize: 20,
     color: C.text,
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.text,
   },
 
@@ -232,12 +232,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   sectionTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.text,
     marginBottom: Spacing.sm,
   },
   sectionDesc: {
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: C.textSecondary,
     lineHeight: 18,
     marginBottom: Spacing.base,
@@ -246,7 +246,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   // Input
   inputLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     color: C.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -259,13 +259,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.text,
     marginBottom: Spacing.sm,
   },
 
   lastSync: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: C.textTertiary,
     marginBottom: Spacing.md,
   },
@@ -284,7 +284,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   buttonText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textInverse,
   },
 
@@ -301,7 +301,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   buttonSecondaryText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.primary,
   },
 
@@ -316,12 +316,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   infoTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.info,
     marginBottom: Spacing.sm,
   },
   infoText: {
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: C.textSecondary,
     lineHeight: 20,
   },

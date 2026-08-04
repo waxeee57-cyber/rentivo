@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -70,8 +70,11 @@ export default function ApiSettingsScreen() {
   const styles = useMemo(() => makeStyles(C), [C])
   const { operator, language } = useAuthStore()
   const { showToast } = useToastStore()
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>(MOCK_API_KEYS)
-  const [webhooks, setWebhooks] = useState<Webhook[]>(MOCK_WEBHOOKS)
+  // Seeded with MOCK_* unconditionally before — a shipped build opened this screen
+  // showing a fake `rnt_live_abc1` key, and a failed query left it there for good.
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>(Config.useMock ? MOCK_API_KEYS : [])
+  const [webhooks, setWebhooks] = useState<Webhook[]>(Config.useMock ? MOCK_WEBHOOKS : [])
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [newWebhookUrl, setNewWebhookUrl] = useState('')
   const [selectedEvents, setSelectedEvents] = useState<string[]>(['booking.confirmed'])
   const [addingWebhook, setAddingWebhook] = useState(false)
@@ -83,6 +86,10 @@ export default function ApiSettingsScreen() {
       supabase.from('rentivo_api_keys').select('*').eq('operator_id', operator.id),
       supabase.from('rentivo_webhooks').select('*').eq('operator_id', operator.id),
     ])
+    // A failed query must say so rather than leave whatever was on screen; credentials
+    // silently showing stale/absent data is how people revoke or trust the wrong key.
+    const failure = keysRes.error ?? hooksRes.error
+    setLoadError(failure ? failure.message : null)
     if (keysRes.data) setApiKeys(keysRes.data as ApiKey[])
     if (hooksRes.data) setWebhooks(hooksRes.data as Webhook[])
   }, [operator?.id])
@@ -159,6 +166,17 @@ export default function ApiSettingsScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader title={tr('opSetApiWebhooks', language)} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content}>
+
+        {loadError !== null && (
+          <Card style={styles.card}>
+            <Text style={styles.errorText}>{loadError}</Text>
+            <Button
+              title={t('tryAgain', language)}
+              variant="secondary"
+              onPress={() => { void loadData() }}
+            />
+          </Card>
+        )}
 
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>{tr('opSetApiKeysTitle', language)}</Text>
@@ -274,7 +292,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   card: { gap: Spacing.sm },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -288,9 +306,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     gap: Spacing.sm,
   },
   keyInfo: { flex: 1 },
-  keyName: { fontSize: 14, fontWeight: '700', color: C.text },
+  keyName: { fontSize: 14, fontFamily: Fonts.bold, color: C.text },
   keyPrefix: { fontSize: 13, color: C.primary, fontFamily: 'monospace', marginTop: 2 },
-  meta: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
+  meta: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, marginTop: 2 },
   keyActions: { alignItems: 'flex-end', gap: Spacing.xs },
   revokeBtn: {
     borderWidth: 1,
@@ -301,30 +319,31 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     minHeight: 28,
     justifyContent: 'center',
   },
-  revokeBtnText: { fontSize: 12, color: C.error, fontWeight: '600' },
-  infoText: { fontSize: 12, color: C.textSecondary, fontStyle: 'italic' },
+  revokeBtnText: { fontSize: 12, color: C.error, fontFamily: Fonts.semibold },
+  infoText: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, fontStyle: 'italic' },
+  errorText: { fontFamily: Fonts.regular, fontSize: 14, color: C.error, lineHeight: 20 },
   webhookRow: {
     paddingVertical: Spacing.sm,
     gap: 4,
     borderBottomWidth: 1,
     borderBottomColor: C.border,
   },
-  webhookUrl: { fontSize: 13, color: C.text, fontWeight: '600' },
-  webhookEvents: { fontSize: 12, color: C.textSecondary },
+  webhookUrl: { fontSize: 13, color: C.text, fontFamily: Fonts.semibold },
+  webhookEvents: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary },
   webhookMeta: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', marginTop: 4 },
-  failCount: { fontSize: 12, color: C.error },
+  failCount: { fontFamily: Fonts.regular, fontSize: 12, color: C.error },
   addWebhook: { marginTop: Spacing.md, gap: Spacing.sm },
   urlInput: {
     backgroundColor: C.background,
     borderRadius: Radius.md,
     padding: Spacing.md,
     color: C.text,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     borderWidth: 1,
     borderColor: C.border,
     minHeight: 44,
   },
-  eventsLabel: { fontSize: 13, color: C.text, fontWeight: '600' },
+  eventsLabel: { fontSize: 13, color: C.text, fontFamily: Fonts.semibold },
   eventsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs },
   eventChip: {
     paddingHorizontal: Spacing.sm,
@@ -336,7 +355,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
   },
   eventChipActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
-  eventChipText: { fontSize: 11, color: C.textSecondary },
+  eventChipText: { fontFamily: Fonts.regular, fontSize: 11, color: C.textSecondary },
   eventChipTextActive: { color: C.primaryDark },
   addBtns: { flexDirection: 'row', gap: Spacing.sm, justifyContent: 'flex-end' },
   addWebhookBtn: {
@@ -345,6 +364,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     minHeight: 44,
     justifyContent: 'center',
   },
-  addWebhookBtnText: { fontSize: 14, color: C.primary, fontWeight: '600' },
+  addWebhookBtnText: { fontSize: 14, color: C.primary, fontFamily: Fonts.semibold },
   })
 }

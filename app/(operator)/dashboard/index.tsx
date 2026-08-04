@@ -1,9 +1,10 @@
 import React, { useMemo, useEffect, useRef } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Animated, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { subDays, format, startOfMonth } from 'date-fns'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { QuickStats } from '@/components/operator/QuickStats'
 import { BookingRow } from '@/components/operator/BookingRow'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -47,34 +48,67 @@ function RevenueSparkline({ bookings }: { bookings: { total_amount: number; star
   }, [bookings])
 
   const max = Math.max(...bars.map(b => b.revenue), 1)
+  const hasRevenue = bars.some(b => b.revenue > 0)
 
   return (
     <View style={sparkStyles.container}>
-      <View style={sparkStyles.bars}>
-        {bars.map((bar, i) => (
-          <View key={i} style={sparkStyles.barCol}>
-            <View style={sparkStyles.barTrack}>
-              <View
-                style={[
-                  sparkStyles.barFill,
-                  { height: `${Math.max((bar.revenue / max) * 100, bar.revenue > 0 ? 8 : 0)}%` },
-                ]}
-              />
+      <View style={sparkStyles.chartRow}>
+        {/* € axis — a chart without a scale is a wireframe, not data */}
+        <View style={sparkStyles.axis}>
+          <Text style={sparkStyles.axisLabel}>€{hasRevenue ? Math.round(max) : 100}</Text>
+          <Text style={sparkStyles.axisLabel}>€{hasRevenue ? Math.round(max / 2) : 50}</Text>
+          <Text style={sparkStyles.axisLabel}>€0</Text>
+        </View>
+        <View style={sparkStyles.bars}>
+          {bars.map((bar, i) => (
+            <View key={i} style={sparkStyles.barCol}>
+              <View style={sparkStyles.barTrack}>
+                <View
+                  style={[
+                    sparkStyles.barFill,
+                    { height: `${Math.max((bar.revenue / max) * 100, bar.revenue > 0 ? 8 : 0)}%` },
+                  ]}
+                />
+              </View>
+              {bar.revenue > 0 && (
+                <Text style={sparkStyles.barValue}>{formatEUR(bar.revenue).replace('€', '')}</Text>
+              )}
+              <Text style={sparkStyles.barLabel}>{bar.label}</Text>
             </View>
-            {bar.revenue > 0 && (
-              <Text style={sparkStyles.barValue}>{formatEUR(bar.revenue).replace('€', '')}</Text>
-            )}
-            <Text style={sparkStyles.barLabel}>{bar.label}</Text>
-          </View>
-        ))}
+          ))}
+        </View>
       </View>
+      {!hasRevenue && (
+        <View style={sparkStyles.zeroOverlay} pointerEvents="none">
+          <Text style={sparkStyles.zeroText}>No revenue yet — trends appear after your first confirmed booking</Text>
+        </View>
+      )}
     </View>
   )
 }
 
 function makeSparkStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create({
   container: { marginTop: Spacing.sm },
-  bars: { flexDirection: 'row', alignItems: 'flex-end', height: 80, gap: 6 },
+  chartRow: { flexDirection: 'row', gap: Spacing.sm },
+  axis: { justifyContent: 'space-between', height: 80, paddingBottom: 0 },
+  axisLabel: { fontFamily: Fonts.regular, fontSize: 9, color: C.textTertiary, fontVariant: ['tabular-nums'] },
+  zeroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  zeroText: {
+    fontFamily: Fonts.regular, fontSize: 12,
+    color: C.textSecondary,
+    textAlign: 'center',
+    backgroundColor: C.surface,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: Radius.sm,
+    overflow: 'hidden',
+  },
+  bars: { flex: 1, flexDirection: 'row', alignItems: 'flex-end', height: 80, gap: 6 },
   barCol: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
   barTrack: {
     width: '100%',
@@ -85,12 +119,12 @@ function makeSparkStyles(C: ReturnType<typeof useColors>) { return StyleSheet.cr
     overflow: 'hidden',
   },
   barFill: { width: '100%', backgroundColor: C.primary, borderRadius: 4, minHeight: 0 },
-  barValue: { fontSize: 8, color: C.textTertiary, marginTop: 2 },
-  barLabel: { fontSize: 9, color: C.textTertiary, fontWeight: '600', marginTop: 1 },
+  barValue: { fontFamily: Fonts.regular, fontSize: 8, color: C.textTertiary, marginTop: 2 },
+  barLabel: { fontSize: 9, color: C.textTertiary, fontFamily: Fonts.semibold, marginTop: 1 },
 }) }
 
 interface QuickActionCardProps {
-  icon: string
+  icon: React.ComponentProps<typeof Ionicons>['name']
   label: string
   route?: string
   externalUrl?: string
@@ -131,7 +165,10 @@ function QuickActionCard({ icon, label, route, externalUrl, badge }: QuickAction
       accessibilityRole="button"
     >
       <View style={qaStyles.iconWrap}>
-        <Text style={qaStyles.icon}>{icon}</Text>
+        <View style={qaStyles.iconCircle}>
+          {/* Quick-action nav icon, not a CTA → muted ink. */}
+          <Ionicons name={icon} size={20} color={C.textSecondary} />
+        </View>
         {badge != null && badge > 0 && (
           <Animated.View style={[qaStyles.badge, { transform: [{ scale: pulseAnim }] }]}>
             <Text style={qaStyles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
@@ -164,7 +201,16 @@ function makeQaStyles(C: ReturnType<typeof useColors>) { return StyleSheet.creat
   iconWrap: {
     position: 'relative',
   },
-  icon: { fontSize: 28 },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    // Neutral chip — the accent tint is reserved for the CTA.
+    backgroundColor: C.surfaceWarm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  icon: { fontFamily: Fonts.regular, fontSize: 28 },
   badge: {
     position: 'absolute',
     top: -6,
@@ -177,8 +223,8 @@ function makeQaStyles(C: ReturnType<typeof useColors>) { return StyleSheet.creat
     justifyContent: 'center',
     paddingHorizontal: 3,
   },
-  badgeText: { fontSize: 10, fontWeight: '800', color: C.textInverse },
-  label: { fontSize: 12, fontWeight: '600', color: C.textSecondary, textAlign: 'center' },
+  badgeText: { fontSize: 10, fontFamily: Fonts.extrabold, color: C.textInverse },
+  label: { fontSize: 12, fontFamily: Fonts.semibold, color: C.textSecondary, textAlign: 'center' },
 }) }
 
 export default function DashboardScreen() {
@@ -226,13 +272,14 @@ export default function DashboardScreen() {
           accessibilityLabel="Set up Stripe payouts"
           accessibilityRole="button"
         >
+          <Ionicons name="flash-outline" size={13} color={C.background} importantForAccessibility="no" />
           <Text style={styles.stripeBannerText}>
             {t('ternSetupPayouts', language)}
           </Text>
         </TouchableOpacity>
       )}
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.greeting}>{greeting}, {opName.split(' ')[0]} 👋</Text>
+        <Text style={styles.greeting}>{greeting}, {opName.split(' ')[0]}</Text>
 
         {/* Monthly stats */}
         <View style={styles.monthlyStats}>
@@ -254,12 +301,12 @@ export default function DashboardScreen() {
         <View style={styles.quickActionsGrid}>
           <View style={styles.quickActionsRow}>
             <QuickActionCard
-              icon="＋"
+              icon="add"
               label={t('addVehicle', language)}
               route="/(operator)/fleet/new"
             />
             <QuickActionCard
-              icon="📋"
+              icon="clipboard-outline"
               label={t('bookings', language)}
               route="/(operator)/bookings"
               badge={pendingCount}
@@ -267,13 +314,13 @@ export default function DashboardScreen() {
           </View>
           <View style={styles.quickActionsRow}>
             <QuickActionCard
-              icon="💬"
+              icon="chatbubble-ellipses-outline"
               label={t('messages', language)}
               route="/(operator)/messages"
               badge={unreadCount > 0 ? unreadCount : undefined}
             />
             <QuickActionCard
-              icon="💳"
+              icon="card-outline"
               label={t('ternPayouts', language)}
               externalUrl="https://dashboard.stripe.com/express"
             />
@@ -331,7 +378,14 @@ export default function DashboardScreen() {
             {todayPickups.length > 0 && (
               <>
                 <View style={styles.scheduleLabel}>
-                  <Text style={styles.scheduleLabelText}>🔑 Pickups</Text>
+                  <Ionicons
+                    name="key-outline"
+                    size={14}
+                    color={C.text}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                  />
+                  <Text style={styles.scheduleLabelText}>Pickups</Text>
                 </View>
                 {todayPickups.map(b => (
                   <BookingRow
@@ -345,7 +399,14 @@ export default function DashboardScreen() {
             {todayReturns.length > 0 && (
               <>
                 <View style={styles.scheduleLabel}>
-                  <Text style={styles.scheduleLabelText}>🏁 Returns</Text>
+                  <Ionicons
+                    name="flag-outline"
+                    size={14}
+                    color={C.text}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                  />
+                  <Text style={styles.scheduleLabelText}>Returns</Text>
                 </View>
                 {todayReturns.map(b => (
                   <BookingRow
@@ -361,7 +422,7 @@ export default function DashboardScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t('todaysSchedule', language)}</Text>
             <View style={[styles.card, styles.emptySchedule]}>
-              <Text style={styles.emptyScheduleEmoji}>☀️</Text>
+              <Ionicons name="sunny-outline" size={28} color={C.textTertiary} />
               <Text style={styles.emptyScheduleText}>{t('noPickupsToday', language)}</Text>
             </View>
           </View>
@@ -373,7 +434,7 @@ export default function DashboardScreen() {
             ? Array(3).fill(null).map((_, i) => <SkeletonCard key={i} />)
             : bookings.length === 0 ? (
               <View style={[styles.card, styles.emptySchedule]}>
-                <Text style={styles.emptyScheduleEmoji}>📅</Text>
+                <Ionicons name="calendar-outline" size={28} color={C.textTertiary} />
                 <Text style={styles.emptyScheduleText}>{t('noBookingsYet', language)}</Text>
                 <TouchableOpacity
                   onPress={() => router.push('/(operator)/fleet/new' as Parameters<typeof router.push>[0])}
@@ -400,18 +461,21 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: C.background },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
-  greeting: { fontSize: 24, fontWeight: '800', color: C.text, marginBottom: Spacing.xl },
+  greeting: { fontFamily: 'Manrope_800ExtraBold', fontSize: 24, letterSpacing: -0.5, color: C.text, marginBottom: Spacing.xl },
 
   // Stripe onboarding banner
   stripeBanner: {
     backgroundColor: C.warning,
     paddingVertical: 12,
     paddingHorizontal: Spacing.base,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
   stripeBannerText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.background,
   },
 
@@ -436,19 +500,19 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   monthlyStatValue: {
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.primary,
     marginBottom: 4,
   },
   monthlyStatValueAlt: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     marginBottom: 4,
   },
   monthlyStatLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     color: C.textSecondary,
   },
 
@@ -462,7 +526,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   section: { marginTop: Spacing.xl },
   sectionTitle: {
-    fontSize: 13, fontWeight: '700', textTransform: 'uppercase',
+    fontSize: 13, fontFamily: Fonts.bold, textTransform: 'uppercase',
     letterSpacing: 0.5, color: C.textSecondary, marginBottom: Spacing.md,
   },
   card: {
@@ -475,11 +539,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     shadowRadius: 6,
     elevation: 1,
   },
-  scheduleLabel: { marginBottom: Spacing.sm },
-  scheduleLabelText: { fontSize: 13, fontWeight: '700', color: C.text },
+  scheduleLabel: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.sm },
+  scheduleLabelText: { fontSize: 13, fontFamily: Fonts.bold, color: C.text },
   emptySchedule: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyScheduleEmoji: { fontSize: 32, marginBottom: Spacing.sm },
-  emptyScheduleText: { fontSize: 14, color: C.textTertiary },
+  emptyScheduleEmoji: { fontFamily: Fonts.regular, fontSize: 32, marginBottom: Spacing.sm },
+  emptyScheduleText: { fontFamily: Fonts.regular, fontSize: 14, color: C.textTertiary },
   emptyAction: {
     marginTop: Spacing.md,
     backgroundColor: C.primarySurface,
@@ -489,7 +553,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.primary,
   },
-  emptyActionText: { fontSize: 14, fontWeight: '600', color: C.primary },
+  emptyActionText: { fontSize: 14, fontFamily: Fonts.semibold, color: C.primary },
   })
 
   const tierStyles = StyleSheet.create({
@@ -502,10 +566,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  nextLabel: { color: C.textSecondary, fontSize: 13 },
+  nextLabel: { color: C.textSecondary, fontFamily: Fonts.regular, fontSize: 13 },
   progressBar: { height: 4, backgroundColor: C.border, borderRadius: 2, marginBottom: 6 },
   progressFill: { height: 4, backgroundColor: C.primary, borderRadius: 2 },
-  hint: { color: C.textSecondary, fontSize: 12 },
+  hint: { color: C.textSecondary, fontFamily: Fonts.regular, fontSize: 12 },
   })
   return { styles, tierStyles }
 }

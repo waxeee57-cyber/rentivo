@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { View, Text, StyleSheet, AppState, AppStateStatus } from 'react-native'
-import { Spacing } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 function checkConnection(setOnline: (v: boolean) => void) {
@@ -32,7 +33,15 @@ export function OfflineBanner() {
 
   return (
     <View style={styles.banner}>
-      <Text style={styles.text}>📡 No internet · Some features unavailable</Text>
+      <Ionicons
+        name="cloud-offline-outline"
+        size={16}
+        color={C.text}
+        style={styles.icon}
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+      />
+      <Text style={styles.text}>No internet · Some features unavailable</Text>
       <Text style={styles.dismiss} onPress={() => setDismissed(true)}>✕</Text>
     </View>
   )
@@ -50,7 +59,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
   },
-  text: { fontSize: 13, fontWeight: '600', color: C.text, flex: 1 },
-  dismiss: { fontSize: 16, color: C.textSecondary, fontWeight: '700', paddingLeft: Spacing.sm },
+  icon: { marginRight: Spacing.sm },
+  text: { fontSize: 13, fontFamily: Fonts.semibold, color: C.text, flex: 1 },
+  dismiss: { fontSize: 16, color: C.textSecondary, fontFamily: Fonts.bold, paddingLeft: Spacing.sm },
   })
 }

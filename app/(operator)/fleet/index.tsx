@@ -1,13 +1,14 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  RefreshControl, Share,
+  RefreshControl, Share, ScrollView,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as Haptics from 'expo-haptics'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { FleetCard } from '@/components/operator/FleetCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -25,9 +26,20 @@ function OperatorSetupWizard({ onStart, onSkip }: { onStart: () => void; onSkip:
   const { language } = useAuthStore()
   const wizardStyles = useMemo(() => makeWizardStyles(C), [C])
   return (
-    <View style={wizardStyles.container}>
+    <ScrollView
+      style={wizardStyles.scroll}
+      contentContainerStyle={wizardStyles.container}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={wizardStyles.card}>
-        <Text style={wizardStyles.emoji}>🎉</Text>
+        <Ionicons
+          name="sparkles"
+          size={56}
+          color={C.primary}
+          style={wizardStyles.heroIcon}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        />
         <Text style={wizardStyles.title}>{t('opFleetWelcomeTitle', language)}</Text>
         <Text style={wizardStyles.subtitle}>{t('opFleetWelcomeSub', language)}</Text>
         <View style={wizardStyles.steps}>
@@ -61,12 +73,18 @@ function OperatorSetupWizard({ onStart, onSkip }: { onStart: () => void; onSkip:
           <Text style={wizardStyles.skipBtnText}>{t('opFleetWizardSkip', language)}</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   )
 }
 
 function makeWizardStyles(C: ReturnType<typeof useColors>) { return StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', paddingHorizontal: Spacing.xl },
+  scroll: { flex: 1 },
+  // flexGrow (not flex) + centering: a card taller than the viewport scrolls
+  // instead of overflowing the screen title above / tab bar below.
+  container: {
+    flexGrow: 1, justifyContent: 'center',
+    paddingHorizontal: Spacing.xl, paddingVertical: Spacing.base,
+  },
   card: {
     backgroundColor: C.surface,
     borderRadius: Radius.xxl,
@@ -75,9 +93,9 @@ function makeWizardStyles(C: ReturnType<typeof useColors>) { return StyleSheet.c
     borderColor: C.border,
     alignItems: 'center',
   },
-  emoji: { fontSize: 56, marginBottom: Spacing.md },
-  title: { fontSize: 24, fontWeight: '800', color: C.text, textAlign: 'center', marginBottom: Spacing.sm },
-  subtitle: { fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: Spacing.xl },
+  heroIcon: { marginBottom: Spacing.md },
+  title: { fontSize: 24, fontFamily: Fonts.extrabold, color: C.text, textAlign: 'center', marginBottom: Spacing.sm },
+  subtitle: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: Spacing.xl },
   steps: { width: '100%', gap: Spacing.sm, marginBottom: Spacing.xl },
   step: {
     flexDirection: 'row',
@@ -95,10 +113,10 @@ function makeWizardStyles(C: ReturnType<typeof useColors>) { return StyleSheet.c
     textAlign: 'center',
     lineHeight: 28,
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.textInverse,
   },
-  stepText: { fontSize: 15, fontWeight: '600', color: C.text },
+  stepText: { fontSize: 15, fontFamily: Fonts.semibold, color: C.text },
   startBtn: {
     backgroundColor: C.primary,
     borderRadius: Radius.pill,
@@ -106,9 +124,9 @@ function makeWizardStyles(C: ReturnType<typeof useColors>) { return StyleSheet.c
     paddingHorizontal: Spacing.xxxl,
     marginBottom: Spacing.sm,
   },
-  startBtnText: { fontSize: 16, fontWeight: '800', color: C.textInverse },
+  startBtnText: { fontSize: 16, fontFamily: Fonts.extrabold, color: C.textInverse },
   skipBtn: { paddingVertical: Spacing.sm },
-  skipBtnText: { fontSize: 14, color: C.textTertiary },
+  skipBtnText: { fontFamily: Fonts.regular, fontSize: 14, color: C.textTertiary },
 }) }
 
 export default function FleetScreen() {
@@ -193,7 +211,7 @@ export default function FleetScreen() {
       </View>
       {fleet.length === 0 ? (
         <EmptyState
-          emoji="🚗"
+          icon="car-sport-outline"
           title={t('opFleetEmptyTitle', language)}
           subtitle={t('opFleetEmptySub', language)}
           action={{ label: t('opFleetAddVehicleBtn', language), onPress: () => router.push('/(operator)/fleet/new' as Parameters<typeof router.push>[0]) }}
@@ -223,11 +241,27 @@ export default function FleetScreen() {
                 accessibilityLabel={t('opFleetShareListing', language)}
                 accessibilityRole="button"
               >
-                <Text style={styles.shareText}>🔗 {t('opFleetShareListing', language)}</Text>
+                <Ionicons
+                  name="share-social-outline"
+                  size={16}
+                  color={C.primary}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
+                />
+                <Text style={styles.shareText}>{t('opFleetShareListing', language)}</Text>
               </TouchableOpacity>
               <View style={styles.rentalOsCard}>
                 <View style={styles.rentalOsLeft}>
-                  <Text style={styles.rentalOsTitle}>🔄 {t('rentalOsImport', language)}</Text>
+                  <View style={styles.rentalOsTitleRow}>
+                    <Ionicons
+                      name="sync-outline"
+                      size={14}
+                      color={C.text}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no"
+                    />
+                    <Text style={styles.rentalOsTitle}>{t('rentalOsImport', language)}</Text>
+                  </View>
                   <Text style={styles.rentalOsSubtitle}>{t('opFleetRentalOsSub', language)}</Text>
                 </View>
                 <View style={styles.soonBadge}>
@@ -292,7 +326,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   availBadgeLive: { backgroundColor: C.successSurface, borderWidth: 1, borderColor: C.success },
   availBadgePaused: { backgroundColor: C.surfaceWarm, borderWidth: 1, borderColor: C.border },
-  availBadgeText: { fontSize: 11, fontWeight: '700' },
+  availBadgeText: { fontSize: 11, fontFamily: Fonts.bold },
   availBadgeTextLive: { color: C.success },
   availBadgeTextPaused: { color: C.textTertiary },
 
@@ -304,7 +338,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingTop: Spacing.md,
     marginBottom: Spacing.base,
   },
-  title: { fontSize: 26, fontWeight: '800', color: C.text },
+  title: { fontFamily: 'Manrope_800ExtraBold', fontSize: 26, letterSpacing: -0.6, color: C.text },
   list: { paddingHorizontal: Spacing.base },
   shareRow: {
     backgroundColor: C.primarySurface,
@@ -313,11 +347,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginBottom: Spacing.sm,
     borderWidth: 1,
     borderColor: C.primary,
+    flexDirection: 'row',
+    gap: Spacing.xs,
     alignItems: 'center',
     minHeight: 44,
     justifyContent: 'center',
   },
-  shareText: { fontSize: 14, fontWeight: '600', color: C.primary },
+  shareText: { fontSize: 14, fontFamily: Fonts.semibold, color: C.primary },
   rentalOsCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -330,8 +366,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
   },
   rentalOsLeft: { flex: 1 },
-  rentalOsTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 2 },
-  rentalOsSubtitle: { fontSize: 12, color: C.textSecondary },
+  rentalOsTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: 2 },
+  rentalOsTitle: { fontSize: 14, fontFamily: Fonts.bold, color: C.text },
+  rentalOsSubtitle: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary },
   soonBadge: {
     backgroundColor: C.warningSurface,
     borderRadius: Radius.pill,
@@ -340,7 +377,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.warning,
   },
-  soonText: { fontSize: 11, fontWeight: '700', color: C.warning },
+  soonText: { fontSize: 11, fontFamily: Fonts.bold, color: C.warning },
   fab: {
     position: 'absolute',
     bottom: 90,
@@ -357,6 +394,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     shadowRadius: 10,
     elevation: 8,
   },
-  fabText: { fontSize: 28, color: C.textInverse, fontWeight: '300', lineHeight: 32 },
+  fabText: { fontSize: 28, color: C.textInverse, fontFamily: Fonts.regular, lineHeight: 32 },
   })
 }

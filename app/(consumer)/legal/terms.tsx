@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { View, Text, ScrollView, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -66,15 +66,15 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.background },
   content: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
-  lastUpdated: { fontSize: 12, color: C.textTertiary, marginBottom: Spacing.md },
-  intro: { fontSize: 14, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
+  lastUpdated: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginBottom: Spacing.md },
+  intro: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
   section: {
     backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
     marginBottom: Spacing.md,
   },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: Spacing.sm },
-  sectionBody: { fontSize: 14, color: C.textSecondary, lineHeight: 22 },
+  sectionTitle: { fontSize: 15, fontFamily: Fonts.bold, color: C.text, marginBottom: Spacing.sm },
+  sectionBody: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, lineHeight: 22 },
   })
 }

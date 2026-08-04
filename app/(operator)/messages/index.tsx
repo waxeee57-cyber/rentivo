@@ -4,9 +4,10 @@ import {
   StyleSheet, RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Config } from '@/constants/config'
 import { MOCK_CONVERSATIONS } from '@/lib/mockData'
 import { supabase } from '@/lib/supabase'
@@ -116,7 +117,14 @@ export default function OperatorMessagesScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>💬</Text>
+            <Ionicons
+              name="chatbubble-ellipses-outline"
+              size={48}
+              color={C.textTertiary}
+              style={styles.emptyIcon}
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+            />
             <Text style={styles.emptyTitle}>{t('messagesEmpty', language)}</Text>
             <Text style={styles.emptySubtitle}>{t('messagesEmptyGuests', language)}</Text>
           </View>
@@ -133,9 +141,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   listContent: { paddingVertical: Spacing.sm, paddingBottom: 100 },
   emptyContainer: { flex: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 120, paddingHorizontal: Spacing.xl },
-  emptyIcon: { fontSize: 48, marginBottom: Spacing.base },
-  emptyTitle: { fontSize: 18, fontWeight: '800', color: C.text, marginBottom: Spacing.xs },
-  emptySubtitle: { fontSize: 14, color: C.textSecondary, textAlign: 'center' },
+  emptyIcon: { marginBottom: Spacing.base },
+  emptyTitle: { fontSize: 18, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.xs },
+  emptySubtitle: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, textAlign: 'center' },
   separator: { height: 1, backgroundColor: C.border, marginLeft: 72 },
   row: {
     flexDirection: 'row',
@@ -152,7 +160,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 20, color: C.primary, fontWeight: '700' },
+  avatarText: { fontSize: 20, color: C.primary, fontFamily: Fonts.bold },
   rowContent: { flex: 1, gap: 4 },
   rowTop: {
     flexDirection: 'row',
@@ -164,11 +172,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  guestName: { fontSize: 15, fontWeight: '600', color: C.text, flex: 1, marginRight: 8 },
-  guestNameUnread: { fontWeight: '700' },
-  time: { fontSize: 12, color: C.textTertiary },
-  lastMsg: { fontSize: 14, color: C.textSecondary, flex: 1, marginRight: 8 },
-  lastMsgUnread: { color: C.text, fontWeight: '500' },
+  guestName: { fontSize: 15, fontFamily: Fonts.semibold, color: C.text, flex: 1, marginRight: 8 },
+  guestNameUnread: { fontFamily: Fonts.bold },
+  time: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary },
+  lastMsg: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, flex: 1, marginRight: 8 },
+  lastMsgUnread: { color: C.text, fontFamily: Fonts.medium },
   badge: {
     backgroundColor: C.primary,
     borderRadius: Radius.pill,
@@ -178,6 +186,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
     paddingHorizontal: 6,
   },
-  badgeText: { fontSize: 11, fontWeight: '700', color: C.textInverse },
+  badgeText: { fontSize: 11, fontFamily: Fonts.bold, color: C.textInverse },
   })
 }

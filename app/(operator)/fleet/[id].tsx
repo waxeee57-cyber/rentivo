@@ -5,7 +5,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
@@ -193,7 +194,7 @@ export default function EditVehicleScreen() {
                 <Image source={{ uri }} style={styles.photoImg} contentFit="cover" />
               ) : (
                 <View style={styles.photoPlaceholder}>
-                  <Text style={styles.photoPlaceholderIcon}>📷</Text>
+                  <Ionicons name="camera-outline" size={24} color={C.textTertiary} importantForAccessibility="no" />
                   <Text style={styles.photoPlaceholderText}>
                     {i === 0 ? t('opFleetPhotoCover', language) : `${t('opFleetPhotoN', language)} ${i + 1}`}
                   </Text>
@@ -226,7 +227,12 @@ export default function EditVehicleScreen() {
               accessibilityRole="radio"
               accessibilityState={{ selected: category === cat.key }}
             >
-              <Text style={styles.catEmoji}>{cat.emoji}</Text>
+              <Ionicons
+                name={cat.icon}
+                size={16}
+                color={category === cat.key ? C.primaryDark : C.textSecondary}
+                importantForAccessibility="no"
+              />
               <Text style={[styles.catLabel, category === cat.key && styles.catLabelActive]}>
                 {cat.label}
               </Text>
@@ -437,7 +443,8 @@ export default function EditVehicleScreen() {
           accessibilityLabel={t('opFleetIcalSync', language)}
           accessibilityRole="button"
         >
-          <Text style={styles.icalBtnText}>📅 {t('opFleetIcalSync', language)}</Text>
+          <Ionicons name="calendar-outline" size={15} color={C.primary} importantForAccessibility="no" />
+          <Text style={styles.icalBtnText}>{t('opFleetIcalSync', language)}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -446,7 +453,8 @@ export default function EditVehicleScreen() {
           accessibilityLabel={t('opFleetPricingRules', language)}
           accessibilityRole="button"
         >
-          <Text style={styles.pricingBtnText}>📊 {t('opFleetPricingRules', language)}</Text>
+          <Ionicons name="stats-chart-outline" size={14} color={C.primary} importantForAccessibility="no" />
+          <Text style={styles.pricingBtnText}>{t('opFleetPricingRules', language)}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -455,7 +463,8 @@ export default function EditVehicleScreen() {
           accessibilityLabel={t('opFleetManageAvail', language)}
           accessibilityRole="button"
         >
-          <Text style={styles.availabilityBtnText}>📅 {t('opFleetManageAvail', language)}</Text>
+          <Ionicons name="calendar-outline" size={14} color={C.primary} importantForAccessibility="no" />
+          <Text style={styles.availabilityBtnText}>{t('opFleetManageAvail', language)}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -464,7 +473,8 @@ export default function EditVehicleScreen() {
           accessibilityLabel={t('opFleetDeleteVehicle', language)}
           accessibilityRole="button"
         >
-          <Text style={styles.deleteBtnText}>🗑 {t('opFleetDeleteVehicle', language)}</Text>
+          <Ionicons name="trash-outline" size={15} color={C.error} importantForAccessibility="no" />
+          <Text style={styles.deleteBtnText}>{t('opFleetDeleteVehicle', language)}</Text>
         </TouchableOpacity>
 
         <View style={{ height: Spacing.xxxl }} />
@@ -488,9 +498,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   container: { flex: 1, backgroundColor: C.background },
   content: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { fontSize: 15, color: C.textSecondary },
+  loadingText: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary },
   sectionTitle: {
-    fontSize: 13, fontWeight: '700', color: C.textTertiary,
+    fontSize: 13, fontFamily: Fonts.bold, color: C.textTertiary,
     textTransform: 'uppercase', letterSpacing: 0.5,
     marginTop: Spacing.xl, marginBottom: Spacing.sm,
   },
@@ -504,13 +514,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   photoImg: { width: '100%', height: '100%' },
   photoPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 },
-  photoPlaceholderIcon: { fontSize: 24 },
-  photoPlaceholderText: { fontSize: 11, color: C.textTertiary, fontWeight: '600' },
+  photoPlaceholderText: { fontSize: 11, color: C.textTertiary, fontFamily: Fonts.semibold },
   input: {
     backgroundColor: C.surface, borderRadius: Radius.lg,
     borderWidth: 1, borderColor: C.border,
     paddingHorizontal: Spacing.base, paddingVertical: Spacing.md,
-    fontSize: 15, color: C.text,
+    fontFamily: Fonts.regular, fontSize: 15, color: C.text,
   },
   textArea: { minHeight: 100, textAlignVertical: 'top', paddingTop: Spacing.md },
   categoryScroll: { marginBottom: Spacing.xs },
@@ -522,14 +531,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginRight: Spacing.sm,
   },
   catChipActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
-  catEmoji: { fontSize: 16 },
-  catLabel: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
+  catLabel: { fontSize: 13, fontFamily: Fonts.semibold, color: C.textSecondary },
   catLabelActive: { color: C.primaryDark },
   card: { marginTop: Spacing.xl },
   toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   toggleLeft: { flex: 1, marginRight: Spacing.md },
-  toggleTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 2 },
-  toggleSub: { fontSize: 13, color: C.textSecondary },
+  toggleTitle: { fontSize: 15, fontFamily: Fonts.bold, color: C.text, marginBottom: 2 },
+  toggleSub: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
   minDaysRow: { flexDirection: 'row', gap: Spacing.sm },
   dayChip: {
     flex: 1, paddingVertical: Spacing.sm, borderRadius: Radius.lg,
@@ -537,7 +545,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
   },
   dayChipActive: { backgroundColor: C.primary, borderColor: C.primary },
-  dayChipText: { fontSize: 14, fontWeight: '700', color: C.textSecondary },
+  dayChipText: { fontSize: 14, fontFamily: Fonts.bold, color: C.textSecondary },
   dayChipTextActive: { color: C.textInverse },
   policyRow: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
@@ -554,41 +562,46 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   radioActive: { borderColor: C.primary },
   radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.primary },
   policyText: { flex: 1 },
-  policyLabel: { fontSize: 15, fontWeight: '700', color: C.text },
-  policyDesc: { fontSize: 13, color: C.textSecondary, marginTop: 2 },
+  policyLabel: { fontSize: 15, fontFamily: Fonts.bold, color: C.text },
+  policyDesc: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, marginTop: 2 },
   icalBtn: {
-    marginTop: Spacing.sm, padding: Spacing.md, alignItems: 'center',
+    marginTop: Spacing.sm, padding: Spacing.md,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.xs,
     borderWidth: 1.5, borderColor: C.primary,
     borderRadius: Radius.lg, backgroundColor: C.primarySurface,
     minHeight: 48,
   },
-  icalBtnText: { fontSize: 15, fontWeight: '700', color: C.primary },
+  icalBtnText: { fontSize: 15, fontFamily: Fonts.bold, color: C.primary },
   pricingBtn: {
-    marginTop: Spacing.sm, padding: Spacing.md, alignItems: 'center',
+    marginTop: Spacing.sm, padding: Spacing.md,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.xs,
     borderWidth: 1, borderColor: C.borderGold,
     borderRadius: Radius.lg, backgroundColor: C.surface,
     minHeight: 44,
   },
-  pricingBtnText: { color: C.primary, fontWeight: '600', fontSize: 14 },
+  pricingBtnText: { color: C.primary, fontFamily: Fonts.semibold, fontSize: 14 },
   availabilityBtn: {
     marginTop: Spacing.sm,
     borderWidth: 1,
     borderColor: C.primary,
     borderRadius: Radius.lg,
     padding: Spacing.md,
+    flexDirection: 'row',
     alignItems: 'center',
     minHeight: 44,
     justifyContent: 'center',
+    gap: Spacing.xs,
   },
-  availabilityBtnText: { fontSize: 14, color: C.primary, fontWeight: '600' },
+  availabilityBtnText: { fontSize: 14, color: C.primary, fontFamily: Fonts.semibold },
   deleteBtn: {
-    marginTop: Spacing.base, padding: Spacing.md, alignItems: 'center',
+    marginTop: Spacing.base, padding: Spacing.md,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.xs,
     borderWidth: 1.5, borderColor: C.error + '55',
     borderRadius: Radius.lg, backgroundColor: C.errorSurface,
   },
-  deleteBtnText: { fontSize: 15, fontWeight: '700', color: C.error },
+  deleteBtnText: { fontSize: 15, fontFamily: Fonts.bold, color: C.error },
   hourlyFields: { marginTop: Spacing.base, gap: Spacing.xs },
-  hourlyFieldLabel: { fontSize: 13, fontWeight: '600', color: C.textSecondary, marginBottom: Spacing.xs },
+  hourlyFieldLabel: { fontSize: 13, fontFamily: Fonts.semibold, color: C.textSecondary, marginBottom: Spacing.xs },
   minHoursRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
   })
 }

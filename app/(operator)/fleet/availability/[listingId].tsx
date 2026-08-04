@@ -5,7 +5,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -302,7 +302,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     marginBottom: Spacing.sm,
   },
-  subtitle: { fontSize: 13, color: C.textSecondary, flex: 1, marginRight: Spacing.sm },
+  subtitle: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, flex: 1, marginRight: Spacing.sm },
   addBtn: {
     backgroundColor: C.primary,
     borderRadius: Radius.md,
@@ -312,17 +312,17 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  addBtnText: { fontSize: 13, fontWeight: '700', color: C.background },
+  addBtnText: { fontSize: 13, fontFamily: Fonts.bold, color: C.background },
   loadingText: { textAlign: 'center', color: C.textSecondary, marginTop: Spacing.xl },
   emptyCard: { alignItems: 'center', paddingVertical: Spacing.xl },
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: Spacing.sm },
-  emptyText: { fontSize: 14, color: C.textSecondary, textAlign: 'center' },
+  emptyTitle: { fontSize: 16, fontFamily: Fonts.bold, color: C.text, marginBottom: Spacing.sm },
+  emptyText: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, textAlign: 'center' },
   periodCard: { gap: Spacing.sm },
   periodHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  periodTitle: { fontSize: 15, fontWeight: '700', color: C.text, flex: 1 },
-  deleteBtn: { fontSize: 13, color: C.error, fontWeight: '600', paddingVertical: Spacing.xs, paddingLeft: Spacing.sm, minHeight: 44, textAlignVertical: 'center' },
-  periodDates: { fontSize: 14, color: C.primary, fontWeight: '600' },
-  notes: { fontSize: 13, color: C.textSecondary },
+  periodTitle: { fontSize: 15, fontFamily: Fonts.bold, color: C.text, flex: 1 },
+  deleteBtn: { fontSize: 13, color: C.error, fontFamily: Fonts.semibold, paddingVertical: Spacing.xs, paddingLeft: Spacing.sm, minHeight: 44, textAlignVertical: 'center' },
+  periodDates: { fontSize: 14, color: C.primary, fontFamily: Fonts.semibold },
+  notes: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
   modal: { flex: 1, backgroundColor: C.background },
   modalHeader: {
     flexDirection: 'row',
@@ -332,12 +332,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderBottomWidth: 1,
     borderBottomColor: C.border,
   },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: C.text },
-  closeBtn: { fontSize: 14, color: C.textSecondary, fontWeight: '600', minHeight: 44, textAlignVertical: 'center', paddingVertical: Spacing.sm },
+  modalTitle: { fontSize: 18, fontFamily: Fonts.bold, color: C.text },
+  closeBtn: { fontSize: 14, color: C.textSecondary, fontFamily: Fonts.semibold, minHeight: 44, textAlignVertical: 'center', paddingVertical: Spacing.sm },
   modalContent: { padding: Spacing.base },
   fieldLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     color: C.textSecondary,
     marginBottom: Spacing.xs,
     marginTop: Spacing.md,
@@ -347,7 +347,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: Radius.md,
     padding: Spacing.md,
     color: C.text,
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     borderWidth: 1,
     borderColor: C.border,
     minHeight: 44,
@@ -365,7 +365,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
   },
   reasonChipActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
-  reasonChipText: { fontSize: 13, color: C.textSecondary },
-  reasonChipTextActive: { color: C.primaryDark, fontWeight: '600' },
+  reasonChipText: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
+  reasonChipTextActive: { color: C.primaryDark, fontFamily: Fonts.semibold },
   })
 }

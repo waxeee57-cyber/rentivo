@@ -8,7 +8,7 @@ import { useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import * as Haptics from 'expo-haptics'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useBooking } from '@/lib/hooks/useBookings'
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
@@ -80,9 +80,14 @@ function MessageBubble({ msg, translation, onTranslate }: MessageBubbleProps) {
           {translation.loading ? (
             <ActivityIndicator size="small" color={C.primary} style={styles.translateSpinner} />
           ) : (
-            <Text style={styles.translateBtnText}>
-              {translation.text !== null ? t('opBkHideTranslation', language) : `🌐 ${t('opBkTranslate', language)}`}
-            </Text>
+            <View style={styles.translateBtnRow}>
+              {translation.text === null && (
+                <Ionicons name="globe-outline" size={12} color={C.primary} importantForAccessibility="no" />
+              )}
+              <Text style={styles.translateBtnText}>
+                {translation.text !== null ? t('opBkHideTranslation', language) : t('opBkTranslate', language)}
+              </Text>
+            </View>
           )}
         </TouchableOpacity>
       )}
@@ -307,7 +312,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   container: { flex: 1, backgroundColor: C.background },
   messageList: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.md },
   emptyChat: { flex: 1, alignItems: 'center', paddingTop: Spacing.xxxl },
-  emptyChatText: { fontSize: 14, color: C.textTertiary },
+  emptyChatText: { fontFamily: Fonts.regular, fontSize: 14, color: C.textTertiary },
   bubbleWrapper: { marginBottom: Spacing.xs, maxWidth: '80%' },
   bubbleWrapperRight: { alignSelf: 'flex-end', alignItems: 'flex-end' },
   bubbleWrapperLeft: { alignSelf: 'flex-start', alignItems: 'flex-start' },
@@ -327,28 +332,29 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.border,
   },
-  bubbleText: { fontSize: 14, color: C.text, lineHeight: 20 },
+  bubbleText: { fontFamily: Fonts.regular, fontSize: 14, color: C.text, lineHeight: 20 },
   bubbleTextOperator: { color: C.textInverse },
-  bubbleTime: { fontSize: 10, color: C.textTertiary, marginTop: 2 },
+  bubbleTime: { fontFamily: Fonts.regular, fontSize: 10, color: C.textTertiary, marginTop: 2 },
   bubbleTimeRight: { textAlign: 'right' },
   translationContainer: { marginTop: 6 },
   translationDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.12)', marginBottom: 6 },
-  translationText: { fontSize: 13, color: C.text, lineHeight: 18, fontStyle: 'italic' },
+  translationText: { fontFamily: Fonts.regular, fontSize: 13, color: C.text, lineHeight: 18, fontStyle: 'italic' },
   translateBtn: {
     marginTop: 4,
     minHeight: 20,
   },
+  translateBtnRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   translateBtnText: {
     fontSize: 11,
     color: C.primary,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
   },
   translateSpinner: {
     height: 16,
   },
   systemMsg: { alignSelf: 'center', marginVertical: Spacing.sm, maxWidth: '70%' },
   systemMsgText: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: C.textTertiary,
     fontStyle: 'italic',
     textAlign: 'center',
@@ -370,7 +376,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: Radius.xxl,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.text,
     maxHeight: 100,
     borderWidth: 1,

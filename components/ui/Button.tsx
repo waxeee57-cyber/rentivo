@@ -1,10 +1,23 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import {
-  TouchableOpacity, Text, ActivityIndicator,
+  Pressable, Text, ActivityIndicator,
   StyleSheet, ViewStyle, TextStyle,
 } from 'react-native'
-import { Radius, Spacing } from '@/constants/colors'
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated'
+import { impactAsync, ImpactFeedbackStyle } from 'expo-haptics'
+import { Radius, Spacing, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
+
+// A Pressable wrapped by Reanimated rather than a Pressable *containing* an
+// Animated.View: the button stays ONE box, so the `style` prop keeps landing
+// on the exact element it did under the old TouchableOpacity. That is what
+// lets all 29 call sites keep their margins/minWidth/flex without reflowing.
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
+
+// Quiet-luxury press: a 4% dip, not a bounce. High stiffness + damping 15 is
+// effectively critically damped, so it settles in ~150ms and never overshoots
+// past its resting size on release.
+const PRESS_SPRING = { damping: 15, stiffness: 400 } as const
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 
@@ -28,6 +41,30 @@ export function Button({
 }: ButtonProps) {
   const C = useColors()
   const isDisabled = disabled || loading
+  const scale = useSharedValue(1)
+
+  // Runs on the UI thread — the scale never crosses the JS bridge, so the
+  // press stays responsive even while a submit handler blocks JS.
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
+  const handlePressIn = useCallback(() => {
+    if (isDisabled) return
+    scale.value = withSpring(0.96, PRESS_SPRING)
+  }, [isDisabled, scale])
+
+  const handlePressOut = useCallback(() => {
+    scale.value = withSpring(1, PRESS_SPRING)
+  }, [scale])
+
+  const handlePress = useCallback(() => {
+    if (isDisabled) return
+    // .catch swallows the rejection on platforms with no haptic engine
+    // (web, older simulators) — a missing taptic must never break a tap.
+    impactAsync(ImpactFeedbackStyle.Light).catch(() => {})
+    onPress()
+  }, [isDisabled, onPress])
 
   const variantContainerStyle: ViewStyle = (() => {
     switch (variant) {
@@ -48,8 +85,10 @@ export function Button({
   })()
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
+    <AnimatedPressable
+      onPress={handlePress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       disabled={isDisabled}
       style={[
         styles.base,
@@ -57,15 +96,17 @@ export function Button({
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
         style,
+        // Last so the transform survives a caller-supplied `style`.
+        animatedStyle,
       ]}
-      activeOpacity={0.8}
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
     >
       {loading
         ? <ActivityIndicator color={variant === 'primary' ? C.textInverse : C.primary} size="small" />
         : <Text style={[styles.text, variantTextColor, textStyle]}>{title}</Text>}
-    </TouchableOpacity>
+    </AnimatedPressable>
   )
 }
 
@@ -79,5 +120,5 @@ const styles = StyleSheet.create({
   },
   fullWidth: { alignSelf: 'stretch' },
   disabled: { opacity: 0.5 },
-  text: { fontSize: 15, fontWeight: '600' },
+  text: { fontSize: 15, fontFamily: Fonts.semibold },
 })

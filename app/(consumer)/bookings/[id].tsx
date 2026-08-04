@@ -4,7 +4,9 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import * as Haptics from 'expo-haptics'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -19,9 +21,9 @@ import { t } from '@/constants/i18n'
 import { getError } from '@/lib/errors'
 import { formatDate, formatDateRange, isDateToday } from '@/lib/utils/formatDate'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
-import { calculateCancellationRefund, getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
+import { calculateCancellationRefund, getCancellationPolicyColor, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
 import { useBooking } from '@/lib/hooks/useBookings'
-import { updateBookingStatus } from '@/lib/api/bookings'
+import { cancelBooking } from '@/lib/api/bookings'
 import { Config } from '@/constants/config'
 import { MOCK_REVIEWS } from '@/lib/mockData'
 import { supabase } from '@/lib/supabase'
@@ -84,14 +86,29 @@ export default function BookingDetailScreen() {
   const handleCancel = async () => {
     setCancelling(true)
     try {
+      // cancel-booking issues the actual Stripe refund and returns the amount it
+      // moved. The old path only flipped `status` — the refund this very screen
+      // promises above never happened.
+      let refunded = refundCalc?.refundAmount ?? 0
       if (!Config.useMock) {
-        await updateBookingStatus(booking.id, 'cancelled')
+        const result = await cancelBooking(booking.id)
+        refunded = result.refundAmount
       }
       setShowCancelSheet(false)
-      showToast({ message: t('cbkBookingCancelled', language), type: 'info' })
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      showToast({
+        message: refunded > 0
+          ? `${t('cbkBookingCancelled', language)} · ${t('refundProcessing', language)} (${formatEURDecimal(refunded)})`
+          : t('cbkBookingCancelled', language),
+        type: 'info',
+      })
       router.back()
-    } catch {
-      showToast({ message: getError('booking_failed'), type: 'error' })
+    } catch (e) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      showToast({
+        message: e instanceof Error && e.message ? e.message : t('cancelFailed', language),
+        type: 'error',
+      })
     } finally {
       setCancelling(false)
     }
@@ -125,9 +142,12 @@ export default function BookingDetailScreen() {
           </View>
           <Badge label={booking.payment_status} variant={booking.payment_status === 'paid' ? 'success' : 'warning'} />
           {booking.deposit_amount > 0 && (
-            <Text style={styles.depositInfo}>
-              🔒 {formatEURDecimal(booking.deposit_amount)} deposit hold active
-            </Text>
+            <View style={styles.depositInfoRow}>
+              <Ionicons name="lock-closed" size={12} color={C.info} importantForAccessibility="no" />
+              <Text style={styles.depositInfo}>
+                {formatEURDecimal(booking.deposit_amount)} deposit hold active
+              </Text>
+            </View>
           )}
         </Card>
 
@@ -135,7 +155,7 @@ export default function BookingDetailScreen() {
         <Card style={{ marginBottom: Spacing.base }}>
           <Text style={styles.sectionTitle}>{t('insurance', language)}</Text>
           <View style={styles.insuranceRow}>
-            <Text style={styles.insuranceIcon}>🛡️</Text>
+            <Ionicons name="shield-checkmark" size={18} color={C.success} importantForAccessibility="no" />
             <Text style={styles.insuranceText}>{t('cbkInsuranceDesc', language)}</Text>
           </View>
         </Card>
@@ -144,12 +164,13 @@ export default function BookingDetailScreen() {
         {refundCalc && (
           <Card style={{ marginBottom: Spacing.base }}>
             <Text style={styles.sectionTitle}>{t('cancellationPolicy', language)}</Text>
-            <Text style={styles.policyLabel}>
-              {getCancellationPolicyEmoji(policy)} {getCancellationPolicyLabel(policy, language)}
-            </Text>
+            <View style={styles.policyLabelRow}>
+              <Ionicons name="ellipse" size={8} color={getCancellationPolicyColor(policy)} importantForAccessibility="no" />
+              <Text style={styles.policyLabel}>{getCancellationPolicyLabel(policy, language)}</Text>
+            </View>
             <Divider style={{ marginVertical: Spacing.sm }} />
             <Text style={styles.refundNote}>
-              If you cancel now: <Text style={{ fontWeight: '700' }}>{refundCalc.refundPercent}% refund</Text>
+              If you cancel now: <Text style={{ fontFamily: Fonts.bold }}>{refundCalc.refundPercent}% refund</Text>
               {refundCalc.refundAmount > 0 ? ` (${formatEURDecimal(refundCalc.refundAmount)})` : ''}
             </Text>
             <Text style={styles.refundMessage}>{refundCalc.message}</Text>
@@ -182,7 +203,8 @@ export default function BookingDetailScreen() {
               style={styles.phoneBtn}
               onPress={() => Linking.openURL(`tel:${booking.operator!.phone}`)}
             >
-              <Text style={styles.phoneBtnText}>📞 {booking.operator.phone}</Text>
+              <Ionicons name="call-outline" size={16} color={C.primaryDark} importantForAccessibility="no" />
+              <Text style={styles.phoneBtnText}>{booking.operator.phone}</Text>
             </TouchableOpacity>
           </Card>
         )}
@@ -221,6 +243,7 @@ export default function BookingDetailScreen() {
           accessibilityLabel={t('cbkViewContractLabel', language)}
           accessibilityRole="button"
         >
+          <Ionicons name="document-text-outline" size={15} color={C.text} importantForAccessibility="no" />
           <Text style={styles.actionBtnText}>{t('cbkViewContractBtn', language)}</Text>
         </TouchableOpacity>
 
@@ -231,6 +254,7 @@ export default function BookingDetailScreen() {
           accessibilityLabel={t('messageOperator', language)}
           accessibilityRole="button"
         >
+          <Ionicons name="chatbubble-ellipses-outline" size={15} color={C.text} importantForAccessibility="no" />
           <Text style={styles.actionBtnText}>{t('cbkMessageOperatorBtn', language)}</Text>
         </TouchableOpacity>
 
@@ -241,6 +265,7 @@ export default function BookingDetailScreen() {
             accessibilityLabel={t('cbkOpenDispute', language)}
             accessibilityRole="button"
           >
+            <Ionicons name="warning-outline" size={14} color={C.warning} importantForAccessibility="no" />
             <Text style={styles.disputeBtnText}>{t('cbkOpenDisputeBtn', language)}</Text>
           </TouchableOpacity>
         )}
@@ -253,6 +278,7 @@ export default function BookingDetailScreen() {
             accessibilityLabel={t('cbkLeaveReviewLabel', language)}
             accessibilityRole="button"
           >
+            <Ionicons name="star-outline" size={15} color={C.primaryDark} importantForAccessibility="no" />
             <Text style={[styles.actionBtnText, { color: C.primaryDark }]}>{t('cbkLeaveReviewBtn', language)}</Text>
           </TouchableOpacity>
         )}
@@ -282,7 +308,7 @@ export default function BookingDetailScreen() {
         onCancel={() => setShowCancelSheet(false)}
         details={refundCalc ? [
           { label: t('cbkRefundAmount', language), value: formatEURDecimal(refundCalc.refundAmount) },
-          { label: t('cbkPolicy', language), value: `${getCancellationPolicyEmoji(policy)} ${getCancellationPolicyLabel(policy, language)}` },
+          { label: t('cbkPolicy', language), value: getCancellationPolicyLabel(policy, language) },
         ] : undefined}
       />
     </SafeAreaView>
@@ -299,30 +325,33 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginBottom: Spacing.base,
     alignItems: 'center',
   },
-  statusText: { fontSize: 15, fontWeight: '700' },
-  vehicleTitle: { fontSize: 18, fontWeight: '700', color: C.text, marginBottom: 4 },
-  operatorName: { fontSize: 15, color: C.text, fontWeight: '500', marginBottom: 4 },
-  dates: { fontSize: 15, color: C.text },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: C.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
+  statusText: { fontSize: 15, fontFamily: Fonts.bold },
+  vehicleTitle: { fontSize: 18, fontFamily: Fonts.bold, color: C.text, marginBottom: 4 },
+  operatorName: { fontSize: 15, color: C.text, fontFamily: Fonts.medium, marginBottom: 4 },
+  dates: { fontFamily: Fonts.regular, fontSize: 15, color: C.text },
+  sectionTitle: { fontSize: 12, fontFamily: Fonts.bold, color: C.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
-  priceLabel: { fontSize: 14, color: C.textSecondary },
-  priceValue: { fontSize: 16, fontWeight: '700', color: C.text },
-  depositInfo: { fontSize: 12, color: C.info, marginTop: Spacing.sm },
+  priceLabel: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
+  priceValue: { fontSize: 16, fontFamily: Fonts.bold, color: C.text },
+  depositInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: Spacing.sm },
+  depositInfo: { fontFamily: Fonts.regular, fontSize: 12, color: C.info },
   insuranceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
-  insuranceIcon: { fontSize: 18 },
-  insuranceText: { flex: 1, fontSize: 13, color: C.textSecondary, lineHeight: 20 },
-  policyLabel: { fontSize: 14, color: C.text, fontWeight: '600', marginBottom: Spacing.xs },
-  refundNote: { fontSize: 14, color: C.textSecondary },
-  refundMessage: { fontSize: 12, color: C.textTertiary, marginTop: 4, lineHeight: 18 },
+  insuranceText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, lineHeight: 20 },
+  policyLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.xs },
+  policyLabel: { fontSize: 14, color: C.text, fontFamily: Fonts.semibold },
+  refundNote: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
+  refundMessage: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: 4, lineHeight: 18 },
   inspectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  inspLabel: { fontSize: 14, color: C.textSecondary },
-  phoneBtn: { backgroundColor: C.primarySurface, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', justifyContent: 'center', minHeight: 44 },
-  phoneBtnText: { fontSize: 15, color: C.primaryDark, fontWeight: '600' },
+  inspLabel: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
+  phoneBtn: { backgroundColor: C.primarySurface, borderRadius: Radius.lg, padding: Spacing.md, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', minHeight: 44 },
+  phoneBtnText: { fontSize: 15, color: C.primaryDark, fontFamily: Fonts.semibold },
   actionBtn: {
     borderWidth: 1.5,
     borderColor: C.border,
     borderRadius: Radius.lg,
     padding: Spacing.md,
+    flexDirection: 'row',
+    gap: 6,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.sm,
@@ -331,16 +360,19 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   actionBtnGold: { borderColor: C.primary, backgroundColor: C.primarySurface },
   actionBtnDanger: { borderColor: C.error + '44', backgroundColor: C.errorSurface },
-  actionBtnText: { fontSize: 15, color: C.text, fontWeight: '600' },
+  actionBtnText: { fontSize: 15, color: C.text, fontFamily: Fonts.semibold },
   disputeBtn: {
     borderWidth: 1,
     borderColor: C.warning,
     borderRadius: Radius.lg,
     padding: Spacing.md,
+    flexDirection: 'row',
+    gap: 6,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: Spacing.sm,
     minHeight: 44,
   },
-  disputeBtnText: { fontSize: 14, color: C.warning, fontWeight: '600' },
+  disputeBtnText: { fontSize: 14, color: C.warning, fontFamily: Fonts.semibold },
   })
 }

@@ -4,7 +4,7 @@ import {
   TextInput, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -238,7 +238,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   sectionTitle: {
     color: C.text,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     marginBottom: Spacing.md,
   },
   emailInput: {
@@ -249,7 +249,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     color: C.text,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     minHeight: 44,
     marginBottom: Spacing.md,
   },
@@ -266,17 +266,17 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.surfaceWarm,
   },
   roleChipActive: { backgroundColor: C.primary, borderColor: C.primary },
-  roleText: { color: C.textSecondary, fontSize: 13, fontWeight: '600' },
+  roleText: { color: C.textSecondary, fontSize: 13, fontFamily: Fonts.semibold },
   roleTextActive: { color: C.textInverse },
   roleDesc: {
     color: C.textTertiary,
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     marginTop: Spacing.sm,
   },
   listTitle: {
     color: C.textSecondary,
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     marginBottom: Spacing.sm,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -293,9 +293,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.primaryLight,
   },
-  avatarText: { color: C.primaryDark, fontWeight: '700', fontSize: 18 },
+  avatarText: { color: C.primaryDark, fontFamily: Fonts.bold, fontSize: 18 },
   memberInfo: { flex: 1 },
-  memberEmail: { color: C.text, fontSize: 14, fontWeight: '500', marginBottom: 4 },
+  memberEmail: { color: C.text, fontSize: 14, fontFamily: Fonts.medium, marginBottom: 4 },
   badgeRow: { flexDirection: 'row', gap: Spacing.sm },
   roleBadge: {
     borderWidth: 1,
@@ -303,21 +303,21 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
   },
-  roleBadgeText: { fontSize: 11, fontWeight: '700' },
+  roleBadgeText: { fontSize: 11, fontFamily: Fonts.bold },
   statusBadge: { borderRadius: Radius.pill, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
-  statusText: { fontSize: 11, fontWeight: '600' },
+  statusText: { fontSize: 11, fontFamily: Fonts.semibold },
   removeBtn: {
     minHeight: 44,
     minWidth: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  removeText: { color: C.error, fontSize: 16, fontWeight: '700' },
+  removeText: { color: C.error, fontSize: 16, fontFamily: Fonts.bold },
   emptyText: {
     color: C.textSecondary,
     textAlign: 'center',
     marginTop: Spacing.xl,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
   },
   })
 }

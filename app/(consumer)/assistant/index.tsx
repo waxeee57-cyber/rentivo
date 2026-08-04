@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Spacing, Radius, Typography } from '@/constants/colors'
+import { Spacing, Radius, Typography, Fonts } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { supabase } from '@/lib/supabase'
@@ -131,7 +131,8 @@ export default function AssistantScreen() {
           <Ionicons name="arrow-back" size={22} color={C.text} />
         </TouchableOpacity>
         <View style={styles.headerIcon}>
-          <Ionicons name="chatbubble-ellipses" size={20} color={C.primary} />
+          {/* Decorative section icon → muted ink; accent is CTA-only. */}
+          <Ionicons name="chatbubble-ellipses" size={20} color={C.textSecondary} />
         </View>
         <View style={styles.headerText}>
           <Text style={styles.headerTitle}>{t('assistantTitle', language)}</Text>
@@ -156,7 +157,8 @@ export default function AssistantScreen() {
           {messages.length === 0 && (
             <View style={styles.emptyState}>
               <View style={styles.emptyIconWrap}>
-                <Ionicons name="chatbubble-ellipses" size={40} color={C.primary} />
+                {/* Decorative empty-state icon → muted ink. */}
+                <Ionicons name="chatbubble-ellipses" size={40} color={C.textTertiary} />
               </View>
               <Text style={styles.emptyText}>{t('assistantEmpty', language)}</Text>
 
@@ -168,7 +170,7 @@ export default function AssistantScreen() {
                   accessibilityLabel={t('assistantSuggest1', language)}
                   accessibilityRole="button"
                 >
-                  <Ionicons name="car-outline" size={14} color={C.primary} />
+                  <Ionicons name="car-outline" size={14} color={C.textSecondary} />
                   <Text style={styles.chipText}>{t('assistantSuggest1', language)}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -177,7 +179,7 @@ export default function AssistantScreen() {
                   accessibilityLabel={t('assistantSuggest2', language)}
                   accessibilityRole="button"
                 >
-                  <Ionicons name="boat-outline" size={14} color={C.primary} />
+                  <Ionicons name="boat-outline" size={14} color={C.textSecondary} />
                   <Text style={styles.chipText}>{t('assistantSuggest2', language)}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -186,7 +188,7 @@ export default function AssistantScreen() {
                   accessibilityLabel={t('assistantSuggest3', language)}
                   accessibilityRole="button"
                 >
-                  <Ionicons name="calendar-outline" size={14} color={C.primary} />
+                  <Ionicons name="calendar-outline" size={14} color={C.textSecondary} />
                   <Text style={styles.chipText}>{t('assistantSuggest3', language)}</Text>
                 </TouchableOpacity>
               </View>
@@ -234,7 +236,8 @@ export default function AssistantScreen() {
             >
               {msg.role === 'assistant' && (
                 <View style={styles.avatarDot}>
-                  <Ionicons name="chatbubble-ellipses" size={12} color={C.primary} />
+                  {/* Assistant identity chip, not an action → muted ink. */}
+                  <Ionicons name="chatbubble-ellipses" size={12} color={C.textSecondary} />
                 </View>
               )}
               <View
@@ -259,10 +262,11 @@ export default function AssistantScreen() {
           {isTyping && (
             <View style={[styles.bubbleWrap, styles.bubbleWrapAssistant]}>
               <View style={styles.avatarDot}>
-                <Ionicons name="chatbubble-ellipses" size={12} color={C.primary} />
+                <Ionicons name="chatbubble-ellipses" size={12} color={C.textSecondary} />
               </View>
               <View style={[styles.bubble, styles.bubbleAssistant, styles.typingBubble]}>
-                <ActivityIndicator size="small" color={C.primary} />
+                {/* Busy state, not a CTA → muted ink. */}
+                <ActivityIndicator size="small" color={C.textSecondary} />
                 <Text style={styles.typingText}>{t('assistantTyping', language)}</Text>
               </View>
             </View>
@@ -326,7 +330,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     width: 40,
     height: 40,
     borderRadius: Radius.full,
-    backgroundColor: C.primarySurface,
+    // Neutral chip — the accent tint is reserved for the CTA.
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -362,7 +367,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     width: 72,
     height: 72,
     borderRadius: Radius.full,
-    backgroundColor: C.primarySurface,
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.base,
@@ -387,16 +392,18 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     gap: Spacing.xs,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
-    backgroundColor: C.primarySurface,
+    // Suggestion chips are secondary affordances — neutral, so the Send CTA
+    // stays the only orange thing on screen. C.text on surfaceWarm = 15:1/13:1.
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.full,
     borderWidth: 1,
-    borderColor: C.borderGold,
+    borderColor: C.border,
     minHeight: 44,
   },
   chipText: {
     ...Typography.bodyS,
-    color: C.primary,
-    fontWeight: '600',
+    color: C.text,
+    fontFamily: Fonts.semibold,
   },
 
   // Chips (inline row above messages)
@@ -409,17 +416,17 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   chipSmall: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    backgroundColor: C.primarySurface,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.full,
     borderWidth: 1,
-    borderColor: C.borderGold,
+    borderColor: C.border,
     minHeight: 44,
     justifyContent: 'center',
   },
   chipSmallText: {
     ...Typography.caption,
-    color: C.primary,
-    fontWeight: '600',
+    color: C.text,
+    fontFamily: Fonts.semibold,
   },
 
   // Bubbles
@@ -436,7 +443,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     width: 24,
     height: 24,
     borderRadius: Radius.full,
-    backgroundColor: C.primarySurface,
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -496,7 +503,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: Radius.xxl,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.text,
     maxHeight: 100,
     borderWidth: 1,

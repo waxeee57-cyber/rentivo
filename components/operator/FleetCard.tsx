@@ -1,12 +1,16 @@
 import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, Switch, StyleSheet } from 'react-native'
 import { Image } from 'expo-image'
+import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing, Fonts } from '@/constants/colors'
 import { StarRating } from '@/components/ui/StarRating'
 import { formatEUR } from '@/lib/utils/formatCurrency'
 import type { Listing } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import {
+  IMAGE_PLACEHOLDER, IMAGE_TRANSITION, IMAGE_CACHE_POLICY,
+} from '@/components/ui/imagePlaceholder'
 
 interface FleetCardProps {
   listing: Listing
@@ -31,10 +35,18 @@ export function FleetCard({ listing, onEdit, onToggleAvailable }: FleetCardProps
           source={{ uri: imageUri }}
           style={styles.image}
           contentFit="cover"
+          transition={IMAGE_TRANSITION}
+          placeholder={IMAGE_PLACEHOLDER}
+          cachePolicy={IMAGE_CACHE_POLICY}
+          // Fleet lists are long and scrolled fast — recyclingKey is what
+          // stops a recycled row from flashing the previous vehicle.
+          recyclingKey={imageUri}
+          accessible
+          accessibilityLabel={listing.title}
         />
       ) : (
         <View style={[styles.image, styles.imagePlaceholder]}>
-          <Text style={styles.imagePlaceholderText}>🚗</Text>
+          <Ionicons name="car-sport-outline" size={28} color={C.textTertiary} importantForAccessibility="no" />
         </View>
       )}
       <View style={styles.info}>
@@ -90,14 +102,14 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  imagePlaceholderText: { fontSize: 28 },
+  imagePlaceholderText: { fontFamily: Fonts.regular, fontSize: 28 },
   info: { flex: 1, padding: Spacing.md },
-  title: { fontSize: 15, fontWeight: '700', color: C.text },
-  sub: { fontSize: 14, color: C.textSecondary, marginBottom: Spacing.xs },
+  title: { fontSize: 15, fontFamily: Fonts.bold, color: C.text },
+  sub: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, marginBottom: Spacing.xs },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.xs },
-  price: { fontSize: 15, fontWeight: '700', color: C.text },
+  price: { fontSize: 15, fontFamily: Fonts.bold, color: C.text },
   bottomRow: { flexDirection: 'row', alignItems: 'center' },
-  availText: { fontSize: 14, marginLeft: Spacing.xs, flex: 1 },
+  availText: { fontFamily: Fonts.regular, fontSize: 14, marginLeft: Spacing.xs, flex: 1 },
   editBtn: {
     minWidth: 80, height: 44,
     justifyContent: 'center', alignItems: 'center',
@@ -105,6 +117,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: Radius.lg,
     paddingHorizontal: Spacing.md,
   },
-  editText: { fontSize: 14, color: C.primary, fontWeight: '700' },
+  editText: { fontSize: 14, color: C.primary, fontFamily: Fonts.bold },
   })
 }

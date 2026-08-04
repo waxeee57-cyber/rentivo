@@ -5,11 +5,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as Haptics from 'expo-haptics'
+import { Ionicons } from '@expo/vector-icons'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { HelpTooltip } from '@/components/ui/HelpTooltip'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { DamagePhotoGrid } from '@/components/damage/DamagePhotoGrid'
 import { SignatureCanvas } from '@/components/booking/SignatureCanvas'
@@ -46,7 +47,12 @@ interface ValidationErrors {
 function FieldError({ message }: { message: string | undefined }) {
   const C = useColors()
   if (!message) return null
-  return <Text style={{ fontSize: 12, color: C.error, fontWeight: '600', marginTop: 4, marginBottom: 4 }}>⚠ {message}</Text>
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, marginBottom: 4 }}>
+      <Ionicons name="warning-outline" size={12} color={C.error} importantForAccessibility="no" />
+      <Text style={{ fontSize: 12, color: C.error, fontFamily: Fonts.semibold }}>{message}</Text>
+    </View>
+  )
 }
 
 export default function PickupDamageScreen() {
@@ -343,17 +349,17 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   container: { flex: 1, backgroundColor: C.background },
   content: { paddingBottom: Spacing.xxxl },
   stepHint: {
-    fontSize: 14, color: C.textSecondary,
+    fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary,
     paddingHorizontal: Spacing.base, marginBottom: Spacing.base, lineHeight: 20,
   },
   sectionTitle: {
-    fontSize: 13, fontWeight: '700', color: C.text,
+    fontSize: 13, fontFamily: Fonts.bold, color: C.text,
     marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 0.5,
   },
   card: { marginHorizontal: Spacing.base, marginBottom: Spacing.base },
   mileageInput: {
     borderWidth: 1, borderColor: C.border, borderRadius: Radius.lg,
-    padding: Spacing.md, fontSize: 15, color: C.text, marginBottom: Spacing.sm,
+    padding: Spacing.md, fontFamily: Fonts.regular, fontSize: 15, color: C.text, marginBottom: Spacing.sm,
   },
   inputError: { borderColor: C.error },
   fuelRow: { flexDirection: 'row', gap: Spacing.xs },
@@ -362,16 +368,16 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1, borderColor: C.border, alignItems: 'center',
   },
   fuelBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
-  fuelText: { fontSize: 12, color: C.textSecondary, fontWeight: '600' },
+  fuelText: { fontSize: 12, color: C.textSecondary, fontFamily: Fonts.semibold },
   fuelTextActive: { color: C.textInverse },
   damageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  damageLabel: { fontSize: 15, color: C.text, fontWeight: '500' },
+  damageLabel: { fontSize: 15, color: C.text, fontFamily: Fonts.medium },
   textArea: {
     borderWidth: 1, borderColor: C.border, borderRadius: Radius.lg,
-    padding: Spacing.md, fontSize: 14, color: C.text, minHeight: 80,
+    padding: Spacing.md, fontFamily: Fonts.regular, fontSize: 14, color: C.text, minHeight: 80,
     textAlignVertical: 'top',
   },
-  sigSubtitle: { fontSize: 13, color: C.textSecondary, marginBottom: Spacing.md },
-  sigConfirm: { fontSize: 12, color: C.textTertiary, textAlign: 'center', lineHeight: 18 },
+  sigSubtitle: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, marginBottom: Spacing.md },
+  sigConfirm: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, textAlign: 'center', lineHeight: 18 },
   })
 }

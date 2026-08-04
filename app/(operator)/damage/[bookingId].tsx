@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
-import { Spacing } from '@/constants/colors'
+import { Spacing, Fonts } from '@/constants/colors'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
@@ -29,7 +29,7 @@ export default function OperatorDamageScreen() {
         <View style={{ width: 50 }} />
       </View>
       <EmptyState
-        emoji="📋"
+        icon="document-text-outline"
         title={t('opBkDamageReport', language)}
         subtitle={`Booking: ${bookingId ?? ''}\n${t('opBkDamageEmpty', language)}`}
       />
@@ -44,7 +44,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.base, paddingVertical: Spacing.md,
   },
-  back: { fontSize: 16, color: C.primary, fontWeight: '600', width: 50 },
-  header: { fontSize: 18, fontWeight: '700', color: C.text },
+  back: { fontSize: 16, color: C.primary, fontFamily: Fonts.semibold, width: 50 },
+  header: { fontSize: 18, fontFamily: Fonts.bold, color: C.text },
   })
 }

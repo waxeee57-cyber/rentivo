@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { Spacing } from '@/constants/colors'
+import { Spacing, Fonts } from '@/constants/colors'
 import { Divider } from '@/components/ui/Divider'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import type { PriceCalculation } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
+import { Config } from '@/constants/config'
 
 interface PriceBreakdownProps {
   calculation: PriceCalculation
@@ -34,16 +35,19 @@ export function PriceBreakdown({
   return (
     <View style={styles.container}>
       <Row label={calculation.breakdown} value={formatEURDecimal(calculation.subtotal)} />
-      <Row label="Service fee (2.5%)" value={formatEURDecimal(calculation.platformFee)} />
+      <Row
+        label={`${t('serviceFee', language)} (${(Config.platformCut * 100).toFixed(Number.isInteger(Config.platformCut * 100) ? 0 : 1)}%)`}
+        value={formatEURDecimal(calculation.platformFee)}
+      />
       {insuranceTotal !== null && insuranceName !== undefined && (
         <Row
-          label={`${insuranceName} insurance`}
+          label={`${insuranceName} ${t('insurance', language).toLowerCase()}`}
           value={formatEURDecimal(insuranceTotal)}
         />
       )}
       <Divider style={{ marginVertical: Spacing.sm }} />
       <Row
-        label="Total"
+        label={t('total', language)}
         value={formatEURDecimal(calculation.total + (insuranceTotal ?? 0))}
         bold
       />
@@ -75,9 +79,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: {},
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
-  label: { fontSize: 14, color: C.textSecondary, flex: 1, paddingRight: Spacing.sm },
-  value: { fontSize: 14, color: C.text, fontWeight: '500' },
-  bold: { fontWeight: '700', fontSize: 16, color: C.text },
-  note: { fontSize: 12, color: C.textTertiary },
+  label: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, flex: 1, paddingRight: Spacing.sm },
+  value: { fontSize: 14, color: C.text, fontFamily: Fonts.medium },
+  bold: { fontFamily: Fonts.bold, fontSize: 16, color: C.text },
+  note: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary },
   })
 }

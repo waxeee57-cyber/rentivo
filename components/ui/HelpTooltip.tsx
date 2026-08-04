@@ -2,8 +2,10 @@ import React, { useState, useMemo } from 'react'
 import {
   View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView,
 } from 'react-native'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 interface HelpTooltipProps {
   title: string
@@ -14,6 +16,7 @@ interface HelpTooltipProps {
 export function HelpTooltip({ title, description, faqs }: HelpTooltipProps) {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const language = useAuthStore(s => s.language)
   const [visible, setVisible] = useState(false)
 
   return (
@@ -21,6 +24,11 @@ export function HelpTooltip({ title, description, faqs }: HelpTooltipProps) {
       <TouchableOpacity
         style={styles.trigger}
         onPress={() => setVisible(true)}
+        // A bare "?" is announced as "question mark". The label names the
+        // action and the title tells the user what it is about; hitSlop 10
+        // lifts the 28px circle to a 48px effective target.
+        accessibilityRole="button"
+        accessibilityLabel={`${t('helpTriggerA11y', language)}: ${title}`}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Text style={styles.triggerText}>?</Text>
@@ -36,6 +44,8 @@ export function HelpTooltip({ title, description, faqs }: HelpTooltipProps) {
           style={styles.backdrop}
           activeOpacity={1}
           onPress={() => setVisible(false)}
+          accessibilityRole="button"
+          accessibilityLabel={t('closeSheet', language)}
         />
         <View style={styles.sheet}>
           <View style={styles.handle} />
@@ -45,7 +55,7 @@ export function HelpTooltip({ title, description, faqs }: HelpTooltipProps) {
 
           {faqs && faqs.length > 0 && (
             <ScrollView showsVerticalScrollIndicator={false}>
-              <Text style={styles.faqHeader}>Frequently asked</Text>
+              <Text style={styles.faqHeader}>{t('helpFrequentlyAsked', language)}</Text>
               {faqs.map((faq, i) => (
                 <View key={i} style={styles.faqItem}>
                   <Text style={styles.faqQ}>{faq.q}</Text>
@@ -55,8 +65,13 @@ export function HelpTooltip({ title, description, faqs }: HelpTooltipProps) {
             </ScrollView>
           )}
 
-          <TouchableOpacity style={styles.closeBtn} onPress={() => setVisible(false)}>
-            <Text style={styles.closeBtnText}>Got it</Text>
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={() => setVisible(false)}
+            accessibilityRole="button"
+            accessibilityLabel={t('helpGotIt', language)}
+          >
+            <Text style={styles.closeBtnText}>{t('helpGotIt', language)}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -78,7 +93,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   triggerText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textSecondary,
   },
   backdrop: {
@@ -103,19 +118,19 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   title: {
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     marginBottom: Spacing.md,
   },
   description: {
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     color: C.textSecondary,
     lineHeight: 24,
     marginBottom: Spacing.xl,
   },
   faqHeader: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -131,12 +146,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   faqQ: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.text,
     marginBottom: 4,
   },
   faqA: {
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: C.textSecondary,
     lineHeight: 20,
   },
@@ -149,7 +164,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   closeBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textInverse,
   },
   })

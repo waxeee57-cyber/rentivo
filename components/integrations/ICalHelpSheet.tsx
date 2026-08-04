@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Sheet } from '@/components/ui/Sheet'
 import { useColors } from '@/lib/hooks/useColors'
 
@@ -118,12 +118,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   container: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxl },
   title: {
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.textSecondary,
     marginBottom: Spacing.xl,
   },
@@ -145,7 +145,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginTop: 5,
     flexShrink: 0,
   },
-  stepText: { flex: 1, fontSize: 14, color: C.text, lineHeight: 20 },
+  stepText: { flex: 1, fontFamily: Fonts.regular, fontSize: 14, color: C.text, lineHeight: 20 },
   infoBox: {
     backgroundColor: C.infoSurface,
     borderRadius: Radius.lg,
@@ -154,13 +154,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.info,
     marginBottom: Spacing.xl,
   },
-  infoText: { fontSize: 13, color: C.info, lineHeight: 18 },
+  infoText: { fontFamily: Fonts.regular, fontSize: 13, color: C.info, lineHeight: 18 },
   closeBtn: {
     backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.base,
     alignItems: 'center',
   },
-  closeBtnText: { fontSize: 16, fontWeight: '700', color: C.textInverse },
+  closeBtnText: { fontSize: 16, fontFamily: Fonts.bold, color: C.textInverse },
   })
 }

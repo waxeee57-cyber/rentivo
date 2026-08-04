@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
@@ -37,9 +38,9 @@ function StepRow({
         status === 'done' && stepStyles.dotDone,
         status === 'active' && stepStyles.dotActive,
       ]}>
-        <Text style={stepStyles.dotText}>
-          {status === 'done' ? '✓' : '⏳'}
-        </Text>
+        {status === 'done'
+          ? <Text style={stepStyles.dotText}>✓</Text>
+          : <Ionicons name="time-outline" size={14} color={C.textInverse} importantForAccessibility="no" />}
       </View>
       <Text style={[stepStyles.label, status === 'done' && stepStyles.labelDone]}>
         {t(labelKey as TranslationKey, language)}
@@ -59,10 +60,12 @@ function makeStepStyles(C: ReturnType<typeof useColors>) { return StyleSheet.cre
     justifyContent: 'center',
   },
   dotDone: { backgroundColor: C.success },
-  dotActive: { backgroundColor: C.primary },
-  dotText: { fontSize: 12, color: C.textInverse, fontWeight: '700' },
-  label: { fontSize: 15, color: C.textSecondary },
-  labelDone: { color: C.text, fontWeight: '600' },
+  // Step indicator: ink for the active step, C.border for the remaining ones.
+  // textInverse on C.text = 15:1 in both themes.
+  dotActive: { backgroundColor: C.text },
+  dotText: { fontSize: 12, color: C.textInverse, fontFamily: Fonts.bold },
+  label: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary },
+  labelDone: { color: C.text, fontFamily: Fonts.semibold },
 }) }
 
 export default function OperatorStripeScreen() {
@@ -103,7 +106,7 @@ export default function OperatorStripeScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <Text style={styles.icon}>💳</Text>
+          <Ionicons name="card-outline" size={36} color={C.primary} importantForAccessibility="no" />
         </View>
 
         <Text style={styles.title}>{t('auth2SetupPayouts', language)}</Text>
@@ -118,6 +121,7 @@ export default function OperatorStripeScreen() {
         </View>
 
         <View style={styles.stripeNote}>
+          <Ionicons name="lock-closed" size={14} color={C.info} importantForAccessibility="no" />
           <Text style={styles.stripeNoteText}>
             {t('auth2StripeSecureNote', language)}
           </Text>
@@ -163,9 +167,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
     marginBottom: Spacing.xl,
   },
-  icon: { fontSize: 36 },
-  title: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.md, textAlign: 'center' },
-  subtitle: { fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: Spacing.xl },
+  title: { fontSize: 26, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.md, textAlign: 'center' },
+  subtitle: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: Spacing.xl },
   stepsCard: {
     width: '100%',
     backgroundColor: C.surface,
@@ -179,10 +182,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     padding: Spacing.md,
     marginBottom: Spacing.xl,
     width: '100%',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
   },
-  stripeNoteText: { fontSize: 13, color: C.info, lineHeight: 20 },
+  stripeNoteText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: C.info, lineHeight: 20 },
   connectBtn: { marginBottom: Spacing.md },
   skipBtn: { paddingVertical: Spacing.md, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
-  skipText: { fontSize: 14, color: C.textTertiary },
+  skipText: { fontFamily: Fonts.regular, fontSize: 14, color: C.textTertiary },
   })
 }

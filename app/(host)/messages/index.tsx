@@ -6,7 +6,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Config } from '@/constants/config'
 import { MOCK_CONVERSATIONS } from '@/lib/mockData'
 import { supabase } from '@/lib/supabase'
@@ -115,7 +116,7 @@ export default function HostMessagesScreen() {
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>💬</Text>
+            <Ionicons name="chatbubble-ellipses-outline" size={48} color={C.textTertiary} style={styles.emptyIcon} importantForAccessibility="no" />
             <Text style={styles.emptyText}>{t('messagesEmpty', language)}</Text>
           </View>
         }
@@ -131,8 +132,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   listContent: { paddingVertical: Spacing.sm, paddingBottom: 100 },
   emptyContainer: { flex: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 120 },
-  emptyIcon: { fontSize: 48, marginBottom: Spacing.base },
-  emptyText: { fontSize: 16, color: C.textSecondary },
+  emptyIcon: { marginBottom: Spacing.base },
+  emptyText: { fontFamily: Fonts.regular, fontSize: 16, color: C.textSecondary },
   separator: { height: 1, backgroundColor: C.border, marginLeft: 72 },
   row: {
     flexDirection: 'row',
@@ -145,19 +146,21 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: C.primarySurface,
+    // Identity chip, not an action — neutral ink pair, brand accent reserved
+    // for the primary CTA / active tab.
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 20, color: C.primary, fontWeight: '700' },
+  avatarText: { fontSize: 20, color: C.text, fontFamily: Fonts.bold },
   rowContent: { flex: 1, gap: 4 },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   rowBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  guestName: { fontSize: 15, fontWeight: '600', color: C.text, flex: 1, marginRight: 8 },
-  guestNameUnread: { fontWeight: '700' },
-  time: { fontSize: 12, color: C.textTertiary },
-  lastMsg: { fontSize: 14, color: C.textSecondary, flex: 1, marginRight: 8 },
-  lastMsgUnread: { color: C.text, fontWeight: '500' },
+  guestName: { fontSize: 15, fontFamily: Fonts.semibold, color: C.text, flex: 1, marginRight: 8 },
+  guestNameUnread: { fontFamily: Fonts.bold },
+  time: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary },
+  lastMsg: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, flex: 1, marginRight: 8 },
+  lastMsgUnread: { color: C.text, fontFamily: Fonts.medium },
   badge: {
     backgroundColor: C.primary,
     borderRadius: Radius.pill,
@@ -167,6 +170,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
     paddingHorizontal: 6,
   },
-  badgeText: { fontSize: 11, fontWeight: '700', color: C.textInverse },
+  badgeText: { fontSize: 11, fontFamily: Fonts.bold, color: C.textInverse },
   })
 }

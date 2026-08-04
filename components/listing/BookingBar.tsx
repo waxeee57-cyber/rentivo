@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as Haptics from 'expo-haptics'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { formatEUR, formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { useColors } from '@/lib/hooks/useColors'
 
@@ -62,9 +62,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderTopColor: C.border,
   },
   left: { flex: 1 },
-  price: { fontSize: 20, fontWeight: '700', color: C.text },
-  unit: { fontSize: 13, color: C.textSecondary },
-  total: { fontSize: 12, color: C.textTertiary, marginTop: 2 },
+  price: { fontSize: 20, fontFamily: Fonts.bold, color: C.text },
+  unit: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
+  total: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: 2 },
   bookBtn: {
     minHeight: 52,
     borderRadius: Radius.lg,
@@ -86,7 +86,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   bookBtnText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textInverse,
   },
   })

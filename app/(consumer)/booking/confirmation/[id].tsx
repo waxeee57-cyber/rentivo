@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated } from '
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { ConfettiAnimation } from '@/components/ui/ConfettiAnimation'
@@ -93,7 +94,7 @@ export default function BookingConfirmationScreen() {
             t('ternChecklistInsuranceActive', language),
           ].map((label, i) => (
             <View key={i} style={styles.checkRow}>
-              <Text style={styles.checkRowIcon}>✅</Text>
+              <Ionicons name="checkmark-circle" size={16} color={C.success} importantForAccessibility="no" />
               <Text style={styles.checkRowLabel}>{label}</Text>
             </View>
           ))}
@@ -119,7 +120,8 @@ export default function BookingConfirmationScreen() {
           style={styles.msgBtn}
           onPress={() => router.push(`/(consumer)/bookings/chat/${id ?? 'bk-001'}` as Parameters<typeof router.push>[0])}
         >
-          <Text style={styles.msgBtnText}>💬 {t('messageOperator', language)}</Text>
+          <Ionicons name="chatbubble-ellipses-outline" size={18} color={C.textSecondary} importantForAccessibility="no" />
+          <Text style={styles.msgBtnText}>{t('messageOperator', language)}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -145,10 +147,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 3,
     borderColor: C.success,
   },
-  checkMark: { fontSize: 48, color: C.success, fontWeight: '900' },
-  title: { fontSize: 28, fontWeight: '800', color: C.text, textAlign: 'center', marginBottom: Spacing.sm },
-  ref: { fontSize: 15, color: C.primary, fontWeight: '700', marginBottom: Spacing.md },
-  subtitle: { fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22 },
+  checkMark: { fontSize: 48, color: C.success, fontFamily: Fonts.extrabold },
+  title: { fontSize: 28, fontFamily: Fonts.extrabold, color: C.text, textAlign: 'center', marginBottom: Spacing.sm },
+  ref: { fontSize: 15, color: C.primary, fontFamily: Fonts.bold, marginBottom: Spacing.md },
+  subtitle: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22 },
 
   nextCard: {
     backgroundColor: C.surface,
@@ -160,7 +162,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   nextCardTitle: {
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     marginBottom: Spacing.md,
     textTransform: 'uppercase',
@@ -180,11 +182,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     textAlign: 'center',
     lineHeight: 24,
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.textInverse,
     flexShrink: 0,
   },
-  nextStepText: { flex: 1, fontSize: 14, color: C.textSecondary, lineHeight: 20, paddingTop: 4 },
+  nextStepText: { flex: 1, fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, lineHeight: 20, paddingTop: 4 },
 
   checklist: {
     backgroundColor: C.surface,
@@ -194,8 +196,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginBottom: Spacing.base,
   },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  checkRowIcon: { fontSize: 16, color: C.success },
-  checkRowLabel: { fontSize: 14, color: C.textSecondary, fontWeight: '500' },
+  checkRowIcon: { fontFamily: Fonts.regular, fontSize: 16, color: C.success },
+  checkRowLabel: { fontSize: 14, color: C.textSecondary, fontFamily: Fonts.medium },
   noFeesNote: {
     backgroundColor: C.successSurface,
     borderRadius: Radius.lg,
@@ -203,7 +205,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     marginBottom: Spacing.base,
   },
-  noFeesText: { fontSize: 13, fontWeight: '700', color: C.success },
+  noFeesText: { fontSize: 13, fontFamily: Fonts.bold, color: C.success },
 
   actions: {
     paddingHorizontal: Spacing.base,
@@ -217,9 +219,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: C.border,
+    flexDirection: 'row',
+    gap: Spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  msgBtnText: { fontSize: 15, fontWeight: '600', color: C.textSecondary },
+  msgBtnText: { fontSize: 15, fontFamily: Fonts.semibold, color: C.textSecondary },
   })
 }

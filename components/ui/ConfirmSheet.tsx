@@ -2,8 +2,10 @@ import React, { useMemo } from 'react'
 import {
   View, Text, Modal, TouchableOpacity, StyleSheet,
 } from 'react-native'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 
 interface Detail {
   label: string
@@ -33,6 +35,7 @@ export function ConfirmSheet({
 }: ConfirmSheetProps) {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const language = useAuthStore(s => s.language)
   return (
     <Modal
       transparent
@@ -40,10 +43,13 @@ export function ConfirmSheet({
       animationType="slide"
       onRequestClose={onCancel}
     >
+      {/* Full-screen dismiss target — unannounced without a role + label. */}
       <TouchableOpacity
         style={styles.backdrop}
         activeOpacity={1}
         onPress={onCancel}
+        accessibilityRole="button"
+        accessibilityLabel={t('closeSheet', language)}
       />
       <View style={styles.sheet}>
         <View style={styles.handle} />
@@ -63,8 +69,14 @@ export function ConfirmSheet({
         )}
 
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.cancelBtn} onPress={onCancel}>
-            <Text style={styles.cancelText}>Cancel</Text>
+          <TouchableOpacity
+            style={styles.cancelBtn}
+            onPress={onCancel}
+            accessibilityRole="button"
+            accessibilityLabel={t('cancel', language)}
+          >
+            {/* Was a hardcoded English 'Cancel' next to translated props. */}
+            <Text style={styles.cancelText}>{t('cancel', language)}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
@@ -72,6 +84,8 @@ export function ConfirmSheet({
               confirmVariant === 'danger' && styles.confirmBtnDanger,
             ]}
             onPress={onConfirm}
+            accessibilityRole="button"
+            accessibilityLabel={confirmLabel}
           >
             <Text style={[
               styles.confirmText,
@@ -109,12 +123,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   title: {
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     marginBottom: Spacing.sm,
   },
   message: {
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     color: C.textSecondary,
     lineHeight: 22,
     marginBottom: Spacing.xl,
@@ -137,12 +151,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderTopColor: C.border,
   },
   detailLabel: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.textSecondary,
   },
   detailValue: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.text,
   },
   actions: {
@@ -151,7 +165,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   cancelBtn: {
     flex: 1,
-    height: 50,
+    // minHeight, not height — a fixed box clips the label at large system
+    // font sizes (allowFontScaling stays on everywhere in this app).
+    minHeight: 50,
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: C.border,
@@ -160,12 +176,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   cancelText: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     color: C.textSecondary,
   },
   confirmBtn: {
     flex: 2,
-    height: 50,
+    minHeight: 50,
     borderRadius: Radius.lg,
     backgroundColor: C.primary,
     alignItems: 'center',
@@ -178,7 +194,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   confirmText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textInverse,
   },
   confirmTextDanger: {

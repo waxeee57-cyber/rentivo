@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { WhatNextScreen } from '@/components/ui/WhatNextScreen'
@@ -30,6 +30,16 @@ const CATEGORIES: { key: string; icon: React.ComponentProps<typeof Ionicons>['na
 ]
 
 const FEATURE_CHIPS = ['AC', 'GPS', 'Bluetooth', 'USB', 'Leather seats', 'Sunroof', 'Baby seat', '4WD', 'Convertible', 'Automatic']
+
+// Canonical brand names — keeps the listings DB clean of misspellings.
+// "Other" is covered by the free-text fallback below the chips.
+const CAR_MAKES = [
+  'Mercedes-Benz', 'BMW', 'Audi', 'Porsche', 'Range Rover', 'Ferrari',
+  'Lamborghini', 'Bentley', 'Tesla', 'Volkswagen', 'Toyota', 'SEAT',
+]
+const MOTO_MAKES = [
+  'Vespa', 'Honda', 'Yamaha', 'BMW Motorrad', 'Ducati', 'Harley-Davidson', 'Piaggio',
+]
 
 const POLICIES = [
   { key: 'flexible', label: 'Flexible', desc: 'Full refund 1 day prior to arrival' },
@@ -169,10 +179,10 @@ export default function NewHostListingScreen() {
           <Text style={styles.publishedSubtitle}>{t('hostLLiveSubtitle', language)}</Text>
           <WhatNextScreen
             steps={[
-              { icon: '🔔', text: t('hostLWhatNext1', language) },
-              { icon: '✓', text: t('hostLWhatNext2', language) },
-              { icon: '💰', text: t('hostLWhatNext3', language) },
-              { icon: '🛡️', text: t('hostLWhatNext4', language) },
+              { icon: 'notifications-outline', text: t('hostLWhatNext1', language) },
+              { icon: 'checkmark-outline', text: t('hostLWhatNext2', language) },
+              { icon: 'cash-outline', text: t('hostLWhatNext3', language) },
+              { icon: 'shield-checkmark-outline', text: t('hostLWhatNext4', language) },
             ]}
             primaryAction={{
               label: t('hostLViewMyListings', language),
@@ -251,17 +261,37 @@ export default function NewHostListingScreen() {
               <Text style={styles.title}>{t('hostLTellUsAboutIt', language)}</Text>
               {(category === 'car' || category === 'motorcycle') && (
                 <>
+                  {/* Canonical make picker — free text produced misspelled
+                      brand names in the DB; chips keep the data clean, with
+                      "Other" falling back to free text. */}
+                  <Text style={styles.label}>{t('opFleetMake', language)}</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.makeChips}
+                  >
+                    {(category === 'car' ? CAR_MAKES : MOTO_MAKES).map(m => (
+                      <TouchableOpacity
+                        key={m}
+                        style={[styles.makeChip, make === m && styles.makeChipActive]}
+                        onPress={() => setMake(prev => prev === m ? '' : m)}
+                        accessibilityRole="button"
+                        accessibilityLabel={m}
+                      >
+                        <Text style={[styles.makeChipText, make === m && styles.makeChipTextActive]}>{m}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                  {(make === '' || !(category === 'car' ? CAR_MAKES : MOTO_MAKES).includes(make)) && (
+                    <TextInput
+                      style={styles.input}
+                      placeholder={t('hostLMakePlaceholder', language)}
+                      placeholderTextColor={C.textTertiary}
+                      value={(category === 'car' ? CAR_MAKES : MOTO_MAKES).includes(make) ? '' : make}
+                      onChangeText={setMake}
+                    />
+                  )}
                   <View style={styles.row}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.label}>{t('opFleetMake', language)}</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder={t('hostLMakePlaceholder', language)}
-                        placeholderTextColor={C.textTertiary}
-                        value={make}
-                        onChangeText={setMake}
-                      />
-                    </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.label}>{t('opFleetModel', language)}</Text>
                       <TextInput
@@ -308,7 +338,7 @@ export default function NewHostListingScreen() {
                     value={strRegistration}
                     onChangeText={setStrRegistration}
                   />
-                  <Text style={{ color: C.textTertiary, fontSize: 11, marginBottom: Spacing.md }}>
+                  <Text style={{ color: C.textTertiary, fontFamily: Fonts.regular, fontSize: 11, marginBottom: Spacing.md }}>
                     {t('hostLStrHintText', language)}
                   </Text>
                 </View>
@@ -370,7 +400,10 @@ export default function NewHostListingScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={styles.photoTip}>{t('hostLPhotoTip', language)}</Text>
+              <View style={styles.photoTip}>
+                <Ionicons name="bulb-outline" size={14} color={C.textSecondary} importantForAccessibility="no" />
+                <Text style={styles.photoTipText}>{t('hostLPhotoTip', language)}</Text>
+              </View>
             </View>
           )}
 
@@ -390,11 +423,17 @@ export default function NewHostListingScreen() {
                 />
                 <Text style={styles.priceUnit}>{t('perDay', language)}</Text>
               </View>
-              <Text style={styles.priceSuggestion}>{t('hostLPriceSuggestion', language)}</Text>
+              <View style={styles.priceSuggestion}>
+                <Ionicons name="bulb-outline" size={14} color={C.textSecondary} importantForAccessibility="no" />
+                <Text style={styles.priceSuggestionText}>{t('hostLPriceSuggestion', language)}</Text>
+              </View>
 
               {pricePerDay !== '' && parseFloat(pricePerDay) > 0 && (
                 <View style={styles.earningsCard}>
-                  <Text style={styles.earningsTitle}>{'💰 ' + t('estimatedEarnings', language)}</Text>
+                  <View style={styles.earningsTitleRow}>
+                    <Ionicons name="cash-outline" size={14} color={C.success} importantForAccessibility="no" />
+                    <Text style={styles.earningsTitle}>{t('estimatedEarnings', language)}</Text>
+                  </View>
                   <Text style={styles.earningsValue}>
                     ~€{Math.round(parseFloat(pricePerDay) * 8 * 0.975)}/month
                   </Text>
@@ -503,7 +542,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
   },
-  headerTitle: { fontSize: 14, fontWeight: '600', color: C.textSecondary },
+  headerTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: C.textSecondary },
 
   content: {
     paddingHorizontal: Spacing.xl,
@@ -511,13 +550,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   title: {
     fontSize: 26,
-    fontWeight: '900',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     marginBottom: Spacing.xl,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.textSecondary,
     marginTop: -Spacing.md,
     marginBottom: Spacing.xl,
@@ -544,20 +583,35 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.primary,
     backgroundColor: C.primarySurface,
   },
-  catEmoji: { fontSize: 32 },
-  catLabel: { fontSize: 12, fontWeight: '600', color: C.textSecondary },
+  catEmoji: { fontFamily: Fonts.regular, fontSize: 32 },
+  catLabel: { fontSize: 12, fontFamily: Fonts.semibold, color: C.textSecondary },
   catLabelActive: { color: C.primaryDark },
 
   row: { flexDirection: 'row', gap: Spacing.sm },
   label: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.xs,
     marginTop: Spacing.base,
   },
+  makeChips: { gap: Spacing.sm, paddingVertical: 2, marginBottom: Spacing.sm },
+  makeChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.surfaceWarm,
+  },
+  makeChipActive: {
+    backgroundColor: C.primarySurface,
+    borderColor: C.primary,
+  },
+  makeChipText: { fontSize: 13, fontFamily: Fonts.semibold, color: C.textSecondary },
+  makeChipTextActive: { color: C.primary },
   input: {
     backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg,
@@ -565,7 +619,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     color: C.text,
   },
   inputMulti: {
@@ -591,7 +645,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.primarySurface,
     borderColor: C.primary,
   },
-  featureChipText: { fontSize: 13, fontWeight: '500', color: C.textSecondary },
+  featureChipText: { fontSize: 13, fontFamily: Fonts.medium, color: C.textSecondary },
   featureChipTextActive: { color: C.primaryDark },
 
   photoGrid: {
@@ -612,14 +666,20 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
     gap: 4,
   },
-  photoSlotLabel: { fontSize: 10, color: C.textTertiary, fontWeight: '600' },
+  photoSlotLabel: { fontSize: 10, color: C.textTertiary, fontFamily: Fonts.semibold },
   photoSlotImage: { width: '100%', height: '100%', borderRadius: Radius.lg },
   photoTip: {
-    fontSize: 13,
-    color: C.textSecondary,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
     backgroundColor: C.primarySurface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
+  },
+  photoTipText: {
+    flex: 1,
+    fontFamily: Fonts.regular, fontSize: 13,
+    color: C.textSecondary,
     lineHeight: 20,
   },
 
@@ -633,13 +693,19 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingHorizontal: Spacing.xl,
     marginBottom: Spacing.md,
   },
-  currencySymbol: { fontSize: 28, fontWeight: '700', color: C.primary, marginRight: Spacing.sm },
-  priceInput: { flex: 1, fontSize: 48, fontWeight: '900', color: C.text, paddingVertical: Spacing.xl },
-  priceUnit: { fontSize: 18, color: C.textSecondary, fontWeight: '600' },
+  currencySymbol: { fontSize: 28, fontFamily: Fonts.bold, color: C.primary, marginRight: Spacing.sm },
+  priceInput: { flex: 1, fontSize: 48, fontFamily: Fonts.extrabold, color: C.text, paddingVertical: Spacing.xl },
+  priceUnit: { fontSize: 18, color: C.textSecondary, fontFamily: Fonts.semibold },
   priceSuggestion: {
-    fontSize: 13,
-    color: C.textSecondary,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
     marginBottom: Spacing.xl,
+  },
+  priceSuggestionText: {
+    flex: 1,
+    fontFamily: Fonts.regular, fontSize: 13,
+    color: C.textSecondary,
     lineHeight: 20,
   },
 
@@ -673,8 +739,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: 5,
     backgroundColor: C.primary,
   },
-  policyLabel: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 2 },
-  policyDesc: { fontSize: 12, color: C.textSecondary },
+  policyLabel: { fontSize: 14, fontFamily: Fonts.bold, color: C.text, marginBottom: 2 },
+  policyDesc: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary },
 
   instantBookRow: {
     flexDirection: 'row',
@@ -687,8 +753,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
     gap: Spacing.md,
   },
-  instantBookTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 2 },
-  instantBookDesc: { fontSize: 13, color: C.textSecondary },
+  instantBookTitle: { fontSize: 15, fontFamily: Fonts.bold, color: C.text, marginBottom: 2 },
+  instantBookDesc: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
   toggleBtn: {
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
@@ -698,7 +764,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
   },
   toggleBtnActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
-  toggleBtnText: { fontSize: 13, fontWeight: '800', color: C.textSecondary },
+  toggleBtnText: { fontSize: 13, fontFamily: Fonts.extrabold, color: C.textSecondary },
   toggleBtnTextActive: { color: C.primaryDark },
 
   publishNote: {
@@ -709,7 +775,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.success,
   },
-  publishNoteText: { fontSize: 13, color: C.success, lineHeight: 20 },
+  publishNoteText: { fontFamily: Fonts.regular, fontSize: 13, color: C.success, lineHeight: 20 },
 
   footer: {
     paddingHorizontal: Spacing.xl,
@@ -734,7 +800,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     shadowOpacity: 0,
     elevation: 0,
   },
-  nextBtnText: { fontSize: 16, fontWeight: '800', color: C.textInverse },
+  nextBtnText: { fontSize: 16, fontFamily: Fonts.extrabold, color: C.textInverse },
   publishedCircle: {
     width: 96,
     height: 96,
@@ -747,16 +813,16 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 3,
     borderColor: C.success,
   },
-  publishedCheck: { fontSize: 48, color: C.success },
+  publishedCheck: { fontFamily: Fonts.regular, fontSize: 48, color: C.success },
   publishedTitle: {
     fontSize: 28,
-    fontWeight: '900',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
   publishedSubtitle: {
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     color: C.textSecondary,
     textAlign: 'center',
     marginBottom: Spacing.xl,
@@ -771,8 +837,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.success,
     alignItems: 'center',
   },
-  earningsTitle: { fontSize: 13, fontWeight: '700', color: C.success, marginBottom: Spacing.xs },
-  earningsValue: { fontSize: 32, fontWeight: '900', color: C.success },
-  earningsNote: { fontSize: 12, color: C.textSecondary, marginTop: 4 },
+  earningsTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: Spacing.xs },
+  earningsTitle: { fontSize: 13, fontFamily: Fonts.bold, color: C.success },
+  earningsValue: { fontSize: 32, fontFamily: Fonts.extrabold, color: C.success },
+  earningsNote: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, marginTop: 4 },
   })
 }

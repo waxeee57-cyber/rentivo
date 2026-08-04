@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing, Fonts } from '@/constants/colors'
 import { Avatar } from '@/components/ui/Avatar'
 import { formatDate } from '@/lib/utils/formatDate'
 import type { Review } from '@/types'
@@ -43,17 +43,17 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderBottomColor: C.border,
   },
   header: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm },
-  name: { fontSize: 14, fontWeight: '600', color: C.text },
-  date: { fontSize: 12, color: C.textTertiary },
-  stars: { color: C.primary, fontSize: 14 },
-  comment: { fontSize: 14, color: C.textSecondary, lineHeight: 20 },
+  name: { fontSize: 14, fontFamily: Fonts.semibold, color: C.text },
+  date: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary },
+  stars: { color: C.primary, fontFamily: Fonts.regular, fontSize: 14 },
+  comment: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, lineHeight: 20 },
   replyBox: {
     backgroundColor: C.surfaceWarm,
     borderRadius: Radius.md,
     padding: Spacing.sm,
     marginTop: Spacing.sm,
   },
-  replyLabel: { fontSize: 12, fontWeight: '600', color: C.textSecondary, marginBottom: 2 },
-  reply: { fontSize: 13, color: C.textSecondary },
+  replyLabel: { fontSize: 12, fontFamily: Fonts.semibold, color: C.textSecondary, marginBottom: 2 },
+  reply: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
   })
 }

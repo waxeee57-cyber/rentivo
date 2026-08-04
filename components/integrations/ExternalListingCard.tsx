@@ -1,14 +1,23 @@
-import React, { useRef, useMemo } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
+import React, { useMemo, useCallback } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated'
 import { Image } from 'expo-image'
+import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { StarRating } from '@/components/ui/StarRating'
 import { formatEUR } from '@/lib/utils/formatCurrency'
 import { openAffiliateLink } from '@/lib/utils/affiliateLinks'
 import { AffiliateDisclosure } from './AffiliateDisclosure'
 import type { ExternalListing } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import {
+  IMAGE_PLACEHOLDER, IMAGE_TRANSITION, IMAGE_CACHE_POLICY,
+} from '@/components/ui/imagePlaceholder'
+
+// Same press language as Button: a 3% dip on a card-sized surface reads as
+// the same physical material as the 4% dip on a button.
+const PRESS_SPRING = { damping: 15, stiffness: 400 } as const
 
 interface ExternalListingCardProps {
   listing: ExternalListing
@@ -25,14 +34,18 @@ export function ExternalListingCard({ listing }: ExternalListingCardProps) {
     holidu: { label: 'Holidu', color: C.primary },
     other: { label: 'External', color: C.textSecondary },
   }
-  const scale = useRef(new Animated.Value(1)).current
+  const scale = useSharedValue(1)
   const platform = PLATFORM_INFO[listing.platform] ?? PLATFORM_INFO.other
   const imageUri = listing.images?.[0] ?? listing.cover_image_url ?? null
 
-  const onPressIn = () =>
-    Animated.spring(scale, { toValue: 0.97, damping: 15, useNativeDriver: true }).start()
-  const onPressOut = () =>
-    Animated.spring(scale, { toValue: 1, damping: 15, useNativeDriver: true }).start()
+  // Reanimated instead of RN Animated: this card lives in a scrolling feed,
+  // and the press must not stutter when JS is busy rendering more rows.
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }))
+
+  const onPressIn = useCallback(() => { scale.value = withSpring(0.97, PRESS_SPRING) }, [scale])
+  const onPressOut = useCallback(() => { scale.value = withSpring(1, PRESS_SPRING) }, [scale])
 
   const handleBook = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
@@ -40,7 +53,7 @@ export function ExternalListingCard({ listing }: ExternalListingCardProps) {
   }
 
   return (
-    <Animated.View style={[styles.card, { transform: [{ scale }] }]}>
+    <Animated.View style={[styles.card, animatedStyle]}>
       <TouchableOpacity
         onPressIn={onPressIn}
         onPressOut={onPressOut}
@@ -53,10 +66,18 @@ export function ExternalListingCard({ listing }: ExternalListingCardProps) {
               source={{ uri: imageUri }}
               style={styles.image}
               contentFit="cover"
+              transition={IMAGE_TRANSITION}
+              placeholder={IMAGE_PLACEHOLDER}
+              cachePolicy={IMAGE_CACHE_POLICY}
+              // External results render in the same FlatList as native ones,
+              // so they need the same recycling guard.
+              recyclingKey={imageUri}
+              accessible
+              accessibilityLabel={listing.title}
             />
           ) : (
             <View style={[styles.image, styles.imagePlaceholder]}>
-              <Text style={styles.imagePlaceholderText}>🏠</Text>
+              <Ionicons name="home-outline" size={48} color={C.textTertiary} importantForAccessibility="no" />
             </View>
           )}
           <View style={[styles.platformBadge, { backgroundColor: platform.color }]}>
@@ -132,7 +153,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  imagePlaceholderText: { fontSize: 48 },
+  imagePlaceholderText: { fontFamily: Fonts.regular, fontSize: 48 },
   platformBadge: {
     position: 'absolute',
     top: Spacing.sm,
@@ -141,7 +162,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
-  platformBadgeText: { fontSize: 11, fontWeight: '700', color: C.white },
+  platformBadgeText: { fontSize: 11, fontFamily: Fonts.bold, color: C.white },
   externalBadge: {
     position: 'absolute',
     top: Spacing.sm,
@@ -151,7 +172,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  externalBadgeText: { fontSize: 10, fontWeight: '600', color: C.white },
+  externalBadgeText: { fontSize: 10, fontFamily: Fonts.semibold, color: C.white },
   info: { padding: Spacing.base },
   titleRow: {
     flexDirection: 'row',
@@ -159,24 +180,24 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'flex-start',
     marginBottom: 4,
   },
-  title: { fontSize: 15, fontWeight: '700', color: C.text, flex: 1, marginRight: Spacing.sm },
-  location: { fontSize: 12, color: C.textSecondary, marginBottom: 4 },
-  description: { fontSize: 12, color: C.textSecondary, lineHeight: 17, marginBottom: Spacing.sm },
+  title: { fontSize: 15, fontFamily: Fonts.bold, color: C.text, flex: 1, marginRight: Spacing.sm },
+  location: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, marginBottom: 4 },
+  description: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, lineHeight: 17, marginBottom: Spacing.sm },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
     marginTop: Spacing.sm,
   },
-  price: { fontSize: 18, fontWeight: '700', color: C.text },
-  priceUnit: { fontSize: 12, color: C.textSecondary },
-  priceUnknown: { fontSize: 13, color: C.textSecondary, flex: 1 },
+  price: { fontSize: 18, fontFamily: Fonts.bold, color: C.text },
+  priceUnit: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary },
+  priceUnknown: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, flex: 1 },
   bookBtn: {
     marginLeft: 'auto',
     borderRadius: Radius.pill,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  bookBtnText: { fontSize: 12, fontWeight: '700', color: C.white },
+  bookBtnText: { fontSize: 12, fontFamily: Fonts.bold, color: C.white },
   })
 }

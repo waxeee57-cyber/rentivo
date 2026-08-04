@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Animated }
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { MOCK_BOOKINGS } from '@/lib/mockData'
 import { Config } from '@/constants/config'
 import { useBooking } from '@/lib/hooks/useBookings'
@@ -91,7 +91,10 @@ export default function HostBookingDetailScreen() {
       {/* Prominent confirm banner for pending bookings */}
       {booking.status === 'pending' && (
         <View style={styles.confirmBanner}>
-          <Text style={styles.confirmBannerLabel}>{'⏳ ' + t('hostBNewBookingBanner', language)}</Text>
+          <View style={styles.confirmBannerLabelRow}>
+            <Ionicons name="hourglass-outline" size={14} color={C.success} importantForAccessibility="no" />
+            <Text style={styles.confirmBannerLabel}>{t('hostBNewBookingBanner', language)}</Text>
+          </View>
           <View style={styles.confirmBannerRow}>
             <TouchableOpacity
               style={styles.confirmBigBtn}
@@ -169,11 +172,15 @@ export default function HostBookingDetailScreen() {
           <View style={styles.detailCard}>
             <Row
               label={t('pickupInspection', language)}
-              value={booking.pickup_damage_done ? ('✅ ' + t('opBkDone', language)) : ('⏳ ' + t('pending', language))}
+              icon={booking.pickup_damage_done ? 'checkmark-circle' : 'hourglass-outline'}
+              iconColor={booking.pickup_damage_done ? C.success : C.warning}
+              value={booking.pickup_damage_done ? t('opBkDone', language) : t('pending', language)}
             />
             <Row
               label={t('returnInspection', language)}
-              value={booking.return_damage_done ? ('✅ ' + t('opBkDone', language)) : ('⏳ ' + t('pending', language))}
+              icon={booking.return_damage_done ? 'checkmark-circle' : 'hourglass-outline'}
+              iconColor={booking.return_damage_done ? C.success : C.warning}
+              value={booking.return_damage_done ? t('opBkDone', language) : t('pending', language)}
             />
           </View>
         </View>
@@ -186,7 +193,8 @@ export default function HostBookingDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel={t('opBkMessageGuest', language)}
           >
-            <Ionicons name="chatbubble-outline" size={18} color={C.primary} />
+            {/* Secondary action (the primary CTA on this screen is Confirm) → ink. */}
+            <Ionicons name="chatbubble-outline" size={18} color={C.text} />
             <Text style={styles.messageBtnText}>{t('opBkMessageGuest', language)}</Text>
           </TouchableOpacity>
 
@@ -218,7 +226,8 @@ export default function HostBookingDetailScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('hostBStartPickupInspection', language)}
             >
-              <Text style={styles.inspectionBtnText}>{'🔍 ' + t('hostBStartPickupInspection', language)}</Text>
+              <Ionicons name="search-outline" size={16} color={C.textInverse} importantForAccessibility="no" />
+              <Text style={styles.inspectionBtnText}>{t('hostBStartPickupInspection', language)}</Text>
             </TouchableOpacity>
           )}
 
@@ -229,7 +238,8 @@ export default function HostBookingDetailScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('hostBCompleteRental', language)}
             >
-              <Text style={styles.inspectionBtnText}>{'🏁 ' + t('hostBCompleteRental', language)}</Text>
+              <Ionicons name="flag-outline" size={16} color={C.textInverse} importantForAccessibility="no" />
+              <Text style={styles.inspectionBtnText}>{t('hostBCompleteRental', language)}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -238,13 +248,21 @@ export default function HostBookingDetailScreen() {
   )
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, icon, iconColor }: {
+  label: string
+  value: string
+  icon?: React.ComponentProps<typeof Ionicons>['name']
+  iconColor?: string
+}) {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value}</Text>
+      <View style={styles.rowValueGroup}>
+        {icon && <Ionicons name={icon} size={14} color={iconColor ?? C.text} importantForAccessibility="no" />}
+        <Text style={styles.rowValue}>{value}</Text>
+      </View>
     </View>
   )
 }
@@ -261,7 +279,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderBottomWidth: 1,
     borderBottomColor: C.border,
   },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: C.text },
+  headerTitle: { fontSize: 16, fontFamily: Fonts.bold, color: C.text },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
 
   guestCard: {
@@ -279,27 +297,29 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: C.primarySurface,
+    // Identity chip, not an action — neutral ink pair, brand accent reserved
+    // for the primary CTA / active tab.
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  guestAvatarText: { fontSize: 22, fontWeight: '700', color: C.primary },
+  guestAvatarText: { fontSize: 22, fontFamily: Fonts.bold, color: C.text },
   guestInfo: { flex: 1 },
   guestNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: 4 },
-  guestName: { fontSize: 16, fontWeight: '700', color: C.text },
+  guestName: { fontSize: 16, fontFamily: Fonts.bold, color: C.text },
   verifiedBadge: {
     backgroundColor: C.successSurface,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
   },
-  verifiedBadgeText: { fontSize: 11, fontWeight: '700', color: C.success },
-  guestMeta: { fontSize: 13, color: C.textSecondary, marginBottom: 2 },
+  verifiedBadgeText: { fontSize: 11, fontFamily: Fonts.bold, color: C.success },
+  guestMeta: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, marginBottom: 2 },
 
   section: { marginBottom: Spacing.xl },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -314,8 +334,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
   },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowLabel: { fontSize: 14, color: C.textSecondary },
-  rowValue: { fontSize: 14, color: C.text, fontWeight: '500' },
+  rowLabel: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
+  rowValueGroup: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  rowValue: { fontSize: 14, color: C.text, fontFamily: Fonts.medium },
 
   earningsRow: {
     flexDirection: 'row',
@@ -326,8 +347,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingTop: Spacing.sm,
     marginTop: Spacing.xs,
   },
-  earningsLabel: { fontSize: 15, fontWeight: '700', color: C.text },
-  earningsValue: { fontSize: 18, fontWeight: '800', color: C.primary },
+  earningsLabel: { fontSize: 15, fontFamily: Fonts.bold, color: C.text },
+  // Money reads in ink — the brand orange stays reserved for the CTA.
+  earningsValue: { fontSize: 18, fontFamily: Fonts.extrabold, color: C.text, fontVariant: ['tabular-nums'] },
 
   actionsSection: { gap: Spacing.sm },
   messageBtn: {
@@ -338,11 +360,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     padding: Spacing.base,
     borderRadius: Radius.xl,
     borderWidth: 1,
-    borderColor: C.primary,
-    backgroundColor: C.primarySurface,
+    // Secondary outline button — neutral, so it cannot compete with the
+    // Confirm CTA below it. borderStrong clears the 3:1 UI-boundary rule.
+    borderColor: C.borderStrong,
+    backgroundColor: C.surfaceWarm,
     minHeight: 44,
   },
-  messageBtnText: { fontSize: 15, fontWeight: '700', color: C.primary },
+  messageBtnText: { fontSize: 15, fontFamily: Fonts.bold, color: C.text },
 
   pendingActions: { flexDirection: 'row', gap: Spacing.sm },
   declineBtn: {
@@ -355,7 +379,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.errorSurface,
     minHeight: 44,
   },
-  declineBtnText: { fontSize: 15, fontWeight: '700', color: C.error },
+  declineBtnText: { fontSize: 15, fontFamily: Fonts.bold, color: C.error },
   confirmBtn: {
     flex: 2,
     padding: Spacing.base,
@@ -369,11 +393,14 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     elevation: 6,
     minHeight: 44,
   },
-  confirmBtnText: { fontSize: 15, fontWeight: '700', color: C.textInverse },
+  confirmBtnText: { fontSize: 15, fontFamily: Fonts.bold, color: C.textInverse },
 
   inspectionBtn: {
     padding: Spacing.base,
     borderRadius: Radius.xl,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: C.primary,
     shadowColor: C.primary,
@@ -383,7 +410,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     elevation: 6,
     minHeight: 44,
   },
-  inspectionBtnText: { fontSize: 15, fontWeight: '700', color: C.textInverse },
+  inspectionBtnText: { fontSize: 15, fontFamily: Fonts.bold, color: C.textInverse },
   confirmBanner: {
     backgroundColor: C.successSurface,
     borderBottomWidth: 1,
@@ -391,7 +418,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     padding: Spacing.base,
     gap: Spacing.sm,
   },
-  confirmBannerLabel: { fontSize: 14, fontWeight: '700', color: C.success },
+  confirmBannerLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  confirmBannerLabel: { fontSize: 14, fontFamily: Fonts.bold, color: C.success },
   confirmBannerRow: { flexDirection: 'row', gap: Spacing.sm },
   confirmBigBtn: {
     flex: 1,
@@ -401,7 +429,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     minHeight: 44,
   },
-  confirmBigBtnText: { fontSize: 16, fontWeight: '800', color: C.white },
+  confirmBigBtnText: { fontSize: 16, fontFamily: Fonts.extrabold, color: C.white },
   declineSmallBtn: {
     paddingHorizontal: Spacing.xl,
     borderRadius: Radius.lg,
@@ -411,7 +439,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.error,
     minHeight: 44,
   },
-  declineSmallBtnText: { fontSize: 14, fontWeight: '700', color: C.error },
-  confirmBannerPayout: { fontSize: 12, color: C.textSecondary, textAlign: 'center' },
+  declineSmallBtnText: { fontSize: 14, fontFamily: Fonts.bold, color: C.error },
+  confirmBannerPayout: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, textAlign: 'center' },
   })
 }

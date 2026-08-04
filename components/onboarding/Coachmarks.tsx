@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Dimensions } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 const { width, height } = Dimensions.get('window')
@@ -119,14 +119,14 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.border,
   },
   stepDotActive: { backgroundColor: C.primary, width: 20 },
-  title: { fontSize: 18, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
-  body: { fontSize: 14, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
+  title: { fontSize: 18, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.sm },
+  body: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
   actions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  skip: { fontSize: 14, color: C.textTertiary, fontWeight: '600' },
+  skip: { fontSize: 14, color: C.textTertiary, fontFamily: Fonts.semibold },
   nextBtn: {
     backgroundColor: C.primary, borderRadius: Radius.pill,
     paddingHorizontal: Spacing.xl, paddingVertical: Spacing.md,
   },
-  nextText: { fontSize: 14, fontWeight: '800', color: C.textInverse },
+  nextText: { fontSize: 14, fontFamily: Fonts.extrabold, color: C.textInverse },
   })
 }

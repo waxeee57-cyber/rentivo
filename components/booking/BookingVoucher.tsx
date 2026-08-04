@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
 import { WebView } from 'react-native-webview'
 import * as Sharing from 'expo-sharing'
-import { Spacing, Radius, Typography, Shadow } from '@/constants/colors'
+import { Spacing, Radius, Typography, Shadow, Fonts } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { useColors } from '@/lib/hooks/useColors'
 
@@ -145,23 +145,23 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginBottom: Spacing.sm,
   },
   details: {
-    fontSize: 16,
+    fontFamily: Fonts.regular, fontSize: 16,
     color: C.text,
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
   dates: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.textSecondary,
     marginBottom: Spacing.sm,
   },
   guest: {
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: C.textTertiary,
     marginBottom: Spacing.md,
   },
   offlineHint: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: C.textTertiary,
     textAlign: 'center',
     fontStyle: 'italic',
@@ -180,7 +180,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   shareBtnText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     color: C.primary,
   },
   })

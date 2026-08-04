@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
@@ -83,7 +83,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.background },
   content: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
-  intro: { fontSize: 14, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
+  intro: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
   cookieCard: {
     backgroundColor: C.surface,
     borderRadius: Radius.lg,
@@ -92,8 +92,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   cookieRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   cookieInfo: { flex: 1 },
-  cookieName: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 4 },
-  cookieDesc: { fontSize: 13, color: C.textSecondary, lineHeight: 19 },
-  note: { fontSize: 12, color: C.textTertiary, lineHeight: 18, marginTop: Spacing.md },
+  cookieName: { fontSize: 15, fontFamily: Fonts.bold, color: C.text, marginBottom: 4 },
+  cookieDesc: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, lineHeight: 19 },
+  note: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, lineHeight: 18, marginTop: Spacing.md },
   })
 }

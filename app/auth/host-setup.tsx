@@ -5,7 +5,8 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { MOCK_HOST } from '@/lib/mockData'
 import { Config } from '@/constants/config'
@@ -13,13 +14,13 @@ import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
 import type { TranslationKey } from '@/constants/i18n'
 
-const CATEGORY_CHIPS: { key: string; emoji: string; labelKey: string }[] = [
-  { key: 'car', emoji: '🚗', labelKey: 'auth2CatCar' },
-  { key: 'boat', emoji: '⛵', labelKey: 'auth2CatBoat' },
-  { key: 'villa', emoji: '🏠', labelKey: 'auth2CatVilla' },
-  { key: 'motorcycle', emoji: '🏍️', labelKey: 'auth2CatMotorcycle' },
-  { key: 'bike', emoji: '🚲', labelKey: 'auth2CatBike' },
-  { key: 'other', emoji: '📦', labelKey: 'catOther' },
+const CATEGORY_CHIPS: { key: string; icon: React.ComponentProps<typeof Ionicons>['name']; labelKey: string }[] = [
+  { key: 'car', icon: 'car-sport-outline', labelKey: 'auth2CatCar' },
+  { key: 'boat', icon: 'boat-outline', labelKey: 'auth2CatBoat' },
+  { key: 'villa', icon: 'home-outline', labelKey: 'auth2CatVilla' },
+  { key: 'motorcycle', icon: 'bicycle-outline', labelKey: 'auth2CatMotorcycle' },
+  { key: 'bike', icon: 'bicycle-outline', labelKey: 'auth2CatBike' },
+  { key: 'other', icon: 'cube-outline', labelKey: 'catOther' },
 ]
 
 type Step = 1 | 2 | 3
@@ -154,7 +155,12 @@ export default function HostSetupScreen() {
                         accessibilityState={{ selected: selectedCategories.includes(chip.key) }}
                         hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
                       >
-                        <Text style={styles.chipEmoji}>{chip.emoji}</Text>
+                        <Ionicons
+                          name={chip.icon}
+                          size={16}
+                          color={selectedCategories.includes(chip.key) ? C.primaryDark : C.textSecondary}
+                          importantForAccessibility="no"
+                        />
                         <Text style={[styles.chipLabel, selectedCategories.includes(chip.key) && styles.chipLabelActive]}>
                           {t(chip.labelKey as TranslationKey, language)}
                         </Text>
@@ -182,7 +188,7 @@ export default function HostSetupScreen() {
                 <Text style={styles.subtitle}>{t('auth2VerifySubtitle', language)}</Text>
 
                 <View style={styles.verifyBox}>
-                  <Text style={styles.verifyIcon}>🪪</Text>
+                  <Ionicons name="card-outline" size={40} color={C.info} style={styles.verifyIcon} importantForAccessibility="no" />
                   <Text style={styles.verifyTitle}>{t('auth2DriverLicenseRequired', language)}</Text>
                   <Text style={styles.verifyText}>
                     {t('auth2DriverLicenseText', language)}
@@ -191,7 +197,7 @@ export default function HostSetupScreen() {
 
                 {verified ? (
                   <View style={styles.verifiedBanner}>
-                    <Text style={styles.verifiedIcon}>✅</Text>
+                    <Ionicons name="checkmark-circle" size={24} color={C.success} importantForAccessibility="no" />
                     <Text style={styles.verifiedText}>{t('auth2IdentityVerified', language)}</Text>
                   </View>
                 ) : (
@@ -241,7 +247,7 @@ export default function HostSetupScreen() {
                 <Text style={styles.subtitle}>{t('auth2HostPayoutsSubtitle', language)}</Text>
 
                 <View style={styles.stripeBox}>
-                  <Text style={styles.stripeIcon}>💳</Text>
+                  <Ionicons name="card-outline" size={36} color={C.text} importantForAccessibility="no" />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.stripeTitle}>{t('auth2RentivoUsesStripe', language)}</Text>
                     <Text style={styles.stripeText}>
@@ -251,6 +257,7 @@ export default function HostSetupScreen() {
                 </View>
 
                 <View style={styles.feeNote}>
+                  <Ionicons name="bulb-outline" size={14} color={C.primaryDark} importantForAccessibility="no" />
                   <Text style={styles.feeNoteText}>
                     {t('auth2FeeNote', language)}
                   </Text>
@@ -305,7 +312,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: 4,
     backgroundColor: C.border,
   },
-  progressDotActive: { backgroundColor: C.primary, width: 24 },
+  // Step indicator: ink for done/active, C.border for the rest. Not a CTA.
+  progressDotActive: { backgroundColor: C.text, width: 24 },
 
   content: {
     paddingHorizontal: Spacing.xl,
@@ -314,8 +322,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
 
   stepLabel: {
     fontSize: 12,
-    fontWeight: '700',
-    color: C.primary,
+    fontFamily: Fonts.bold,
+    // "Step 1 of 3" is a status label, not an action → muted ink (matches
+    // the same label in (consumer)/profile/verify.tsx).
+    color: C.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: Spacing.sm,
@@ -323,13 +333,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   title: {
     fontSize: 28,
-    fontWeight: '900',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     marginBottom: Spacing.sm,
     letterSpacing: -0.5,
   },
   subtitle: {
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     color: C.textSecondary,
     marginBottom: Spacing.xl,
     lineHeight: 22,
@@ -338,7 +348,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   field: { marginBottom: Spacing.lg },
   label: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textSecondary,
     marginBottom: Spacing.xs,
     textTransform: 'uppercase',
@@ -351,7 +361,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     color: C.text,
   },
   inputMulti: {
@@ -381,8 +391,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.primarySurface,
     borderColor: C.primary,
   },
-  chipEmoji: { fontSize: 16 },
-  chipLabel: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
+  chipLabel: { fontSize: 13, fontFamily: Fonts.semibold, color: C.textSecondary },
   chipLabelActive: { color: C.primaryDark },
 
   primaryBtn: {
@@ -405,7 +414,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   primaryBtnText: {
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.textInverse,
   },
   skipBtn: {
@@ -418,7 +427,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   skipText: {
     fontSize: 14,
     color: C.textSecondary,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
   },
 
   verifyBox: {
@@ -430,9 +439,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.info,
   },
-  verifyIcon: { fontSize: 40, marginBottom: Spacing.md },
-  verifyTitle: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: Spacing.sm },
-  verifyText: { fontSize: 13, color: C.textSecondary, textAlign: 'center', lineHeight: 20 },
+  verifyIcon: { marginBottom: Spacing.md },
+  verifyTitle: { fontSize: 16, fontFamily: Fonts.bold, color: C.text, marginBottom: Spacing.sm },
+  verifyText: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, textAlign: 'center', lineHeight: 20 },
 
   verifiedBanner: {
     flexDirection: 'row',
@@ -443,8 +452,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     padding: Spacing.base,
     marginBottom: Spacing.base,
   },
-  verifiedIcon: { fontSize: 24 },
-  verifiedText: { fontSize: 15, fontWeight: '700', color: C.success },
+  verifiedText: { fontSize: 15, fontFamily: Fonts.bold, color: C.success },
 
   stripeBox: {
     flexDirection: 'row',
@@ -456,18 +464,20 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.border,
   },
-  stripeIcon: { fontSize: 36 },
-  stripeTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 4 },
-  stripeText: { fontSize: 13, color: C.textSecondary, lineHeight: 20 },
+  stripeTitle: { fontSize: 15, fontFamily: Fonts.bold, color: C.text, marginBottom: 4 },
+  stripeText: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, lineHeight: 20 },
 
   feeNote: {
     backgroundColor: C.primarySurface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     marginBottom: Spacing.xl,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
     borderWidth: 1,
     borderColor: C.primary,
   },
-  feeNoteText: { fontSize: 13, color: C.primaryDark, lineHeight: 20 },
+  feeNoteText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: C.primaryDark, lineHeight: 20 },
   })
 }

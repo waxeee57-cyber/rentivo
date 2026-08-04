@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import { Image } from 'expo-image'
-import { Radius, Spacing } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Radius, Spacing, Fonts } from '@/constants/colors'
 import { useCamera } from '@/lib/hooks/useCamera'
 import { useColors } from '@/lib/hooks/useColors'
 
@@ -49,7 +50,13 @@ export function PhotoCapture({ label, uri, onCapture }: PhotoCaptureProps) {
         </>
       ) : (
         <View style={styles.placeholder}>
-          <Text style={styles.cameraIcon}>📷</Text>
+          <Ionicons
+            name="camera-outline"
+            size={28}
+            color={C.textTertiary}
+            style={styles.cameraIcon}
+            importantForAccessibility="no"
+          />
           <Text style={styles.label}>{label}</Text>
         </View>
       )}
@@ -81,8 +88,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
     padding: 8,
   },
-  cameraIcon: { fontSize: 28, marginBottom: 6 },
-  label: { fontSize: 12, color: C.textTertiary, textAlign: 'center', fontWeight: '600' },
+  cameraIcon: { marginBottom: 6 },
+  label: { fontSize: 12, color: C.textTertiary, textAlign: 'center', fontFamily: Fonts.semibold },
   checkOverlay: {
     position: 'absolute',
     bottom: 6,
@@ -94,7 +101,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkIcon: { fontSize: 12, color: C.white, fontWeight: '800' },
+  checkIcon: { fontSize: 12, color: C.white, fontFamily: Fonts.extrabold },
   retakeOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: C.overlayLight,
@@ -103,6 +110,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingBottom: 6,
     opacity: 0,
   },
-  retakeText: { fontSize: 11, color: C.white, fontWeight: '700' },
+  retakeText: { fontSize: 11, color: C.white, fontFamily: Fonts.bold },
   })
 }

@@ -5,8 +5,9 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { supabase } from '@/lib/supabase'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
@@ -27,7 +28,7 @@ type VerificationStatus =
   | 'expired'
 
 interface StatusConfig {
-  icon: string
+  icon: React.ComponentProps<typeof Ionicons>['name']
   title: string
   desc: string
   cta: string
@@ -103,49 +104,49 @@ export default function IdentityVerificationScreen() {
 
   const STATUS_CONFIGS: Record<VerificationStatus, StatusConfig> = {
     loading: {
-      icon: '⏳',
+      icon: 'time-outline',
       title: t('opFleet2Loading', language),
       desc: '',
       cta: '',
       color: C.textSecondary,
     },
     unverified: {
-      icon: '📋',
+      icon: 'document-text-outline',
       title: cprT('cprVerificationRequired', language),
       desc: cprT('cprVerificationRequiredDesc', language),
       cta: cprT('cprStartVerification', language),
       color: C.primary,
     },
     pending: {
-      icon: '⏳',
+      icon: 'hourglass-outline',
       title: cprT('cprVerificationPending', language),
       desc: cprT('cprVerificationPendingDesc', language),
       cta: cprT('cprRefresh', language),
       color: C.warning,
     },
     in_progress: {
-      icon: '🔄',
+      icon: 'sync-outline',
       title: cprT('cprInProgress', language),
       desc: cprT('cprInProgressDesc', language),
       cta: cprT('cprRefreshStatus', language),
       color: C.warning,
     },
     approved: {
-      icon: '✅',
+      icon: 'checkmark-circle',
       title: cprT('cprIdentityVerified', language),
       desc: cprT('cprIdentityVerifiedDesc', language),
       cta: '',
       color: C.success,
     },
     declined: {
-      icon: '❌',
+      icon: 'close-circle-outline',
       title: cprT('cprVerificationFailed', language),
       desc: cprT('cprVerificationFailedDesc', language),
       cta: cprT('cprTryAgain', language),
       color: C.error,
     },
     expired: {
-      icon: '⌛',
+      icon: 'timer-outline',
       title: cprT('cprSessionExpired', language),
       desc: cprT('cprSessionExpiredDesc', language),
       cta: cprT('cprStartAgain', language),
@@ -176,7 +177,7 @@ export default function IdentityVerificationScreen() {
         ) : (
           <>
             <View style={styles.statusCard}>
-              <Text style={styles.statusIcon}>{config.icon}</Text>
+              <Ionicons name={config.icon} size={48} color={config.color} importantForAccessibility="no" />
               <Text style={[styles.statusTitle, { color: config.color }]}>{config.title}</Text>
               {config.desc ? (
                 <Text style={styles.statusDesc}>{config.desc}</Text>
@@ -199,13 +200,16 @@ export default function IdentityVerificationScreen() {
             {(status === 'unverified' || status === 'declined' || status === 'expired') && (
               <View style={styles.infoCard}>
                 <Text style={styles.infoTitle}>{cprT('cprWhatWeVerify', language)}</Text>
-                {[
-                  cprT('cprVerifyDoc', language),
-                  cprT('cprVerifySelfie', language),
-                  cprT('cprVerifyTime', language),
-                  cprT('cprVerifyGdpr', language),
-                ].map((item, i) => (
-                  <Text key={i} style={styles.infoItem}>{item}</Text>
+                {([
+                  { icon: 'document-text-outline', text: cprT('cprVerifyDoc', language) },
+                  { icon: 'person-circle-outline', text: cprT('cprVerifySelfie', language) },
+                  { icon: 'time-outline', text: cprT('cprVerifyTime', language) },
+                  { icon: 'lock-closed', text: cprT('cprVerifyGdpr', language) },
+                ] as const).map((item, i) => (
+                  <View key={i} style={styles.infoItemRow}>
+                    <Ionicons name={item.icon} size={14} color={C.textTertiary} importantForAccessibility="no" />
+                    <Text style={styles.infoItem}>{item.text}</Text>
+                  </View>
                 ))}
                 <View style={styles.poweredByRow}>
                   <Text style={styles.poweredBy}>Powered by </Text>
@@ -234,8 +238,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderBottomColor: C.border,
   },
   backButton: { minWidth: 44, minHeight: 44, justifyContent: 'center' },
-  backText: { color: C.text, fontSize: 22 },
-  title: { color: C.text, fontSize: 18, fontWeight: '700', flex: 1 },
+  backText: { color: C.text, fontFamily: Fonts.regular, fontSize: 22 },
+  title: { color: C.text, fontSize: 18, fontFamily: Fonts.bold, flex: 1 },
   content: { padding: Spacing.base, paddingBottom: 80, gap: 16 },
   statusCard: {
     backgroundColor: C.surface,
@@ -246,11 +250,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     gap: 12,
   },
-  statusIcon: { fontSize: 52 },
-  statusTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center' },
+  statusIcon: { fontFamily: Fonts.regular, fontSize: 52 },
+  statusTitle: { fontSize: 20, fontFamily: Fonts.bold, textAlign: 'center' },
   statusDesc: {
     color: C.textSecondary,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -263,7 +267,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     width: '100%',
   },
-  ctaText: { color: C.background, fontSize: 16, fontWeight: '700' },
+  ctaText: { color: C.background, fontSize: 16, fontFamily: Fonts.bold },
   infoCard: {
     backgroundColor: C.surface,
     borderRadius: Radius.lg,
@@ -272,9 +276,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     padding: Spacing.base,
     gap: 8,
   },
-  infoTitle: { color: C.text, fontSize: 15, fontWeight: '700', marginBottom: 4 },
-  infoItem: { color: C.textSecondary, fontSize: 14, lineHeight: 22 },
+  infoTitle: { color: C.text, fontSize: 15, fontFamily: Fonts.bold, marginBottom: 4 },
+  infoItemRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  infoItem: { flex: 1, color: C.textSecondary, fontFamily: Fonts.regular, fontSize: 14, lineHeight: 22 },
   poweredByRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
-  poweredBy: { color: C.textTertiary, fontSize: 12 },
+  poweredBy: { color: C.textTertiary, fontFamily: Fonts.regular, fontSize: 12 },
   })
 }

@@ -31,6 +31,15 @@ const tabIconStyles = StyleSheet.create({
 
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
 
+// Deep screens (detail, checkout, chat, legal, settings) are focused tasks, not
+// destinations. `href: null` only hides them FROM the dock — the dock still
+// rendered on top of them, stacking two competing bottom bars over the primary
+// CTA. Every non-tab route now hides it.
+const DEEP_SCREEN = {
+  href: null,
+  tabBarStyle: { display: 'none' as const },
+} as const
+
 export default function HostLayout() {
   const C = useColors()
   const { language } = useAuthStore()
@@ -41,26 +50,33 @@ export default function HostLayout() {
         headerShown: false,
         tabBarActiveTintColor: C.primary,
         tabBarInactiveTintColor: C.textTertiary,
+        // Floating dock — matches consumer layout
         tabBarStyle: {
-          backgroundColor: C.background,
-          borderTopWidth: 1,
-          borderTopColor: C.border,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 12,
-          elevation: 20,
-          height: 88,
-          paddingBottom: 12,
+          marginHorizontal: 14,
+          marginBottom: 26,
+          height: 64,
+          borderRadius: 26,
+          backgroundColor: C.surface,
+          borderTopWidth: 0,
+          borderWidth: 1,
+          borderColor: C.border,
+          shadowColor: '#0A1628',
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.16,
+          shadowRadius: 28,
+          elevation: 16,
+          paddingBottom: 6,
+          paddingTop: 6,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
+          // 10px: HU labels truncate at 11px
+          fontFamily: 'Manrope_600SemiBold',
+          fontSize: 10,
         },
       }}
     >
       <Tabs.Screen
-        name="listings"
+        name="listings/index"
         options={{
           title: t('listings', language),
           tabBarIcon: ({ focused }) => (
@@ -70,7 +86,7 @@ export default function HostLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="bookings"
+        name="bookings/index"
         options={{
           title: t('bookings', language),
           tabBarIcon: ({ focused }) => (
@@ -80,7 +96,7 @@ export default function HostLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="messages"
+        name="messages/index"
         options={{
           title: t('messages', language),
           tabBarIcon: ({ focused }) => (
@@ -90,7 +106,7 @@ export default function HostLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="profile"
+        name="profile/index"
         options={{
           title: t('profile', language),
           tabBarIcon: ({ focused }) => (
@@ -100,10 +116,10 @@ export default function HostLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       {/* Hidden screens */}
-      <Tabs.Screen name="dashboard" options={{ href: null }} />
-      <Tabs.Screen name="listings/new" options={{ href: null }} />
-      <Tabs.Screen name="listings/add-external" options={{ href: null }} />
-      <Tabs.Screen name="bookings/[id]" options={{ href: null }} />
+      <Tabs.Screen name="dashboard/index" options={DEEP_SCREEN} />
+      <Tabs.Screen name="listings/new" options={DEEP_SCREEN} />
+      <Tabs.Screen name="listings/add-external" options={DEEP_SCREEN} />
+      <Tabs.Screen name="bookings/[id]" options={DEEP_SCREEN} />
     </Tabs>
   )
 }

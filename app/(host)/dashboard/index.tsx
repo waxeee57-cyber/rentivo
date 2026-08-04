@@ -2,7 +2,8 @@ import React, { useMemo, useEffect, useRef } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts, Typography } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { MOCK_HOST, MOCK_HOST_LISTING, MOCK_BOOKINGS } from '@/lib/mockData'
@@ -91,7 +92,7 @@ export default function HostDashboardScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.greeting}>Hi {firstName} 👋</Text>
+        <Text style={styles.greeting}>Hi {firstName}</Text>
 
         {/* Quick stats */}
         <View style={styles.statsGrid}>
@@ -155,7 +156,7 @@ export default function HostDashboardScreen() {
               accessibilityRole="button"
             >
               <View style={styles.listingEmoji}>
-                <Text style={{ fontSize: 32 }}>🚗</Text>
+                <Ionicons name="car-sport-outline" size={32} color={C.textTertiary} importantForAccessibility="no" />
               </View>
               <View style={styles.listingInfo}>
                 <Text style={styles.listingTitle} numberOfLines={1}>{MOCK_HOST_LISTING.title}</Text>
@@ -163,7 +164,10 @@ export default function HostDashboardScreen() {
                   {formatPricePerDay(MOCK_HOST_LISTING.price_per_day, language)}
                 </Text>
                 <View style={styles.listingStats}>
-                  <Text style={styles.listingStatText}>📅 {MOCK_HOST_LISTING.booking_count} bookings</Text>
+                  <View style={styles.listingStat}>
+                    <Ionicons name="calendar-outline" size={12} color={C.textSecondary} importantForAccessibility="no" />
+                    <Text style={styles.listingStatText}>{MOCK_HOST_LISTING.booking_count} bookings</Text>
+                  </View>
                   <Text style={styles.listingStatText}>★ {MOCK_HOST_LISTING.rating}</Text>
                 </View>
               </View>
@@ -173,7 +177,7 @@ export default function HostDashboardScreen() {
             </TouchableOpacity>
           ) : (
             <View style={styles.emptyListings}>
-              <Text style={styles.emptyEmoji}>🚗</Text>
+              <Ionicons name="car-sport-outline" size={32} color={C.textTertiary} style={styles.emptyEmoji} importantForAccessibility="no" />
               <Text style={styles.emptyText}>{t('hostBNoListingsYet', language)}</Text>
             </View>
           )}
@@ -203,7 +207,7 @@ export default function HostDashboardScreen() {
 
           {recentBookings.length === 0 ? (
             <View style={styles.emptyListings}>
-              <Text style={styles.emptyEmoji}>📅</Text>
+              <Ionicons name="calendar-outline" size={32} color={C.textTertiary} style={styles.emptyEmoji} importantForAccessibility="no" />
               <Text style={styles.emptyText}>{t('noBookingsYet', language)}</Text>
             </View>
           ) : recentBookings.map(b => (
@@ -240,13 +244,13 @@ export default function HostDashboardScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('hostBTipsTitle', language)}</Text>
           <View style={styles.tipsBox}>
-            {[
-              { emoji: '📸', tip: t('hostBTip1', language) },
-              { emoji: '⚡', tip: t('hostBTip2', language) },
-              { emoji: '📅', tip: t('hostBTip3', language) },
-            ].map(({ emoji, tip }) => (
-              <View key={emoji} style={styles.tipRow}>
-                <Text style={styles.tipEmoji}>{emoji}</Text>
+            {([
+              { icon: 'camera-outline', tip: t('hostBTip1', language) },
+              { icon: 'flash-outline', tip: t('hostBTip2', language) },
+              { icon: 'calendar-outline', tip: t('hostBTip3', language) },
+            ] as { icon: React.ComponentProps<typeof Ionicons>['name']; tip: string }[]).map(({ icon, tip }) => (
+              <View key={icon} style={styles.tipRow}>
+                <Ionicons name={icon} size={20} color={C.textSecondary} style={styles.tipEmoji} importantForAccessibility="no" />
                 <Text style={styles.tipText}>{tip}</Text>
               </View>
             ))}
@@ -264,7 +268,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
 
   greeting: {
     fontSize: 26,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     marginBottom: Spacing.xl,
   },
@@ -289,10 +293,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1.5,
     borderColor: C.primary,
   },
-  statValue: { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: 4 },
-  statValuePrimary: { fontSize: 24, fontWeight: '800', color: C.primary, marginBottom: 4 },
-  statLabel: { fontSize: 12, color: C.textSecondary },
-  statLabelLight: { fontSize: 12, color: C.primary, fontWeight: '600' },
+  statValue: { fontSize: 20, fontFamily: Fonts.extrabold, color: C.text, marginBottom: 4 },
+  statValuePrimary: { fontSize: 24, fontFamily: Fonts.extrabold, color: C.primary, marginBottom: 4 },
+  statLabel: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary },
+  statLabelLight: { fontSize: 12, color: C.primary, fontFamily: Fonts.semibold },
 
   section: { marginBottom: Spacing.xl },
   sectionHeader: {
@@ -303,12 +307,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   sectionTitle: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  seeAll: { fontSize: 13, color: C.primary, fontWeight: '600' },
+  seeAll: { fontSize: 13, color: C.primary, fontFamily: Fonts.semibold },
 
   listingCard: {
     flexDirection: 'row',
@@ -330,17 +334,19 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
   },
   listingInfo: { flex: 1 },
-  listingTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 2 },
-  listingPrice: { fontSize: 13, color: C.primary, fontWeight: '600', marginBottom: 4 },
-  listingStats: { flexDirection: 'row', gap: Spacing.md },
-  listingStatText: { fontSize: 12, color: C.textSecondary },
+  listingTitle: { fontSize: 14, fontFamily: Fonts.bold, color: C.text, marginBottom: 2 },
+  // Price in ink on the shared price scale (tabular numerals), never brand orange.
+  listingPrice: { ...Typography.priceS, color: C.text, marginBottom: 4 },
+  listingStats: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  listingStat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  listingStatText: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary },
   listingBadge: {
     backgroundColor: C.successSurface,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
   },
-  listingBadgeText: { fontSize: 11, fontWeight: '700', color: C.success },
+  listingBadgeText: { fontSize: 11, fontFamily: Fonts.bold, color: C.success },
 
   emptyListings: {
     alignItems: 'center',
@@ -351,8 +357,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
     marginBottom: Spacing.sm,
   },
-  emptyEmoji: { fontSize: 32, marginBottom: Spacing.sm },
-  emptyText: { fontSize: 14, color: C.textTertiary },
+  emptyEmoji: { marginBottom: Spacing.sm },
+  emptyText: { fontFamily: Fonts.regular, fontSize: 14, color: C.textTertiary },
 
   addBtn: {
     borderWidth: 1.5,
@@ -365,7 +371,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginTop: Spacing.xs,
     minHeight: 44,
   },
-  addBtnText: { fontSize: 14, color: C.primary, fontWeight: '700' },
+  addBtnText: { fontSize: 14, color: C.primary, fontFamily: Fonts.bold },
 
   bookingRow: {
     flexDirection: 'row',
@@ -382,14 +388,16 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: C.primarySurface,
+    // Identity chip, not an action — neutral ink pair, brand accent reserved
+    // for the primary CTA / active tab.
+    backgroundColor: C.surfaceWarm,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bookingAvatarText: { fontSize: 16, fontWeight: '700', color: C.primary },
+  bookingAvatarText: { fontSize: 16, fontFamily: Fonts.bold, color: C.text },
   bookingInfo: { flex: 1 },
-  bookingGuest: { fontSize: 14, fontWeight: '600', color: C.text },
-  bookingDates: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
+  bookingGuest: { fontSize: 14, fontFamily: Fonts.semibold, color: C.text },
+  bookingDates: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, marginTop: 2 },
   bookingStatusBadge: {
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.sm,
@@ -400,7 +408,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   statusPending: { backgroundColor: C.warningSurface },
   statusActive: { backgroundColor: C.infoSurface },
   statusCompleted: { backgroundColor: C.surfaceWarm },
-  bookingStatusText: { fontSize: 11, fontWeight: '700', color: C.textSecondary },
+  bookingStatusText: { fontSize: 11, fontFamily: Fonts.bold, color: C.textSecondary },
 
   tipsBox: {
     backgroundColor: C.surface,
@@ -411,15 +419,15 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
   },
   tipRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  tipEmoji: { fontSize: 20, width: 28 },
-  tipText: { flex: 1, fontSize: 13, color: C.textSecondary, lineHeight: 20 },
+  tipEmoji: { width: 28 },
+  tipText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, lineHeight: 20 },
 
   earningsCard: { backgroundColor: C.surface, borderRadius: Radius.xl, padding: Spacing.base, marginBottom: Spacing.xl, borderWidth: 1, borderColor: C.border },
-  earningsTitle: { fontSize: 12, fontWeight: '700', color: C.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
+  earningsTitle: { fontSize: 12, fontFamily: Fonts.bold, color: C.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
   earningsRow: { flexDirection: 'row', alignItems: 'center' },
   earningsItem: { flex: 1, alignItems: 'center' },
-  earningsAmount: { fontSize: 16, fontWeight: '800', color: C.text, marginBottom: 2 },
-  earningsLabel: { fontSize: 11, color: C.textTertiary, fontWeight: '600' },
+  earningsAmount: { fontSize: 16, fontFamily: Fonts.extrabold, color: C.text, marginBottom: 2 },
+  earningsLabel: { fontSize: 11, color: C.textTertiary, fontFamily: Fonts.semibold },
   earningsDivider: { width: 1, height: 36, backgroundColor: C.border },
   })
 }

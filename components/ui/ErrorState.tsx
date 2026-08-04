@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { Spacing } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { useColors } from '@/lib/hooks/useColors'
 
@@ -14,7 +15,14 @@ export function ErrorState({ message = 'Something went wrong', onRetry }: ErrorS
   const styles = useMemo(() => makeStyles(C), [C])
   return (
     <View style={styles.container}>
-      <Text style={styles.emoji}>⚠️</Text>
+      <Ionicons
+        name="warning-outline"
+        size={48}
+        color={C.warning}
+        style={styles.icon}
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+      />
       <Text style={styles.title}>Oops!</Text>
       <Text style={styles.message}>{message}</Text>
       {onRetry && (
@@ -32,8 +40,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
     padding: Spacing.xxxl,
   },
-  emoji: { fontSize: 48, marginBottom: Spacing.base },
-  title: { fontSize: 20, fontWeight: '700', color: C.text, marginBottom: Spacing.sm },
-  message: { fontSize: 14, color: C.textSecondary, textAlign: 'center', lineHeight: 20 },
+  icon: { marginBottom: Spacing.base },
+  title: { fontSize: 20, fontFamily: Fonts.bold, color: C.text, marginBottom: Spacing.sm },
+  message: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, textAlign: 'center', lineHeight: 20 },
   })
 }

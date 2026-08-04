@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react'
+import { Fonts } from '@/constants/colors'
 import { Tabs } from 'expo-router'
 import { View, StyleSheet, Animated } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
@@ -46,6 +47,16 @@ const tabIconStyles = StyleSheet.create({
 
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
 
+// Deep screens (detail, checkout, chat, legal, settings) are focused tasks, not
+// destinations. `href: null` only hides them FROM the dock — the dock still
+// rendered on top of them, so listing detail stacked a sticky "Select dates"
+// bar and the nav dock into two competing bottom bars, ~90px of dead chrome
+// over the most important CTA in the app. Every non-tab route now hides it.
+const DEEP_SCREEN = {
+  href: null,
+  tabBarStyle: { display: 'none' as const },
+} as const
+
 export default function ConsumerLayout() {
   const C = useColors()
   const { language } = useAuthStore()
@@ -61,26 +72,33 @@ export default function ConsumerLayout() {
         headerShown: false,
         tabBarActiveTintColor: C.primary,
         tabBarInactiveTintColor: C.textTertiary,
+        // Floating dock — detached rounded bar, the 2026 signature nav
         tabBarStyle: {
-          backgroundColor: C.background,
-          borderTopWidth: 1,
-          borderTopColor: C.border,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 12,
-          elevation: 20,
-          height: 88,
-          paddingBottom: 12,
+          marginHorizontal: 14,
+          marginBottom: 26,
+          height: 64,
+          borderRadius: 26,
+          backgroundColor: C.surface,
+          borderTopWidth: 0,
+          borderWidth: 1,
+          borderColor: C.border,
+          shadowColor: '#0A1628',
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.16,
+          shadowRadius: 28,
+          elevation: 16,
+          paddingBottom: 6,
+          paddingTop: 6,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
+          // 10px: HU labels (Felfedezés, Foglalások, Asszisztens) truncate at 11px
+          fontFamily: 'Manrope_600SemiBold',
+          fontSize: 10,
         },
       }}
     >
       <Tabs.Screen
-        name="explore"
+        name="explore/index"
         options={{
           title: t('explore', language),
           tabBarIcon: ({ focused }) => (
@@ -90,7 +108,7 @@ export default function ConsumerLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="search"
+        name="search/index"
         options={{
           title: t('search', language),
           tabBarIcon: ({ focused }) => (
@@ -100,11 +118,13 @@ export default function ConsumerLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="bookings"
+        name="bookings/index"
         options={{
-          title: t('bookings', language),
+          // Consumer-side naming: "Trips" everywhere (tab, screen title "My
+          // Trips", CTA) — three different names for one thing read as sloppy.
+          title: t('myTrips', language),
           tabBarBadge: bookingsBadge > 0 ? bookingsBadge : undefined,
-          tabBarBadgeStyle: { backgroundColor: C.error, fontSize: 10 },
+          tabBarBadgeStyle: { backgroundColor: C.error, fontFamily: Fonts.regular, fontSize: 10 },
           tabBarIcon: ({ focused }) => (
             <TabIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} />
           ),
@@ -112,7 +132,7 @@ export default function ConsumerLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="assistant"
+        name="assistant/index"
         options={{
           title: t('assistant', language),
           tabBarIcon: ({ focused }) => (
@@ -122,7 +142,7 @@ export default function ConsumerLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="profile"
+        name="profile/index"
         options={{
           title: t('profile', language),
           tabBarIcon: ({ focused }) => (
@@ -133,27 +153,27 @@ export default function ConsumerLayout() {
       />
 
       {/* Hidden screens */}
-      <Tabs.Screen name="wishlist" options={{ href: null }} />
-      <Tabs.Screen name="listing/[id]" options={{ href: null }} />
-      <Tabs.Screen name="listing/reviews/[id]" options={{ href: null }} />
-      <Tabs.Screen name="booking/[listingId]" options={{ href: null }} />
-      <Tabs.Screen name="booking/confirmation/[id]" options={{ href: null }} />
-      <Tabs.Screen name="bookings/[id]" options={{ href: null }} />
-      <Tabs.Screen name="bookings/chat/[bookingId]" options={{ href: null }} />
-      <Tabs.Screen name="bookings/review/[bookingId]" options={{ href: null }} />
-      <Tabs.Screen name="profile/verify" options={{ href: null }} />
-      <Tabs.Screen name="legal/privacy" options={{ href: null }} />
-      <Tabs.Screen name="legal/terms" options={{ href: null }} />
-      <Tabs.Screen name="legal/cookies" options={{ href: null }} />
-      <Tabs.Screen name="damage/pickup/[bookingId]" options={{ href: null }} />
-      <Tabs.Screen name="damage/return/[bookingId]" options={{ href: null }} />
-      <Tabs.Screen name="profile/connected-platforms" options={{ href: null }} />
-      <Tabs.Screen name="profile/delete-account" options={{ href: null }} />
-      <Tabs.Screen name="profile/privacy-settings" options={{ href: null }} />
-      <Tabs.Screen name="profile/notifications" options={{ href: null }} />
-      <Tabs.Screen name="booking/sign/[bookingId]" options={{ href: null }} />
-      <Tabs.Screen name="profile/identity-verification" options={{ href: null }} />
-      <Tabs.Screen name="bookings/dispute/[bookingId]" options={{ href: null }} />
+      <Tabs.Screen name="wishlist/index" options={DEEP_SCREEN} />
+      <Tabs.Screen name="listing/[id]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="listing/reviews/[id]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="booking/[listingId]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="booking/confirmation/[id]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="bookings/[id]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="bookings/chat/[bookingId]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="bookings/review/[bookingId]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="profile/verify" options={DEEP_SCREEN} />
+      <Tabs.Screen name="legal/privacy" options={DEEP_SCREEN} />
+      <Tabs.Screen name="legal/terms" options={DEEP_SCREEN} />
+      <Tabs.Screen name="legal/cookies" options={DEEP_SCREEN} />
+      <Tabs.Screen name="damage/pickup/[bookingId]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="damage/return/[bookingId]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="profile/connected-platforms" options={DEEP_SCREEN} />
+      <Tabs.Screen name="profile/delete-account" options={DEEP_SCREEN} />
+      <Tabs.Screen name="profile/privacy-settings" options={DEEP_SCREEN} />
+      <Tabs.Screen name="profile/notifications" options={DEEP_SCREEN} />
+      <Tabs.Screen name="booking/sign/[bookingId]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="profile/identity-verification" options={DEEP_SCREEN} />
+      <Tabs.Screen name="bookings/dispute/[bookingId]" options={DEEP_SCREEN} />
     </Tabs>
   )
 }

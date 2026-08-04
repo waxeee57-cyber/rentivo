@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import { Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing, Fonts } from '@/constants/colors'
 import { Badge } from '@/components/ui/Badge'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
@@ -64,11 +64,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   left: { flex: 1 },
   right: { alignItems: 'flex-end', marginRight: Spacing.sm },
-  guest: { fontSize: 15, fontWeight: '700', color: C.text },
-  vehicle: { fontSize: 13, color: C.textSecondary, marginBottom: 2 },
-  dates: { fontSize: 12, color: C.textTertiary },
-  total: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 4 },
-  chevron: { fontSize: 22, color: C.textTertiary },
+  guest: { fontSize: 15, fontFamily: Fonts.bold, color: C.text },
+  vehicle: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, marginBottom: 2 },
+  dates: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary },
+  total: { fontSize: 14, fontFamily: Fonts.bold, color: C.text, marginBottom: 4 },
+  chevron: { fontFamily: Fonts.regular, fontSize: 22, color: C.textTertiary },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   View, Text, FlatList, TouchableOpacity, ScrollView,
   StyleSheet, Dimensions, Platform, Animated, Modal, RefreshControl,
-  ListRenderItem,
+  ListRenderItem, ActivityIndicator,
 } from 'react-native'
 import { impactAsync, ImpactFeedbackStyle } from 'expo-haptics'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { Spacing, Radius, Shadow } from '@/constants/colors'
+import { Spacing, Radius, Shadow, Fonts, Typography } from '@/constants/colors'
 import { useListings } from '@/lib/hooks/useListings'
 import { useLocation } from '@/lib/hooks/useLocation'
 import { ListingCard, ListingCardSkeleton } from '@/components/listing/ListingCard'
@@ -25,7 +25,7 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useRecentlyViewedStore } from '@/lib/store/useRecentlyViewedStore'
 import { t, type TranslationKey } from '@/constants/i18n'
 import { openAffiliateLink } from '@/lib/utils/affiliateLinks'
-import { formatPricePerDay } from '@/lib/utils/formatCurrency'
+import { formatEUR, formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { Image } from 'expo-image'
 import type { Listing, RentalCategory, SearchFilters, AnyListing, ExternalListing } from '@/types'
 import { format } from 'date-fns'
@@ -50,6 +50,7 @@ const Marker = Platform.OS !== 'web'
   : null
 
 import { ListingMarker } from '@/components/map/ListingMarker'
+import { LeafletMap } from '@/components/map/LeafletMap'
 
 const { width, height: screenHeight } = Dimensions.get('window')
 
@@ -75,18 +76,27 @@ const INITIAL_REGION = {
   longitudeDelta: 0.0421,
 }
 
-const INSPIRE_THEMES = [
-  { emoji: '🏖️', title: 'Weekend in Marbella', subtitle: 'Cars & villas from €35/day', category: 'car' as RentalCategory, city: 'Marbella' },
-  { emoji: '🌅', title: 'Mediterranean road trip', subtitle: 'Convertibles in Nice, Barcelona', category: 'car' as RentalCategory, city: null },
-  { emoji: '⛵', title: 'Yacht week in the islands', subtitle: '8+ person boats from €200/day', category: 'yacht' as RentalCategory, city: null },
-  { emoji: '🛵', title: 'Vespa adventures', subtitle: 'Scooters in Dubrovnik · Lisbon', category: 'scooter' as RentalCategory, city: null },
+// Hero headline copy per app language ("Rent a <rotating word>")
+const HERO_COPY: Record<'en' | 'es' | 'hu', { prefix: string; words: string[] }> = {
+  en: { prefix: 'Rent a ', words: ['car', 'boat', 'villa', 'scooter', 'drone'] },
+  es: { prefix: 'Alquila ', words: ['un coche', 'un barco', 'una villa', 'un scooter', 'un dron'] },
+  hu: { prefix: 'Bérelj ', words: ['autót', 'hajót', 'villát', 'robogót', 'drónt'] },
+}
+
+type IoniconName = React.ComponentProps<typeof Ionicons>['name']
+
+const INSPIRE_THEMES: { icon: IoniconName; title: string; subtitle: string; category: RentalCategory; city: string | null }[] = [
+  { icon: 'sunny-outline', title: 'Weekend in Marbella', subtitle: 'Cars & villas from €35/day', category: 'car' as RentalCategory, city: 'Marbella' },
+  { icon: 'partly-sunny-outline', title: 'Mediterranean road trip', subtitle: 'Convertibles in Nice, Barcelona', category: 'car' as RentalCategory, city: null },
+  { icon: 'boat-outline', title: 'Yacht week in the islands', subtitle: '8+ person boats from €200/day', category: 'yacht' as RentalCategory, city: null },
+  { icon: 'bicycle-outline', title: 'Vespa adventures', subtitle: 'Scooters in Dubrovnik · Lisbon', category: 'scooter' as RentalCategory, city: null },
 ]
 
-const MOODS = [
-  { emoji: '🌴', label: 'Beach & sun', category: 'yacht' as RentalCategory },
-  { emoji: '🏔️', label: 'Mountain escape', category: 'bike' as RentalCategory },
-  { emoji: '🍷', label: 'City & culture', category: 'car' as RentalCategory },
-  { emoji: '⚓', label: 'Sea adventure', category: 'kayak' as RentalCategory },
+const MOODS: { icon: IoniconName; label: string; category: RentalCategory }[] = [
+  { icon: 'sunny-outline', label: 'Beach & sun', category: 'yacht' as RentalCategory },
+  { icon: 'triangle-outline', label: 'Mountain escape', category: 'bike' as RentalCategory },
+  { icon: 'wine-outline', label: 'City & culture', category: 'car' as RentalCategory },
+  { icon: 'boat-outline', label: 'Sea adventure', category: 'kayak' as RentalCategory },
 ]
 
 export default function ExploreScreen() {
@@ -120,7 +130,7 @@ export default function ExploreScreen() {
 
   useLocation()
   const filters: SearchFilters = selectedCategory ? { category: selectedCategory } : {}
-  const { listings: rawListings, loading, error } = useListings(filters)
+  const { listings: rawListings, loading, error, refetch, loadMore, loadingMore } = useListings(filters)
 
   const listings = React.useMemo(() => {
     let arr = [...rawListings]
@@ -130,6 +140,16 @@ export default function ExploreScreen() {
     else if (sortBy === 'rating') arr.sort((a, b) => b.rating - a.rating)
     return arr
   }, [rawListings, sortBy, minCapacity])
+
+  // Cheapest live price in the loaded catalogue. The range runs from ~€25/day
+  // (kayaks) to ~€350/day (yachts), but nothing above the fold showed the bottom
+  // of it, so price-sensitive users bounced before scrolling. Derived from the
+  // real listings — never a hardcoded figure that would drift from the data —
+  // and null until at least one listing has loaded, so nothing flashes.
+  const minPricePerDay = useMemo(
+    () => (listings.length > 0 ? Math.min(...listings.map(l => l.price_per_day)) : null),
+    [listings],
+  )
 
   useEffect(() => {
     if (listings.length > 0 && mapRef.current && viewMode === 'map') {
@@ -208,11 +228,18 @@ export default function ExploreScreen() {
     }
   }
 
-  const handleRefresh = useCallback(async () => {
+  // Pull-to-refresh used to be a lie: it flipped `refreshing` and (in mock mode only)
+  // waited 700ms, never fetching anything. Now it re-runs the real listing query and
+  // clears the spinner from the hook's own loading flag.
+  const handleRefresh = useCallback(() => {
+    void impactAsync(ImpactFeedbackStyle.Light)
     setRefreshing(true)
-    if (Config.useMock) await new Promise<void>(r => setTimeout(r, 700))
-    setRefreshing(false)
-  }, [])
+    refetch()
+  }, [refetch])
+
+  useEffect(() => {
+    if (!loading) setRefreshing(false)
+  }, [loading])
 
   const renderListItem = useCallback<ListRenderItem<AnyListing>>(({ item }) => {
     if (item.sourceType === 'native') {
@@ -228,8 +255,8 @@ export default function ExploreScreen() {
       accessibilityLabel={`${item.title}, ${formatPricePerDay(item.price_per_day, language)}`}
       accessibilityRole="button"
     >
-      {item.cover_image_url != null ? (
-        <Image source={{ uri: item.cover_image_url }} style={hStyles.hCardImage} contentFit="cover" />
+      {(item.images?.[0] ?? item.cover_image_url) != null ? (
+        <Image source={{ uri: item.images?.[0] ?? item.cover_image_url as string }} style={hStyles.hCardImage} contentFit="cover" />
       ) : (
         <View style={[hStyles.hCardImage, hStyles.hCardImagePlaceholder]}>
           <Text style={hStyles.hCardPlaceholderText}>{item.title.charAt(0)}</Text>
@@ -239,9 +266,7 @@ export default function ExploreScreen() {
         <Text style={hStyles.hCardTitle} numberOfLines={1}>{item.title}</Text>
         <Text style={hStyles.hCardPrice}>{formatPricePerDay(item.price_per_day, language)}</Text>
         {item.instant_book === true && (
-          <View style={hStyles.instantBadge}>
-            <Text style={hStyles.instantBadgeText}>⚡ Instant</Text>
-          </View>
+          <Text style={hStyles.hCardMeta}>Instant booking</Text>
         )}
       </View>
     </TouchableOpacity>
@@ -254,8 +279,8 @@ export default function ExploreScreen() {
       accessibilityLabel={`${item.title}, ${formatPricePerDay(item.price_per_day, language)}`}
       accessibilityRole="button"
     >
-      {item.cover_image_url != null ? (
-        <Image source={{ uri: item.cover_image_url }} style={hStyles.hCardImage} contentFit="cover" />
+      {(item.images?.[0] ?? item.cover_image_url) != null ? (
+        <Image source={{ uri: item.images?.[0] ?? item.cover_image_url as string }} style={hStyles.hCardImage} contentFit="cover" />
       ) : (
         <View style={[hStyles.hCardImage, hStyles.hCardImagePlaceholder]}>
           <Text style={hStyles.hCardPlaceholderText}>{item.title.charAt(0)}</Text>
@@ -264,9 +289,7 @@ export default function ExploreScreen() {
       <View style={hStyles.hCardInfo}>
         <Text style={hStyles.hCardTitle} numberOfLines={1}>{item.title}</Text>
         <Text style={hStyles.hCardPrice}>{formatPricePerDay(item.price_per_day, language)}</Text>
-        <View style={hStyles.dealBadge}>
-          <Text style={hStyles.dealBadgeText}>🔥 Last minute</Text>
-        </View>
+        <Text style={hStyles.hCardMeta}>Last-minute deal</Text>
       </View>
     </TouchableOpacity>
   ), [language, hStyles])
@@ -285,7 +308,7 @@ export default function ExploreScreen() {
 
   const dateLabel = startDate && endDate
     ? `${format(startDate, 'MMM d')} – ${format(endDate, 'MMM d')}`
-    : 'Dates'
+    : (language === 'hu' ? 'Dátumok' : language === 'es' ? 'Fechas' : 'Dates')
 
   const searchBarTop = insets.top + 8
   // Hide the floating filter + map/list toggle while a preview card is up, so they
@@ -322,10 +345,24 @@ export default function ExploreScreen() {
             ))}
           </MapView>
         ) : (
-          <View style={[StyleSheet.absoluteFill, styles.webMapPlaceholder]}>
-            <Text style={styles.webMapText}>🗺️</Text>
-            <Text style={styles.webMapLabel}>Map view (native only)</Text>
-          </View>
+          <LeafletMap
+            pins={listings
+              .filter(l => l.latitude != null && l.longitude != null)
+              .map(l => ({
+                id: l.id,
+                lat: l.latitude as number,
+                lng: l.longitude as number,
+                label: `€${Math.round(l.price_per_day)}`,
+                selected: selectedListing?.id === l.id,
+              }))}
+            onPinPress={(id) => {
+              const hit = listings.find(x => x.id === id)
+              if (hit) {
+                setSelectedListing(hit)
+                setViewMode('map')
+              }
+            }}
+          />
         )}
       </Animated.View>
 
@@ -426,13 +463,23 @@ export default function ExploreScreen() {
         <View style={styles.listHandle} />
 
         <View style={heroStyles.row}>
-          <Text style={heroStyles.prefix}>Rent a </Text>
+          <Text style={heroStyles.prefix}>{HERO_COPY[language].prefix}</Text>
           <RotatingText
-            words={['car', 'boat', 'villa', 'scooter', 'drone']}
+            words={HERO_COPY[language].words}
             style={heroStyles.rotating}
             interval={2400}
           />
         </View>
+
+        {/* Low-price anchor, directly under the headline and above the first
+            rail. Quiet supporting text on purpose — the accent colour is
+            reserved for the primary CTA and the active tab, and a promotional
+            pill here would read as a deal badge rather than as information. */}
+        {minPricePerDay !== null && (
+          <Text style={heroStyles.fromPrice}>
+            {t('fromPricePerDay', language).replace('{price}', formatEUR(minPricePerDay, language))}
+          </Text>
+        )}
 
         {/* Source toggle */}
         <View style={styles.sourceToggleRow}>
@@ -459,65 +506,15 @@ export default function ExploreScreen() {
             accessibilityRole="button"
           >
             <Text style={[styles.sourceBtnText, source === 'all' && styles.sourceBtnTextActive]}>
-              🌐 {t('sourceAllPlatforms', language)}
+              {t('sourceAllPlatforms', language)}
             </Text>
           </TouchableOpacity>
         </View>
 
         {hasExternalResults && <AffiliateSearchDisclosure />}
 
-        {/* Sort bar */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.sortContent}
-          style={styles.sortBar}
-        >
-          {([
-            { key: 'default' as typeof sortBy, label: t('sortRelevance', language) },
-            { key: 'price_asc' as typeof sortBy, label: t('sortPriceAsc', language) },
-            { key: 'price_desc' as typeof sortBy, label: t('sortPriceDesc', language) },
-            { key: 'rating' as typeof sortBy, label: t('sortRating', language) },
-          ]).map(opt => (
-            <TouchableOpacity
-              key={opt.key}
-              style={[styles.sortPill, sortBy === opt.key && styles.sortPillActive]}
-              onPress={() => {
-                void impactAsync(ImpactFeedbackStyle.Light)
-                setSortBy(opt.key)
-              }}
-              accessibilityLabel={`Sort by: ${opt.label}`}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.sortPillText, sortBy === opt.key && styles.sortPillTextActive]}>
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          <View style={styles.sortDivider} />
-          {([
-            { cap: null as number | null, label: t('filterAnySize', language) },
-            { cap: 4 as number | null, label: t('seats4Plus', language) },
-            { cap: 8 as number | null, label: t('seats8Plus', language) },
-          ]).map(opt => (
-            <TouchableOpacity
-              key={String(opt.cap)}
-              style={[styles.sortPill, minCapacity === opt.cap && styles.sortPillActive]}
-              onPress={() => {
-                void impactAsync(ImpactFeedbackStyle.Light)
-                setMinCapacity(opt.cap)
-              }}
-              accessibilityLabel={`Capacity: ${opt.label}`}
-              accessibilityRole="button"
-            >
-              <Text style={[styles.sortPillText, minCapacity === opt.cap && styles.sortPillTextActive]}>
-                👥 {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {error && <ErrorState message={error} />}
+        {/* onRetry wired to the (now real) refetch — this used to be a dead end. */}
+        {error && <ErrorState message={error} onRetry={refetch} />}
         {isLoading ? (
           <View style={styles.skeletonGrid}>
             {Array.from({ length: 6 }).map((_, i) => (
@@ -526,7 +523,7 @@ export default function ExploreScreen() {
           </View>
         ) : showDiscovery ? (
           <ScrollView contentContainerStyle={styles.discoveryContainer}>
-            <Text style={styles.discoverySectionTitle}>💡 {t('discoverIdeas', language)}</Text>
+            <Text style={styles.discoverySectionTitle}>{t('discoverIdeas', language)}</Text>
             {INSPIRE_THEMES.map(theme => (
               <TouchableOpacity
                 key={theme.title}
@@ -541,7 +538,7 @@ export default function ExploreScreen() {
                 accessibilityLabel={theme.title}
                 accessibilityRole="button"
               >
-                <Text style={styles.inspireEmoji}>{theme.emoji}</Text>
+                <Ionicons name={theme.icon} size={32} color={C.textSecondary} importantForAccessibility="no" />
                 <View style={styles.inspireInfo}>
                   <Text style={styles.inspireTitle}>{theme.title}</Text>
                   <Text style={styles.inspireSubtitle}>{theme.subtitle}</Text>
@@ -551,7 +548,7 @@ export default function ExploreScreen() {
             ))}
 
             <Text style={[styles.discoverySectionTitle, { marginTop: Spacing.xl }]}>
-              🎭 {t('browseByMood', language)}
+              {t('browseByMood', language)}
             </Text>
             <View style={styles.moodGrid}>
               {MOODS.map(mood => (
@@ -566,7 +563,7 @@ export default function ExploreScreen() {
                   accessibilityLabel={mood.label}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.moodEmoji}>{mood.emoji}</Text>
+                  <Ionicons name={mood.icon} size={28} color={C.textSecondary} importantForAccessibility="no" />
                   <Text style={styles.moodLabel}>{mood.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -594,21 +591,33 @@ export default function ExploreScreen() {
               />
             }
             renderItem={renderListItem}
+            // Infinite scroll — only the native feed is paginated; the merged
+            // "all platforms" result set arrives in one shot from searchAllSources.
+            onEndReached={source === 'rentivo' ? loadMore : undefined}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              source === 'rentivo' && loadingMore ? (
+                <View style={styles.listFooter}>
+                  <ActivityIndicator size="small" color={C.primary} />
+                </View>
+              ) : null
+            }
             ListHeaderComponent={source === 'rentivo' ? (
               <View>
                 {availableTodayListings.length > 0 && (
                   <View style={hStyles.section}>
                     <View style={hStyles.sectionHeader}>
-                      <Text style={hStyles.sectionTitle}>
-                        {`⚡ ${t('availableTodayTitle', language)}`}
-                      </Text>
+                      <View style={hStyles.sectionTitleRow}>
+                        <Text style={hStyles.sectionTitle}>{t('availableTodayTitle', language)}</Text>
+                      </View>
                       <TouchableOpacity
                         onPress={() => setSelectedCategory(null)}
                         accessibilityLabel={t('seeAll', language)}
                         accessibilityRole="button"
                         style={hStyles.seeAllBtn}
                       >
-                        <Text style={hStyles.seeAllText}>{`${t('seeAll', language)} →`}</Text>
+                        <Text style={hStyles.seeAllText}>{t('seeAll', language)}</Text>
+                        <Ionicons name="chevron-forward" size={13} color={C.textSecondary} />
                       </TouchableOpacity>
                     </View>
                     <FlatList
@@ -624,16 +633,17 @@ export default function ExploreScreen() {
                 {lastMinuteListings.length > 0 && (
                   <View style={hStyles.section}>
                     <View style={hStyles.sectionHeader}>
-                      <Text style={hStyles.sectionTitle}>
-                        {`🔥 ${t('lastMinuteTitle', language)}`}
-                      </Text>
+                      <View style={hStyles.sectionTitleRow}>
+                        <Text style={hStyles.sectionTitle}>{t('lastMinuteTitle', language)}</Text>
+                      </View>
                       <TouchableOpacity
                         onPress={() => setSelectedCategory(null)}
                         accessibilityLabel={t('seeAll', language)}
                         accessibilityRole="button"
                         style={hStyles.seeAllBtn}
                       >
-                        <Text style={hStyles.seeAllText}>{`${t('seeAll', language)} →`}</Text>
+                        <Text style={hStyles.seeAllText}>{t('seeAll', language)}</Text>
+                        <Ionicons name="chevron-forward" size={13} color={C.textSecondary} />
                       </TouchableOpacity>
                     </View>
                     <FlatList
@@ -649,7 +659,9 @@ export default function ExploreScreen() {
                 {recentlyViewed.length > 0 && (
                   <View style={hStyles.section}>
                     <View style={hStyles.sectionHeader}>
-                      <Text style={hStyles.sectionTitle}>🕒 {t('recentlyViewed', language)}</Text>
+                      <View style={hStyles.sectionTitleRow}>
+                        <Text style={hStyles.sectionTitle}>{t('recentlyViewed', language)}</Text>
+                      </View>
                     </View>
                     <FlatList
                       horizontal
@@ -769,8 +781,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    webMapText: { fontSize: 64, marginBottom: Spacing.base },
-    webMapLabel: { fontSize: 16, color: C.textTertiary },
+    webMapText: { fontFamily: Fonts.regular, fontSize: 64, marginBottom: Spacing.base },
+    webMapLabel: { fontFamily: Fonts.regular, fontSize: 16, color: C.textTertiary },
 
     searchBar: {
       position: 'absolute',
@@ -797,14 +809,14 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       alignItems: 'center',
       gap: Spacing.xs,
     },
-    searchCity: { fontSize: 14, fontWeight: '700', color: C.text },
+    searchCity: { fontSize: 14, fontFamily: Fonts.bold, color: C.text },
     searchDivider: {
       width: 1, height: 20,
       backgroundColor: C.border,
       marginHorizontal: Spacing.sm,
     },
-    searchDates: { fontSize: 13, color: C.textSecondary, fontWeight: '500' },
-    searchDatesActive: { color: C.primaryDark, fontWeight: '700' },
+    searchDates: { fontSize: 13, color: C.textSecondary, fontFamily: Fonts.medium },
+    searchDatesActive: { color: C.primaryDark, fontFamily: Fonts.bold },
     filterBtn: {
       width: 32, height: 32, borderRadius: 16,
       backgroundColor: C.primarySurface,
@@ -835,7 +847,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       backgroundColor: C.primary, borderColor: C.primary,
       shadowColor: C.primary, shadowOpacity: 0.3,
     },
-    categoryPillText: { fontSize: 14, fontWeight: '600', color: C.text },
+    categoryPillText: { fontSize: 14, fontFamily: Fonts.semibold, color: C.text },
     categoryPillTextActive: { color: C.textInverse },
 
     toggleBtn: {
@@ -850,7 +862,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       elevation: 8, zIndex: 6,
       borderWidth: 1, borderColor: C.border,
     },
-    toggleText: { color: C.text, fontWeight: '700', fontSize: 14 },
+    toggleText: { color: C.text, fontFamily: Fonts.bold, fontSize: 14 },
 
     listOverlay: {
       position: 'absolute',
@@ -864,17 +876,18 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       alignSelf: 'center', marginTop: Spacing.md, marginBottom: Spacing.sm,
     },
 
+    // Compact segmented — hugs content, breathes, no full-width slab
     sourceToggleRow: {
       flexDirection: 'row',
-      marginHorizontal: Spacing.base, marginBottom: Spacing.sm,
+      alignSelf: 'flex-start',
+      marginHorizontal: Spacing.base, marginBottom: Spacing.base,
       backgroundColor: C.surfaceWarm,
       borderRadius: Radius.pill, padding: 3,
-      borderWidth: 1, borderColor: C.border,
     },
-    sourceBtn: { flex: 1, paddingVertical: Spacing.sm, alignItems: 'center', borderRadius: Radius.pill },
-    sourceBtnActive: { backgroundColor: C.primary },
-    sourceBtnText: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
-    sourceBtnTextActive: { color: C.textInverse },
+    sourceBtn: { paddingVertical: 8, paddingHorizontal: 18, alignItems: 'center', borderRadius: Radius.pill },
+    sourceBtnActive: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, ...Shadow.sm },
+    sourceBtnText: { fontSize: 13, fontFamily: Fonts.semibold, color: C.textTertiary },
+    sourceBtnTextActive: { color: C.text },
 
     skeletonGrid: {
       flexDirection: 'row',
@@ -883,27 +896,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       gap: Spacing.base,
     },
     listContent: { padding: Spacing.base, paddingTop: Spacing.sm, paddingBottom: 100 },
+    listFooter: { paddingVertical: Spacing.lg, alignItems: 'center' },
     columnWrapper: { gap: Spacing.base },
-    sortBar: { flexGrow: 0 },
-    sortContent: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm, gap: Spacing.sm },
-    sortDivider: {
-      width: 1, height: 24, backgroundColor: C.border,
-      marginHorizontal: Spacing.sm, alignSelf: 'center',
-    },
-    sortPill: {
-      borderRadius: Radius.pill, paddingHorizontal: 14, paddingVertical: 6,
-      backgroundColor: C.surfaceWarm,
-      borderWidth: 1, borderColor: C.border,
-      minHeight: 44,
-      justifyContent: 'center',
-    },
-    sortPillActive: { backgroundColor: C.primary, borderColor: C.primary },
-    sortPillText: { fontSize: 13, fontWeight: '600', color: C.text },
-    sortPillTextActive: { color: C.textInverse },
-
     discoveryContainer: { padding: Spacing.base, paddingBottom: 100 },
     discoverySectionTitle: {
-      fontSize: 18, fontWeight: '800', color: C.text,
+      fontSize: 18, fontFamily: Fonts.extrabold, color: C.text,
       marginBottom: Spacing.md,
     },
     inspireCard: {
@@ -914,10 +911,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       borderWidth: 1, borderColor: C.border,
       gap: Spacing.md,
     },
-    inspireEmoji: { fontSize: 32 },
+    inspireEmoji: { fontFamily: Fonts.regular, fontSize: 32 },
     inspireInfo: { flex: 1 },
-    inspireTitle: { fontSize: 15, fontWeight: '700', color: C.text },
-    inspireSubtitle: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
+    inspireTitle: { fontSize: 15, fontFamily: Fonts.bold, color: C.text },
+    inspireSubtitle: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, marginTop: 2 },
     moodGrid: {
       flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
     },
@@ -930,8 +927,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       borderWidth: 1, borderColor: C.border,
       gap: Spacing.sm,
     },
-    moodEmoji: { fontSize: 28 },
-    moodLabel: { fontSize: 13, fontWeight: '600', color: C.text, textAlign: 'center' },
+    moodEmoji: { fontFamily: Fonts.regular, fontSize: 28 },
+    moodLabel: { fontSize: 13, fontFamily: Fonts.semibold, color: C.text, textAlign: 'center' },
   })
 
   const filterStyles = StyleSheet.create({
@@ -946,9 +943,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       backgroundColor: C.border,
       alignSelf: 'center', marginBottom: Spacing.xl,
     },
-    title: { fontSize: 18, fontWeight: '800', color: C.text, marginBottom: Spacing.xl },
+    title: { fontSize: 18, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.xl },
     sectionLabel: {
-      fontSize: 12, fontWeight: '700', color: C.textTertiary,
+      fontSize: 12, fontFamily: Fonts.bold, color: C.textTertiary,
       textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md,
     },
     pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.xl },
@@ -961,14 +958,14 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       justifyContent: 'center',
     },
     pillActive: { backgroundColor: C.primary, borderColor: C.primary },
-    pillText: { fontSize: 13, fontWeight: '600', color: C.text },
+    pillText: { fontSize: 13, fontFamily: Fonts.semibold, color: C.text },
     pillTextActive: { color: C.textInverse },
     applyBtn: {
       backgroundColor: C.primary,
       borderRadius: Radius.pill, paddingVertical: Spacing.base,
       alignItems: 'center', marginTop: Spacing.sm,
     },
-    applyBtnText: { fontSize: 16, fontWeight: '800', color: C.textInverse },
+    applyBtnText: { fontSize: 16, fontFamily: Fonts.extrabold, color: C.textInverse },
   })
 
   const heroStyles = StyleSheet.create({
@@ -979,14 +976,23 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       paddingBottom: Spacing.sm,
     },
     prefix: {
-      fontSize: 28,
-      fontWeight: '800',
+      fontFamily: 'Manrope_800ExtraBold',
+      fontSize: 32,
+      letterSpacing: -1.0,
       color: C.text,
     },
     rotating: {
-      fontSize: 28,
-      fontWeight: '800',
-      color: C.primary,
+      fontFamily: 'Manrope_800ExtraBold',
+      fontSize: 32,
+      letterSpacing: -1.0,
+      color: C.text,
+    },
+    // Deliberately secondary ink and body type: helpful information, not a badge.
+    fromPrice: {
+      ...Typography.bodyS,
+      color: C.textSecondary,
+      paddingHorizontal: Spacing.base,
+      paddingBottom: Spacing.sm,
     },
   })
 
@@ -1001,20 +1007,29 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       paddingHorizontal: Spacing.base,
       marginBottom: Spacing.sm,
     },
+    sectionTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
     sectionTitle: {
+      fontFamily: 'Manrope_700Bold',
       fontSize: 16,
-      fontWeight: '800',
+      letterSpacing: -0.3,
       color: C.text,
     },
     seeAllBtn: {
       minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
       justifyContent: 'center',
+      gap: 2,
       paddingHorizontal: Spacing.sm,
     },
     seeAllText: {
       fontSize: 13,
-      fontWeight: '600',
-      color: C.primary,
+      fontFamily: Fonts.semibold,
+      color: C.textSecondary,
     },
     hList: {
       paddingHorizontal: Spacing.base,
@@ -1022,16 +1037,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     },
     hCard: {
       width: 220,
-      backgroundColor: C.surface,
-      borderRadius: Radius.lg,
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: C.border,
-      ...Shadow.sm,
     },
     hCardImage: {
       width: '100%',
-      height: 130,
+      height: 140,
+      borderRadius: Radius.xl,
     },
     hCardImagePlaceholder: {
       backgroundColor: C.surfaceWarm,
@@ -1040,46 +1050,29 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     },
     hCardPlaceholderText: {
       fontSize: 36,
-      fontWeight: '700',
+      fontFamily: Fonts.bold,
       color: C.textTertiary,
     },
     hCardInfo: {
-      padding: Spacing.sm,
-      gap: 4,
+      paddingTop: Spacing.sm,
+      paddingHorizontal: 2,
+      gap: 3,
     },
     hCardTitle: {
+      fontFamily: 'Manrope_700Bold',
       fontSize: 14,
-      fontWeight: '700',
       color: C.text,
     },
     hCardPrice: {
+      fontFamily: 'Manrope_700Bold',
       fontSize: 13,
-      fontWeight: '600',
-      color: C.primary,
+      color: C.text,
+      fontVariant: ['tabular-nums'],
     },
-    instantBadge: {
-      alignSelf: 'flex-start',
-      backgroundColor: C.successSurface,
-      borderRadius: Radius.pill,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-    },
-    instantBadgeText: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: C.success,
-    },
-    dealBadge: {
-      alignSelf: 'flex-start',
-      backgroundColor: C.warningSurface,
-      borderRadius: Radius.pill,
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-    },
-    dealBadgeText: {
-      fontSize: 11,
-      fontWeight: '700',
-      color: C.warning,
+    hCardMeta: {
+      fontSize: 12,
+      fontFamily: Fonts.medium,
+      color: C.textTertiary,
     },
   })
 

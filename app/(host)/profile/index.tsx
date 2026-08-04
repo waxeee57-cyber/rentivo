@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import type { Href } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
 import { Divider } from '@/components/ui/Divider'
@@ -70,11 +71,22 @@ export default function HostProfileScreen() {
         <View style={styles.profileSection}>
           <Avatar name={name} size={80} />
           <Text style={styles.name}>{name}</Text>
-          <Text style={styles.location}>📍 {city}</Text>
+          {city ? (
+            <View style={styles.locationRow}>
+              <Ionicons name="location-outline" size={14} color={C.textSecondary} importantForAccessibility="no" />
+              <Text style={styles.location}>{city}</Text>
+            </View>
+          ) : null}
           <View style={styles.ratingRow}>
-            <Text style={styles.ratingText}>★ {rating.toFixed(1)}</Text>
-            <Text style={styles.ratingDot}>·</Text>
-            <Text style={styles.reviewCount}>{reviewCount} reviews</Text>
+            {reviewCount > 0 ? (
+              <>
+                <Text style={styles.ratingText}>★ {rating.toFixed(1)}</Text>
+                <Text style={styles.ratingDot}>·</Text>
+                <Text style={styles.reviewCount}>{reviewCount} reviews</Text>
+              </>
+            ) : (
+              <Text style={styles.reviewCount}>New host — no reviews yet</Text>
+            )}
           </View>
           {memberSince ? (
             <Text style={styles.memberSince}>{t('memberSinceLabel', language)} {memberSince}</Text>
@@ -106,23 +118,23 @@ export default function HostProfileScreen() {
 
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>{t('listings', language)}</Text>
-          <MenuItem label={`🚗 ${t('myVehicles', language)}`} onPress={() => router.push('/(host)/listings')} />
+          <MenuItem label={`${t('myVehicles', language)}`} onPress={() => router.push('/(host)/listings')} />
           <Divider />
-          <MenuItem label={`➕ ${t('listSomethingNew', language)}`} onPress={() => router.push('/(host)/listings/new')} />
+          <MenuItem label={`${t('listSomethingNew', language)}`} onPress={() => router.push('/(host)/listings/new')} />
         </Card>
 
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>{t('sectionAccount', language)}</Text>
-          <MenuItem label={`🔗 ${t('connectedPlatforms', language)}`} onPress={() => router.push('/(consumer)/profile/connected-platforms' as Parameters<typeof router.push>[0])} />
+          <MenuItem label={`${t('connectedPlatforms', language)}`} onPress={() => router.push('/(consumer)/profile/connected-platforms' as Parameters<typeof router.push>[0])} />
           <Divider />
-          <MenuItem label="🪪 Identity verification" onPress={() => router.push('/(consumer)/profile/verify' as Parameters<typeof router.push>[0])} />
+          <MenuItem label="Identity verification" onPress={() => router.push('/(consumer)/profile/verify' as Parameters<typeof router.push>[0])} />
           <Divider />
           <MenuItem
-            label={`💳 ${t('payoutSettings', language)}`}
+            label={`${t('payoutSettings', language)}`}
             onPress={() => Alert.alert('Payout Setup', 'Configure your bank account for payouts at dashboard.rentivo.app → Payouts', [{ text: 'OK' }])}
           />
           <Divider />
-          <MenuItem label="🔔 Notification preferences" onPress={() => router.push('/(consumer)/profile/privacy-settings' as Parameters<typeof router.push>[0])} />
+          <MenuItem label="Notification preferences" onPress={() => router.push('/(consumer)/profile/privacy-settings' as Parameters<typeof router.push>[0])} />
         </Card>
 
         <Card style={styles.card}>
@@ -133,7 +145,7 @@ export default function HostProfileScreen() {
             accessibilityLabel="Switch to consumer view"
             accessibilityRole="button"
           >
-            <Text style={styles.switchRoleIcon}>🔍</Text>
+            <Ionicons name="search-outline" size={18} color={C.textSecondary} />
             <Text style={styles.switchRoleText}>{t('roleConsumer', language)}</Text>
             <Text style={styles.switchRoleChevron}>›</Text>
           </TouchableOpacity>
@@ -149,7 +161,7 @@ export default function HostProfileScreen() {
                 onPress={() => setLanguage(lang)}
               >
                 <Text style={[styles.langText, language === lang && styles.langTextActive]}>
-                  {lang === 'en' ? '🇬🇧 EN' : lang === 'es' ? '🇪🇸 ES' : '🇭🇺 HU'}
+                  {lang === 'en' ? 'EN' : lang === 'es' ? 'ES' : 'HU'}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -158,11 +170,11 @@ export default function HostProfileScreen() {
 
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>{t('sectionLegal', language)}</Text>
-          <MenuItem label={`📄 ${t('termsOfService', language)}`} onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/terms')} />
+          <MenuItem label={`${t('termsOfService', language)}`} onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/terms')} />
           <Divider />
-          <MenuItem label={`🔒 ${t('privacyPolicy', language)}`} onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/privacy')} />
+          <MenuItem label={`${t('privacyPolicy', language)}`} onPress={() => void Linking.openURL('https://rentivo.domrol.com/legal/privacy')} />
           <Divider />
-          <MenuItem label={`❓ ${t('helpSupport', language)}`} onPress={() => void Linking.openURL('mailto:support@rentivo.app')} />
+          <MenuItem label={`${t('helpSupport', language)}`} onPress={() => void Linking.openURL('mailto:support@rentivo.app')} />
         </Card>
 
         <TouchableOpacity
@@ -203,20 +215,21 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   container: { flex: 1, backgroundColor: C.background },
   title: {
     fontSize: 26,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.text,
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.md,
     marginBottom: Spacing.lg,
   },
   profileSection: { alignItems: 'center', paddingBottom: Spacing.xl },
-  name: { fontSize: 22, fontWeight: '700', color: C.text, marginTop: Spacing.md },
-  location: { fontSize: 14, color: C.textSecondary, marginTop: 4 },
+  name: { fontSize: 22, fontFamily: Fonts.bold, color: C.text, marginTop: Spacing.md },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  location: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: Spacing.sm },
-  ratingText: { fontSize: 15, fontWeight: '700', color: C.primary },
-  ratingDot: { fontSize: 15, color: C.textTertiary },
-  reviewCount: { fontSize: 14, color: C.textSecondary },
-  memberSince: { fontSize: 13, color: C.textTertiary, marginTop: 4 },
+  ratingText: { fontSize: 15, fontFamily: Fonts.bold, color: C.primary },
+  ratingDot: { fontFamily: Fonts.regular, fontSize: 15, color: C.textTertiary },
+  reviewCount: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
+  memberSince: { fontFamily: Fonts.regular, fontSize: 13, color: C.textTertiary, marginTop: 4 },
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -229,7 +242,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.success,
   },
-  verifiedText: { fontSize: 13, fontWeight: '700', color: C.success },
+  verifiedText: { fontSize: 13, fontFamily: Fonts.bold, color: C.success },
 
   statsRow: {
     flexDirection: 'row',
@@ -242,22 +255,22 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingHorizontal: Spacing.xl,
   },
   statItem: { flex: 1, alignItems: 'center' },
-  statNum: { fontSize: 18, fontWeight: '800', color: C.text, marginBottom: 2 },
-  statLabel: { fontSize: 11, color: C.textTertiary, fontWeight: '600', textTransform: 'uppercase' },
+  statNum: { fontSize: 18, fontFamily: Fonts.extrabold, color: C.text, marginBottom: 2 },
+  statLabel: { fontSize: 11, color: C.textTertiary, fontFamily: Fonts.semibold, textTransform: 'uppercase' },
   statDivider: { width: 1, height: 32, backgroundColor: C.border },
 
   card: { marginHorizontal: Spacing.base, marginBottom: Spacing.md },
   sectionTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textTertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.md,
   },
   menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.sm, minHeight: 44 },
-  menuLabel: { fontSize: 15, color: C.text },
-  menuChevron: { fontSize: 20, color: C.textTertiary },
+  menuLabel: { fontFamily: Fonts.regular, fontSize: 15, color: C.text },
+  menuChevron: { fontFamily: Fonts.regular, fontSize: 20, color: C.textTertiary },
 
   switchRoleBtn: {
     flexDirection: 'row',
@@ -271,9 +284,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.surface,
     minHeight: 44,
   },
-  switchRoleIcon: { fontSize: 18 },
-  switchRoleText: { flex: 1, fontSize: 15, color: C.text, fontWeight: '600' },
-  switchRoleChevron: { fontSize: 20, color: C.textTertiary },
+  switchRoleIcon: { fontFamily: Fonts.regular, fontSize: 18 },
+  switchRoleText: { flex: 1, fontSize: 15, color: C.text, fontFamily: Fonts.semibold },
+  switchRoleChevron: { fontFamily: Fonts.regular, fontSize: 20, color: C.textTertiary },
 
   langRow: { flexDirection: 'row', gap: Spacing.sm },
   langBtn: {
@@ -285,12 +298,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
     backgroundColor: C.surface,
   },
-  langBtnActive: { backgroundColor: C.primarySurface, borderColor: C.primary },
-  langText: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
-  langTextActive: { color: C.primary },
+  langBtnActive: { backgroundColor: C.text, borderColor: C.text },
+  langText: { fontSize: 13, fontFamily: Fonts.semibold, color: C.textSecondary },
+  langTextActive: { color: C.background },
 
   signOutBtn: { marginHorizontal: Spacing.base, marginTop: Spacing.base, padding: Spacing.base, alignItems: 'center', minHeight: 44 },
-  signOutText: { fontSize: 16, color: C.error, fontWeight: '600' },
-  appVersion: { textAlign: 'center', fontSize: 12, color: C.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
+  signOutText: { fontSize: 16, color: C.error, fontFamily: Fonts.semibold },
+  appVersion: { textAlign: 'center', fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: Spacing.base, marginBottom: Spacing.md },
   })
 }

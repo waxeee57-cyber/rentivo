@@ -32,13 +32,13 @@ export function QuickStats({ bookings, totalVehicles }: QuickStatsProps) {
   return (
     <View style={styles.row}>
       <RevenueCard
-        emoji="📅"
+        icon="calendar-outline"
         label={t('todaysPickups', language)}
-        value={todayBookings === 0 ? '☀️ Free' : String(todayBookings)}
+        value={String(todayBookings)}
       />
-      <RevenueCard emoji="💰" label={t('monthRevenue', language)} value={formatEUR(monthRevenue)} />
-      <RevenueCard emoji="🚗" label={t('activeRentals', language)} value={String(activeRentals)} />
-      <RevenueCard emoji="📊" label={t('utilizationStat', language)} value={`${utilization}%`} />
+      <RevenueCard icon="cash-outline" label={t('monthRevenue', language)} value={formatEUR(monthRevenue)} />
+      <RevenueCard icon="car-sport-outline" label={t('activeRentals', language)} value={String(activeRentals)} />
+      <RevenueCard icon="stats-chart-outline" label={t('utilizationStat', language)} value={`${utilization}%`} />
     </View>
   )
 }

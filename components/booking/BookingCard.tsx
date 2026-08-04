@@ -1,13 +1,17 @@
 import React, { useEffect, useRef, useCallback, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'
 import { Image } from 'expo-image'
+import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { differenceInDays, parseISO } from 'date-fns'
-import { Radius, Spacing, Shadow, Typography } from '@/constants/colors'
+import { Radius, Spacing, Shadow, Typography, Fonts } from '@/constants/colors'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import type { Booking } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import {
+  IMAGE_PLACEHOLDER, IMAGE_TRANSITION, IMAGE_CACHE_POLICY,
+} from '@/components/ui/imagePlaceholder'
 
 interface BookingCardProps {
   booking: Booking
@@ -61,10 +65,19 @@ function BookingCardComponent({ booking, onPress }: BookingCardProps) {
           source={{ uri: imageUri }}
           style={styles.image}
           contentFit="cover"
+          transition={IMAGE_TRANSITION}
+          placeholder={IMAGE_PLACEHOLDER}
+          cachePolicy={IMAGE_CACHE_POLICY}
+          // BookingCard is a FlatList row: without recyclingKey expo-image
+          // reuses the recycled view and briefly shows the PREVIOUS booking's
+          // vehicle while the new URL decodes.
+          recyclingKey={imageUri}
+          accessible
+          accessibilityLabel={booking.listing?.title ?? 'Vehicle photo'}
         />
       ) : (
         <View style={[styles.image, styles.imagePlaceholder]}>
-          <Text style={styles.imagePlaceholderText}>🚗</Text>
+          <Ionicons name="car-sport-outline" size={28} color={C.textTertiary} importantForAccessibility="no" />
         </View>
       )}
 
@@ -95,9 +108,17 @@ function BookingCardComponent({ booking, onPress }: BookingCardProps) {
         </View>
 
         {daysUntil !== null && daysUntil >= 0 && (
-          <Text style={styles.countdown}>
-            {daysUntil === 0 ? '⚡ Starts today' : `📅 Starts in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`}
-          </Text>
+          <View style={styles.countdownRow}>
+            <Ionicons
+              name={daysUntil === 0 ? 'flash-outline' : 'calendar-outline'}
+              size={12}
+              color={C.primary}
+              importantForAccessibility="no"
+            />
+            <Text style={styles.countdown}>
+              {daysUntil === 0 ? 'Starts today' : `Starts in ${daysUntil} day${daysUntil > 1 ? 's' : ''}`}
+            </Text>
+          </View>
         )}
       </View>
     </TouchableOpacity>
@@ -130,7 +151,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  imagePlaceholderText: { fontSize: 28 },
+  imagePlaceholderText: { fontFamily: Fonts.regular, fontSize: 28 },
   info: {
     flex: 1,
     padding: Spacing.md,
@@ -164,15 +185,15 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   badgeText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   operatorText: {
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.text,
     marginBottom: 2,
   },
   dates: {
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     color: C.text,
     lineHeight: 20,
     marginBottom: 6,
@@ -184,7 +205,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   total: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.primary,
   },
   inspectBtn: {
@@ -197,14 +218,19 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   inspectBtnText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.primaryDark,
+  },
+  countdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
   },
   countdown: {
     fontSize: 12,
     color: C.primary,
-    fontWeight: '600',
-    marginTop: 4,
+    fontFamily: Fonts.semibold,
   },
   })
 }

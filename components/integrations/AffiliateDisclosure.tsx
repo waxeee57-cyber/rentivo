@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -24,7 +25,13 @@ export function AffiliateDisclosure({ platform, compact = false }: AffiliateDisc
 
   return (
     <View style={[styles.container, compact && styles.containerCompact]}>
-      <Text style={styles.icon}>ℹ️</Text>
+      <Ionicons
+        name="information-circle-outline"
+        size={14}
+        color={C.info}
+        style={styles.icon}
+        importantForAccessibility="no"
+      />
       <Text style={styles.text}>
         {compact
           ? `via ${label} · Rentivo may earn a commission`
@@ -40,7 +47,8 @@ export function AffiliateSearchDisclosure() {
   return (
     <View style={styles.searchBanner}>
       <Text style={styles.searchBannerText}>
-        ℹ️ Results include listings from partner platforms. Rentivo may earn a commission.
+        <Ionicons name="information-circle-outline" size={12} color={C.info} />
+        {' '}Results include listings from partner platforms. Rentivo may earn a commission.
       </Text>
     </View>
   )
@@ -63,10 +71,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     padding: Spacing.sm,
     marginTop: Spacing.sm,
   },
-  icon: { fontSize: 14 },
+  icon: { marginTop: 1 },
   text: {
     flex: 1,
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: C.info,
     lineHeight: 17,
   },
@@ -78,7 +86,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderBottomColor: C.info,
   },
   searchBannerText: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: C.info,
     textAlign: 'center',
   },

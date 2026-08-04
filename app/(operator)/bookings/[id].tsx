@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -96,7 +96,10 @@ export default function OperatorBookingDetailScreen() {
       {/* FIRST THING VISIBLE: prominent confirm banner for pending */}
       {booking.status === 'pending' && (
         <View style={styles.actionBanner}>
-          <Text style={styles.actionTitle}>{`📅 ${t('opBkNewRequest', language)}`}</Text>
+          <View style={styles.actionTitleRow}>
+            <Ionicons name="calendar-outline" size={16} color={C.success} importantForAccessibility="no" />
+            <Text style={styles.actionTitle}>{t('opBkNewRequest', language)}</Text>
+          </View>
           <Text style={styles.actionSubtitle}>{t('opBkRespond24h', language)}</Text>
           <View style={styles.actionButtons}>
             <TouchableOpacity
@@ -145,7 +148,8 @@ export default function OperatorBookingDetailScreen() {
               accessibilityLabel={`Call ${booking.guest_phone}`}
               accessibilityRole="button"
             >
-              <Text style={styles.callBtnText}>{`📞 ${t('opBkCall', language)} ${booking.guest_phone}`}</Text>
+              <Ionicons name="call-outline" size={16} color={C.primaryDark} importantForAccessibility="no" />
+              <Text style={styles.callBtnText}>{`${t('opBkCall', language)} ${booking.guest_phone}`}</Text>
             </TouchableOpacity>
           )}
         </Card>
@@ -197,7 +201,10 @@ export default function OperatorBookingDetailScreen() {
         {/* Flight info */}
         {booking.flight_number != null && (
           <View style={flightStyles.flightCard}>
-            <Text style={flightStyles.flightTitle}>{`✈️ ${t('opBkFlightInfo', language)}`}</Text>
+            <View style={flightStyles.flightTitleRow}>
+              <Ionicons name="airplane-outline" size={14} color={C.textSecondary} importantForAccessibility="no" />
+              <Text style={flightStyles.flightTitle}>{t('opBkFlightInfo', language)}</Text>
+            </View>
             <Text style={flightStyles.flightNum}>{booking.flight_number}</Text>
             {booking.flight_arrival_time != null && (
               <Text style={flightStyles.flightArrival}>
@@ -205,8 +212,14 @@ export default function OperatorBookingDetailScreen() {
               </Text>
             )}
             <View style={[flightStyles.statusBadge, { backgroundColor: booking.flight_status === 'on_time' ? C.successSurface : C.warningSurface }]}>
+              <Ionicons
+                name={booking.flight_status === 'on_time' ? 'checkmark-circle' : booking.flight_status === 'delayed' ? 'warning-outline' : 'hourglass-outline'}
+                size={13}
+                color={booking.flight_status === 'on_time' ? C.success : C.warning}
+                importantForAccessibility="no"
+              />
               <Text style={[flightStyles.statusText, { color: booking.flight_status === 'on_time' ? C.success : C.warning }]}>
-                {booking.flight_status === 'on_time' ? `✅ ${t('opBkOnTime', language)}` : booking.flight_status === 'delayed' ? `⚠️ ${t('opBkDelayed', language)}` : `⏳ ${t('opBkTracking', language)}`}
+                {booking.flight_status === 'on_time' ? t('opBkOnTime', language) : booking.flight_status === 'delayed' ? t('opBkDelayed', language) : t('opBkTracking', language)}
               </Text>
             </View>
           </View>
@@ -219,8 +232,9 @@ export default function OperatorBookingDetailScreen() {
           accessibilityLabel="Message guest"
           accessibilityRole="button"
         >
-          <Ionicons name="chatbubble-outline" size={16} color={C.primary} />
-          <Text style={styles.messageBtnText}>{`💬 ${t('opBkMessageGuest', language)}`}</Text>
+          {/* Secondary action, not the screen's primary CTA → ink. */}
+          <Ionicons name="chatbubble-outline" size={16} color={C.text} />
+          <Text style={styles.messageBtnText}>{t('opBkMessageGuest', language)}</Text>
         </TouchableOpacity>
 
         {(booking.status === 'completed' || booking.status === 'active') && (
@@ -230,7 +244,8 @@ export default function OperatorBookingDetailScreen() {
             accessibilityLabel="Open a dispute"
             accessibilityRole="button"
           >
-            <Text style={styles.disputeBtnText}>{`⚠️ ${t('opBkOpenDispute', language)}`}</Text>
+            <Ionicons name="warning-outline" size={15} color={C.warning} importantForAccessibility="no" />
+            <Text style={styles.disputeBtnText}>{t('opBkOpenDispute', language)}</Text>
           </TouchableOpacity>
         )}
 
@@ -271,17 +286,17 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   container: { flex: 1, backgroundColor: C.background },
   content: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.xxxl },
   statusRow: { flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.base, marginBottom: Spacing.base },
-  sectionTitle: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, color: C.textTertiary, marginBottom: Spacing.sm },
-  guestName: { fontSize: 18, fontWeight: '700', color: C.text, marginBottom: Spacing.sm },
-  detail: { fontSize: 14, color: C.textSecondary, marginBottom: 4 },
-  callBtn: { backgroundColor: C.primarySurface, borderRadius: Radius.lg, padding: Spacing.md, alignItems: 'center', justifyContent: 'center', marginTop: Spacing.sm, minHeight: 44 },
-  callBtnText: { fontSize: 14, color: C.primaryDark, fontWeight: '600' },
+  sectionTitle: { fontSize: 11, fontFamily: Fonts.bold, textTransform: 'uppercase', letterSpacing: 0.5, color: C.textTertiary, marginBottom: Spacing.sm },
+  guestName: { fontSize: 18, fontFamily: Fonts.bold, color: C.text, marginBottom: Spacing.sm },
+  detail: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, marginBottom: 4 },
+  callBtn: { backgroundColor: C.primarySurface, borderRadius: Radius.lg, padding: Spacing.md, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', marginTop: Spacing.sm, minHeight: 44 },
+  callBtnText: { fontSize: 14, color: C.primaryDark, fontFamily: Fonts.semibold },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  priceLabel: { fontSize: 14, color: C.textSecondary },
-  priceVal: { fontSize: 18, fontWeight: '700', color: C.text },
-  payoutLabel: { fontSize: 15, fontWeight: '700', color: C.text },
-  payoutVal: { fontSize: 20, fontWeight: '800', color: C.success },
-  payoutNote: { fontSize: 12, color: C.textTertiary, marginTop: 4 },
+  priceLabel: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
+  priceVal: { fontSize: 18, fontFamily: Fonts.bold, color: C.text },
+  payoutLabel: { fontSize: 15, fontFamily: Fonts.bold, color: C.text },
+  payoutVal: { fontSize: 20, fontFamily: Fonts.extrabold, color: C.success },
+  payoutNote: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: 4 },
   inspRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   actions: { marginTop: Spacing.md },
 
@@ -293,8 +308,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     padding: Spacing.base,
     gap: Spacing.sm,
   },
-  actionTitle: { fontSize: 16, fontWeight: '800', color: C.success },
-  actionSubtitle: { fontSize: 13, color: C.textSecondary },
+  actionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  actionTitle: { fontSize: 16, fontFamily: Fonts.extrabold, color: C.success },
+  actionSubtitle: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
   actionButtons: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xs },
   declineBtn: {
     paddingHorizontal: Spacing.xl, borderRadius: Radius.lg,
@@ -303,7 +319,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1, borderColor: C.error,
     minHeight: 44,
   },
-  declineBtnText: { fontSize: 14, fontWeight: '700', color: C.error },
+  declineBtnText: { fontSize: 14, fontFamily: Fonts.bold, color: C.error },
   confirmBtn: {
     flex: 1, backgroundColor: C.success,
     borderRadius: Radius.lg, paddingVertical: Spacing.md,
@@ -311,29 +327,34 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     minHeight: 44,
   },
   confirmBtnDisabled: { opacity: 0.6 },
-  confirmBtnText: { fontSize: 16, fontWeight: '800', color: C.white },
-  payoutPreview: { fontSize: 12, color: C.textSecondary, textAlign: 'center' },
+  confirmBtnText: { fontSize: 16, fontFamily: Fonts.extrabold, color: C.white },
+  payoutPreview: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, textAlign: 'center' },
 
   messageBtn: {
     flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
-    borderWidth: 1.5, borderColor: C.primary,
-    backgroundColor: C.primarySurface,
+    // Secondary outline button — neutral, so it cannot compete with the
+    // Confirm CTA above it. borderStrong clears the 3:1 UI-boundary rule.
+    borderWidth: 1.5, borderColor: C.borderStrong,
+    backgroundColor: C.surfaceWarm,
     borderRadius: Radius.lg, padding: Spacing.md,
     marginTop: Spacing.sm, marginBottom: Spacing.sm,
     justifyContent: 'center',
     minHeight: 44,
   },
-  messageBtnText: { fontSize: 15, color: C.primaryDark, fontWeight: '600' },
+  messageBtnText: { fontSize: 15, color: C.text, fontFamily: Fonts.semibold },
   disputeBtn: {
     borderWidth: 1,
     borderColor: C.warning,
     borderRadius: Radius.lg,
     padding: Spacing.md,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
     alignItems: 'center',
     marginTop: Spacing.sm,
     minHeight: 44,
   },
-  disputeBtnText: { fontSize: 14, color: C.warning, fontWeight: '600' },
+  disputeBtnText: { fontSize: 14, color: C.warning, fontFamily: Fonts.semibold },
   })
 
   const flightStyles = StyleSheet.create({
@@ -345,21 +366,21 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1,
     borderColor: C.border,
   },
+  flightTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 },
   flightTitle: {
     color: C.textSecondary,
     fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontFamily: Fonts.semibold,
   },
   flightNum: {
     color: C.text,
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     marginBottom: 4,
   },
   flightArrival: {
     color: C.textSecondary,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     marginBottom: 8,
   },
   statusBadge: {
@@ -367,10 +388,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
   statusText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
   },
   })
   return { styles, flightStyles }

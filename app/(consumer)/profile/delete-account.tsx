@@ -4,7 +4,8 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -92,7 +93,7 @@ export default function DeleteAccountScreen() {
         </TouchableOpacity>
 
         <View style={styles.content}>
-          <Text style={styles.icon}>🗑️</Text>
+          <Ionicons name="trash-outline" size={48} color={C.error} style={styles.icon} importantForAccessibility="no" />
           <Text style={styles.title}>{cprT('cprDeleteAccount', language)}</Text>
           <Text style={styles.subtitle}>{cprT('cprDeleteAccountSubtitle', language)}</Text>
 
@@ -106,8 +107,9 @@ export default function DeleteAccountScreen() {
           </View>
 
           <View style={styles.warningCard}>
+            <Ionicons name="warning-outline" size={16} color={C.error} style={styles.warningIcon} importantForAccessibility="no" />
             <Text style={styles.warningText}>
-              {'⚠️ '}{cprT('cprDeleteWarning', language)}
+              {cprT('cprDeleteWarning', language)}
             </Text>
           </View>
 
@@ -141,11 +143,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   container: { flex: 1, backgroundColor: C.background },
   scroll: { flexGrow: 1 },
   back: { paddingHorizontal: Spacing.base, paddingBottom: Spacing.sm },
-  backText: { fontSize: 16, color: C.primary, fontWeight: '600' },
+  // Navigation, not a primary action → muted ink (5.67:1 light, 8.61:1 dark).
+  backText: { fontSize: 16, color: C.textSecondary, fontFamily: Fonts.semibold },
   content: { flex: 1, padding: Spacing.base },
-  icon: { fontSize: 48, marginBottom: Spacing.base },
-  title: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
-  subtitle: { fontSize: 15, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
+  icon: { marginBottom: Spacing.base },
+  title: { fontSize: 26, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.sm },
+  subtitle: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary, lineHeight: 22, marginBottom: Spacing.xl },
   infoCard: {
     backgroundColor: C.surface,
     borderRadius: Radius.lg,
@@ -155,9 +158,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginBottom: Spacing.md,
     gap: Spacing.xs,
   },
-  infoTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: Spacing.sm },
-  infoItem: { fontSize: 13, color: C.textSecondary, lineHeight: 20 },
+  infoTitle: { fontSize: 14, fontFamily: Fonts.bold, color: C.text, marginBottom: Spacing.sm },
+  infoItem: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, lineHeight: 20 },
   warningCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     backgroundColor: C.errorSurface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
@@ -165,9 +170,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.error,
     marginBottom: Spacing.xl,
   },
-  warningText: { fontSize: 13, color: C.error, lineHeight: 20 },
+  warningIcon: { marginRight: Spacing.sm, marginTop: 2 },
+  warningText: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: C.error, lineHeight: 20 },
   deleteBtn: { marginBottom: Spacing.md },
   cancelLink: { alignItems: 'center', padding: Spacing.md, minHeight: 44, justifyContent: 'center' },
-  cancelLinkText: { fontSize: 15, color: C.textSecondary, fontWeight: '500' },
+  cancelLinkText: { fontSize: 15, color: C.textSecondary, fontFamily: Fonts.medium },
   })
 }

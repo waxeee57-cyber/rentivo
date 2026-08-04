@@ -5,7 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
@@ -152,15 +152,16 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.background },
   back: { paddingHorizontal: Spacing.base, paddingTop: Spacing.md },
-  backText: { fontSize: 16, color: C.primary, fontWeight: '600' },
+  // Navigation, not a primary action → muted ink (5.67:1 light, 8.61:1 dark).
+  backText: { fontSize: 16, color: C.textSecondary, fontFamily: Fonts.semibold },
   content: { flex: 1, padding: Spacing.xl, justifyContent: 'center' },
-  title: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
-  subtitle: { fontSize: 15, color: C.textSecondary, marginBottom: Spacing.xl },
+  title: { fontSize: 26, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.sm },
+  subtitle: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary, marginBottom: Spacing.xl },
   codeRow: { flexDirection: 'row', justifyContent: 'space-between' },
   codeBox: {
     width: 46, height: 56, borderRadius: Radius.lg,
     borderWidth: 1.5, borderColor: C.border,
-    textAlign: 'center', fontSize: 22, fontWeight: '700',
+    textAlign: 'center', fontSize: 22, fontFamily: Fonts.bold,
     color: C.text, backgroundColor: C.surface,
   },
   codeBoxFilled: { borderColor: C.primary, backgroundColor: C.primarySurface },

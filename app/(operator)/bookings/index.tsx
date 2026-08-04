@@ -3,7 +3,8 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } fr
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { BookingRow } from '@/components/operator/BookingRow'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -26,24 +27,28 @@ const TABS: { key: Tab; labelKey: TranslationKey }[] = [
   { key: 'completed', labelKey: 'tabCompleted' },
 ]
 
-const EMPTY_MESSAGES: Record<Tab, { emoji: string; title: string; subtitle: string }> = {
+const EMPTY_MESSAGES: Record<Tab, {
+  icon: React.ComponentProps<typeof Ionicons>['name']
+  title: string
+  subtitle: string
+}> = {
   pending: {
-    emoji: '📅',
+    icon: 'calendar-outline',
     title: 'No new requests',
     subtitle: 'New booking requests will appear here',
   },
   confirmed: {
-    emoji: '✅',
+    icon: 'checkmark-circle-outline',
     title: 'No confirmed bookings',
     subtitle: 'Confirmed bookings will appear here',
   },
   active: {
-    emoji: '🚗',
+    icon: 'car-sport-outline',
     title: 'No active rentals',
     subtitle: 'Rentals in progress will appear here',
   },
   completed: {
-    emoji: '📚',
+    icon: 'time-outline',
     title: 'No completed bookings',
     subtitle: 'Past completed bookings will appear here',
   },
@@ -133,7 +138,7 @@ export default function OperatorBookingsScreen() {
         <View style={styles.list}>{Array(3).fill(null).map((_, i) => <SkeletonCard key={i} />)}</View>
       ) : filtered.length === 0 ? (
         <EmptyState
-          emoji={emptyInfo.emoji}
+          icon={emptyInfo.icon}
           title={emptyInfo.title}
           subtitle={emptyInfo.subtitle}
           action={activeTab === 'pending' ? {
@@ -195,7 +200,7 @@ export default function OperatorBookingsScreen() {
 function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.background },
-  title: { fontSize: 26, fontWeight: '800', color: C.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md, marginBottom: Spacing.md },
+  title: { fontFamily: 'Manrope_800ExtraBold', fontSize: 26, letterSpacing: -0.6, color: C.text, paddingHorizontal: Spacing.base, paddingTop: Spacing.md, marginBottom: Spacing.md },
   tabs: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.base,
@@ -215,7 +220,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     gap: 4,
   },
   tabActive: { backgroundColor: C.primary, borderColor: C.primary },
-  tabText: { fontSize: 12, fontWeight: '600', color: C.textSecondary },
+  tabText: { fontSize: 12, fontFamily: Fonts.semibold, color: C.textSecondary },
   tabTextActive: { color: C.textInverse },
   tabBadge: {
     backgroundColor: C.error,
@@ -227,7 +232,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingHorizontal: 3,
   },
   tabBadgeActive: { backgroundColor: C.textInverse },
-  tabBadgeText: { fontSize: 9, fontWeight: '800', color: C.text },
+  tabBadgeText: { fontSize: 9, fontFamily: Fonts.extrabold, color: C.text },
   tabBadgeTextActive: { color: C.error },
   list: { paddingHorizontal: Spacing.base, paddingBottom: 100 },
   })

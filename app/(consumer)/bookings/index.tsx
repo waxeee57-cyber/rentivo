@@ -2,7 +2,8 @@ import React, { useState, useRef, useCallback, useMemo } from 'react'
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Dimensions, Animated, RefreshControl } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { BookingCard } from '@/components/booking/BookingCard'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
@@ -38,25 +39,25 @@ function filterBookings(bookings: Booking[], tab: TabKey): Booking[] {
 }
 
 const EMPTY_MESSAGES: Record<TabKey, {
-  emoji: string
+  icon: React.ComponentProps<typeof Ionicons>['name']
   title: string
   subtitle: string
   action?: { label: string; tab?: TabKey; route?: string }
 }> = {
   upcoming: {
-    emoji: '🌴',
+    icon: 'map-outline',
     title: 'No upcoming trips',
     subtitle: 'Ready for your next adventure?',
-    action: { label: 'Explore vehicles →', route: '/(consumer)/explore' },
+    action: { label: 'Explore rentals →', route: '/(consumer)/explore' },
   },
   active: {
-    emoji: '🚗',
+    icon: 'car-sport-outline',
     title: 'No active rentals',
     subtitle: 'Your current rentals will appear here',
     action: { label: 'View upcoming →', tab: 'upcoming' },
   },
   past: {
-    emoji: '📚',
+    icon: 'time-outline',
     title: 'No past trips yet',
     subtitle: 'Your completed rentals will appear here',
     action: { label: 'Start exploring →', route: '/(consumer)/explore' },
@@ -154,7 +155,7 @@ export default function BookingsScreen() {
         </View>
       ) : filtered.length === 0 ? (
         <EmptyState
-          emoji={emptyInfo.emoji}
+          icon={emptyInfo.icon}
           title={emptyInfo.title}
           subtitle={emptyInfo.subtitle}
           action={emptyInfo.action
@@ -194,7 +195,8 @@ export default function BookingsScreen() {
                     accessibilityLabel="View contract"
                     accessibilityRole="button"
                   >
-                    <Text style={styles.activeActionText}>📋 View contract</Text>
+                    <Ionicons name="document-text-outline" size={15} color={C.text} importantForAccessibility="no" />
+                    <Text style={styles.activeActionText}>View contract</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.activeActionBtn}
@@ -202,7 +204,8 @@ export default function BookingsScreen() {
                     accessibilityLabel="Message host"
                     accessibilityRole="button"
                   >
-                    <Text style={styles.activeActionText}>💬 Message</Text>
+                    <Ionicons name="chatbubble-ellipses-outline" size={15} color={C.text} importantForAccessibility="no" />
+                    <Text style={styles.activeActionText}>Message</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -218,8 +221,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.background },
   title: {
+    fontFamily: 'Manrope_800ExtraBold',
     fontSize: 26,
-    fontWeight: '800',
+    letterSpacing: -0.6,
     color: C.text,
     paddingHorizontal: Spacing.base,
     paddingTop: Spacing.md,
@@ -240,10 +244,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   tabInner: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   tabLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     color: C.textTertiary,
   },
-  tabLabelActive: { color: C.primary },
+  tabLabelActive: { color: C.text },
   tabBadge: {
     backgroundColor: C.border,
     borderRadius: 10,
@@ -253,14 +257,14 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     justifyContent: 'center',
     paddingHorizontal: 5,
   },
-  tabBadgeActive: { backgroundColor: C.primarySurface },
-  tabBadgeText: { fontSize: 10, fontWeight: '700', color: C.textTertiary },
-  tabBadgeTextActive: { color: C.primaryDark },
+  tabBadgeActive: { backgroundColor: C.surfaceWarm },
+  tabBadgeText: { fontSize: 10, fontFamily: Fonts.bold, color: C.textTertiary },
+  tabBadgeTextActive: { color: C.text },
   tabIndicator: {
     position: 'absolute',
     bottom: -1,
     height: 2,
-    backgroundColor: C.primary,
+    backgroundColor: C.text,
     borderRadius: Radius.pill,
   },
   list: { paddingHorizontal: Spacing.base, paddingBottom: 100 },
@@ -276,12 +280,14 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.surface,
     borderRadius: Radius.lg,
     paddingVertical: 10,
+    flexDirection: 'row',
+    gap: 6,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: C.border,
     minHeight: 44,
     justifyContent: 'center',
   },
-  activeActionText: { fontSize: 13, fontWeight: '600', color: C.text },
+  activeActionText: { fontSize: 13, fontFamily: Fonts.semibold, color: C.text },
   })
 }

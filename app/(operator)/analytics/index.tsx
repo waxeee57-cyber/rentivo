@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Card } from '@/components/ui/Card'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
@@ -105,7 +105,7 @@ export default function AnalyticsScreen() {
         </View>
       ) : error != null ? (
         <View style={styles.centered}>
-          <Text style={styles.errorEmoji}>⚠️</Text>
+          <Ionicons name="warning-outline" size={40} color={C.warning} style={styles.errorEmoji} importantForAccessibility="no" />
           <Text style={styles.errorText}>{tr('opSetAnalyticsLoadFailed', language)}</Text>
           <TouchableOpacity
             style={styles.retryBtn}
@@ -118,7 +118,7 @@ export default function AnalyticsScreen() {
         </View>
       ) : analytics == null || analytics.totalBookings === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyEmoji}>📊</Text>
+          <Ionicons name="bar-chart-outline" size={48} color={C.textTertiary} style={styles.emptyEmoji} importantForAccessibility="no" />
           <Text style={styles.emptyTitle}>{tr('opSetNoData', language)}</Text>
           <Text style={styles.emptySubtitle}>
             {tr('opSetAnalyticsEmpty', language)}
@@ -224,7 +224,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     flex: 1,
     color: C.text,
     fontSize: 20,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     textAlign: 'center',
   },
   headerSpacer: { minWidth: 44 },
@@ -250,7 +250,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.primary,
     borderColor: C.primary,
   },
-  periodText: { color: C.textSecondary, fontSize: 13, fontWeight: '600' },
+  periodText: { color: C.textSecondary, fontSize: 13, fontFamily: Fonts.semibold },
   periodTextActive: { color: C.background },
 
   // States
@@ -263,13 +263,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   loadingText: {
     color: C.textSecondary,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     marginTop: Spacing.md,
   },
-  errorEmoji: { fontSize: 40, marginBottom: Spacing.md },
+  errorEmoji: { marginBottom: Spacing.md },
   errorText: {
     color: C.textSecondary,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     textAlign: 'center',
     marginBottom: Spacing.lg,
   },
@@ -284,12 +284,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  retryText: { color: C.primary, fontSize: 14, fontWeight: '600' },
-  emptyEmoji: { fontSize: 48, marginBottom: Spacing.md },
-  emptyTitle: { color: C.text, fontSize: 18, fontWeight: '700', marginBottom: Spacing.sm },
+  retryText: { color: C.primary, fontSize: 14, fontFamily: Fonts.semibold },
+  emptyEmoji: { marginBottom: Spacing.md },
+  emptyTitle: { color: C.text, fontSize: 18, fontFamily: Fonts.bold, marginBottom: Spacing.sm },
   emptySubtitle: {
     color: C.textSecondary,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -300,27 +300,27 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   // KPI cards
   kpiRow: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.md },
   kpi: { flex: 1, alignItems: 'center', padding: Spacing.base },
-  kpiValue: { color: C.primary, fontSize: 22, fontWeight: '800' },
-  kpiLabel: { color: C.textSecondary, fontSize: 12, marginTop: 4, fontWeight: '600' },
+  kpiValue: { color: C.primary, fontSize: 22, fontFamily: Fonts.extrabold },
+  kpiLabel: { color: C.textSecondary, fontSize: 12, marginTop: 4, fontFamily: Fonts.semibold },
 
   // Best performer
   bestCard: { padding: Spacing.base, marginBottom: Spacing.md },
   bestLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     letterSpacing: 1,
     color: C.primary,
     marginBottom: Spacing.xs,
   },
-  bestTitle: { color: C.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  bestRevenue: { color: C.textSecondary, fontSize: 13 },
+  bestTitle: { color: C.text, fontSize: 16, fontFamily: Fonts.bold, marginBottom: 4 },
+  bestRevenue: { color: C.textSecondary, fontFamily: Fonts.regular, fontSize: 13 },
 
   // Bar chart
   chartCard: { padding: Spacing.base },
   chartTitle: {
     color: C.text,
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     marginBottom: Spacing.md,
   },
   barRow: {
@@ -329,7 +329,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginBottom: Spacing.sm,
     gap: Spacing.sm,
   },
-  barLabel: { color: C.textSecondary, fontSize: 11, width: 52, fontWeight: '500' },
+  barLabel: { color: C.textSecondary, fontSize: 11, width: 52, fontFamily: Fonts.medium },
   barTrack: {
     flex: 1,
     height: 8,
@@ -347,7 +347,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     fontSize: 11,
     width: 52,
     textAlign: 'right',
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
   },
   })
 }

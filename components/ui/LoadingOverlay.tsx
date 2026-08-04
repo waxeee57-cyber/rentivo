@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native'
-import { Spacing } from '@/constants/colors'
+import { Spacing, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface LoadingOverlayProps {
@@ -36,6 +36,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     gap: Spacing.md,
   },
-  message: { fontSize: 14, color: C.textSecondary },
+  message: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
   })
 }

@@ -32,7 +32,7 @@
 import React, { useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface KYCGatePlaceholderProps {
@@ -83,14 +83,14 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     minHeight: 44,
   },
   content: { flex: 1 },
-  title: { color: C.text, fontSize: 15, fontWeight: '600' },
-  subtitle: { color: C.textSecondary, fontSize: 13, marginTop: 2 },
+  title: { color: C.text, fontSize: 15, fontFamily: Fonts.semibold },
+  subtitle: { color: C.textSecondary, fontFamily: Fonts.regular, fontSize: 13, marginTop: 2 },
   verified: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
     padding: Spacing.md,
   },
-  verifiedText: { color: C.success, fontSize: 14, fontWeight: '600' },
+  verifiedText: { color: C.success, fontSize: 14, fontFamily: Fonts.semibold },
   })
 }

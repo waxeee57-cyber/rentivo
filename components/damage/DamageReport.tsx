@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, ScrollView } from 'react-native'
 import { Image } from 'expo-image'
-import { Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing, Fonts } from '@/constants/colors'
 import { Badge } from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils/formatDate'
 import type { DamageReport as DamageReportType } from '@/types'
@@ -95,17 +95,17 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.surface },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xs },
-  title: { fontSize: 18, fontWeight: '700', color: C.text },
-  date: { fontSize: 12, color: C.textTertiary, marginBottom: Spacing.base },
+  title: { fontSize: 18, fontFamily: Fonts.bold, color: C.text },
+  date: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginBottom: Spacing.base },
   photos: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, marginBottom: Spacing.base },
   photo: { width: 100, height: 75, borderRadius: Radius.md },
   details: { marginBottom: Spacing.base },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: C.borderLight },
-  detailLabel: { fontSize: 13, color: C.textSecondary },
-  detailValue: { fontSize: 13, color: C.text, fontWeight: '500' },
+  detailLabel: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
+  detailValue: { fontSize: 13, color: C.text, fontFamily: Fonts.medium },
   signatures: { flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.base },
   sigRow: { alignItems: 'center' },
-  sigLabel: { fontSize: 12, color: C.textTertiary },
-  sigStatus: { fontSize: 14, fontWeight: '700', marginTop: 2 },
+  sigLabel: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary },
+  sigStatus: { fontSize: 14, fontFamily: Fonts.bold, marginTop: 2 },
   })
 }

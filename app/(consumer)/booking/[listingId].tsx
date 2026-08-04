@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native'
 import Animated, { FadeInDown } from 'react-native-reanimated'
 import { Image } from 'expo-image'
@@ -8,7 +8,7 @@ import { differenceInDays, format } from 'date-fns'
 import * as Haptics from 'expo-haptics'
 import { Ionicons } from '@expo/vector-icons'
 import { CardField, useStripe } from '@stripe/stripe-react-native'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { AnimatedButton } from '@/components/ui/AnimatedButton'
 import { Input } from '@/components/ui/Input'
@@ -35,6 +35,8 @@ import { INSURANCE_PACKAGES } from '@/types'
 import type { InsuranceId } from '@/types'
 import { validatePromoCode } from '@/lib/api/promo'
 import { useColors } from '@/lib/hooks/useColors'
+import { captureException } from '@/lib/sentry'
+import { getCancellationPolicyLabel, calculateCancellationRefund } from '@/lib/utils/cancellation'
 
 const TIME_SLOTS = Array.from({ length: 25 }, (_, i) => {
   const hour = 8 + Math.floor(i / 2)
@@ -79,6 +81,8 @@ export default function BookingFlowScreen() {
   const [promoLoading, setPromoLoading] = useState(false)
   const [identityStatus, setIdentityStatus] = useState<string | null>(null)
   const [identityLoading, setIdentityLoading] = useState(true)
+  // Synchronous double-submit latch — see handlePayment.
+  const inFlightRef = useRef(false)
   const [localStartDate, setLocalStartDate] = useState<Date | null>(
     startDateParam ? new Date(startDateParam) : null
   )
@@ -124,7 +128,7 @@ export default function BookingFlowScreen() {
       <SafeAreaView style={styles.container}>
         <ScreenHeader title="Booking" />
         <View style={styles.vgContainer}>
-          <Text style={styles.vgIcon}>🔐</Text>
+          <Ionicons name="lock-closed" size={56} color={C.textSecondary} style={styles.vgIcon} importantForAccessibility="no" />
           <Text style={styles.vgTitle}>Identity verification required</Text>
           <Text style={styles.vgDesc}>
             {identityStatus === 'pending' || identityStatus === 'in_progress'
@@ -166,7 +170,7 @@ export default function BookingFlowScreen() {
       <SafeAreaView style={styles.container}>
         <ScreenHeader title="Booking" onBack={() => router.back()} />
         <View style={styles.vgContainer}>
-          <Text style={styles.vgIcon}>🚧</Text>
+          <Ionicons name="construct-outline" size={56} color={C.textSecondary} style={styles.vgIcon} importantForAccessibility="no" />
           <Text style={styles.vgTitle}>
             {language === 'hu'
               ? 'Ez a hirdetés jelenleg nem foglalható'
@@ -259,13 +263,19 @@ export default function BookingFlowScreen() {
   }
 
   const handlePayment = async () => {
-    if (submitting || submitted) return
+    // Synchronous re-entry guard. React state (`submitting`) lags by a frame, so two
+    // taps dispatched in the same frame would both observe `submitting === false`
+    // and each create a booking + PaymentIntent — a real double charge.
+    if (inFlightRef.current || submitted) return
+    inFlightRef.current = true
 
     if (!guestName.trim()) {
+      inFlightRef.current = false
       showToast({ message: getError('name_required'), type: 'error' })
       return
     }
     if (!guestPhone.trim()) {
+      inFlightRef.current = false
       showToast({ message: getError('phone_required'), type: 'error' })
       return
     }
@@ -318,7 +328,12 @@ export default function BookingFlowScreen() {
         })
 
         if (stripeError) {
-          console.error('[BOOKING] confirmPayment error =', JSON.stringify(stripeError))
+          // Never console.error the raw Stripe error — it lands in device logs
+          // (adb logcat / crash reporters) with card + customer metadata.
+          captureException(new Error(`confirmPayment: ${stripeError.code ?? 'unknown'}`), {
+            code: stripeError.code,
+            declineCode: (stripeError as { declineCode?: string }).declineCode,
+          })
           showToast({ message: stripeError.message ?? getError('payment_failed'), type: 'error' })
           return
         }
@@ -354,7 +369,7 @@ export default function BookingFlowScreen() {
       setSubmitted(true)
       router.replace(`/(consumer)/booking/confirmation/${bookingId}`)
     } catch (e) {
-      console.error('[BOOKING] payment flow threw:', e instanceof Error ? `${e.name}: ${e.message}\n${e.stack ?? ''}` : JSON.stringify(e))
+      captureException(e, { stage: 'booking_payment_flow', listingId: listing.id })
       // BUGFIX (was: new-account payment always showed generic "Payment failed" toast,
       // hiding the real reason). create-booking / create-payment-intent throw
       // Error(message) where `message` is the edge function's own human-readable
@@ -364,14 +379,34 @@ export default function BookingFlowScreen() {
       // pattern already used above. Falls back to the generic copy only for truly
       // unexpected errors (network blips, JS exceptions with no thrown message).
       const serverMessage = e instanceof Error && e.message ? e.message : null
-      showToast({ message: serverMessage ?? getError('payment_failed'), type: 'error' })
+      // Dates taken between opening the screen and paying: give the user the one
+      // action that actually recovers the flow instead of a dead-end toast.
+      const isDateConflict =
+        serverMessage != null && /no longer available|not available|409/i.test(serverMessage)
+      if (isDateConflict) {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+        showToast({ message: getError('dates_unavailable'), type: 'error' })
+        setLocalStartDate(null)
+        setLocalEndDate(null)
+        setStep(1)
+      } else {
+        showToast({ message: serverMessage ?? getError('payment_failed'), type: 'error' })
+      }
     } finally {
+      inFlightRef.current = false
       setSubmitting(false)
     }
   }
 
   const steps = [t('tripDetails', language), t('reviewAndPay', language)]
-  const platformFeeLabel = `Service fee (${(Config.platformCut * 100).toFixed(1)}%)`
+  const feePct = Config.platformCut * 100
+  const platformFeeLabel = `${t('serviceFee', language)} (${feePct.toFixed(Number.isInteger(feePct) ? 0 : 1)}%)`
+  // Show the listing's REAL policy, not a hardcoded promise. `strict` refunds 0%
+  // at 48h, so the old "Free cancel until 48h before" line was a false claim.
+  const policy = listing.cancellation_policy ?? 'moderate'
+  const policyLine = `${getCancellationPolicyLabel(policy, language)} · ${
+    calculateCancellationRefund(policy, format(startDate, 'yyyy-MM-dd'), grandTotal, language).message
+  }`
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -405,7 +440,7 @@ export default function BookingFlowScreen() {
             />
           ) : (
             <View style={[styles.summaryImage, styles.summaryImagePlaceholder]}>
-              <Text style={styles.summaryImagePlaceholderText}>🚗</Text>
+              <Ionicons name="car-sport-outline" size={32} color={C.textTertiary} importantForAccessibility="no" />
             </View>
           )}
           <View style={styles.summaryBody}>
@@ -442,8 +477,14 @@ export default function BookingFlowScreen() {
                     accessibilityRole="radio"
                     accessibilityState={{ selected: rentalType === rt }}
                   >
+                    <Ionicons
+                      name={rt === 'daily' ? 'calendar-outline' : 'time-outline'}
+                      size={14}
+                      color={rentalType === rt ? C.textInverse : C.textSecondary}
+                      importantForAccessibility="no"
+                    />
                     <Text style={[styles.typeChipText, rentalType === rt && styles.typeChipTextActive]}>
-                      {rt === 'daily' ? '📅 Daily' : '⏱ Hourly'}
+                      {rt === 'daily' ? 'Daily' : 'Hourly'}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -532,7 +573,7 @@ export default function BookingFlowScreen() {
               multiline numberOfLines={3}
             />
             <Input
-              label={language === 'es' ? '✈️ Número de vuelo (opcional)' : language === 'hu' ? '✈️ Járatszám (opcionális)' : '✈️ Flight number (optional)'}
+              label={language === 'es' ? 'Número de vuelo (opcional)' : language === 'hu' ? 'Járatszám (opcionális)' : 'Flight number (optional)'}
               value={flightNumber}
               onChangeText={v => setFlightNumber(v.toUpperCase())}
               placeholder="e.g. FR1234"
@@ -577,15 +618,29 @@ export default function BookingFlowScreen() {
         {step === 2 && (
           <Animated.View key="step2" entering={FadeInDown.duration(200)}>
             <View style={styles.priceCard}>
-              <Text style={styles.priceCardTitle}>Your total</Text>
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>{priceCalc.breakdown}</Text>
-                <Text style={styles.priceValue}>{formatEURDecimal(priceCalc.subtotal)}</Text>
-              </View>
-              <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>{platformFeeLabel}</Text>
-                <Text style={styles.priceValue}>{formatEURDecimal(priceCalc.platformFee)}</Text>
-              </View>
+              <Text style={styles.priceCardTitle}>{t('yourTotal', language)}</Text>
+              {/* Hourly rentals are priced from price_per_hour with no platform fee
+                  (mirrors create-booking). Rendering the daily breakdown here made the
+                  itemisation contradict the amount actually charged. */}
+              {rentalType === 'hourly' ? (
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>
+                    {`${formatEURDecimal(listing.price_per_hour ?? 0)} × ${totalHours}${t('hoursShort', language)}`}
+                  </Text>
+                  <Text style={styles.priceValue}>{formatEURDecimal(hourlySubtotal)}</Text>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.priceRow}>
+                    <Text style={styles.priceLabel}>{priceCalc.breakdown}</Text>
+                    <Text style={styles.priceValue}>{formatEURDecimal(priceCalc.subtotal)}</Text>
+                  </View>
+                  <View style={styles.priceRow}>
+                    <Text style={styles.priceLabel}>{platformFeeLabel}</Text>
+                    <Text style={styles.priceValue}>{formatEURDecimal(priceCalc.platformFee)}</Text>
+                  </View>
+                </>
+              )}
               {selectedInsurance.price > 0 && (
                 <View style={styles.priceRow}>
                   <Text style={styles.priceLabel}>
@@ -605,13 +660,16 @@ export default function BookingFlowScreen() {
                 </View>
               )}
               <View style={[styles.priceRow, styles.priceTotal]}>
-                <Text style={styles.priceTotalLabel}>Total now</Text>
+                <Text style={styles.priceTotalLabel}>{t('totalNow', language)}</Text>
                 <Text style={styles.priceTotalValue}>{formatEURDecimal(grandTotal)}</Text>
               </View>
               {effectiveDeposit > 0 ? (
                 <>
                   <View style={styles.depositRow}>
-                    <Text style={styles.depositLabel}>🔒 {t('depositHoldLabel', language)}</Text>
+                    <View style={styles.depositLabelRow}>
+                      <Ionicons name="lock-closed" size={13} color={C.textSecondary} importantForAccessibility="no" />
+                      <Text style={styles.depositLabel}>{t('depositHoldLabel', language)}</Text>
+                    </View>
                     <Text style={styles.depositValue}>{formatEURDecimal(effectiveDeposit)}</Text>
                   </View>
                   <Text style={styles.depositNote}>
@@ -620,13 +678,13 @@ export default function BookingFlowScreen() {
                 </>
               ) : (
                 <View style={styles.depositRow}>
-                  <Text style={styles.depositLabel}>✓ No deposit required</Text>
-                  <Text style={[styles.depositValue, { color: C.success }]}>Included</Text>
+                  <Text style={styles.depositLabel}>✓ {t('noDepositRequired', language)}</Text>
+                  <Text style={[styles.depositValue, { color: C.success }]}>{t('included', language)}</Text>
                 </View>
               )}
               <View style={styles.trustRow}>
-                <Text style={styles.trustItem}>✓ Free cancel until 48h before</Text>
-                <Text style={styles.trustItem}>✓ No hidden fees</Text>
+                <Text style={styles.trustItem}>✓ {policyLine}</Text>
+                <Text style={styles.trustItem}>✓ {t('noHiddenFees', language)}</Text>
               </View>
             </View>
 
@@ -663,7 +721,7 @@ export default function BookingFlowScreen() {
                 {promoLoading ? (
                   <ActivityIndicator color={C.background} size="small" />
                 ) : (
-                  <Text style={styles.promoBtnText}>{promoApplied ? '✓' : 'Apply'}</Text>
+                  <Text style={styles.promoBtnText}>{promoApplied ? '✓' : t('applyCode', language)}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -678,7 +736,7 @@ export default function BookingFlowScreen() {
             )}
 
             <View style={styles.guestRecap}>
-              <Text style={styles.guestRecapTitle}>Booked as</Text>
+              <Text style={styles.guestRecapTitle}>{t('bookedAs', language)}</Text>
               <Text style={styles.guestRecapName}>{guestName}</Text>
               <Text style={styles.guestRecapContact}>{guestPhone}{guestEmail ? ` · ${guestEmail}` : ''}</Text>
             </View>
@@ -707,10 +765,10 @@ export default function BookingFlowScreen() {
 
             <View style={styles.trustGrid}>
               {([
-                { icon: 'lock-closed', text: 'Stripe secure' },
-                { icon: 'checkmark-circle', text: 'No hidden fees' },
-                { icon: 'checkmark-circle', text: 'Cancel anytime' },
-                { icon: 'arrow-undo', text: 'Money back' },
+                { icon: 'lock-closed', text: t('stripeSecure', language) },
+                { icon: 'checkmark-circle', text: t('noHiddenFees', language) },
+                { icon: 'shield-checkmark', text: getCancellationPolicyLabel(policy, language) },
+                { icon: 'arrow-undo', text: t('moneyBack', language) },
               ] as const).map(item => (
                 <View key={item.text} style={styles.trustGridItem}>
                   <Ionicons name={item.icon} size={14} color={C.success} style={styles.trustGridIcon} />
@@ -720,16 +778,19 @@ export default function BookingFlowScreen() {
             </View>
 
             <AnimatedButton
-              title={`Pay ${formatEURDecimal(grandTotal)} →`}
+              title={`${t('payAction', language)} ${formatEURDecimal(grandTotal)} →`}
               onPress={() => void handlePayment()}
               loading={submitting}
               disabled={submitted || !guestName.trim() || (!Config.useMock && !cardComplete)}
-              accessibilityLabel={`Pay ${formatEURDecimal(grandTotal)}`}
+              accessibilityLabel={`${t('payAction', language)} ${formatEURDecimal(grandTotal)}`}
               fullWidth
               style={styles.payBtn}
               textStyle={styles.payBtnText}
             />
-            <Text style={styles.secureNote}>🔒 Secure payment · SSL encrypted</Text>
+            <View style={styles.secureNoteRow}>
+              <Ionicons name="lock-closed" size={12} color={C.textTertiary} importantForAccessibility="no" />
+              <Text style={styles.secureNote}>{t('sslEncrypted', language)}</Text>
+            </View>
           </Animated.View>
         )}
       </ScrollView>
@@ -744,9 +805,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
 
     // Identity verification gate
     vgContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-    vgIcon: { fontSize: 56, marginBottom: 16 },
-    vgTitle: { color: C.text, fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 12 },
-    vgDesc: { color: C.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
+    vgIcon: { fontFamily: Fonts.regular, fontSize: 56, marginBottom: 16 },
+    vgTitle: { color: C.text, fontSize: 20, fontFamily: Fonts.bold, textAlign: 'center', marginBottom: 12 },
+    vgDesc: { color: C.textSecondary, fontFamily: Fonts.regular, fontSize: 14, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
     vgButton: {
       backgroundColor: C.primary,
       borderRadius: 12,
@@ -756,7 +817,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       alignItems: 'center',
       width: '100%',
     },
-    vgButtonText: { color: C.background, fontSize: 16, fontWeight: '700' },
+    vgButtonText: { color: C.background, fontSize: 16, fontFamily: Fonts.bold },
 
     summaryCard: {
       backgroundColor: C.surface, borderRadius: Radius.xl,
@@ -770,31 +831,31 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    summaryImagePlaceholderText: { fontSize: 48 },
+    summaryImagePlaceholderText: { fontFamily: Fonts.regular, fontSize: 48 },
     summaryBody: { padding: Spacing.base },
-    summaryTitle: { fontSize: 17, fontWeight: '800', color: C.text, marginBottom: 2 },
-    summaryOp: { fontSize: 12, color: C.textSecondary, marginBottom: Spacing.md },
+    summaryTitle: { fontSize: 17, fontFamily: Fonts.extrabold, color: C.text, marginBottom: 2 },
+    summaryOp: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, marginBottom: Spacing.md },
     summaryDatesRow: {
       flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
       backgroundColor: C.surfaceWarm, borderRadius: Radius.lg, padding: Spacing.sm,
     },
     summaryDateBlock: { flex: 1 },
-    summaryDateLabel: { fontSize: 10, color: C.textTertiary, fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
-    summaryDateValue: { fontSize: 13, fontWeight: '700', color: C.text },
+    summaryDateLabel: { fontSize: 10, color: C.textTertiary, fontFamily: Fonts.semibold, textTransform: 'uppercase', marginBottom: 2 },
+    summaryDateValue: { fontSize: 13, fontFamily: Fonts.bold, color: C.text },
     summaryArrow: { paddingHorizontal: Spacing.xs },
-    summaryArrowText: { fontSize: 16, color: C.textTertiary },
+    summaryArrowText: { fontFamily: Fonts.regular, fontSize: 16, color: C.textTertiary },
     summaryDaysBlock: { alignItems: 'center', paddingLeft: Spacing.sm, borderLeftWidth: 1, borderLeftColor: C.border },
-    summaryDaysNum: { fontSize: 20, fontWeight: '800', color: C.primary },
-    summaryDaysLabel: { fontSize: 10, color: C.textTertiary, fontWeight: '600' },
+    summaryDaysNum: { fontSize: 20, fontFamily: Fonts.extrabold, color: C.primary },
+    summaryDaysLabel: { fontSize: 10, color: C.textTertiary, fontFamily: Fonts.semibold },
 
-    formTitle: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: Spacing.base, marginTop: Spacing.xl },
+    formTitle: { fontSize: 16, fontFamily: Fonts.bold, color: C.text, marginBottom: Spacing.base, marginTop: Spacing.xl },
     timeSlots: { gap: Spacing.sm, paddingVertical: Spacing.xs },
     timeSlot: {
       paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.pill,
       borderWidth: 1, borderColor: C.border, backgroundColor: C.surface,
     },
     timeSlotActive: { backgroundColor: C.primary, borderColor: C.primary },
-    timeSlotText: { fontSize: 13, fontWeight: '600', color: C.textSecondary },
+    timeSlotText: { fontSize: 13, fontFamily: Fonts.semibold, color: C.textSecondary },
     timeSlotTextActive: { color: C.textInverse },
 
     priceCard: {
@@ -802,26 +863,27 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       padding: Spacing.base, marginBottom: Spacing.base,
       borderWidth: 1, borderColor: C.border,
     },
-    priceCardTitle: { fontSize: 13, fontWeight: '700', color: C.textTertiary, textTransform: 'uppercase', marginBottom: Spacing.md },
+    priceCardTitle: { fontSize: 13, fontFamily: Fonts.bold, color: C.textTertiary, textTransform: 'uppercase', marginBottom: Spacing.md },
     priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
-    priceLabel: { fontSize: 14, color: C.textSecondary },
-    priceValue: { fontSize: 14, color: C.text, fontWeight: '600' },
+    priceLabel: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary },
+    priceValue: { fontSize: 14, color: C.text, fontFamily: Fonts.semibold },
     priceTotal: {
       borderTopWidth: 1, borderTopColor: C.border,
       paddingTop: Spacing.sm, marginTop: Spacing.xs,
     },
-    priceTotalLabel: { fontSize: 15, fontWeight: '700', color: C.text },
-    priceTotalValue: { fontSize: 18, fontWeight: '800', color: C.primary },
+    priceTotalLabel: { fontSize: 15, fontFamily: Fonts.bold, color: C.text },
+    priceTotalValue: { fontSize: 18, fontFamily: Fonts.extrabold, color: C.primary },
     depositRow: {
       flexDirection: 'row', justifyContent: 'space-between',
       marginTop: Spacing.sm, paddingTop: Spacing.sm,
       borderTopWidth: 1, borderTopColor: C.border,
     },
-    depositLabel: { fontSize: 13, color: C.textSecondary },
-    depositNote: { fontSize: 12, color: C.textTertiary, lineHeight: 18, marginTop: Spacing.xs },
-    depositValue: { fontSize: 13, color: C.textSecondary, fontWeight: '600' },
+    depositLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    depositLabel: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
+    depositNote: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, lineHeight: 18, marginTop: Spacing.xs },
+    depositValue: { fontSize: 13, color: C.textSecondary, fontFamily: Fonts.semibold },
     trustRow: { marginTop: Spacing.md, gap: 4 },
-    trustItem: { fontSize: 12, color: C.success, fontWeight: '500' },
+    trustItem: { fontSize: 12, color: C.success, fontFamily: Fonts.medium },
 
     promoRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm },
     promoInput: {
@@ -832,7 +894,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       borderRadius: Radius.sm,
       color: C.text,
       paddingHorizontal: Spacing.md,
-      fontSize: 14,
+      fontFamily: Fonts.regular, fontSize: 14,
       minHeight: 44,
     },
     promoBtn: {
@@ -844,17 +906,17 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       alignItems: 'center',
     },
     promoBtnApplied: { backgroundColor: C.success },
-    promoBtnText: { color: C.background, fontWeight: '700', fontSize: 14 },
-    promoSaved: { color: C.success, fontSize: 13, marginBottom: Spacing.sm, fontWeight: '600' },
+    promoBtnText: { color: C.background, fontFamily: Fonts.bold, fontSize: 14 },
+    promoSaved: { color: C.success, fontSize: 13, marginBottom: Spacing.sm, fontFamily: Fonts.semibold },
 
     guestRecap: {
       backgroundColor: C.surface, borderRadius: Radius.lg,
       padding: Spacing.base, marginBottom: Spacing.base,
       borderLeftWidth: 3, borderLeftColor: C.primary,
     },
-    guestRecapTitle: { fontSize: 11, fontWeight: '700', color: C.textTertiary, textTransform: 'uppercase', marginBottom: 4 },
-    guestRecapName: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 2 },
-    guestRecapContact: { fontSize: 13, color: C.textSecondary },
+    guestRecapTitle: { fontSize: 11, fontFamily: Fonts.bold, color: C.textTertiary, textTransform: 'uppercase', marginBottom: 4 },
+    guestRecapName: { fontSize: 15, fontFamily: Fonts.bold, color: C.text, marginBottom: 2 },
+    guestRecapContact: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
 
     trustGrid: {
       flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm,
@@ -863,11 +925,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       padding: Spacing.base, borderWidth: 1, borderColor: C.borderWarm,
     },
     trustGridItem: { width: '47%', flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-    trustGridIcon: { fontSize: 14, width: 20, textAlign: 'center' },
-    trustGridText: { fontSize: 12, color: C.textSecondary, fontWeight: '500' },
+    trustGridIcon: { fontFamily: Fonts.regular, fontSize: 14, width: 20, textAlign: 'center' },
+    trustGridText: { fontSize: 12, color: C.textSecondary, fontFamily: Fonts.medium },
 
     cardFieldWrapper: { marginBottom: Spacing.base },
-    cardLabel: { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: Spacing.sm },
+    cardLabel: { fontSize: 14, fontFamily: Fonts.semibold, color: C.text, marginBottom: Spacing.sm },
     cardField: { height: 50, marginBottom: 4 },
 
     payBtn: {
@@ -880,17 +942,19 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       minHeight: 52, justifyContent: 'center',
     },
     payBtnDisabled: { opacity: 0.5, shadowOpacity: 0 },
-    payBtnText: { color: C.textInverse, fontWeight: '800', fontSize: 17 },
-    secureNote: { fontSize: 12, color: C.textTertiary, textAlign: 'center', marginTop: Spacing.sm },
+    payBtnText: { color: C.textInverse, fontFamily: Fonts.extrabold, fontSize: 17 },
+    secureNoteRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: Spacing.sm },
+    secureNote: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, textAlign: 'center' },
 
     rentalTypeRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.base },
     typeChip: {
       flex: 1, padding: Spacing.md, borderRadius: Radius.sm,
       borderWidth: 1, borderColor: C.border,
+      flexDirection: 'row', gap: 6,
       alignItems: 'center', minHeight: 44, justifyContent: 'center',
     },
     typeChipActive: { backgroundColor: C.primary, borderColor: C.primary },
-    typeChipText: { color: C.textSecondary, fontSize: 14, fontWeight: '600' },
+    typeChipText: { color: C.textSecondary, fontSize: 14, fontFamily: Fonts.semibold },
     typeChipTextActive: { color: C.background },
     hourlySection: { marginBottom: Spacing.base },
     slotBtn: {
@@ -899,9 +963,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
       marginRight: Spacing.sm, minHeight: 44, justifyContent: 'center',
     },
     slotBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
-    slotText: { color: C.textSecondary, fontSize: 13, fontWeight: '600' },
+    slotText: { color: C.textSecondary, fontSize: 13, fontFamily: Fonts.semibold },
     slotTextActive: { color: C.background },
     hoursRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-    hourlyTotal: { color: C.primary, fontSize: 18, fontWeight: '700', marginTop: Spacing.md },
+    hourlyTotal: { color: C.primary, fontSize: 18, fontFamily: Fonts.bold, marginTop: Spacing.md },
   })
 }

@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router'
+import { Fonts } from '@/constants/colors'
 import { View, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
@@ -35,6 +36,15 @@ const tabIconStyles = StyleSheet.create({
 
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
 
+// Deep screens (detail, checkout, chat, legal, settings) are focused tasks, not
+// destinations. `href: null` only hides them FROM the dock — the dock still
+// rendered on top of them, stacking two competing bottom bars over the primary
+// CTA. Every non-tab route now hides it.
+const DEEP_SCREEN = {
+  href: null,
+  tabBarStyle: { display: 'none' as const },
+} as const
+
 export default function OperatorLayout() {
   const C = useColors()
   const { language, operator } = useAuthStore()
@@ -48,26 +58,33 @@ export default function OperatorLayout() {
         headerShown: false,
         tabBarActiveTintColor: C.primary,
         tabBarInactiveTintColor: C.textTertiary,
+        // Floating dock — matches consumer layout
         tabBarStyle: {
-          backgroundColor: C.background,
-          borderTopWidth: 1,
-          borderTopColor: C.border,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 12,
-          elevation: 20,
-          height: 88,
-          paddingBottom: 12,
+          marginHorizontal: 14,
+          marginBottom: 26,
+          height: 64,
+          borderRadius: 26,
+          backgroundColor: C.surface,
+          borderTopWidth: 0,
+          borderWidth: 1,
+          borderColor: C.border,
+          shadowColor: '#0A1628',
+          shadowOffset: { width: 0, height: 12 },
+          shadowOpacity: 0.16,
+          shadowRadius: 28,
+          elevation: 16,
+          paddingBottom: 6,
+          paddingTop: 6,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
+          // 10px: HU labels (Irányítópult, Üzenetek) truncate at 11px
+          fontFamily: 'Manrope_600SemiBold',
+          fontSize: 10,
         },
       }}
     >
       <Tabs.Screen
-        name="dashboard"
+        name="dashboard/index"
         options={{
           title: t('dashboard', language),
           tabBarIcon: ({ focused }) => (
@@ -77,11 +94,11 @@ export default function OperatorLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="bookings"
+        name="bookings/index"
         options={{
           title: t('bookings', language),
           tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
-          tabBarBadgeStyle: { backgroundColor: C.error, fontSize: 10 },
+          tabBarBadgeStyle: { backgroundColor: C.error, fontFamily: Fonts.regular, fontSize: 10 },
           tabBarIcon: ({ focused }) => (
             <TabIcon name={focused ? 'calendar' : 'calendar-outline'} focused={focused} />
           ),
@@ -89,7 +106,7 @@ export default function OperatorLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="fleet"
+        name="fleet/index"
         options={{
           title: t('fleet', language),
           tabBarIcon: ({ focused }) => (
@@ -99,11 +116,11 @@ export default function OperatorLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="messages"
+        name="messages/index"
         options={{
           title: t('messages', language),
           tabBarBadge: operatorUnreadCount > 0 ? operatorUnreadCount : undefined,
-          tabBarBadgeStyle: { backgroundColor: C.error, fontSize: 10 },
+          tabBarBadgeStyle: { backgroundColor: C.error, fontFamily: Fonts.regular, fontSize: 10 },
           tabBarIcon: ({ focused }) => (
             <TabIcon name={focused ? 'chatbubbles' : 'chatbubbles-outline'} focused={focused} />
           ),
@@ -111,7 +128,7 @@ export default function OperatorLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       <Tabs.Screen
-        name="profile"
+        name="profile/index"
         options={{
           title: t('profile', language),
           tabBarIcon: ({ focused }) => (
@@ -121,21 +138,21 @@ export default function OperatorLayout() {
         listeners={{ tabPress: triggerHaptic }}
       />
       {/* Hidden screens */}
-      <Tabs.Screen name="analytics" options={{ href: null }} />
-      <Tabs.Screen name="bookings/[id]" options={{ href: null }} />
-      <Tabs.Screen name="bookings/chat/[bookingId]" options={{ href: null }} />
-      <Tabs.Screen name="bookings/calendar" options={{ href: null }} />
-      <Tabs.Screen name="fleet/new" options={{ href: null }} />
-      <Tabs.Screen name="fleet/[id]" options={{ href: null }} />
-      <Tabs.Screen name="fleet/ical-sync/[id]" options={{ href: null }} />
-      <Tabs.Screen name="damage/[bookingId]" options={{ href: null }} />
-      <Tabs.Screen name="profile/team" options={{ href: null }} />
-      <Tabs.Screen name="settings/delivery" options={{ href: null }} />
-      <Tabs.Screen name="settings/api/index" options={{ href: null }} />
-      <Tabs.Screen name="fleet/pricing/[id]" options={{ href: null }} />
-      <Tabs.Screen name="fleet/availability/[listingId]" options={{ href: null }} />
-      <Tabs.Screen name="bookings/sign/[bookingId]" options={{ href: null }} />
-      <Tabs.Screen name="bookings/dispute/[bookingId]" options={{ href: null }} />
+      <Tabs.Screen name="analytics/index" options={DEEP_SCREEN} />
+      <Tabs.Screen name="bookings/[id]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="bookings/chat/[bookingId]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="bookings/calendar" options={DEEP_SCREEN} />
+      <Tabs.Screen name="fleet/new" options={DEEP_SCREEN} />
+      <Tabs.Screen name="fleet/[id]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="fleet/ical-sync/[id]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="damage/[bookingId]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="profile/team" options={DEEP_SCREEN} />
+      <Tabs.Screen name="settings/delivery" options={DEEP_SCREEN} />
+      <Tabs.Screen name="settings/api/index" options={DEEP_SCREEN} />
+      <Tabs.Screen name="fleet/pricing/[id]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="fleet/availability/[listingId]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="bookings/sign/[bookingId]" options={DEEP_SCREEN} />
+      <Tabs.Screen name="bookings/dispute/[bookingId]" options={DEEP_SCREEN} />
     </Tabs>
   )
 }

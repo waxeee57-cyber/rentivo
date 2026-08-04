@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -318,23 +318,23 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   toggleLabel: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.text,
     marginBottom: 2,
   },
   toggleSub: {
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: C.textSecondary,
     lineHeight: 18,
   },
   sectionLabel: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.text,
     marginBottom: 4,
   },
   sectionSub: {
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: C.textSecondary,
     marginBottom: Spacing.base,
   },
@@ -358,7 +358,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   radiusBtnText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     color: C.textSecondary,
   },
   radiusBtnTextActive: {
@@ -376,13 +376,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   feePrefix: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textSecondary,
     marginRight: Spacing.xs,
   },
   feeInput: {
     flex: 1,
-    fontSize: 16,
+    fontFamily: Fonts.regular, fontSize: 16,
     color: C.text,
     paddingVertical: Spacing.sm,
   },
@@ -399,7 +399,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.text,
     minHeight: 44,
   },
@@ -414,11 +414,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   addBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textInverse,
   },
   emptyZones: {
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: C.textTertiary,
     fontStyle: 'italic',
     textAlign: 'center',
@@ -440,7 +440,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   zoneText: {
     flex: 1,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.text,
   },
   removeBtn: {
@@ -454,7 +454,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   removeBtnText: {
     fontSize: 12,
     color: C.error,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   saveBtn: {
     marginTop: Spacing.base,

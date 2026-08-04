@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
 import * as Haptics from 'expo-haptics'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { DamagePhotoGrid } from '@/components/damage/DamagePhotoGrid'
 import { SignatureCanvas } from '@/components/booking/SignatureCanvas'
@@ -286,12 +286,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.background },
   content: { paddingBottom: Spacing.xxxl },
-  subtitle: { fontSize: 14, color: C.textSecondary, paddingHorizontal: Spacing.base, marginBottom: Spacing.base },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: C.text, marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
+  subtitle: { fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, paddingHorizontal: Spacing.base, marginBottom: Spacing.base },
+  sectionTitle: { fontSize: 13, fontFamily: Fonts.bold, color: C.text, marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 0.5 },
   card: { marginHorizontal: Spacing.base, marginBottom: Spacing.base },
   mileageInput: {
     borderWidth: 1, borderColor: C.border, borderRadius: Radius.lg,
-    padding: Spacing.md, fontSize: 15, color: C.text, marginBottom: Spacing.md,
+    padding: Spacing.md, fontFamily: Fonts.regular, fontSize: 15, color: C.text, marginBottom: Spacing.md,
   },
   fuelRow: { flexDirection: 'row', gap: Spacing.xs },
   fuelBtn: {
@@ -299,21 +299,21 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderWidth: 1, borderColor: C.border, alignItems: 'center',
   },
   fuelBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
-  fuelText: { fontSize: 12, color: C.textSecondary, fontWeight: '600' },
+  fuelText: { fontSize: 12, color: C.textSecondary, fontFamily: Fonts.semibold },
   fuelTextActive: { color: C.textInverse },
   damageRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  damageLabel: { fontSize: 15, color: C.text, fontWeight: '500' },
+  damageLabel: { fontSize: 15, color: C.text, fontFamily: Fonts.medium },
   textArea: {
     borderWidth: 1, borderColor: C.border, borderRadius: Radius.lg,
-    padding: Spacing.md, fontSize: 14, color: C.text, minHeight: 80,
+    padding: Spacing.md, fontFamily: Fonts.regular, fontSize: 14, color: C.text, minHeight: 80,
     textAlignVertical: 'top',
   },
-  sigSubtitle: { fontSize: 13, color: C.textSecondary, marginBottom: Spacing.md },
-  sigConfirm: { fontSize: 12, color: C.textTertiary, textAlign: 'center', lineHeight: 18 },
+  sigSubtitle: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, marginBottom: Spacing.md },
+  sigConfirm: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, textAlign: 'center', lineHeight: 18 },
   aiLoadingContainer: { padding: Spacing.base, alignItems: 'center' as const },
-  aiLoadingText: { color: C.textSecondary, marginTop: Spacing.sm, fontSize: 14 },
+  aiLoadingText: { color: C.textSecondary, marginTop: Spacing.sm, fontFamily: Fonts.regular, fontSize: 14 },
   aiResultContainer: { borderRadius: Radius.lg, padding: Spacing.base, marginHorizontal: Spacing.base, marginBottom: Spacing.base },
-  aiResultTitle: { fontSize: 16, fontWeight: '700' as const, marginBottom: Spacing.xs },
-  aiResultText: { color: C.text, fontSize: 14, lineHeight: 20 },
+  aiResultTitle: { fontSize: 16, fontFamily: Fonts.bold, marginBottom: Spacing.xs },
+  aiResultText: { color: C.text, fontFamily: Fonts.regular, fontSize: 14, lineHeight: 20 },
   })
 }

@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { Path } from 'react-native-svg'
 import { router, useLocalSearchParams } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -177,12 +177,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   infoTitle: {
     color: C.text,
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     marginBottom: 8,
   },
   infoText: {
     color: C.textSecondary,
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     lineHeight: 20,
   },
   padCard: {
@@ -190,7 +190,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   padLabel: {
     color: C.textSecondary,
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     marginBottom: 8,
   },
   signaturePad: {
@@ -212,7 +212,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   placeholder: {
     color: C.textTertiary,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
   },
   clearBtn: {
     marginTop: 8,
@@ -223,7 +223,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   clearText: {
     color: C.error,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
   },
   })
 }

@@ -9,13 +9,13 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { impactAsync, notificationAsync, ImpactFeedbackStyle, NotificationFeedbackType } from 'expo-haptics'
-import { Radius, Spacing, Shadow, Typography } from '@/constants/colors'
+import { Radius, Spacing, Shadow, Typography, DarkColors, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 import { useThemeStore } from '@/lib/store/useThemeStore'
 import { StarRating } from '@/components/ui/StarRating'
 import { formatPricePerDay } from '@/lib/utils/formatCurrency'
-import { getCategoryEmoji, getCategoryLabel, getCategoryIcon } from '@/constants/categories'
-import { getCancellationPolicyEmoji, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
+import { getCategoryLabel, getCategoryIcon } from '@/constants/categories'
+import { getCancellationPolicyLabel } from '@/lib/utils/cancellation'
 import { useWishlistStore } from '@/lib/store/useWishlistStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { TierBadge } from '@/components/operator/TierBadge'
@@ -66,12 +66,12 @@ function getGradient(category: string, isDark: boolean): [string, string] {
   return [g[0], g[1]]
 }
 
-const CONTEXT_ACTIONS = [
-  { key: 'wishlist', label: '❤️ Add to wishlist' },
-  { key: 'share', label: '↗ Share' },
-  { key: 'notify', label: '🔔 Notify on price drop' },
-  { key: 'compare', label: '🏷️ Compare prices' },
-  { key: 'hide', label: '✕ Hide this listing' },
+const CONTEXT_ACTIONS: { key: string; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
+  { key: 'wishlist', label: 'Add to wishlist', icon: 'heart-outline' },
+  { key: 'share', label: 'Share', icon: 'share-outline' },
+  { key: 'notify', label: 'Notify on price drop', icon: 'notifications-outline' },
+  { key: 'compare', label: 'Compare prices', icon: 'pricetag-outline' },
+  { key: 'hide', label: 'Hide this listing', icon: 'close-outline' },
 ]
 
 function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }: ListingCardProps) {
@@ -91,6 +91,10 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
   const imageUri = listing.images?.[0] ?? listing.cover_image_url ?? null
   const gradient = getGradient(listing.category, isDark)
   const priceLabel = formatPricePerDay(listing.price_per_day, language)
+  // Computed here so the row can be skipped entirely: TierBadge renders nothing
+  // for renters below 'verified', and an empty row would still cost 3px on every
+  // card in the feed.
+  const operatorTier = listing.operator != null ? calculateTier(listing.operator) : null
 
   const animatedCardStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -155,10 +159,15 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
     <>
       <Animated.View style={[
         isFull ? styles.cardFull : styles.cardGrid,
-        { backgroundColor: C.surface, borderColor: C.border },
         animatedCardStyle,
       ]}>
         <TouchableOpacity
+          // Stable E2E handle. The Maestro flows used to tap `text: ".*€.*"` —
+          // "the first thing on screen containing a euro sign" — which silently
+          // retargeted onto a non-interactive price label the moment one was
+          // added above the feed. Selecting the card itself keeps the tests
+          // pinned to intent rather than to copy.
+          testID="listing-card"
           onPress={handlePress}
           onPressIn={onPressIn}
           onPressOut={onPressOut}
@@ -186,29 +195,26 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <Text style={styles.imagePlaceholderIcon}>{getCategoryEmoji(listing.category)}</Text>
+                <Ionicons
+                  name={getCategoryIcon(listing.category)}
+                  size={36}
+                  color={C.textSecondary}
+                  importantForAccessibility="no"
+                />
                 <Text style={styles.imagePlaceholderTitle} numberOfLines={2}>{listing.title}</Text>
               </LinearGradient>
             )}
-            {/* Category badge */}
-            <View style={[
-              styles.categoryBadge,
-              { backgroundColor: isDark ? 'rgba(10,22,40,0.80)' : 'rgba(0,0,0,0.55)', flexDirection: 'row', alignItems: 'center' },
-            ]}>
-              <Ionicons name={getCategoryIcon(listing.category)} size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
-              <Text style={styles.categoryText}>
-                {getCategoryLabel(listing.category)}
-              </Text>
-            </View>
             {/* Available / Instant book badge */}
             {showAvailableBadge === true && listing.available && (
               <View style={styles.availableBadge}>
-                <Text style={styles.availableBadgeText}>⚡ Available now</Text>
+                <Ionicons name="flash" size={10} color={DarkColors.primary} />
+                <Text style={styles.availableBadgeText}>Available now</Text>
               </View>
             )}
             {showAvailableBadge !== true && listing.instant_book === true && (
               <View style={styles.availableBadge}>
-                <Text style={styles.availableBadgeText}>⚡ Instant book</Text>
+                <Ionicons name="flash" size={10} color={DarkColors.primary} />
+                <Text style={styles.availableBadgeText}>Instant book</Text>
               </View>
             )}
             {/* Heart button — connected to wishlist store */}
@@ -220,7 +226,11 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
               accessibilityRole="button"
             >
               <Animated.View style={heartAnimStyle}>
-                <Text style={styles.heart}>{wishlisted ? '❤️' : '🤍'}</Text>
+                <Ionicons
+                  name={wishlisted ? 'heart' : 'heart-outline'}
+                  size={19}
+                  color={wishlisted ? '#E8500F' : '#1A1F2B'}
+                />
               </Animated.View>
             </TouchableOpacity>
           </View>
@@ -229,17 +239,22 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
           <View style={styles.info}>
             {/* Title: max 2 lines with ellipsis */}
             <Text style={[styles.title, { color: C.text }]} numberOfLines={2} ellipsizeMode="tail">{listing.title}</Text>
-            {/* Operator tier badge */}
-            {listing.operator != null && (
+            {/* Operator proof — NOT the supplier tier. A renter scanning the feed
+                reads "ELITE" as a price bracket, so the browse card carries the
+                evidence (rentals · rating) that the rank was derived from. */}
+            {operatorTier != null && operatorTier !== 'new' && (
               <View style={styles.tierRow}>
-                <TierBadge tier={calculateTier(listing.operator)} size="sm" />
+                <TierBadge tier={operatorTier} size="sm" audience="renter" operator={listing.operator} />
               </View>
             )}
             {/* Location: pickup_address preferred, city as fallback */}
             {(listing.pickup_address ?? listing.operator?.city ?? listing.host?.city) != null && (
-              <Text style={[styles.location, { color: C.textTertiary }]} numberOfLines={1}>
-                📍 {listing.pickup_address ?? listing.operator?.city ?? listing.host?.city}
-              </Text>
+              <View style={styles.locationRow}>
+                <Ionicons name="location-outline" size={11} color={C.textTertiary} />
+                <Text style={[styles.location, { color: C.textTertiary }]} numberOfLines={1}>
+                  {listing.pickup_address ?? listing.operator?.city ?? listing.host?.city}
+                </Text>
+              </View>
             )}
             <View style={styles.ratingRow}>
               <StarRating rating={listing.rating} reviewCount={listing.review_count} size={12} />
@@ -247,16 +262,9 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
                 <Text style={[styles.rentalCount, { color: C.textTertiary }]}> · {listing.booking_count} rentals</Text>
               )}
             </View>
-            {listing.cancellation_policy != null && (
-              <View style={styles.policyRow}>
-                <View style={styles.policyDot} />
-                <Text style={[styles.policyText, { color: C.textTertiary }]}>
-                  {getCancellationPolicyEmoji(listing.cancellation_policy)} {getCancellationPolicyLabel(listing.cancellation_policy, language)}
-                </Text>
-              </View>
-            )}
+            {/* Price in ink, not brand orange — amount leads, unit recedes */}
             <View style={styles.priceRow}>
-              <Text style={[styles.price, { color: C.primary }]}>{priceLabel}</Text>
+              <Text style={[styles.price, { color: C.text }]}>{priceLabel}</Text>
             </View>
           </View>
         </TouchableOpacity>
@@ -280,14 +288,17 @@ function ListingCardComponent({ listing, variant = 'grid', showAvailableBadge }:
           {CONTEXT_ACTIONS.map((action, idx) => {
             const isWishlistAction = action.key === 'wishlist'
             const label = isWishlistAction
-              ? (wishlisted ? '💔 Remove from wishlist' : '❤️ Add to wishlist')
+              ? (wishlisted ? 'Remove from wishlist' : 'Add to wishlist')
               : action.label
+            const iconName = isWishlistAction && wishlisted ? 'heart-dislike-outline' : action.icon
+            const tint = action.key === 'hide' ? C.error : C.text
             return (
               <TouchableOpacity
                 key={action.key}
                 style={[contextStyles.menuItem, { borderBottomColor: C.border }, idx === CONTEXT_ACTIONS.length - 1 && contextStyles.menuItemLast]}
                 onPress={() => handleContextAction(action.key)}
               >
+                <Ionicons name={iconName} size={18} color={tint} importantForAccessibility="no" />
                 <Text style={[
                   contextStyles.menuItemText,
                   { color: C.text },
@@ -315,57 +326,57 @@ export default ListingCard
 
 function makeStyles(C: ReturnType<typeof useColors>) {
 const styles = StyleSheet.create({
+  // Naked cards — no box, no border: the photo IS the card
   cardFull: {
     width: '100%',
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    ...Shadow.sm,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   cardGrid: {
     width: GRID_CARD_WIDTH,
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    ...Shadow.sm,
-    marginBottom: Spacing.base,
+    marginBottom: Spacing.lg,
   },
-  imageContainer: { position: 'relative' },
-  imageFull: { width: '100%', height: 200 },
-  imageGrid: { width: '100%', height: 150 },
+  imageContainer: {
+    position: 'relative',
+    borderRadius: Radius.xl,
+    overflow: 'hidden',
+  },
+  imageFull: { width: '100%', height: 230 },
+  imageGrid: { width: '100%', height: 165 },
   imagePlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  imagePlaceholderIcon: { fontSize: 36 },
+  imagePlaceholderIcon: { fontFamily: Fonts.regular, fontSize: 36 },
   imagePlaceholderTitle: {
     fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.5)',
+    fontFamily: Fonts.semibold,
+    // Theme-derived, not a fixed white: the light-mode placeholder gradient is
+    // near-white (#E8E8E8→#F5F5F5), so 50%-alpha white landed at ~1.1:1 and
+    // every photo-less listing rendered as a blank tile. textSecondary holds
+    // >=4.88:1 on every light gradient stop and >=5.93:1 on every dark one.
+    color: C.textSecondary,
     textAlign: 'center',
     paddingHorizontal: Spacing.sm,
   },
-  categoryBadge: {
-    position: 'absolute',
-    top: Spacing.sm,
-    left: Spacing.sm,
-    borderRadius: Radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  categoryText: { fontSize: 11, fontWeight: '700', color: C.white },
   availableBadge: {
     position: 'absolute',
     bottom: Spacing.sm,
     left: Spacing.sm,
-    backgroundColor: C.success,
+    // Deliberately theme-INVARIANT: this chip floats over an arbitrary listing
+    // photo, so it needs a dark scrim + white text in both themes. That is why
+    // its bolt icon uses DarkColors.primary rather than C.primary — the light
+    // CTA orange would sit at 1.56:1 on this scrim, whereas the dark-theme
+    // amber holds 4.26:1 (light gradient) / 9.08:1 (dark gradient).
+    backgroundColor: 'rgba(10,22,40,0.72)',
     borderRadius: Radius.full,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  availableBadgeText: { fontSize: 11, fontWeight: '700', color: C.white },
+  availableBadgeText: { fontSize: 11, fontFamily: Fonts.semibold, color: '#FFFFFF' },
   heartBtn: {
     position: 'absolute',
     top: Spacing.sm,
@@ -378,17 +389,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...Shadow.sm,
   },
-  heart: { fontSize: 16 },
-  info: { padding: Spacing.base, paddingBottom: Spacing.md },
-  title: { ...Typography.h4, marginBottom: 4, lineHeight: 20 },
-  tierRow: { marginBottom: 4 },
-  location: { fontSize: 12, marginBottom: 6 },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  rentalCount: { fontSize: 12 },
-  policyRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  policyDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.success },
-  policyText: { fontSize: 12 },
-  priceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 4 },
+  heart: { fontFamily: Fonts.regular, fontSize: 16 },
+  // Info sits directly on the canvas — tight, calm stack
+  info: { paddingTop: Spacing.sm, paddingHorizontal: 2, paddingBottom: 2 },
+  title: { ...Typography.h4, marginBottom: 3, lineHeight: 20 },
+  tierRow: { marginBottom: 3 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 3 },
+  location: { fontFamily: Fonts.regular, fontSize: 12, flexShrink: 1 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
+  rentalCount: { fontFamily: Fonts.regular, fontSize: 12 },
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', marginTop: 3 },
   price: { ...Typography.priceS },
 })
 
@@ -404,23 +414,24 @@ const contextStyles = StyleSheet.create({
     borderRadius: Radius.pill, alignSelf: 'center', marginBottom: Spacing.base,
   },
   menuTitle: {
-    fontSize: 14, fontWeight: '700',
+    fontSize: 14, fontFamily: Fonts.bold,
     textAlign: 'center', marginBottom: Spacing.md,
     paddingHorizontal: Spacing.xl,
   },
   menuItem: {
     paddingHorizontal: Spacing.xl, paddingVertical: 15,
     borderBottomWidth: 1,
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
   },
   menuItemLast: { borderBottomWidth: 0 },
-  menuItemText: { fontSize: 16, fontWeight: '500' },
+  menuItemText: { fontSize: 16, fontFamily: Fonts.medium },
   menuItemTextDanger: { color: C.error },
   cancelBtn: {
     marginHorizontal: Spacing.xl, marginTop: Spacing.md,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.md, alignItems: 'center',
   },
-  cancelText: { fontSize: 16, fontWeight: '700' },
+  cancelText: { fontSize: 16, fontFamily: Fonts.bold },
 })
 return { styles, contextStyles }
 }
@@ -454,10 +465,9 @@ export function ListingCardSkeleton({ variant = 'grid' }: { variant?: 'full' | '
   return (
     <Animated.View style={[
       isFull ? styles.cardFull : styles.cardGrid,
-      { backgroundColor: C.surface, borderColor: C.border },
       skeletonAnimStyle,
     ]}>
-      <View style={[isFull ? styles.imageFull : styles.imageGrid, { backgroundColor: C.border }]} />
+      <View style={[isFull ? styles.imageFull : styles.imageGrid, { backgroundColor: C.border, borderRadius: Radius.xl }]} />
       <View style={skeletonStyles.info}>
         <View style={[skeletonStyles.line, { width: '70%', backgroundColor: C.border }]} />
         <View style={[skeletonStyles.line, { width: '45%', marginTop: 8, backgroundColor: C.border }]} />

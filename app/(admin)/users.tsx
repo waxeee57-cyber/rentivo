@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react'
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ListRenderItemInfo, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Badge } from '@/components/ui/Badge'
 import { useToastStore } from '@/lib/store/useToastStore'
@@ -152,11 +152,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   name: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.text,
   },
   email: {
-    fontSize: 13,
+    fontFamily: Fonts.regular, fontSize: 13,
     color: C.textSecondary,
     marginTop: 2,
   },
@@ -174,7 +174,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   actionBtnText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     color: C.error,
   },
   actionBtnTextUnban: {

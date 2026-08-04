@@ -5,7 +5,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -229,8 +229,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   container: { flex: 1, backgroundColor: C.background },
   content: { padding: Spacing.base, paddingBottom: 100 },
   section: { marginBottom: Spacing.base, padding: Spacing.base },
-  sectionTitle: { color: C.text, fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  sectionDesc: { color: C.textSecondary, fontSize: 13, marginBottom: 12 },
+  sectionTitle: { color: C.text, fontSize: 16, fontFamily: Fonts.semibold, marginBottom: 4 },
+  sectionDesc: { color: C.textSecondary, fontFamily: Fonts.regular, fontSize: 13, marginBottom: 12 },
   row: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   chip: {
@@ -244,10 +244,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
   },
   chipActive: { backgroundColor: C.primary, borderColor: C.primary },
-  chipText: { color: C.textSecondary, fontSize: 13, fontWeight: '600' },
+  chipText: { color: C.textSecondary, fontSize: 13, fontFamily: Fonts.semibold },
   chipTextActive: { color: C.background },
   inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  inputLabel: { color: C.textSecondary, fontSize: 14, flex: 1 },
+  inputLabel: { color: C.textSecondary, fontFamily: Fonts.regular, fontSize: 14, flex: 1 },
   input: {
     backgroundColor: C.surface,
     borderWidth: 1,
@@ -258,10 +258,10 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingVertical: 8,
     width: 70,
     textAlign: 'center',
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     minHeight: 44,
   },
-  inputSuffix: { color: C.textSecondary, fontSize: 14 },
-  previewText: { color: C.text, fontSize: 14, marginBottom: 4 },
+  inputSuffix: { color: C.textSecondary, fontFamily: Fonts.regular, fontSize: 14 },
+  previewText: { color: C.text, fontFamily: Fonts.regular, fontSize: 14, marginBottom: 4 },
   })
 }

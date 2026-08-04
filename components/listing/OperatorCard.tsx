@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
-import { Radius, Spacing } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Radius, Spacing, Fonts } from '@/constants/colors'
 import { Avatar } from '@/components/ui/Avatar'
 import { StarRating } from '@/components/ui/StarRating'
 import { TierBadge } from '@/components/operator/TierBadge'
@@ -24,11 +25,16 @@ export function OperatorCard({ operator, onViewListings }: OperatorCardProps) {
           <View style={styles.nameRow}>
             <Text style={styles.name}>{operator.name}</Text>
             {operator.verified && <Text style={styles.verified}> ✓</Text>}
-            <TierBadge tier={calculateTier(operator)} size="md" />
+            {/* Renter-facing detail screen: show the proof behind the tier, not
+                the supplier rank — "ELITE" here reads as a price bracket. */}
+            <TierBadge tier={calculateTier(operator)} size="md" audience="renter" operator={operator} />
           </View>
           <Text style={styles.city}>{operator.city}, {operator.country}</Text>
           <StarRating rating={operator.rating} reviewCount={operator.review_count} size={12} />
-          <Text style={styles.responseTime}>⚡ Usually responds within 1 hour</Text>
+          <View style={styles.responseTimeRow}>
+            <Ionicons name="flash-outline" size={12} color={C.success} importantForAccessibility="no" />
+            <Text style={styles.responseTime}>Usually responds within 1 hour</Text>
+          </View>
         </View>
       </View>
       {operator.description && (
@@ -54,12 +60,13 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
   nameRow: { flexDirection: 'row', alignItems: 'center' },
-  name: { fontSize: 16, fontWeight: '700', color: C.text },
-  verified: { color: C.success, fontWeight: '700', fontSize: 16 },
-  city: { fontSize: 13, color: C.textSecondary, marginBottom: 4 },
-  desc: { fontSize: 13, color: C.textSecondary, lineHeight: 18, marginBottom: Spacing.sm },
+  name: { fontSize: 16, fontFamily: Fonts.bold, color: C.text },
+  verified: { color: C.success, fontFamily: Fonts.bold, fontSize: 16 },
+  city: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, marginBottom: 4 },
+  desc: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, lineHeight: 18, marginBottom: Spacing.sm },
   link: { alignSelf: 'flex-start' },
-  linkText: { fontSize: 13, color: C.primary, fontWeight: '600' },
-  responseTime: { fontSize: 12, color: C.success, marginTop: 2 },
+  linkText: { fontSize: 13, color: C.primary, fontFamily: Fonts.semibold },
+  responseTimeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  responseTime: { fontFamily: Fonts.regular, fontSize: 12, color: C.success },
   })
 }

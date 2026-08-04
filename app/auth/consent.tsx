@@ -4,7 +4,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -101,6 +101,9 @@ export default function ConsentScreen() {
               accessibilityLabel={t('auth2AcceptTermsA11y', language)}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: termsAccepted }}
+              // The box is 24×24; 10px of slop on each side brings the legally
+              // load-bearing consent target to exactly 44×44.
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               {termsAccepted && <Text style={styles.checkMark}>✓</Text>}
             </TouchableOpacity>
@@ -131,6 +134,8 @@ export default function ConsentScreen() {
               accessibilityLabel={t('auth2AcceptPrivacyA11y', language)}
               accessibilityRole="checkbox"
               accessibilityState={{ checked: privacyAccepted }}
+              // 24×24 box + 10px slop = 44×44 effective target.
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               {privacyAccepted && <Text style={styles.checkMark}>✓</Text>}
             </TouchableOpacity>
@@ -239,8 +244,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: C.background },
   scroll: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
-  title: { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
-  subtitle: { fontSize: 15, color: C.textSecondary, marginBottom: Spacing.xl, lineHeight: 22 },
+  title: { fontSize: 26, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.sm },
+  subtitle: { fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary, marginBottom: Spacing.xl, lineHeight: 22 },
   section: {
     backgroundColor: C.surface,
     borderRadius: Radius.lg,
@@ -251,16 +256,16 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   sectionLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textTertiary,
     letterSpacing: 0.8,
     marginBottom: Spacing.md,
   },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, paddingVertical: Spacing.sm },
   rowContent: { flex: 1 },
-  rowText: { fontSize: 14, color: C.text, lineHeight: 20 },
-  rowMeta: { fontSize: 12, color: C.textTertiary, marginTop: 2 },
-  link: { color: C.primary, fontWeight: '600' },
+  rowText: { fontFamily: Fonts.regular, fontSize: 14, color: C.text, lineHeight: 20 },
+  rowMeta: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: 2 },
+  link: { color: C.primary, fontFamily: Fonts.semibold },
   checkbox: {
     width: 24,
     height: 24,
@@ -273,7 +278,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginTop: 2,
   },
   checkboxChecked: { backgroundColor: C.primary, borderColor: C.primary },
-  checkMark: { fontSize: 14, fontWeight: '800', color: C.textInverse },
+  checkMark: { fontSize: 14, fontFamily: Fonts.extrabold, color: C.textInverse },
   divider: { height: 1, backgroundColor: C.border, marginVertical: Spacing.sm },
   switchRow: {
     flexDirection: 'row',
@@ -282,11 +287,11 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingVertical: Spacing.sm,
   },
   switchContent: { flex: 1, marginRight: Spacing.md },
-  switchTitle: { fontSize: 14, fontWeight: '600', color: C.text },
-  switchMeta: { fontSize: 12, color: C.textTertiary, marginTop: 2 },
+  switchTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: C.text },
+  switchMeta: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: 2 },
   confirmBtn: { marginTop: Spacing.lg },
   gdprNote: {
-    fontSize: 12,
+    fontFamily: Fonts.regular, fontSize: 12,
     color: C.textTertiary,
     textAlign: 'center',
     marginTop: Spacing.base,

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useMemo } from 'react'
 import { View, Text, Animated, StyleSheet } from 'react-native'
-import { Spacing, Radius } from '@/constants/colors'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface StepIndicatorProps {
@@ -117,17 +117,17 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   stepNum: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.textTertiary,
   },
   stepNumCurrent: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: C.primary,
   },
   checkmark: {
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: Fonts.extrabold,
     color: C.textInverse,
   },
   connector: {
@@ -142,14 +142,14 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   },
   label: {
     fontSize: 10,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
     color: C.textTertiary,
     textAlign: 'center',
     maxWidth: 60,
   },
   labelCurrent: {
     color: C.primary,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   labelDone: {
     color: C.success,

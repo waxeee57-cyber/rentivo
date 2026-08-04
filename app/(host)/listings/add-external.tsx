@@ -1,50 +1,59 @@
 import React, { useState, useMemo } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, TextInput, ActivityIndicator, Alert,
+  StyleSheet, TextInput, ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import * as Haptics from 'expo-haptics'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { StepIndicator } from '@/components/ui/StepIndicator'
 import { ICalHelpSheet } from '@/components/integrations/ICalHelpSheet'
 import { performICalSync } from '@/lib/ical'
+import { createListing } from '@/lib/api/listings'
+import { supabase } from '@/lib/supabase'
+import { Config } from '@/constants/config'
+import { useToastStore } from '@/lib/store/useToastStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
-import type { PlatformType } from '@/types'
+import type { PlatformType, Listing } from '@/types'
 
 type Step = 1 | 2 | 3 | 4
+
+type IoniconName = React.ComponentProps<typeof Ionicons>['name']
 
 interface Platform {
   key: PlatformType
   label: string
-  emoji: string
+  /** Neutral glyph for the platform *type* — the text label carries the brand. */
+  icon: IoniconName
 }
 
 const PLATFORMS: Platform[] = [
-  { key: 'airbnb', label: 'Airbnb', emoji: '🏠' },
-  { key: 'booking', label: 'Booking.com', emoji: '🏨' },
-  { key: 'vrbo', label: 'VRBO', emoji: '🏖️' },
-  { key: 'turo', label: 'Turo', emoji: '🚗' },
-  { key: 'holidu', label: 'Holidu', emoji: '🌴' },
-  { key: 'other', label: 'Other', emoji: '🔗' },
+  { key: 'airbnb', label: 'Airbnb', icon: 'home-outline' },
+  { key: 'booking', label: 'Booking.com', icon: 'business-outline' },
+  { key: 'vrbo', label: 'VRBO', icon: 'home-outline' },
+  { key: 'turo', label: 'Turo', icon: 'car-sport-outline' },
+  { key: 'holidu', label: 'Holidu', icon: 'home-outline' },
+  { key: 'other', label: 'Other', icon: 'link-outline' },
 ]
 
-const CATEGORIES = [
-  { key: 'car', label: 'Car', emoji: '🚗' },
-  { key: 'motorcycle', label: 'Motorcycle', emoji: '🏍️' },
-  { key: 'yacht', label: 'Boat', emoji: '⛵' },
-  { key: 'villa', label: 'Villa', emoji: '🏡' },
-  { key: 'bike', label: 'Bike', emoji: '🚲' },
-  { key: 'other', label: 'Other', emoji: '📦' },
+const CATEGORIES: { key: string; label: string; icon: IoniconName }[] = [
+  { key: 'car', label: 'Car', icon: 'car-sport-outline' },
+  { key: 'motorcycle', label: 'Motorcycle', icon: 'bicycle-outline' },
+  { key: 'yacht', label: 'Boat', icon: 'boat-outline' },
+  { key: 'villa', label: 'Villa', icon: 'home-outline' },
+  { key: 'bike', label: 'Bike', icon: 'bicycle-outline' },
+  { key: 'other', label: 'Other', icon: 'cube-outline' },
 ]
 
 export default function AddExternalListingScreen() {
   const C = useColors()
   const { language } = useAuthStore()
+  const { showToast } = useToastStore()
   const [step, setStep] = useState<Step>(1)
   const [selectedPlatform, setSelectedPlatform] = useState<PlatformType | null>(null)
   const [listingUrl, setListingUrl] = useState('')
@@ -75,11 +84,82 @@ export default function AddExternalListingScreen() {
 
   const handleSave = async () => {
     setSaving(true)
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    // In production: save to Supabase rentivo_external_listings table
-    await new Promise<void>(resolve => setTimeout(resolve, 800))
-    setSaving(false)
-    setStep(4)
+    try {
+      // The old body was an ungated `setTimeout(800)` followed by an unconditional
+      // jump to the step-4 "Listing published!" screen — in a shipped build the host
+      // finished the whole wizard and every field was thrown away.
+      if (Config.useMock) {
+        await new Promise<void>(resolve => setTimeout(resolve, 800))
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+        setStep(4)
+        return
+      }
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) throw new Error('Not signed in')
+
+      const { data: hostRecord, error: hostError } = await supabase
+        .from('rentivo_hosts')
+        .select('id')
+        .eq('auth_id', session.user.id)
+        .maybeSingle()
+      if (hostError) throw hostError
+      if (!hostRecord?.id) throw new Error(t('hostLHostNotFound', language))
+
+      const listing = await createListing({
+        operator_id: '',
+        host_id: hostRecord.id,
+        owner_type: 'host',
+        title: title.trim(),
+        description: null,
+        category: (category || 'other') as Listing['category'],
+        subcategory: null,
+        price_per_day: parseFloat(price) || 0,
+        price_per_week: null,
+        deposit_amount: 0,
+        currency: 'EUR',
+        available: true,
+        min_rental_days: 1,
+        max_rental_days: null,
+        capacity: null,
+        year: null,
+        make: null,
+        model: null,
+        color: null,
+        license_plate: null,
+        features: [],
+        rules: null,
+        images: [],
+        cover_image_url: null,
+        pickup_address: city.trim() || null,
+        latitude: null,
+        longitude: null,
+        instant_book: false,
+      })
+
+      // The platform link lives on its own table: rentivo_listings has no
+      // external_url / platform column (see supabase/migrations/14_connected_platforms.sql).
+      const { error: connError } = await supabase.from('rentivo_connected_platforms').insert({
+        owner_id: session.user.id,
+        listing_id: listing.id,
+        platform: selectedPlatform,
+        external_url: listingUrl.trim(),
+        ical_url: wantsIcal === true && icalUrl.trim() ? icalUrl.trim() : null,
+        active: true,
+      })
+      if (connError) throw connError
+
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      // Only advance to the success screen once the rows actually exist.
+      setStep(4)
+    } catch (e) {
+      // Surface the real reason and stay on step 3 so the host can retry — matching
+      // the toast pattern the sibling wizard (listings/new.tsx) already uses.
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      showToast({ message: e instanceof Error ? e.message : String(e), type: 'error' })
+    } finally {
+      setSaving(false)
+    }
   }
 
   const next = () => {
@@ -119,7 +199,13 @@ export default function AddExternalListingScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={p.label}
                 >
-                  <Text style={styles.platformEmoji}>{p.emoji}</Text>
+                  <Ionicons
+                    name={p.icon}
+                    size={28}
+                    color={selectedPlatform === p.key ? C.primary : C.textSecondary}
+                    style={styles.platformEmoji}
+                    importantForAccessibility="no"
+                  />
                   <Text
                     style={[styles.platformLabel, selectedPlatform === p.key && styles.platformLabelActive]}
                     numberOfLines={1}
@@ -173,8 +259,14 @@ export default function AddExternalListingScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={c.label}
                   >
+                    <Ionicons
+                      name={c.icon}
+                      size={14}
+                      color={category === c.key ? C.textInverse : C.textSecondary}
+                      importantForAccessibility="no"
+                    />
                     <Text style={[styles.categoryPillText, category === c.key && styles.categoryPillTextActive]}>
-                      {c.emoji} {c.label}
+                      {c.label}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -217,7 +309,7 @@ export default function AddExternalListingScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('hostLSyncYes', language)}
             >
-              <Text style={styles.optionEmoji}>🔄</Text>
+              <Ionicons name="sync-outline" size={24} color={C.textSecondary} style={styles.optionEmoji} importantForAccessibility="no" />
               <View style={styles.optionText}>
                 <Text style={styles.optionTitle}>{t('hostLSyncYes', language)}</Text>
                 <Text style={styles.optionDesc}>{t('hostLSyncYesDesc', language)}</Text>
@@ -230,7 +322,7 @@ export default function AddExternalListingScreen() {
               accessibilityRole="button"
               accessibilityLabel={t('opFleetWizardSkip', language)}
             >
-              <Text style={styles.optionEmoji}>⏭️</Text>
+              <Ionicons name="play-skip-forward-outline" size={24} color={C.textSecondary} style={styles.optionEmoji} importantForAccessibility="no" />
               <View style={styles.optionText}>
                 <Text style={styles.optionTitle}>{t('opFleetWizardSkip', language)}</Text>
                 <Text style={styles.optionDesc}>{t('hostLSkipForNowDesc', language)}</Text>
@@ -287,7 +379,7 @@ export default function AddExternalListingScreen() {
         {/* STEP 4 — Megerősítés / Siker */}
         {step === 4 && (
           <View style={styles.successContainer}>
-            <Text style={styles.successEmoji}>🎉</Text>
+            <Ionicons name="checkmark-circle" size={64} color={C.success} style={styles.successEmoji} importantForAccessibility="no" />
             <Text style={styles.successTitle}>{t('hostLListingPublished', language)}</Text>
             <Text style={styles.successSubtitle}>
               Your listing is now visible on Rentivo's explore page.
@@ -296,11 +388,23 @@ export default function AddExternalListingScreen() {
 
             <View style={styles.infoBox}>
               <Text style={styles.infoTitle}>{t('hostLWhatToExpect', language)}</Text>
-              <Text style={styles.infoItem}>✅ Listing shows a "{platformLabel} via Rentivo" badge</Text>
-              <Text style={styles.infoItem}>✅ The "Book" button links to your {platformLabel} listing</Text>
-              <Text style={styles.infoItem}>✅ Rentivo does not handle the booking — {platformLabel} does</Text>
+              <View style={styles.infoItemRow}>
+                <Ionicons name="checkmark-circle" size={14} color={C.success} importantForAccessibility="no" />
+                <Text style={styles.infoItem}>Listing shows a "{platformLabel} via Rentivo" badge</Text>
+              </View>
+              <View style={styles.infoItemRow}>
+                <Ionicons name="checkmark-circle" size={14} color={C.success} importantForAccessibility="no" />
+                <Text style={styles.infoItem}>The "Book" button links to your {platformLabel} listing</Text>
+              </View>
+              <View style={styles.infoItemRow}>
+                <Ionicons name="checkmark-circle" size={14} color={C.success} importantForAccessibility="no" />
+                <Text style={styles.infoItem}>Rentivo does not handle the booking — {platformLabel} does</Text>
+              </View>
               {wantsIcal && icalResult?.error === null && (
-                <Text style={styles.infoItem}>{t('hostLICalSyncActive', language)}</Text>
+                <View style={styles.infoItemRow}>
+                  <Ionicons name="checkmark-circle" size={14} color={C.success} importantForAccessibility="no" />
+                  <Text style={styles.infoItem}>{t('hostLICalSyncActive', language)}</Text>
+                </View>
               )}
             </View>
 
@@ -375,9 +479,9 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   scroll: { flex: 1 },
   content: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
 
-  stepTitle: { fontSize: 22, fontWeight: '800', color: C.text, marginBottom: Spacing.sm },
+  stepTitle: { fontSize: 22, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.sm },
   stepSubtitle: {
-    fontSize: 14, color: C.textSecondary, lineHeight: 20, marginBottom: Spacing.xl,
+    fontFamily: Fonts.regular, fontSize: 14, color: C.textSecondary, lineHeight: 20, marginBottom: Spacing.xl,
   },
 
   platformGrid: {
@@ -398,19 +502,19 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     gap: Spacing.xs,
   },
   platformCardActive: { borderColor: C.primary, borderWidth: 2, backgroundColor: C.primarySubtle },
-  platformEmoji: { fontSize: 36 },
-  platformLabel: { fontSize: 13, fontWeight: '600', color: C.textSecondary, textAlign: 'center' },
+  platformEmoji: { marginBottom: 2 },
+  platformLabel: { fontSize: 13, fontFamily: Fonts.semibold, color: C.textSecondary, textAlign: 'center' },
   platformLabelActive: { color: C.primary },
 
   fieldLabel: {
-    fontSize: 13, fontWeight: '600', color: C.textSecondary,
+    fontSize: 13, fontFamily: Fonts.semibold, color: C.textSecondary,
     marginBottom: Spacing.sm, marginTop: Spacing.base,
   },
   input: {
     backgroundColor: C.surface,
     borderRadius: Radius.lg,
     padding: Spacing.base,
-    fontSize: 14,
+    fontFamily: Fonts.regular, fontSize: 14,
     color: C.text,
     borderWidth: 1,
     borderColor: C.border,
@@ -425,9 +529,12 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingVertical: 8,
     borderWidth: 1,
     borderColor: C.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   categoryPillActive: { backgroundColor: C.primary, borderColor: C.primary },
-  categoryPillText: { fontSize: 13, fontWeight: '600', color: C.text },
+  categoryPillText: { fontSize: 13, fontFamily: Fonts.semibold, color: C.text },
   categoryPillTextActive: { color: C.textInverse },
 
   optionCard: {
@@ -442,14 +549,14 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderColor: C.border,
   },
   optionCardActive: { borderColor: C.primary, backgroundColor: C.primarySurface },
-  optionEmoji: { fontSize: 28 },
+  optionEmoji: { width: 28, textAlign: 'center' },
   optionText: { flex: 1 },
-  optionTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 2 },
-  optionDesc: { fontSize: 12, color: C.textSecondary },
+  optionTitle: { fontSize: 15, fontFamily: Fonts.bold, color: C.text, marginBottom: 2 },
+  optionDesc: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary },
 
   icalSection: { marginTop: Spacing.base },
   icalLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  helpLink: { fontSize: 12, color: C.primary, fontWeight: '600' },
+  helpLink: { fontSize: 12, color: C.primary, fontFamily: Fonts.semibold },
   testBtn: {
     backgroundColor: C.primary,
     borderRadius: Radius.pill,
@@ -458,21 +565,21 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginTop: Spacing.md,
   },
   testBtnDisabled: { opacity: 0.5 },
-  testBtnText: { fontSize: 14, fontWeight: '700', color: C.textInverse },
+  testBtnText: { fontSize: 14, fontFamily: Fonts.bold, color: C.textInverse },
   icalResult: {
     borderRadius: Radius.lg, padding: Spacing.md, marginTop: Spacing.md,
   },
   icalResultSuccess: { backgroundColor: C.successSurface, borderWidth: 1, borderColor: C.success },
   icalResultError: { backgroundColor: C.errorSurface, borderWidth: 1, borderColor: C.error },
-  icalResultText: { fontSize: 13 },
+  icalResultText: { fontFamily: Fonts.regular, fontSize: 13 },
   icalResultTextSuccess: { color: C.success },
   icalResultTextError: { color: C.error },
 
   successContainer: { alignItems: 'center', paddingTop: Spacing.xxl },
-  successEmoji: { fontSize: 64, marginBottom: Spacing.md },
-  successTitle: { fontSize: 26, fontWeight: '900', color: C.text, marginBottom: Spacing.sm },
+  successEmoji: { marginBottom: Spacing.md },
+  successTitle: { fontSize: 26, fontFamily: Fonts.extrabold, color: C.text, marginBottom: Spacing.sm },
   successSubtitle: {
-    fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22,
+    fontFamily: Fonts.regular, fontSize: 15, color: C.textSecondary, textAlign: 'center', lineHeight: 22,
     marginBottom: Spacing.xl, paddingHorizontal: Spacing.md,
   },
   infoBox: {
@@ -485,15 +592,16 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     marginBottom: Spacing.xl,
     gap: Spacing.sm,
   },
-  infoTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: Spacing.xs },
-  infoItem: { fontSize: 13, color: C.textSecondary },
+  infoTitle: { fontSize: 14, fontFamily: Fonts.bold, color: C.text, marginBottom: Spacing.xs },
+  infoItemRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
+  infoItem: { flex: 1, fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
   doneBtn: {
     backgroundColor: C.primary,
     borderRadius: Radius.pill,
     paddingVertical: Spacing.base,
     paddingHorizontal: Spacing.xxl,
   },
-  doneBtnText: { fontSize: 15, fontWeight: '800', color: C.textInverse },
+  doneBtnText: { fontSize: 15, fontFamily: Fonts.extrabold, color: C.textInverse },
 
   footer: {
     padding: Spacing.base,
@@ -502,7 +610,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     backgroundColor: C.background,
   },
   gdprText: {
-    fontSize: 11, color: C.textTertiary, textAlign: 'center',
+    fontFamily: Fonts.regular, fontSize: 11, color: C.textTertiary, textAlign: 'center',
     marginBottom: Spacing.sm, lineHeight: 16,
   },
   nextBtn: {
@@ -512,6 +620,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
   },
   nextBtnDisabled: { opacity: 0.45 },
-  nextBtnText: { fontSize: 16, fontWeight: '800', color: C.textInverse },
+  nextBtnText: { fontSize: 16, fontFamily: Fonts.extrabold, color: C.textInverse },
   })
 }

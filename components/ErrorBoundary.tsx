@@ -1,7 +1,9 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import { DarkColors as C, Spacing, Radius, Typography } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { getColors, Spacing, Radius, Typography } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useThemeStore } from '@/lib/store/useThemeStore'
 import { captureException } from '@/lib/sentry'
 
 type Lang = 'en' | 'es' | 'hu'
@@ -58,9 +60,29 @@ export class ErrorBoundary extends React.Component<Props, State> {
     }
     const copy = COPY[lang] ?? COPY.en
 
+    // This is a class component, so the theme is read imperatively from the
+    // store instead of via useColors(). Same defensive try/catch as the
+    // language read above: the boundary has to render even when a store is the
+    // thing that blew up. Previously the sheet was pinned to DarkColors, which
+    // dropped a full-bleed navy panel into an otherwise light-mode app.
+    let isDark = false
+    try {
+      isDark = useThemeStore.getState().isDark
+    } catch {
+      isDark = false
+    }
+    const styles = getStyles(isDark)
+
     return (
       <View style={styles.container}>
-        <Text style={styles.emoji}>🌴</Text>
+        <Ionicons
+          name="warning-outline"
+          size={48}
+          color={getColors(isDark).warning}
+          style={styles.icon}
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        />
         <Text style={styles.title}>{copy.title}</Text>
         <Text style={styles.body}>{copy.body}</Text>
         <TouchableOpacity
@@ -76,7 +98,17 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 }
 
-const styles = StyleSheet.create({
+// One sheet per theme, built lazily and cached — the crash screen must not
+// rebuild its StyleSheet on every retry press.
+const styleCache: Partial<Record<'light' | 'dark', ReturnType<typeof makeStyles>>> = {}
+
+function getStyles(isDark: boolean) {
+  const key = isDark ? 'dark' : 'light'
+  return (styleCache[key] ??= makeStyles(getColors(isDark)))
+}
+
+function makeStyles(C: ReturnType<typeof getColors>) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: C.background,
@@ -84,8 +116,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: Spacing.xl,
   },
-  emoji: {
-    fontSize: 48,
+  icon: {
     marginBottom: Spacing.lg,
   },
   title: {
@@ -112,4 +143,5 @@ const styles = StyleSheet.create({
     ...Typography.h4,
     color: C.textInverse,
   },
-})
+  })
+}

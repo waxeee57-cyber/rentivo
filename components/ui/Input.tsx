@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { View, Text, TextInput, StyleSheet, TextInputProps, ViewStyle } from 'react-native'
-import { Radius, Spacing } from '@/constants/colors'
+import { Radius, Spacing, Fonts } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 
 interface InputProps extends TextInputProps {
@@ -38,24 +38,27 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   container: { marginBottom: Spacing.base },
   label: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: Fonts.semibold,
     color: C.textSecondary,
     marginBottom: Spacing.xs,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   input: {
-    height: 48,
+    // minHeight, not height: at large system font sizes a fixed 48px box clips
+    // the text. Nothing in the app disables allowFontScaling, so the field must
+    // be free to grow with the user's text-size setting.
+    minHeight: 48,
     borderWidth: 1,
     borderColor: C.border,
     borderRadius: Radius.lg,
     paddingHorizontal: Spacing.base,
-    fontSize: 15,
+    fontFamily: Fonts.regular, fontSize: 15,
     color: C.text,
     backgroundColor: C.surfaceWarm,
   },
   inputFocused: { borderColor: C.primary },
   inputError: { borderColor: C.error },
-  error: { fontSize: 12, color: C.error, marginTop: Spacing.xs },
+  error: { fontFamily: Fonts.regular, fontSize: 12, color: C.error, marginTop: Spacing.xs },
   })
 }

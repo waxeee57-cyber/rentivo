@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
 import { router } from 'expo-router'
-import { Spacing, Radius } from '@/constants/colors'
+import { Ionicons } from '@expo/vector-icons'
+import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { formatEUR, formatEURDecimal } from '@/lib/utils/formatCurrency'
 import type { Listing } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
@@ -62,7 +63,10 @@ export function MultiVehicleBooking({ primaryListing, onDismiss }: MultiVehicleB
 
       {selectedListings.length > 1 && (
         <View style={styles.discountBanner}>
-          <Text style={styles.discountTitle}>🏷️ Bundle discount applied</Text>
+          <View style={styles.discountTitleRow}>
+            <Ionicons name="pricetag-outline" size={14} color={C.primaryDark} importantForAccessibility="no" />
+            <Text style={styles.discountTitle}>Bundle discount applied</Text>
+          </View>
           <View style={styles.discountRow}>
             <Text style={styles.discountLabel}>Original</Text>
             <Text style={styles.discountOriginal}>{formatEUR(totalPerDay)}/day</Text>
@@ -99,8 +103,8 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   container: { padding: Spacing.base },
   header: { marginBottom: Spacing.base },
-  title: { fontSize: 18, fontWeight: '800', color: C.text },
-  subtitle: { fontSize: 13, color: C.textSecondary, marginTop: 4 },
+  title: { fontSize: 18, fontFamily: Fonts.extrabold, color: C.text },
+  subtitle: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, marginTop: 4 },
   selectedList: { gap: Spacing.sm, marginBottom: Spacing.base },
   selectedRow: {
     flexDirection: 'row', alignItems: 'center',
@@ -108,36 +112,37 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     padding: Spacing.md, borderWidth: 1, borderColor: C.border,
   },
   vehicleInfo: { flex: 1 },
-  vehicleName: { fontSize: 14, fontWeight: '700', color: C.text },
-  vehiclePrice: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
+  vehicleName: { fontSize: 14, fontFamily: Fonts.bold, color: C.text },
+  vehiclePrice: { fontFamily: Fonts.regular, fontSize: 12, color: C.textSecondary, marginTop: 2 },
   removeVehicle: {
     width: 24, height: 24, borderRadius: 12,
     backgroundColor: C.errorSurface,
     alignItems: 'center', justifyContent: 'center',
   },
-  removeText: { fontSize: 11, color: C.error, fontWeight: '700' },
+  removeText: { fontSize: 11, color: C.error, fontFamily: Fonts.bold },
   discountBanner: {
     backgroundColor: C.primarySurface, borderRadius: Radius.lg,
     padding: Spacing.base, marginBottom: Spacing.base,
     borderWidth: 1, borderColor: C.primaryLight,
   },
-  discountTitle: { fontSize: 14, fontWeight: '700', color: C.primaryDark, marginBottom: Spacing.sm },
+  discountTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: Spacing.sm },
+  discountTitle: { fontSize: 14, fontFamily: Fonts.bold, color: C.primaryDark },
   discountRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  discountLabel: { fontSize: 13, color: C.textSecondary },
-  discountOriginal: { fontSize: 13, color: C.textTertiary, textDecorationLine: 'line-through' },
-  discountSavings: { fontSize: 13, color: C.success, fontWeight: '600' },
+  discountLabel: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
+  discountOriginal: { fontFamily: Fonts.regular, fontSize: 13, color: C.textTertiary, textDecorationLine: 'line-through' },
+  discountSavings: { fontSize: 13, color: C.success, fontFamily: Fonts.semibold },
   discountTotal: {
     borderTopWidth: 1, borderTopColor: C.primaryLight,
     paddingTop: Spacing.sm, marginTop: 4,
   },
-  discountTotalLabel: { fontSize: 14, fontWeight: '700', color: C.text },
-  discountTotalValue: { fontSize: 16, fontWeight: '800', color: C.primary },
+  discountTotalLabel: { fontSize: 14, fontFamily: Fonts.bold, color: C.text },
+  discountTotalValue: { fontSize: 16, fontFamily: Fonts.extrabold, color: C.primary },
   bookBtn: {
     backgroundColor: C.primary, borderRadius: Radius.pill,
     paddingVertical: Spacing.base, alignItems: 'center',
     shadowColor: C.primary, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
   },
-  bookBtnText: { fontSize: 16, fontWeight: '800', color: C.textInverse },
+  bookBtnText: { fontSize: 16, fontFamily: Fonts.extrabold, color: C.textInverse },
   })
 }

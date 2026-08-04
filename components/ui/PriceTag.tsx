@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import { Spacing } from '@/constants/colors'
+import { Spacing, Fonts } from '@/constants/colors'
 import { formatEUR } from '@/lib/utils/formatCurrency'
 import { useColors } from '@/lib/hooks/useColors'
 
@@ -23,9 +23,9 @@ export function PriceTag({ pricePerDay, large = false }: PriceTagProps) {
 function makeStyles(C: ReturnType<typeof useColors>) {
   return StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'baseline' },
-  price: { fontSize: 16, fontWeight: '700', color: C.text },
-  priceLarge: { fontSize: 24 },
-  unit: { fontSize: 13, color: C.textSecondary },
-  unitLarge: { fontSize: 16 },
+  price: { fontSize: 16, fontFamily: Fonts.bold, color: C.text },
+  priceLarge: { fontFamily: Fonts.regular, fontSize: 24 },
+  unit: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary },
+  unitLarge: { fontFamily: Fonts.regular, fontSize: 16 },
   })
 }
