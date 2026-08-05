@@ -13,6 +13,7 @@ import { SignatureCanvas } from '@/components/booking/SignatureCanvas'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { Card } from '@/components/ui/Card'
 import { createDamageReport, fetchDamageReport } from '@/lib/api/damage'
+import { captureException } from '@/lib/sentry'
 import { uploadDamagePhoto } from '@/lib/storage'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { supabase } from '@/lib/supabase'
@@ -105,10 +106,11 @@ export default function ReturnDamageScreen() {
         }
       }
 
+      // See lib/api/damage.ts: these were `''` against UUID columns, so every
+      // insert was rejected by Postgres and swallowed by the catch below. The
+      // owning listing and operator are now resolved from the booking there.
       await createDamageReport({
         booking_id: bkId,
-        listing_id: '',
-        operator_id: '',
         type: 'return',
         photo_front: uploadedPhotos.front ?? null,
         photo_back: uploadedPhotos.back ?? null,
@@ -133,13 +135,22 @@ export default function ReturnDamageScreen() {
       const beforeUrl = pickupReport?.photo_front ?? null
       const afterUrl = uploadedPhotos.front ?? null
       if (beforeUrl && afterUrl) {
-        void runAIDamageCheck(beforeUrl, afterUrl)
+        // `void` + the router.back() below meant this screen unmounted before
+        // the response landed, so the one piece of automated damage evidence
+        // was computed, paid for, and discarded. Awaited so the result exists
+        // before we leave; failure must not block a completed inspection.
+        try {
+          await runAIDamageCheck(beforeUrl, afterUrl)
+        } catch (aiError) {
+          captureException(aiError, { where: 'damage/return.ai', bookingId: bkId })
+        }
       }
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       showToast({ message: t('cdmgReturnComplete', language), type: 'success' })
       router.back()
-    } catch {
+    } catch (e) {
+      captureException(e, { screen: 'damage/return', bookingId: bkId })
       showToast({ message: t('cdmgSomethingWentWrong', language), type: 'error' })
     } finally {
       setSubmitting(false)

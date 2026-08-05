@@ -1,0 +1,12 @@
+{
+  "opSetRevenueThisPeriod": {
+    "en": "Revenue this period",
+    "es": "Ingresos de este periodo",
+    "hu": "Bevétel ebben az időszakban"
+  },
+  "opSetOccupancyNoFleet": {
+    "en": "No active listings",
+    "es": "Sin anuncios activos",
+    "hu": "Nincs aktív hirdetés"
+  }
+}

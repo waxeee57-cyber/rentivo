@@ -37,6 +37,31 @@ serve(async (req) => {
     (Deno.env.get('SB_SECRET_KEY') ?? Deno.env.get('SUPABASE_SECRET_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) ?? ''
   )
 
+  // ── Feed token.
+  //
+  // This function had NO authorization of any kind and queries with the service
+  // role, while listing ids are public. Anyone could read the booking calendar
+  // of any vehicle on the platform: when it is out, and therefore when it (and
+  // often its owner's property) is not. A subscribing calendar app cannot send
+  // an Authorization header, so the capability lives in the URL, per listing,
+  // and is rotatable server-side.
+  const token = url.searchParams.get('token')
+  const { data: listingRow, error: listingError } = await supabase
+    .from('rentivo_listings')
+    .select('ical_feed_token')
+    .eq('id', listingId)
+    .maybeSingle()
+
+  if (listingError) {
+    console.error('[ical-export] listing lookup failed', listingId, listingError)
+    return new Response('Unavailable', { status: 500, headers: corsHeaders })
+  }
+  // 404 rather than 403 on a bad token: a 403 confirms the listing exists, which
+  // is exactly the enumeration signal the token is here to remove.
+  if (!listingRow || !token || token !== listingRow.ical_feed_token) {
+    return new Response('Not found', { status: 404, headers: corsHeaders })
+  }
+
   // PII REMOVED: guest_name is intentionally NOT selected or exported. An external
   // calendar only needs the blocked date ranges; SUMMARY is a constant 'Unavailable'.
   // This closes the guest-PII leak even if the feed URL is shared with a third party.

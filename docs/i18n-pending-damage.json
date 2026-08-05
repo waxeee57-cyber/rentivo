@@ -1,0 +1,162 @@
+{
+  "opDmgNotFiled": {
+    "en": "Not filed",
+    "es": "No registrada",
+    "hu": "Nincs rögzítve"
+  },
+  "opDmgPhotoComparison": {
+    "en": "Photo comparison",
+    "es": "Comparación de fotos",
+    "hu": "Fotó-összehasonlítás"
+  },
+  "opDmgPhotoMissing": {
+    "en": "No photo",
+    "es": "Sin foto",
+    "hu": "Nincs fotó"
+  },
+  "opDmgNoPickupBaseline": {
+    "en": "No pickup inspection was filed, so there is no baseline to compare the return photos against.",
+    "es": "No se registró ninguna inspección de recogida, por lo que no hay referencia con la que comparar las fotos de devolución.",
+    "hu": "Nem készült átvételi állapotfelmérés, ezért nincs mihez hasonlítani a visszaadáskori fotókat."
+  },
+  "opDmgNoReturnYet": {
+    "en": "The return inspection has not been filed yet.",
+    "es": "Todavía no se ha registrado la inspección de devolución.",
+    "hu": "A visszaadáskori állapotfelmérés még nem készült el."
+  },
+  "opDmgReadings": {
+    "en": "Mileage and fuel",
+    "es": "Kilometraje y combustible",
+    "hu": "Kilométeróra és üzemanyag"
+  },
+  "opDmgDifference": {
+    "en": "Difference",
+    "es": "Diferencia",
+    "hu": "Különbség"
+  },
+  "fuelEmpty": {
+    "en": "Empty",
+    "es": "Vacío",
+    "hu": "Üres"
+  },
+  "fuelFull": {
+    "en": "Full",
+    "es": "Lleno",
+    "hu": "Tele"
+  },
+  "opDmgSigned": {
+    "en": "Signed",
+    "es": "Firmado",
+    "hu": "Aláírva"
+  },
+  "opDmgNotSigned": {
+    "en": "Not signed",
+    "es": "Sin firmar",
+    "hu": "Nincs aláírva"
+  },
+  "opDmgMaxChargeable": {
+    "en": "Maximum chargeable",
+    "es": "Importe máximo a cobrar",
+    "hu": "Maximálisan terhelhető összeg"
+  },
+  "opDmgAlreadyCharged": {
+    "en": "Already charged",
+    "es": "Ya cobrado",
+    "hu": "Már megterhelve"
+  },
+  "opDmgAmountLabel": {
+    "en": "Amount to charge",
+    "es": "Importe a cobrar",
+    "hu": "Terhelendő összeg"
+  },
+  "opDmgAmountA11y": {
+    "en": "Amount to charge against the deposit",
+    "es": "Importe a cobrar del depósito",
+    "hu": "A kaucióból terhelendő összeg"
+  },
+  "opDmgCappedAt": {
+    "en": "Capped at the deposit of {amount}.",
+    "es": "Limitado al depósito de {amount}.",
+    "hu": "A(z) {amount} összegű kaucióra korlátozva."
+  },
+  "opDmgChargeFull": {
+    "en": "Use the full deposit",
+    "es": "Usar el depósito completo",
+    "hu": "A teljes kaució felhasználása"
+  },
+  "opDmgChargeDeposit": {
+    "en": "Charge deposit",
+    "es": "Cobrar depósito",
+    "hu": "Kaució terhelése"
+  },
+  "opDmgAmountInvalid": {
+    "en": "Enter an amount greater than zero.",
+    "es": "Introduce un importe mayor que cero.",
+    "hu": "Adj meg nullánál nagyobb összeget."
+  },
+  "opDmgAmountOverCap": {
+    "en": "The amount cannot exceed the deposit of {amount}.",
+    "es": "El importe no puede superar el depósito de {amount}.",
+    "hu": "Az összeg nem haladhatja meg a(z) {amount} összegű kauciót."
+  },
+  "opDmgDepositCharged": {
+    "en": "Deposit charged: {amount}",
+    "es": "Depósito cobrado: {amount}",
+    "hu": "Kaució megterhelve: {amount}"
+  },
+  "opDmgNoPlatformFee": {
+    "en": "The full amount is transferred to you. No platform fee is taken from a damage charge.",
+    "es": "El importe íntegro se te transfiere. No se aplica ninguna comisión de plataforma a un cobro por daños.",
+    "hu": "A teljes összeg hozzád kerül. A kárterhelésből nem vonunk platformdíjat."
+  },
+  "opDmgChargeWithoutReturn": {
+    "en": "No return inspection has been filed. Charging without one leaves the claim without evidence if the renter disputes it.",
+    "es": "No se ha registrado ninguna inspección de devolución. Cobrar sin ella deja la reclamación sin pruebas si el arrendatario la disputa.",
+    "hu": "Nem készült visszaadáskori állapotfelmérés. Enélkül terhelve a követelés bizonyíték nélkül marad, ha a bérlő vitatja."
+  },
+  "opDmgChargeWithoutDamage": {
+    "en": "The return inspection recorded no damage. Only charge if you can document why.",
+    "es": "La inspección de devolución no registró daños. Cobra solo si puedes documentar el motivo.",
+    "hu": "A visszaadáskori állapotfelmérés nem rögzített kárt. Csak akkor terhelj, ha dokumentálni tudod az okát."
+  },
+  "opDmgConfirmTitle": {
+    "en": "Charge the deposit?",
+    "es": "¿Cobrar el depósito?",
+    "hu": "Megterheled a kauciót?"
+  },
+  "opDmgConfirmMessage": {
+    "en": "This charges the renter's saved card immediately, against the damage documented above. It cannot be reversed from the app.",
+    "es": "Esto cobra de inmediato la tarjeta guardada del arrendatario por los daños documentados arriba. No se puede revertir desde la aplicación.",
+    "hu": "Ezzel azonnal megterheljük a bérlő elmentett kártyáját a fent dokumentált kár alapján. Az alkalmazásból nem vonható vissza."
+  },
+  "opDmgConfirmCta": {
+    "en": "Charge {amount}",
+    "es": "Cobrar {amount}",
+    "hu": "{amount} terhelése"
+  },
+  "opDmgBlockWaived": {
+    "en": "This booking carries a {amount} deposit because the renter paid for the damage waiver. There is nothing to charge here — settle any damage cost outside the app.",
+    "es": "Esta reserva tiene un depósito de {amount} porque el arrendatario pagó la exención de daños. Aquí no hay nada que cobrar: resuelve cualquier coste por daños fuera de la aplicación.",
+    "hu": "Ennél a foglalásnál {amount} a kaució, mert a bérlő megváltotta a kármentességet. Itt nincs mit terhelni – a kár költségét az alkalmazáson kívül rendezd."
+  },
+  "opDmgBlockNoCard": {
+    "en": "No card was saved for this booking, so the deposit cannot be charged.",
+    "es": "No se guardó ninguna tarjeta para esta reserva, por lo que no se puede cobrar el depósito.",
+    "hu": "Ehhez a foglaláshoz nem mentettünk el kártyát, ezért a kaució nem terhelhető."
+  },
+  "opDmgBlockAlreadyCharged": {
+    "en": "The deposit for this booking has already been charged. A booking can only be charged once.",
+    "es": "El depósito de esta reserva ya se ha cobrado. Una reserva solo se puede cobrar una vez.",
+    "hu": "Ennek a foglalásnak a kaucióját már megterheltük. Egy foglalás csak egyszer terhelhető."
+  },
+  "opDmgBlockChargeFailed": {
+    "en": "The last deposit charge was declined by the card issuer. It cannot be retried from the app — contact support to follow it up.",
+    "es": "El último cobro del depósito fue rechazado por el emisor de la tarjeta. No se puede reintentar desde la aplicación: contacta con soporte para darle seguimiento.",
+    "hu": "A legutóbbi kaucióterhelést a kártyakibocsátó elutasította. Az alkalmazásból nem ismételhető meg – fordulj az ügyfélszolgálathoz."
+  },
+  "opDmgBlockNotAuthorized": {
+    "en": "The deposit is not in a chargeable state for this booking, so nothing can be charged here.",
+    "es": "El depósito no está en un estado cobrable para esta reserva, por lo que aquí no se puede cobrar nada.",
+    "hu": "A kaució ennél a foglalásnál nem terhelhető állapotban van, ezért itt nem lehet terhelni."
+  }
+}

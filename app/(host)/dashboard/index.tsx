@@ -6,8 +6,9 @@ import { Ionicons } from '@expo/vector-icons'
 import { Spacing, Radius, Fonts, Typography } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
-import { MOCK_HOST, MOCK_HOST_LISTING, MOCK_BOOKINGS } from '@/lib/mockData'
-import { useHostBookings } from '@/lib/hooks/useBookings'
+import { MOCK_HOST } from '@/lib/mockData'
+import { useHostDashboard } from '@/lib/hooks/useHostDashboard'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { formatEURDecimal, formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { Config } from '@/constants/config'
@@ -55,38 +56,34 @@ export default function HostDashboardScreen() {
   const C = useColors()
   const { host, language } = useAuthStore()
   const hostId = Config.useMock ? MOCK_HOST.id : (host?.id ?? null)
-  const { bookings, loading } = useHostBookings(hostId)
+  // Every figure below used to be either a `Config.useMock ? n : 0` constant or a
+  // sum over unpaid bookings. The hook derives all of them from this host's real
+  // listings and PAID bookings, and owns one loading/error lifecycle for them.
+  const {
+    listings, recentBookings,
+    earningsThisMonth, earningsLastMonth, earningsAllTime,
+    upcomingPickups, activeRentals,
+    loading, error, refetch,
+  } = useHostDashboard(hostId)
   const hostData = Config.useMock ? MOCK_HOST : host
   const firstName = hostData?.name?.split(' ')[0] ?? 'Host'
 
-  const today = new Date().toISOString().split('T')[0]
-  const thisMonth = new Date().toISOString().slice(0, 7)
-
-  const monthlyEarnings = useMemo(() => {
-    if (Config.useMock) return 42000
-    return bookings
-      .filter(b => b.start_date.startsWith(thisMonth) && b.status !== 'cancelled')
-      .reduce((sum, b) => sum + (b.total_amount - b.platform_fee), 0)
-  }, [bookings, thisMonth])
-
-  const upcomingPickups = useMemo(() => {
-    if (Config.useMock) return 2
-    return bookings.filter(b => b.start_date >= today && (b.status === 'confirmed' || b.status === 'pending')).length
-  }, [bookings, today])
-
-  const activeRentals = useMemo(() => {
-    if (Config.useMock) return 1
-    return bookings.filter(b => b.status === 'active').length
-  }, [bookings])
-
   const rating = Config.useMock ? MOCK_HOST.rating : (host?.rating ?? 0)
-
-  const recentBookings = Config.useMock ? MOCK_BOOKINGS.slice(0, 3) : bookings.slice(0, 3)
 
   const styles = useMemo(() => makeStyles(C), [C])
 
   if (loading) {
     return <DashboardSkeleton />
+  }
+
+  // A failed load used to render as a confident €0 across every card. Say the
+  // numbers could not be fetched instead of publishing a wrong one.
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ErrorState message={error} onRetry={refetch} />
+      </SafeAreaView>
+    )
   }
 
   return (
@@ -97,7 +94,7 @@ export default function HostDashboardScreen() {
         {/* Quick stats */}
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, styles.statCardPrimary]}>
-            <Text style={styles.statValuePrimary}>{formatEURDecimal(monthlyEarnings)}</Text>
+            <Text style={styles.statValuePrimary}>{formatEURDecimal(earningsThisMonth, language)}</Text>
             <Text style={styles.statLabelLight}>{t('earnedThisMonth', language)}</Text>
           </View>
           <View style={styles.statCard}>
@@ -119,17 +116,20 @@ export default function HostDashboardScreen() {
           <Text style={styles.earningsTitle}>{t('hostBEarningsOverview', language)}</Text>
           <View style={styles.earningsRow}>
             <View style={styles.earningsItem}>
-              <Text style={styles.earningsAmount}>{formatEURDecimal(monthlyEarnings)}</Text>
+              <Text style={styles.earningsAmount}>{formatEURDecimal(earningsThisMonth, language)}</Text>
               <Text style={styles.earningsLabel}>{t('hostBThisMonth', language)}</Text>
             </View>
             <View style={styles.earningsDivider} />
             <View style={styles.earningsItem}>
-              <Text style={styles.earningsAmount}>{formatEURDecimal(Config.useMock ? 38500 : 0)}</Text>
+              {/* Was `Config.useMock ? 38500 : 0`, so a live host saw a flat €0
+                  for last month no matter what they had earned. */}
+              <Text style={styles.earningsAmount}>{formatEURDecimal(earningsLastMonth, language)}</Text>
               <Text style={styles.earningsLabel}>{t('hostBLastMonth', language)}</Text>
             </View>
             <View style={styles.earningsDivider} />
             <View style={styles.earningsItem}>
-              <Text style={styles.earningsAmount}>{formatEURDecimal(Config.useMock ? 420000 : 0)}</Text>
+              {/* Same for all time: `Config.useMock ? 420000 : 0`. */}
+              <Text style={styles.earningsAmount}>{formatEURDecimal(earningsAllTime, language)}</Text>
               <Text style={styles.earningsLabel}>{t('hostBAllTime', language)}</Text>
             </View>
           </View>
@@ -148,39 +148,48 @@ export default function HostDashboardScreen() {
             </TouchableOpacity>
           </View>
 
-          {Config.useMock ? (
+          {/* Was `Config.useMock ? <one hardcoded fixture card> : <empty state>`,
+              so a real host's listings section was empty forever however many
+              vehicles they had listed. These are their actual rows. */}
+          {listings.length === 0 ? (
+            <View style={styles.emptyListings}>
+              <Ionicons name="car-sport-outline" size={32} color={C.textTertiary} style={styles.emptyEmoji} importantForAccessibility="no" />
+              <Text style={styles.emptyText}>{t('hostBNoListingsYet', language)}</Text>
+            </View>
+          ) : listings.slice(0, 3).map(listing => (
             <TouchableOpacity
+              key={listing.id}
               style={styles.listingCard}
-              onPress={() => router.push(`/(consumer)/listing/${MOCK_HOST_LISTING.id}`)}
-              accessibilityLabel={`View listing: ${MOCK_HOST_LISTING.title}`}
+              onPress={() => router.push(`/(consumer)/listing/${listing.id}`)}
+              accessibilityLabel={`${t('hostLViewListing', language)}: ${listing.title}`}
               accessibilityRole="button"
             >
               <View style={styles.listingEmoji}>
                 <Ionicons name="car-sport-outline" size={32} color={C.textTertiary} importantForAccessibility="no" />
               </View>
               <View style={styles.listingInfo}>
-                <Text style={styles.listingTitle} numberOfLines={1}>{MOCK_HOST_LISTING.title}</Text>
+                <Text style={styles.listingTitle} numberOfLines={1}>{listing.title}</Text>
                 <Text style={styles.listingPrice}>
-                  {formatPricePerDay(MOCK_HOST_LISTING.price_per_day, language)}
+                  {formatPricePerDay(listing.price_per_day, language)}
                 </Text>
                 <View style={styles.listingStats}>
                   <View style={styles.listingStat}>
                     <Ionicons name="calendar-outline" size={12} color={C.textSecondary} importantForAccessibility="no" />
-                    <Text style={styles.listingStatText}>{MOCK_HOST_LISTING.booking_count} bookings</Text>
+                    <Text style={styles.listingStatText}>{listing.booking_count} bookings</Text>
                   </View>
-                  <Text style={styles.listingStatText}>★ {MOCK_HOST_LISTING.rating}</Text>
+                  <Text style={styles.listingStatText}>★ {listing.rating}</Text>
                 </View>
               </View>
+              {/* The badge was a constant "Live" before, so a paused listing
+                  still advertised itself as bookable. `available` is the real
+                  column; there is no `is_active` on rentivo_listings. */}
               <View style={styles.listingBadge}>
-                <Text style={styles.listingBadgeText}>{t('fleetLive', language)}</Text>
+                <Text style={styles.listingBadgeText}>
+                  {listing.available ? t('fleetLive', language) : t('opFleetBadgePaused', language)}
+                </Text>
               </View>
             </TouchableOpacity>
-          ) : (
-            <View style={styles.emptyListings}>
-              <Ionicons name="car-sport-outline" size={32} color={C.textTertiary} style={styles.emptyEmoji} importantForAccessibility="no" />
-              <Text style={styles.emptyText}>{t('hostBNoListingsYet', language)}</Text>
-            </View>
-          )}
+          ))}
 
           <TouchableOpacity
             style={styles.addBtn}

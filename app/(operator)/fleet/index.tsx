@@ -276,8 +276,18 @@ export default function FleetScreen() {
                 listing={item}
                 onEdit={() => router.push(`/(operator)/fleet/${item.id}`)}
                 onToggleAvailable={available => {
-                  toggleAvailability(item.id, available)
-                  showToast({ message: available ? t('opFleetToastVehicleLive', language) : t('opFleetToastVehiclePaused', language), type: 'info' })
+                  // The success toast used to fire on the line after an
+                  // un-awaited, un-caught call: "Vehicle paused" appeared over a
+                  // vehicle that was still taking bookings whenever the write
+                  // failed. Report what actually happened.
+                  void toggleAvailability(item.id, available).then(ok => {
+                    showToast({
+                      message: ok
+                        ? (available ? t('opFleetToastVehicleLive', language) : t('opFleetToastVehiclePaused', language))
+                        : t('opFleetToastSaveFailed', language),
+                      type: ok ? 'info' : 'error',
+                    })
+                  })
                 }}
               />
               <View style={[

@@ -14,7 +14,8 @@ import { Config } from '@/constants/config'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useHostBookings } from '@/lib/hooks/useBookings'
 import { formatDateRange } from '@/lib/utils/formatDate'
-import { updateBookingStatus } from '@/lib/api/bookings'
+import { updateBookingStatus, cancelBooking } from '@/lib/api/bookings'
+import { captureException } from '@/lib/sentry'
 import type { Booking, BookingStatus } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
@@ -157,12 +158,16 @@ export default function HostBookingsScreen() {
     setDecliningId(null)
     try {
       if (!Config.useMock) {
-        await updateBookingStatus(id, 'cancelled')
+        // Must go through cancelBooking(): updateBookingStatus only flipped a
+        // column, so declining a PAID booking took the guest's money and
+        // refunded nothing. See lib/api/bookings.ts.
+        await cancelBooking(id)
       }
       setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' as BookingStatus } : b))
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
       showToast({ message: t('hostBToastDeclined', language), type: 'info' })
-    } catch {
+    } catch (e) {
+      captureException(e, { screen: 'host/bookings', action: 'decline', bookingId: id })
       showToast({ message: t('hostBToastDeclineFail', language), type: 'error' })
     }
   }

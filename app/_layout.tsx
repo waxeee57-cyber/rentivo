@@ -273,13 +273,25 @@ function RootLayoutInner() {
   // Push notifications
   useEffect(() => {
     if (!session) return
-    registerForPushNotifications().then(token => {
+    registerForPushNotifications().then(async token => {
       if (!token) return
       setPushToken(token)
       const userId = (session as Record<string, unknown> & { user?: { id?: string } }).user?.id
-      if (userId) {
-        void savePushToken(userId, token, role === 'operator')
-      }
+      if (!userId) return
+
+      // Withdrawing push consent nulls the stored token (see
+      // profile/privacy-settings.tsx). This effect used to write it straight
+      // back on the next launch, so a withdrawal lasted only until the user
+      // reopened the app and marketing broadcasts resumed. Consent is read
+      // first now; no consent row means the user never opted in.
+      const { data: consent } = await supabase
+        .from('rentivo_consent')
+        .select('marketing_push')
+        .eq('user_id', userId)
+        .maybeSingle()
+      if (consent?.marketing_push !== true) return
+
+      void savePushToken(userId, token, role === 'operator')
     }).catch(() => {})
   }, [session, role, setPushToken])
 

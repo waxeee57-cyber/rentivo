@@ -10,8 +10,12 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { SkeletonCard } from '@/components/ui/Skeleton'
 import { useHostListings } from '@/lib/hooks/useListings'
+import { setHostListingAvailability } from '@/lib/api/hosts'
 import { formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useToastStore } from '@/lib/store/useToastStore'
+import { captureException } from '@/lib/sentry'
+import { Config } from '@/constants/config'
 import { t } from '@/constants/i18n'
 import type { Listing } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
@@ -113,10 +117,51 @@ function makeWizardStyles(C: ReturnType<typeof useColors>) { return StyleSheet.c
   skipBtnText: { fontFamily: Fonts.regular, fontSize: 14, color: C.textTertiary },
 }) }
 
-function HostListingCard({ listing, language }: { listing: Listing; language: 'en' | 'es' | 'hu' }) {
+function HostListingCard({
+  listing, language, hostId,
+}: { listing: Listing; language: 'en' | 'es' | 'hu'; hostId: string | null }) {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const { showToast } = useToastStore()
   const [available, setAvailable] = React.useState(listing.available)
+  const [saving, setSaving] = React.useState(false)
+
+  // Re-sync after a pull-to-refresh: the row is re-fetched but FlatList keys on
+  // `listing.id`, so the card is not remounted and its initial state would go
+  // stale against the value that just came back from the database.
+  React.useEffect(() => { setAvailable(listing.available) }, [listing.available])
+
+  // This switch was `onValueChange={setAvailable}` and nothing else: it moved a
+  // piece of component state, never wrote to rentivo_listings, so a "paused"
+  // listing stayed bookable and the switch sprang back on the next reload.
+  // Write it, and put the switch back where it was if the write fails.
+  const handleToggle = async (next: boolean) => {
+    if (!Config.useMock && !hostId) {
+      showToast({ message: t('opFleetToastSaveFailed', language), type: 'error' })
+      return
+    }
+    const previous = available
+    setAvailable(next)
+    setSaving(true)
+    try {
+      await setHostListingAvailability(listing.id, hostId ?? '', next)
+      showToast({
+        message: next
+          ? t('opFleetToastVehicleLive', language)
+          : t('opFleetToastVehiclePaused', language),
+        type: 'info',
+      })
+    } catch (e) {
+      // Revert first so the switch never claims a state the database does not
+      // hold. The host cannot act on an RLS denial or a dropped request, so it
+      // goes to Sentry rather than being swallowed.
+      setAvailable(previous)
+      captureException(e, { screen: 'host/listings', listingId: listing.id, available: next })
+      showToast({ message: t('opFleetToastSaveFailed', language), type: 'error' })
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handleShare = async () => {
     await Share.share({ message: `Check out my listing on Rentivo! rentivo.domrol.com/listing/${listing.id}` })
@@ -142,9 +187,11 @@ function HostListingCard({ listing, language }: { listing: Listing; language: 'e
         <View style={styles.toggleCol}>
           <Switch
             value={available}
-            onValueChange={setAvailable}
+            onValueChange={next => { void handleToggle(next) }}
+            disabled={saving}
             trackColor={{ false: C.border, true: C.success }}
             thumbColor={C.text}
+            accessibilityLabel={available ? t('fleetLive', language) : t('opFleetBadgePaused', language)}
           />
           <Text style={styles.toggleLabel}>{available ? t('fleetLive', language) : t('opFleetBadgePaused', language)}</Text>
         </View>
@@ -284,7 +331,9 @@ export default function HostListingsScreen() {
             colors={[C.primary]}
           />
         }
-        renderItem={({ item }) => <HostListingCard listing={item} language={language} />}
+        renderItem={({ item }) => (
+          <HostListingCard listing={item} language={language} hostId={host?.id ?? null} />
+        )}
       />
 
       <TouchableOpacity

@@ -160,9 +160,21 @@ export async function createListing(listing: Omit<Listing, 'id' | 'created_at' |
     } as Listing
   }
 
+  // `operator_id: ''` — app/(host)/listings/new.tsx and add-external.tsx both
+  // pass an empty string because a host has no operator. operator_id is a uuid
+  // column, so Postgres rejected the insert outright with "invalid input syntax
+  // for type uuid" and the screen showed its generic error toast. No host has
+  // ever been able to publish a listing; the host half of the marketplace did
+  // not work at all. Normalising here means no screen can reintroduce it.
+  const UUID_COLUMNS = ['operator_id', 'host_id', 'owner_user_id'] as const
+  const row: Record<string, unknown> = { ...listing }
+  for (const column of UUID_COLUMNS) {
+    if (row[column] === '') row[column] = null
+  }
+
   const { data, error } = await supabase
     .from('rentivo_listings')
-    .insert(listing)
+    .insert(row)
     .select()
     .single()
 

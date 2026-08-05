@@ -22,7 +22,27 @@ server = FastAPI(title="Rentivo AI Agent Core & Fintech API", version="2.0.0")
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 # Local/CI escape hatch ONLY. Anywhere else, signatures are enforced.
-SKIP_SIG_VERIFY = os.getenv("STRIPE_SKIP_SIG_VERIFY") == "true"
+#
+# This used to be the env var on its own. Set it anywhere - a leaked .env, a
+# copied deployment config, a Dockerfile ENV that outlived its purpose - and this
+# endpoint accepts ANY JSON body as a genuine Stripe event. It writes the money
+# ledger, so that is not a debug convenience, it is an unauthenticated write to
+# the books: anyone who learns the URL can invent charges.
+#
+# Two locks now. The environment must SAY it is not production, and a live
+# Stripe key vetoes the flag outright regardless of what the environment claims.
+_ENV = (os.getenv("RENTIVO_ENV") or os.getenv("ENV") or "production").strip().lower()
+_SKIP_REQUESTED = os.getenv("STRIPE_SKIP_SIG_VERIFY") == "true"
+_LIVE_KEYS = bool(STRIPE_SECRET_KEY and STRIPE_SECRET_KEY.startswith("sk_live_"))
+SKIP_SIG_VERIFY = _SKIP_REQUESTED and _ENV in {"local", "test", "ci", "development"} and not _LIVE_KEYS
+
+if _SKIP_REQUESTED and not SKIP_SIG_VERIFY:
+    logger.critical(
+        "STRIPE_SKIP_SIG_VERIFY=true was IGNORED (env=%s, live_keys=%s). "
+        "Signature verification stays on.", _ENV, _LIVE_KEYS,
+    )
+elif SKIP_SIG_VERIFY:
+    logger.warning("Stripe signature verification is DISABLED (env=%s). Never do this in production.", _ENV)
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 # SERVICE ROLE (server-side) — NEVER the anon key. Mirror the Edge Functions' chain.

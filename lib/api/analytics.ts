@@ -1,13 +1,15 @@
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
-import { MOCK_BOOKINGS } from '@/lib/mockData'
+import { MOCK_BOOKINGS, MOCK_LISTINGS } from '@/lib/mockData'
+import { calculateOccupancyRate } from '@/lib/utils/fleetOccupancy'
 import type { Booking } from '@/types'
 
 export interface OperatorAnalytics {
   totalRevenue: number
   totalBookings: number
   avgBookingValue: number
-  occupancyRate: number
+  /** null when the operator has no active listings, so the screen shows a dash. */
+  occupancyRate: number | null
   bestListingId: string | null
   bestListingTitle: string | null
   bestListingRevenue: number
@@ -60,30 +62,67 @@ function buildRevenueByPeriod(
   return Object.entries(groups).map(([label, amount]) => ({ label, amount }))
 }
 
+/**
+ * Highest-earning listing in the set. The mock branch used to report
+ * `bookings[0]` with a hardcoded 'BMW 5 Series' fallback title and a revenue of
+ * `totalRevenue * 0.4`, so the "Top Performer" card showed a made-up number
+ * beside a real-looking name. Both branches now derive it from the bookings.
+ */
+function bestListingFrom(bookings: Booking[]): {
+  id: string | null
+  title: string | null
+  revenue: number
+} {
+  const byListing: Record<string, { title: string; revenue: number }> = {}
+  for (const b of bookings) {
+    const lid = b.listing_id
+    if (byListing[lid] == null) {
+      byListing[lid] = { title: b.listing?.title ?? lid, revenue: 0 }
+    }
+    byListing[lid].revenue += b.total_amount ?? 0
+  }
+  const best = Object.entries(byListing).sort((a, b) => b[1].revenue - a[1].revenue)[0]
+  return {
+    id: best?.[0] ?? null,
+    title: best?.[1]?.title ?? null,
+    revenue: best != null ? Math.round(best[1].revenue * 100) / 100 : 0,
+  }
+}
+
 export async function getOperatorAnalytics(
   operatorId: string,
   period: Period = 'month',
 ): Promise<OperatorAnalytics> {
+  const periodStart = getPeriodStart(period)
+  const periodEnd = new Date()
+
   if (Config.useMock) {
     const bookings = MOCK_BOOKINGS.filter(
-      b => b.status === 'completed' || b.status === 'confirmed',
+      b => (b.status === 'completed' || b.status === 'confirmed') &&
+        b.payment_status === 'paid',
     )
     const totalRevenue = bookings.reduce((s, b) => s + (b.total_amount ?? 0), 0)
+    const best = bestListingFrom(bookings)
     return {
       totalRevenue: Math.round(totalRevenue * 100) / 100,
       totalBookings: bookings.length,
       avgBookingValue: bookings.length
         ? Math.round((totalRevenue / bookings.length) * 100) / 100
         : 0,
-      occupancyRate: 72,
-      bestListingId: bookings[0]?.listing_id ?? null,
-      bestListingTitle: bookings[0]?.listing?.title ?? 'BMW 5 Series',
-      bestListingRevenue: Math.round(totalRevenue * 0.4 * 100) / 100,
+      // Was a hardcoded 72. Mock mode now runs the same maths as live mode so the
+      // number moves when the mock data does.
+      occupancyRate: calculateOccupancyRate(
+        bookings,
+        MOCK_LISTINGS.filter(l => l.available).length,
+        periodStart,
+        periodEnd,
+      ),
+      bestListingId: best.id,
+      bestListingTitle: best.title,
+      bestListingRevenue: best.revenue,
       revenueByPeriod: buildRevenueByPeriod(bookings, period),
     }
   }
-
-  const periodStart = getPeriodStart(period)
 
   const bookings: Booking[] = []
   for (let page = 0; page < ANALYTICS_MAX_PAGES; page++) {
@@ -93,6 +132,12 @@ export async function getOperatorAnalytics(
       .select('*, listing:rentivo_listings(id,title)')
       .eq('operator_id', operatorId)
       .in('status', ['completed', 'confirmed'])
+      // `status` alone does not mean the money arrived. A host can flip a booking
+      // to 'confirmed' by hand before any payment (handleConfirm in
+      // app/(host)/bookings/index.tsx), so unpaid bookings were being counted as
+      // revenue and as occupancy. This is the same "money is real" test
+      // create-booking uses when deciding which bookings hold inventory.
+      .in('payment_status', ['paid', 'processing'])
       .gte('created_at', periodStart.toISOString())
       .order('created_at', { ascending: true })
       .range(from, from + ANALYTICS_PAGE_SIZE - 1)
@@ -102,7 +147,8 @@ export async function getOperatorAnalytics(
         totalRevenue: 0,
         totalBookings: 0,
         avgBookingValue: 0,
-        occupancyRate: 0,
+        // A failed query knows nothing about the fleet, so it must not claim 0%.
+        occupancyRate: null,
         bestListingId: null,
         bestListingTitle: null,
         bestListingRevenue: 0,
@@ -117,19 +163,17 @@ export async function getOperatorAnalytics(
   }
 
   const totalRevenue = bookings.reduce((s, b) => s + (b.total_amount ?? 0), 0)
+  const best = bestListingFrom(bookings)
 
-  // Best listing by revenue
-  const revenueByListing: Record<string, { title: string; revenue: number }> = {}
-  for (const b of bookings) {
-    const lid = b.listing_id
-    if (revenueByListing[lid] == null) {
-      revenueByListing[lid] = { title: b.listing?.title ?? lid, revenue: 0 }
-    }
-    revenueByListing[lid].revenue += b.total_amount ?? 0
-  }
-  const bestEntry = Object.entries(revenueByListing).sort(
-    (a, b) => b[1].revenue - a[1].revenue,
-  )[0]
+  // Occupancy needs the fleet it is measured against. `available` is the
+  // listing's own on/off switch, so an operator who parked half the fleet is not
+  // charged for the vehicles they deliberately took off the market. head+count
+  // keeps this to a COUNT query rather than pulling the rows.
+  const { count: activeListings } = await supabase
+    .from('rentivo_listings')
+    .select('id', { count: 'exact', head: true })
+    .eq('operator_id', operatorId)
+    .eq('available', true)
 
   return {
     totalRevenue: Math.round(totalRevenue * 100) / 100,
@@ -137,12 +181,15 @@ export async function getOperatorAnalytics(
     avgBookingValue: bookings.length
       ? Math.round((totalRevenue / bookings.length) * 100) / 100
       : 0,
-    occupancyRate: Math.min(100, Math.round((bookings.length / 30) * 100)),
-    bestListingId: bestEntry?.[0] ?? null,
-    bestListingTitle: bestEntry?.[1]?.title ?? null,
-    bestListingRevenue: bestEntry != null
-      ? Math.round(bestEntry[1].revenue * 100) / 100
-      : 0,
+    occupancyRate: calculateOccupancyRate(
+      bookings,
+      activeListings ?? 0,
+      periodStart,
+      periodEnd,
+    ),
+    bestListingId: best.id,
+    bestListingTitle: best.title,
+    bestListingRevenue: best.revenue,
     revenueByPeriod: buildRevenueByPeriod(bookings, period),
   }
 }

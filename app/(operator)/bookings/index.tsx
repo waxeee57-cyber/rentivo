@@ -12,7 +12,9 @@ import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useOperatorBookings } from '@/lib/hooks/useOperatorBookings'
 import { useToastStore } from '@/lib/store/useToastStore'
-import { updateBookingStatus } from '@/lib/api/bookings'
+import { updateBookingStatus, cancelBooking } from '@/lib/api/bookings'
+import { captureException } from '@/lib/sentry'
+import { formatEUR } from '@/lib/utils/formatCurrency'
 import { Config } from '@/constants/config'
 import { MOCK_OPERATOR } from '@/lib/mockData'
 import { t, type TranslationKey } from '@/constants/i18n'
@@ -95,11 +97,22 @@ export default function OperatorBookingsScreen() {
     const id = decliningId
     setDecliningId(null)
     try {
-      await updateBookingStatus(id, 'cancelled')
+      // The confirm sheet promises the guest is "refunded according to the
+      // cancellation policy". This used to call updateBookingStatus, which
+      // only flips a column - so a paid guest lost their money against a
+      // written promise on screen. cancelBooking() is the only path that
+      // reaches stripe.refunds.create.
+      const result = await cancelBooking(id)
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-      showToast({ message: 'Booking declined.', type: 'info' })
+      showToast({
+        message: result.refundAmount > 0
+          ? t('opBkDeclinedRefunded', language, { amount: formatEUR(result.refundAmount, language) })
+          : t('opBkDeclined', language),
+        type: 'info',
+      })
       refetch()
-    } catch {
+    } catch (e) {
+      captureException(e, { screen: 'operator/bookings', action: 'decline', bookingId: id })
       showToast({ message: 'Failed to decline booking. Try again.', type: 'error' })
     }
   }

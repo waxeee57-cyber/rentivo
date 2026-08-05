@@ -388,6 +388,52 @@ deno_version = 2
 [functions.stripe-webhook]
 verify_jwt = false
 
+# Every function below is publicly reachable ON PURPOSE and authenticates the
+# caller itself. Without these entries the CLI applies the default (verify_jwt =
+# true) on the next deploy from a clean checkout, and the gateway starts
+# answering 401 before the handler runs — silently killing whichever integration
+# each one serves. The platform happened to hold the right value; nothing in the
+# repo recorded it.
+
+# Didit posts an HMAC-signed callback with no Supabase JWT. The signature is
+# verified over the raw body before anything is parsed or written.
+[functions.didit-webhook]
+verify_jwt = false
+
+# Subscribed calendar apps (Google Calendar, Airbnb, Booking.com) cannot send an
+# Authorization header. Authorised by a per-listing feed token in the URL.
+[functions.ical-export]
+verify_jwt = false
+
+# Called server-to-server on a shared internal secret, not a user session.
+[functions.broadcast-push]
+verify_jwt = false
+
+# These read the Authorization header themselves and resolve the user with
+# supabase.auth.getUser, then check that the caller is a party to the row they
+# are touching. Gateway JWT verification would be redundant, but its absence is
+# not what makes them safe — the in-handler check is.
+[functions.create-booking]
+verify_jwt = false
+
+[functions.cancel-booking]
+verify_jwt = false
+
+[functions.charge-deposit]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false
+
+[functions.create-stripe-account-link]
+verify_jwt = false
+
+[functions.pricing-suggestions]
+verify_jwt = false
+
+[functions.flight-tracker]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

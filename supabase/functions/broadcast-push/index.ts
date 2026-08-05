@@ -60,17 +60,24 @@ serve(async (req) => {
     if (audience === 'users' || audience === 'all') {
       for (let page = 0; page < DB_MAX_PAGES; page++) {
         const from = page * DB_PAGE_SIZE
-        let q = supabase
+        // Consent, not just token presence. A user who withdrew marketing push
+        // in privacy settings kept receiving these: withdrawal only nulled the
+        // token, and the app wrote the token back on the next launch. Consent is
+        // the lawful basis for a marketing broadcast, so it is the filter.
+        // An inner join means no consent row = not included.
+        const q = supabase
           .from('rentivo_users')
-          .select('push_token')
+          .select('id, push_token, consent:rentivo_consent!inner(marketing_push)')
           .not('push_token', 'is', null)
+          .eq('rentivo_consent.marketing_push', true)
           // Order by the primary key: `.range()` without a deterministic sort can
           // repeat or skip rows between pages, which would double-send or silently
           // drop recipients.
           .order('id', { ascending: true })
           .range(from, from + DB_PAGE_SIZE - 1)
-        if (payload.segment?.city) q = q.ilike('city', payload.segment.city)
-        if (payload.segment?.country) q = q.eq('country', payload.segment.country)
+        // `city` and `country` are NOT columns on rentivo_users (they are on
+        // rentivo_operators). PostgREST returned 42703 and the `throw` below
+        // failed the ENTIRE broadcast whenever a geographic segment was used.
         const { data, error } = await q
         if (error) throw error
         for (const row of data ?? []) {

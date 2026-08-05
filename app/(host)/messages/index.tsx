@@ -6,11 +6,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { ScreenHeader } from '@/components/ui/ScreenHeader'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { SkeletonCard } from '@/components/ui/Skeleton'
 import { Ionicons } from '@expo/vector-icons'
 import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Config } from '@/constants/config'
 import { MOCK_CONVERSATIONS } from '@/lib/mockData'
 import { supabase } from '@/lib/supabase'
+import { fetchHostListings } from '@/lib/api/listings'
+import { captureException } from '@/lib/sentry'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
 import type { Conversation } from '@/types'
@@ -37,20 +41,54 @@ export default function HostMessagesScreen() {
     Config.useMock ? [...MOCK_CONVERSATIONS] : []
   )
   const [refreshing, setRefreshing] = useState(false)
+  const [loading, setLoading] = useState(!Config.useMock)
+  const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (Config.useMock) {
       setConversations([...MOCK_CONVERSATIONS])
+      setError(null)
+      setLoading(false)
       return
     }
-    if (!host?.id) return
-    const { data } = await supabase
-      .from('rentivo_conversations')
-      .select('*, listing:rentivo_listings(*)')
-      .eq('host_id', host.id)
-      .order('last_message_at', { ascending: false })
-    setConversations((data as Conversation[]) ?? [])
-  }, [host?.id])
+    // Was a bare `return`. Now that there is a loading flag, that would hang the
+    // screen forever for a signed-in user with no host record.
+    if (!host?.id) {
+      setConversations([])
+      setLoading(false)
+      return
+    }
+    setError(null)
+    try {
+      // rentivo_conversations has NO host_id column. Its participant columns are
+      // operator_id, operator_user_id and user_id, so `.eq('host_id', host.id)`
+      // made PostgREST reject the whole request. The `error` half of the
+      // response was destructured away, `data` came back null, and every host
+      // was shown an empty inbox with nothing logged anywhere. Scope by the
+      // host's own listings instead, which is a column that exists.
+      const listings = await fetchHostListings(host.id)
+      const listingIds = listings.map(l => l.id)
+      if (listingIds.length === 0) {
+        setConversations([])
+        return
+      }
+      const { data, error: queryError } = await supabase
+        .from('rentivo_conversations')
+        .select('*, listing:rentivo_listings(*)')
+        .in('listing_id', listingIds)
+        .order('last_message_at', { ascending: false })
+      if (queryError) throw queryError
+      setConversations((data as Conversation[]) ?? [])
+    } catch (e) {
+      // An RLS denial or a dropped request is not something the host can act on,
+      // and rendering it as an empty inbox hides an outage behind a screen that
+      // looks perfectly normal.
+      captureException(e, { screen: 'host/messages', hostId: host.id })
+      setError(t('hostLSomethingWentWrong', language))
+    } finally {
+      setLoading(false)
+    }
+  }, [host?.id, language])
 
   React.useEffect(() => {
     void load()
@@ -67,6 +105,26 @@ export default function HostMessagesScreen() {
       prev.map(c => c.id === conv.id ? { ...c, unread_operator: 0 } : c)
     )
     router.push(`/(consumer)/bookings/chat/${conv.booking_id}`)
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <ScreenHeader title={t('messagesTitle', language)} />
+        <View style={styles.listContent}><SkeletonCard /></View>
+      </SafeAreaView>
+    )
+  }
+
+  // Only when there is nothing to show: a refresh that fails over an inbox the
+  // host can already read should not blank it out.
+  if (error && conversations.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <ScreenHeader title={t('messagesTitle', language)} />
+        <ErrorState message={error} onRetry={() => { void load() }} />
+      </SafeAreaView>
+    )
   }
 
   return (

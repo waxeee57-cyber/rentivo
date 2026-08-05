@@ -25,6 +25,7 @@ import type { FuelLevel } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { captureException } from '@/lib/sentry'
 
 const FUEL_LEVELS: { key: FuelLevel; label: string }[] = [
   { key: 'empty', label: 'Empty' },
@@ -143,10 +144,16 @@ export default function PickupDamageScreen() {
         }
       }
 
+      // `listing_id` / `operator_id` are deliberately absent. They were empty
+      // strings here, and both are UUID columns, so Postgres rejected EVERY
+      // insert with "invalid input syntax for type uuid" - after all six
+      // photos had already uploaded - and the bare `catch` below turned it
+      // into a generic toast. No damage report has ever been stored, and every
+      // deposit dispute has had zero evidence behind it. `createDamageReport`
+      // now derives both from the booking and no longer accepts them, so this
+      // screen cannot reintroduce the bug.
       await createDamageReport({
         booking_id: bkId,
-        listing_id: '',
-        operator_id: '',
         type: 'pickup',
         photo_front: uploadedPhotos.front ?? null,
         photo_back: uploadedPhotos.back ?? null,
@@ -169,7 +176,12 @@ export default function PickupDamageScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       showToast({ message: t('cdmgPickupComplete', language), type: 'success' })
       router.back()
-    } catch {
+    } catch (e) {
+      // The bare `catch` here is what hid the UUID bug above for as long as it
+      // existed: six photos uploaded, the row rejected, and a generic toast.
+      // Report it so the next failure of this kind is visible in Sentry rather
+      // than only in a renter's confusion at the counter.
+      captureException(e, { screen: 'damage/pickup', bookingId: bkId })
       showToast({ message: getError('server_error'), type: 'error' })
     } finally {
       setSubmitting(false)

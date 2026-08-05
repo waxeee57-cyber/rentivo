@@ -15,6 +15,7 @@ import { WhatNextScreen } from '@/components/ui/WhatNextScreen'
 import { useCamera } from '@/lib/hooks/useCamera'
 import { supabase } from '@/lib/supabase'
 import { createListing } from '@/lib/api/listings'
+import { uploadListingPhotos } from '@/lib/storage'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
@@ -126,6 +127,10 @@ export default function NewHostListingScreen() {
         return
       }
 
+      // Local picker URIs resolve on this phone only. They were stored as the
+      // listing's photos, so every renter saw a broken image.
+      const photoUrls = await uploadListingPhotos(hostRecord.id, photos)
+
       await createListing({
         operator_id: '',
         host_id: hostRecord.id,
@@ -148,8 +153,8 @@ export default function NewHostListingScreen() {
         license_plate: null,
         features,
         rules: null,
-        images: photos.filter((p): p is string => p !== null),
-        cover_image_url: photos.find((p) => p !== null) ?? null,
+        images: photoUrls,
+        cover_image_url: photoUrls[0] ?? null,
         cancellation_policy: policy as Listing['cancellation_policy'],
         pickup_address: address.trim() || null,
         latitude: null,

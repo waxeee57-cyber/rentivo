@@ -139,6 +139,25 @@ export async function createBooking(
 }
 
 export async function updateBookingStatus(id: string, status: BookingStatus): Promise<void> {
+  // 'cancelled' is NOT reachable here any more.
+  //
+  // Every operator and host decline called this and nothing else, so the flow
+  // flipped a status column and stopped. `cancel-booking` - the ONLY code path
+  // in this repo that calls `stripe.refunds.create` - was never reached from
+  // that side. Meanwhile the operator's own confirmation sheet said "The guest
+  // will be notified and refunded according to the cancellation policy". A
+  // paid guest lost their money against an explicit written promise on screen,
+  // which is chargeback material as well as simply wrong.
+  //
+  // Throwing rather than quietly redirecting: a caller that reaches this line
+  // has skipped the refund, and that must fail loudly during development
+  // rather than be papered over at runtime.
+  if (status === 'cancelled') {
+    throw new Error(
+      'Use cancelBooking() — cancelling has to go through the cancel-booking function so the refund actually happens.',
+    )
+  }
+
   // Mock mode used to fall through to a real UPDATE. supabase-js reports NO error for
   // a zero-row update, so the caller showed "Booking confirmed" while nothing changed
   // (and against production data at that). `createBooking` above already gates here.

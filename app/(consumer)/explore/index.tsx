@@ -389,7 +389,7 @@ export default function ExploreScreen() {
           style={styles.filterBtn}
           onPress={() => {
             void impactAsync(ImpactFeedbackStyle.Light)
-            router.push('/(consumer)/feed')
+            router.push('/feed')
           }}
           accessibilityLabel={t('feedFeed', language)}
           accessibilityRole="button"

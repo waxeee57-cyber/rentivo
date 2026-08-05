@@ -18,7 +18,8 @@ import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { formatDate, formatDateRange } from '@/lib/utils/formatDate'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
 import { useBooking } from '@/lib/hooks/useBookings'
-import { updateBookingStatus } from '@/lib/api/bookings'
+import { updateBookingStatus, cancelBooking } from '@/lib/api/bookings'
+import { captureException } from '@/lib/sentry'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import type { BookingStatus } from '@/types'
@@ -60,11 +61,15 @@ export default function OperatorBookingDetailScreen() {
   const handleDecline = async () => {
     setStatusChanging(true)
     try {
-      await updateBookingStatus(booking.id, 'cancelled')
+      // Must go through cancelBooking(): updateBookingStatus only flipped a
+      // column, so declining a PAID booking took the guest's money and
+      // refunded nothing. See lib/api/bookings.ts.
+      await cancelBooking(booking.id)
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
       showToast({ message: t('opBkToastDeclined', language), type: 'error' })
       router.back()
-    } catch {
+    } catch (e) {
+      captureException(e, { screen: 'operator/booking-detail', action: 'decline', bookingId: booking.id })
       showToast({ message: t('opBkToastDeclineFail', language), type: 'error' })
     } finally {
       setStatusChanging(false)
@@ -185,6 +190,24 @@ export default function OperatorBookingDetailScreen() {
             <Text style={styles.detail}>{t('opBkReturn', language)}</Text>
             <Badge label={booking.return_damage_done ? t('opBkDone', language) : t('pending', language)} variant={booking.return_damage_done ? 'success' : 'warning'} />
           </View>
+
+          {/* The operator damage review screen existed and was registered in
+              the layout, but NOTHING in the app navigated to it — the only way
+              in was a deep link. So the photos, mileage and signatures the
+              renter captured were unreachable for the one person who needs
+              them, and the deposit could never be charged against damage. */}
+          {(booking.pickup_damage_done || booking.return_damage_done) && (
+            <TouchableOpacity
+              style={styles.inspectionLink}
+              onPress={() => router.push(`/(operator)/damage/${booking.id}`)}
+              accessibilityRole="button"
+              accessibilityLabel={t('opBkInspection', language)}
+            >
+              <Ionicons name="images-outline" size={15} color={C.text} importantForAccessibility="no" />
+              <Text style={styles.inspectionLinkText}>{t('opBkOpenInspection', language)}</Text>
+              <Ionicons name="chevron-forward" size={15} color={C.textTertiary} importantForAccessibility="no" />
+            </TouchableOpacity>
+          )}
         </Card>
 
         {/* Payout breakdown */}
@@ -306,6 +329,17 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   payoutVal: { fontSize: 20, fontFamily: Fonts.extrabold, color: C.success },
   payoutNote: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: 4 },
   inspRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  inspectionLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.base,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+    minHeight: 44,
+  },
+  inspectionLinkText: { flex: 1, fontSize: 14, fontFamily: Fonts.semibold, color: C.text },
   actions: { marginTop: Spacing.md },
 
   // Action banner (always first visible for pending bookings)

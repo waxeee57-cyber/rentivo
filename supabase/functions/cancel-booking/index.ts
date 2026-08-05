@@ -80,15 +80,24 @@ serve(async (req) => {
     // listing. Anyone else is rejected outright.
     let authorised = booking.user_id === user.id
     if (!authorised) {
-      const { data: owned } = await supabase
+      // `auth_id`, NOT `user_id`. Neither rentivo_operators nor rentivo_hosts
+      // has a user_id column, so this select used to fail outright: `owned` came
+      // back null, ownerIds was empty, and EVERY owner-side cancellation got a
+      // 403. Operator and host declines route through this function, so decline
+      // was dead on both surfaces.
+      const { data: owned, error: ownedError } = await supabase
         .from('rentivo_listings')
-        .select('id, owner_user_id, operator:rentivo_operators(user_id), host:rentivo_hosts(user_id)')
+        .select('id, owner_user_id, operator:rentivo_operators(auth_id), host:rentivo_hosts(auth_id)')
         .eq('id', booking.listing_id)
         .maybeSingle()
+      if (ownedError) {
+        console.error('[cancel-booking] ownership lookup failed', booking.listing_id, ownedError)
+        return jsonError('Could not verify ownership', 500)
+      }
       const ownerIds = [
         owned?.owner_user_id,
-        (owned?.operator as { user_id?: string } | null)?.user_id,
-        (owned?.host as { user_id?: string } | null)?.user_id,
+        (owned?.operator as { auth_id?: string } | null)?.auth_id,
+        (owned?.host as { auth_id?: string } | null)?.auth_id,
       ].filter(Boolean)
       authorised = ownerIds.includes(user.id)
     }
@@ -123,8 +132,41 @@ serve(async (req) => {
     const percent = ownerCancelled ? 100 : refundPercentFor(policy, hoursUntilStart)
 
     const paidTotal = numOr0(booking.total_amount)
-    const wasPaid = booking.payment_status === 'paid' || booking.payment_status === 'captured'
-    const refundAmount = wasPaid ? Math.round(paidTotal * percent) / 100 : 0
+    let wasPaid = booking.payment_status === 'paid' || booking.payment_status === 'captured'
+
+    // ── The cancellation race, closed from this side.
+    //
+    // payment_status only becomes 'paid' when the webhook lands. Cancel in the
+    // seconds between authorisation and that webhook and this function used to
+    // compute a €0 refund on money Stripe had already taken. Ask Stripe what
+    // actually happened rather than trusting our own column.
+    let capturedMinor: number | null = null
+    if (!wasPaid && booking.payment_intent_id) {
+      try {
+        const pi = await stripe.paymentIntents.retrieve(booking.payment_intent_id)
+        if (pi.status === 'succeeded' || pi.status === 'requires_capture') {
+          wasPaid = true
+          capturedMinor = pi.amount_received || pi.amount || 0
+        } else if (
+          pi.status === 'requires_payment_method' ||
+          pi.status === 'requires_confirmation' ||
+          pi.status === 'requires_action'
+        ) {
+          // Kill the intent so the charge cannot land after we cancel. Failure
+          // is non-fatal: the webhook now refunds a charge that arrives for a
+          // cancelled booking.
+          await stripe.paymentIntents.cancel(booking.payment_intent_id).catch(() => {})
+        }
+        // 'processing' is neither capturable nor cancelable — the webhook's
+        // cancelled-booking branch refunds it when it settles.
+      } catch (err) {
+        console.error('[cancel-booking] PaymentIntent lookup failed', booking.payment_intent_id, err)
+      }
+    }
+
+    // Money Stripe actually holds beats our own total_amount column.
+    const refundBase = capturedMinor != null ? capturedMinor / 100 : paidTotal
+    const refundAmount = wasPaid ? Math.round(refundBase * percent) / 100 : 0
 
     let refundId: string | null = null
     if (refundAmount > 0 && booking.payment_intent_id) {
@@ -145,7 +187,7 @@ serve(async (req) => {
     }
 
     const nextPaymentStatus = refundAmount > 0
-      ? (refundAmount >= paidTotal ? 'refunded' : 'partially_refunded')
+      ? (refundAmount >= refundBase ? 'refunded' : 'partially_refunded')
       : booking.payment_status
 
     const { error: updateError } = await supabase
@@ -155,6 +197,9 @@ serve(async (req) => {
         payment_status: nextPaymentStatus,
         cancelled_at: new Date().toISOString(),
         refund_amount: refundAmount,
+        // The column existed and was never written, so a support question of
+        // "did this refund actually go out?" had no answer in our own data.
+        refund_id: refundId,
       })
       .eq('id', booking_id)
 

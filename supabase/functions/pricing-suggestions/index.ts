@@ -83,16 +83,55 @@ serve(async (req) => {
     }
     if (!owns) return json({ error: 'Not authorized for this listing' }, 403)
 
-    // Get comparable listings in the same category
-    const { data: comparables } = await supabase
-      .from('rentivo_listings')
-      .select('price_per_day')
-      .eq('category', category)
-      .neq('id', listing_id)
-      .eq('available', true)
-      .limit(20)
+    // ── Comparables in the same category AND the same city.
+    //
+    // `city` was destructured, length-checked and interpolated into both the
+    // fallback insight text and the Claude prompt, but it never reached the
+    // query: the aggregate below was every listing in the category anywhere in
+    // the world, then reported to the operator as "Market average in {city}".
+    // A Budapest operator was being priced against Marbella.
+    //
+    // rentivo_listings has no city column of its own (verified against the live
+    // schema). A listing's city lives on its owning operator or host, which is
+    // exactly where app/(operator)/fleet/[id].tsx reads the value it sends here
+    // (`listing.operator?.city ?? listing.host?.city`). So resolve the owners in
+    // that city first, then constrain the listings to them.
+    const cityFilter = typeof city === 'string' ? city.trim() : ''
 
-    const prices = (comparables ?? []).map((l: { price_per_day: number }) => l.price_per_day).filter(Boolean)
+    // null = no city was supplied, so keep the previous worldwide behaviour.
+    // An empty array = the city was supplied but has no owners, so there are no
+    // comparables at all and the query is skipped rather than run unfiltered.
+    let ownerFilters: string[] | null = null
+    if (cityFilter) {
+      const [ops, hosts] = await Promise.all([
+        supabase.from('rentivo_operators').select('id').eq('city', cityFilter).limit(500),
+        supabase.from('rentivo_hosts').select('id').eq('city', cityFilter).limit(500),
+      ])
+      const opIds = (ops.data ?? []).map((o: { id: string }) => o.id)
+      const hostIds = (hosts.data ?? []).map((h: { id: string }) => h.id)
+      ownerFilters = []
+      if (opIds.length > 0) ownerFilters.push(`operator_id.in.(${opIds.join(',')})`)
+      if (hostIds.length > 0) ownerFilters.push(`host_id.in.(${hostIds.join(',')})`)
+    }
+
+    let comparables: { price_per_day: number }[] = []
+    if (ownerFilters === null || ownerFilters.length > 0) {
+      // The bound stays in the chain, not on the await: a `.limit()` applied on a
+      // separate line reads as unbounded to both the quality gate and to anyone
+      // skimming the query.
+      let q = supabase
+        .from('rentivo_listings')
+        .select('price_per_day')
+        .eq('category', category)
+        .neq('id', listing_id)
+        .eq('available', true)
+        .limit(20)
+      if (ownerFilters !== null) q = q.or(ownerFilters.join(','))
+      const { data } = await q
+      comparables = (data ?? []) as { price_per_day: number }[]
+    }
+
+    const prices = comparables.map((l: { price_per_day: number }) => l.price_per_day).filter(Boolean)
     const avgPrice = prices.length > 0
       ? Math.round(prices.reduce((a: number, b: number) => a + b, 0) / prices.length)
       : current_price

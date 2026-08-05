@@ -8,11 +8,15 @@ import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useToastStore } from '@/lib/store/useToastStore'
+import { supabase } from '@/lib/supabase'
+import { captureException } from '@/lib/sentry'
 import { MOCK_HOST } from '@/lib/mockData'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
 import type { TranslationKey } from '@/constants/i18n'
+import type { Host } from '@/types'
 
 const CATEGORY_CHIPS: { key: string; icon: React.ComponentProps<typeof Ionicons>['name']; labelKey: string }[] = [
   { key: 'car', icon: 'car-sport-outline', labelKey: 'auth2CatCar' },
@@ -29,6 +33,7 @@ export default function HostSetupScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const { setHost, setRole, language } = useAuthStore()
+  const showToast = useToastStore(s => s.showToast)
   const [step, setStep] = useState<Step>(1)
   const [name, setName] = useState('')
   const [city, setCity] = useState('')
@@ -65,15 +70,65 @@ export default function HostSetupScreen() {
     }
   }
 
-  const handleComplete = () => {
+  /**
+   * Create the host record.
+   *
+   * This used to be a 1000ms setTimeout that set mock state and navigated. In
+   * production it wrote NOTHING: no rentivo_hosts row was created anywhere in
+   * the app, so the name, city, bio and categories collected over three steps
+   * were discarded on the way to the dashboard. Every host screen then failed
+   * its `.eq('auth_id', user.id)` lookup and showed "host not found" — the host
+   * half of the marketplace could not be entered at all.
+   *
+   * Mirrors app/auth/operator-setup.tsx, which does this correctly.
+   */
+  const handleComplete = async () => {
     setOnboarding(true)
-    setTimeout(() => {
+    try {
       if (Config.useMock) {
+        await new Promise(r => setTimeout(r, 600))
         setHost(MOCK_HOST)
         setRole('host')
+        router.replace('/(host)/dashboard')
+        return
       }
+
+      const { data: { session } } = await supabase.auth.getSession()
+      const authId = session?.user?.id
+      if (!authId) {
+        showToast({ message: t('authError', language), type: 'error' })
+        router.replace('/auth/login')
+        return
+      }
+
+      // Re-entering setup must not create a second host record for the same
+      // account, so this is an upsert on auth_id rather than a plain insert.
+      const { data, error } = await supabase
+        .from('rentivo_hosts')
+        .upsert({
+          auth_id: authId,
+          name: name.trim(),
+          city: city.trim(),
+          bio: bio.trim() || null,
+          email: session.user.email ?? null,
+          country: 'ES',
+          active: true,
+          identity_verified: verified,
+        }, { onConflict: 'auth_id' })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setHost(data as Host)
+      setRole('host')
       router.replace('/(host)/dashboard')
-    }, 1000)
+    } catch (e) {
+      captureException(e, { screen: 'auth/host-setup' })
+      showToast({ message: t('authError', language), type: 'error' })
+    } finally {
+      setOnboarding(false)
+    }
   }
 
   return (

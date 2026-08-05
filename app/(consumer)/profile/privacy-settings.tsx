@@ -113,10 +113,16 @@ export default function PrivacySettingsScreen() {
         [`${field}_at`]: value ? now : null,
       }
 
-      await supabase.from('rentivo_consent').upsert(
+      // The result was discarded. supabase-js RESOLVES on a PostgREST failure
+      // rather than rejecting, so the surrounding try/catch could not see it:
+      // a rejected consent write showed as an applied toggle, and the switch
+      // had already been flipped optimistically by the caller. Withdrawing
+      // consent is exactly the operation that must not silently fail.
+      const { error: consentError } = await supabase.from('rentivo_consent').upsert(
         { user_id: session.user.id, ...updateData },
         { onConflict: 'user_id' },
       )
+      if (consentError) throw consentError
 
       // Push consent withdrawn → null the token on both tables (auth_id FK)
       if (field === 'marketing_push' && !value) {

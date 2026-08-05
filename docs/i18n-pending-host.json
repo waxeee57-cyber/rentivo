@@ -1,0 +1,72 @@
+{
+  "hostBGreeting": {
+    "en": "Hi",
+    "es": "Hola",
+    "hu": "Szia"
+  },
+  "hostBBookingsCountSuffix": {
+    "en": "bookings",
+    "es": "reservas",
+    "hu": "foglalás"
+  },
+  "hostBEarningsUnavailable": {
+    "en": "Earnings unavailable",
+    "es": "Ganancias no disponibles",
+    "hu": "A bevétel nem érhető el"
+  },
+  "hostPTitle": {
+    "en": "Profile",
+    "es": "Perfil",
+    "hu": "Profil"
+  },
+  "hostPSignOutConfirm": {
+    "en": "Are you sure?",
+    "es": "¿Estás seguro?",
+    "hu": "Biztos vagy benne?"
+  },
+  "hostPNewHostNoReviews": {
+    "en": "New host, no reviews yet",
+    "es": "Anfitrión nuevo, aún sin reseñas",
+    "hu": "Új házigazda, még nincs értékelés"
+  },
+  "hostPReviewsCountSuffix": {
+    "en": "reviews",
+    "es": "reseñas",
+    "hu": "értékelés"
+  },
+  "hostPIdentityVerification": {
+    "en": "Identity verification",
+    "es": "Verificación de identidad",
+    "hu": "Személyazonosság igazolása"
+  },
+  "hostPNotificationPreferences": {
+    "en": "Notification preferences",
+    "es": "Preferencias de notificaciones",
+    "hu": "Értesítési beállítások"
+  },
+  "hostPPayoutSetupTitle": {
+    "en": "Payout setup",
+    "es": "Configuración de pagos",
+    "hu": "Kifizetés beállítása"
+  },
+  "hostPPayoutSetupBody": {
+    "en": "Configure your bank account for payouts at dashboard.rentivo.app, under Payouts.",
+    "es": "Configura tu cuenta bancaria para los pagos en dashboard.rentivo.app, en Pagos.",
+    "hu": "Add meg a bankszámládat a kifizetésekhez a dashboard.rentivo.app oldalon, a Kifizetések menüpontban."
+  },
+  "hostMMessageFrom": {
+    "en": "Message from",
+    "es": "Mensaje de",
+    "hu": "Üzenet tőle"
+  },
+  "hostMUnreadSuffix": {
+    "en": "unread",
+    "es": "sin leer",
+    "hu": "olvasatlan"
+  },
+  "hostMGuestFallback": {
+    "en": "Guest",
+    "es": "Huésped",
+    "hu": "Vendég"
+  }
+}

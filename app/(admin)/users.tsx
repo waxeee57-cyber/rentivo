@@ -41,14 +41,18 @@ export default function AdminUsersScreen() {
       try {
         const { data, error } = await supabase
           .from('rentivo_users')
-          .select('id, full_name, email, is_banned, created_at')
+          // `full_name` is not a column on rentivo_users; it is `name`.
+          // PostgREST rejected the whole request with 42703, the catch below
+          // showed a generic toast, and the admin user list has therefore
+          // always been empty.
+          .select('id, name, email, is_banned, created_at')
           .order('created_at', { ascending: false })
           .limit(100)
         if (error) { showToast({ message: t('admFailLoadUsers', language), type: 'error' }); return }
         setUsers(
           (data ?? []).map(u => ({
             id: u.id as string,
-            name: (u.full_name as string | null) ?? (u.email as string | null) ?? 'Unknown',
+            name: (u.name as string | null) ?? (u.email as string | null) ?? 'Unknown',
             email: (u.email as string | null) ?? '',
             is_banned: (u.is_banned as boolean | null) ?? false,
             created_at: u.created_at as string,

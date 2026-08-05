@@ -12,6 +12,8 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { MOCK_HOST } from '@/lib/mockData'
 import { Config } from '@/constants/config'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
+import { ownerPayout } from '@/lib/utils/payout'
+import { captureException } from '@/lib/sentry'
 import { t } from '@/constants/i18n'
 import { supabase } from '@/lib/supabase'
 import { useColors } from '@/lib/hooks/useColors'
@@ -33,19 +35,41 @@ export default function HostProfileScreen() {
     : null
 
   const [totalEarned, setTotalEarned] = useState(Config.useMock ? 63000 : 0)
+  // The old code could not tell "nothing earned yet" apart from "the query
+  // failed", and rendered both as a confident €0.
+  const [earnedFailed, setEarnedFailed] = useState(false)
 
   useEffect(() => {
     if (Config.useMock || !host?.id) return
+    let cancelled = false
+    setEarnedFailed(false)
     supabase
       .from('rentivo_bookings')
-      .select('total_amount')
+      // `subtotal` as well as `total_amount`: ownerPayout prefers the subtotal,
+      // which is what Stripe actually transfers to the owner.
+      .select('subtotal, total_amount')
       .eq('host_id', host.id)
       .in('status', ['completed', 'active'])
       .eq('payment_status', 'paid')
-      .then(({ data }) => {
-        const sum = (data ?? []).reduce((acc, b) => acc + ((b.total_amount as number) ?? 0), 0)
-        setTotalEarned(Math.round(sum))
+      .then(({ data, error }) => {
+        if (cancelled) return
+        // `error` was destructured away entirely. supabase-js resolves rather
+        // than rejects on a query error, so an RLS denial or a dropped request
+        // arrived here as `data: null` and was summed to €0 and displayed as
+        // this host's lifetime earnings.
+        if (error) {
+          captureException(error, { screen: 'host/profile', hostId: host.id })
+          setEarnedFailed(true)
+          return
+        }
+        const rows = (data ?? []) as { subtotal: number | null; total_amount: number }[]
+        // Was `sum += total_amount`, the GROSS the renter paid. That includes
+        // the 10% platform fee, the damage waiver and any delivery fee, none of
+        // which reach the host, so the figure overstated their earnings.
+        const sum = rows.reduce((acc, b) => acc + ownerPayout(b), 0)
+        setTotalEarned(Math.round(sum * 100) / 100)
       })
+    return () => { cancelled = true }
   }, [host?.id])
 
   const handleSignOut = () => {
@@ -65,7 +89,7 @@ export default function HostProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.title}>{t('profile', language)}</Text>
 
         {/* Profile section */}
         <View style={styles.profileSection}>
@@ -106,7 +130,11 @@ export default function HostProfileScreen() {
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statNum}>{formatEURDecimal(totalEarned)}</Text>
+            {/* A failed lookup shows a placeholder, not a €0 the host would
+                read as their real lifetime earnings. */}
+            <Text style={styles.statNum}>
+              {earnedFailed ? '—' : formatEURDecimal(totalEarned, language)}
+            </Text>
             <Text style={styles.statLabel}>{t('statEarned', language)}</Text>
           </View>
           <View style={styles.statDivider} />

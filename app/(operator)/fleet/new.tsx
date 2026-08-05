@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/Input'
 import { CategoryPill } from '@/components/ui/CategoryPill'
 import { CATEGORIES } from '@/constants/categories'
 import { createListing } from '@/lib/api/listings'
+import { uploadListingPhotos } from '@/lib/storage'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useCamera } from '@/lib/hooks/useCamera'
 import { useToastStore } from '@/lib/store/useToastStore'
@@ -83,6 +84,11 @@ export default function NewListingScreen() {
         setPublished(true)
         return
       }
+      // The picker's `file://` URIs are meaningless off this device. They used
+      // to be written straight into the listing, so every photo was broken for
+      // every renter while still rendering for the operator who uploaded it.
+      const photoUrls = await uploadListingPhotos(opId, photos)
+
       await createListing({
         operator_id: opId,
         title,
@@ -104,8 +110,8 @@ export default function NewListingScreen() {
         license_plate: null,
         features,
         rules: null,
-        images: photos.filter(Boolean) as string[],
-        cover_image_url: photos.find(Boolean) ?? null,
+        images: photoUrls,
+        cover_image_url: photoUrls[0] ?? null,
         pickup_address: null,
         latitude: null,
         longitude: null,

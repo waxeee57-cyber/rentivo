@@ -54,7 +54,7 @@ serve(async (req) => {
     const { data: booking, error: bookingError } = await supabase
       .from('rentivo_bookings')
       .select(
-        'id, user_id, listing_id, currency, deposit_amount, deposit_status, deposit_payment_method_id, ' +
+        'id, user_id, listing_id, currency, deposit_amount, deposit_status, deposit_payment_method_id, deposit_charge_attempts, ' +
         'listing:rentivo_listings(owner_type, operator:rentivo_operators(id, auth_id, stripe_account_id, stripe_onboarded), host:rentivo_hosts(id, auth_id, stripe_account_id, stripe_onboarded))'
       )
       .eq('id', booking_id)
@@ -86,7 +86,14 @@ serve(async (req) => {
     }
 
     // ── Guards: card must be vaulted, amount in (0, deposit_amount].
-    if (booking.deposit_status !== 'authorized') {
+    //
+    // 'charge_failed' is retryable. It is the state a soft decline leaves behind
+    // (insufficient funds, expired card, a 3DS challenge on an off-session
+    // charge), and the old guard accepted only 'authorized' — so one decline
+    // ended the owner's ability to recover damage costs permanently, even after
+    // the renter fixed their card. 'charged' stays terminal.
+    const CHARGEABLE = ['authorized', 'charge_failed']
+    if (!CHARGEABLE.includes(String(booking.deposit_status))) {
       return jsonError(`Deposit not chargeable (status: ${booking.deposit_status})`, 409)
     }
     if (!booking.deposit_payment_method_id) {
@@ -118,6 +125,7 @@ serve(async (req) => {
 
     const amountCents = Math.round(assessedNum * 100)
     const currency = (typeof booking.currency === 'string' ? booking.currency : 'EUR').toLowerCase()
+    const attempt = Number(booking.deposit_charge_attempts ?? 0)
 
     // ── Off_session charge to the vaulted card. No application_fee → the entire
     //    damage amount is transferred to the owner (default; flip later if needed).
@@ -138,7 +146,13 @@ serve(async (req) => {
             platform: 'rentivo',
           },
         },
-        { idempotencyKey: `rentivo_dep_${booking_id}` }
+        // Attempt-scoped, not booking-scoped. A fixed key meant Stripe replayed
+        // the FIRST response for 24 hours, so a retry after a decline returned
+        // the decline again (or a 400 for reusing a key with different
+        // parameters). The attempt number only moves after a recorded failure,
+        // so two taps of the same button still read the same number and collapse
+        // into a single charge.
+        { idempotencyKey: `rentivo_dep_${booking_id}_${attempt}_${amountCents}` }
       )
 
       await supabase
@@ -157,9 +171,11 @@ serve(async (req) => {
     } catch (chargeErr) {
       // Off_session charge failed (card declined, authentication_required, etc.).
       // Record the failure and surface it — do NOT swallow.
+      // Bump the attempt counter so the next try gets a fresh idempotency key
+      // rather than replaying this decline out of Stripe's cache.
       await supabase
         .from('rentivo_bookings')
-        .update({ deposit_status: 'charge_failed' })
+        .update({ deposit_status: 'charge_failed', deposit_charge_attempts: attempt + 1 })
         .eq('id', booking_id)
 
       const message = chargeErr instanceof Error ? chargeErr.message : 'Deposit charge failed'

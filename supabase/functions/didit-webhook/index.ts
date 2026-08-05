@@ -145,14 +145,20 @@ serve(async (req) => {
       .update({ identity_status: 'verified' })
       .eq('auth_id', userId)
 
-    // Audit log (ha létezik a tábla)
-    await supabase.from('security_audit_log').insert({
+    // Audit log (ha létezik a tábla).
+    //
+    // `.catch()` does NOT exist on a PostgrestBuilder — it implements then() and
+    // throwOnError() and nothing else. So `.throwOnError().catch(...)` threw a
+    // TypeError, outside this handler's try/catch, on EVERY approved
+    // verification: the database writes above had already landed, but Didit got
+    // a 500 and retried the same callback indefinitely. The webhook has been
+    // reporting a 100% failure rate on its successful path.
+    const { error: auditError } = await supabase.from('security_audit_log').insert({
       event_type: 'identity_verified',
       user_id: userId,
       details: { session_id, document_type: document?.type },
-    }).throwOnError().catch(() => {
-      // Silently ignore if audit log table doesn't exist
     })
+    if (auditError) console.error('[didit-webhook] audit write failed', auditError)
   }
 
   return new Response(

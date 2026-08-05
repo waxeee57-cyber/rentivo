@@ -12,6 +12,7 @@ import {
 import { useLocalSearchParams, router } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
+import { captureException } from '@/lib/sentry'
 import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -73,8 +74,27 @@ export default function ICalSyncScreen() {
     }
   }
 
-  function handleExport() {
-    const exportUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/ical-export?listing_id=${id}`
+  async function handleExport() {
+    // The feed now carries a per-listing token. Without it the URL was a public
+    // read of this vehicle's entire booking calendar to anyone who knew the
+    // listing id, and listing ids are public.
+    const { data, error } = await supabase
+      .from('rentivo_listings')
+      .select('ical_feed_token')
+      .eq('id', id)
+      .maybeSingle()
+
+    if (error || !data?.ical_feed_token) {
+      captureException(error ?? new Error('ical_feed_token missing'), {
+        screen: 'fleet/ical-sync', listingId: String(id),
+      })
+      Alert.alert(t('opFleet2Error', language), t('opFleet2SyncFailed', language))
+      return
+    }
+
+    const exportUrl =
+      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/ical-export` +
+      `?listing_id=${id}&token=${data.ical_feed_token}`
     Alert.alert(
       t('opFleet2ICalExportUrl', language),
       exportUrl,
@@ -158,7 +178,7 @@ export default function ICalSyncScreen() {
 
           <TouchableOpacity
             style={styles.buttonSecondary}
-            onPress={handleExport}
+            onPress={() => void handleExport()}
             accessibilityLabel={t('opFleet2ShowExportUrl', language)}
             accessibilityRole="button"
           >

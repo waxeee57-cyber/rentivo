@@ -24,12 +24,10 @@ const tr = t
 
 type Period = 'week' | 'month' | 'quarter' | 'year'
 
-const PERIODS: { key: Period; label: string }[] = [
-  { key: 'week', label: 'Week' },
-  { key: 'month', label: 'Month' },
-  { key: 'quarter', label: 'Quarter' },
-  { key: 'year', label: 'Year' },
-]
+// The English `label` field that used to sit here fed only the accessibility
+// label; the visible text has always come from periodLabels. It is gone so there
+// is no untranslated copy left to drift.
+const PERIODS: Period[] = ['week', 'month', 'quarter', 'year']
 
 export default function AnalyticsScreen() {
   const C = useColors()
@@ -48,6 +46,14 @@ export default function AnalyticsScreen() {
     quarter: tr('opSetQuarter', language),
     year: tr('opSetYear', language),
   }
+
+  // Tallest bar in the breakdown, used to scale every other bar. Floored at 1 so
+  // a period whose revenue is all zeros divides by 1 instead of producing NaN
+  // widths.
+  const maxRevenueAmount = useMemo(
+    () => (analytics?.revenueByPeriod ?? []).reduce((m, x) => Math.max(m, x.amount), 1),
+    [analytics],
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -84,14 +90,19 @@ export default function AnalyticsScreen() {
       <View style={styles.periods}>
         {PERIODS.map(p => (
           <TouchableOpacity
-            key={p.key}
-            style={[styles.periodBtn, period === p.key && styles.periodBtnActive]}
-            onPress={() => setPeriod(p.key)}
-            accessibilityLabel={`Period ${p.label}`}
+            key={p}
+            style={[styles.periodBtn, period === p && styles.periodBtnActive]}
+            onPress={() => setPeriod(p)}
+            // Was `Period ${p.label}`, an English-only label from the PERIODS
+            // table while the visible text was translated. Screen reader users on
+            // es/hu heard English. periodLabels is the same translated string the
+            // button already renders.
+            accessibilityLabel={periodLabels[p]}
             accessibilityRole="button"
+            accessibilityState={{ selected: period === p }}
           >
-            <Text style={[styles.periodText, period === p.key && styles.periodTextActive]}>
-              {periodLabels[p.key]}
+            <Text style={[styles.periodText, period === p && styles.periodTextActive]}>
+              {periodLabels[p]}
             </Text>
           </TouchableOpacity>
         ))}
@@ -152,7 +163,11 @@ export default function AnalyticsScreen() {
               <Text style={styles.kpiLabel}>{tr('opSetAvgValue', language)}</Text>
             </Card>
             <Card style={styles.kpi}>
-              <Text style={styles.kpiValue}>{analytics.occupancyRate}%</Text>
+              {/* null means there is no active fleet to measure against. Showing
+                  "0%" there would read as an idle fleet instead of no fleet. */}
+              <Text style={styles.kpiValue}>
+                {analytics.occupancyRate == null ? '—' : `${analytics.occupancyRate}%`}
+              </Text>
               <Text style={styles.kpiLabel}>{tr('opSetOccupancy', language)}</Text>
             </Card>
           </View>
@@ -162,8 +177,12 @@ export default function AnalyticsScreen() {
             <Card style={styles.bestCard}>
               <Text style={styles.bestLabel}>{tr('opSetTopPerformer', language)}</Text>
               <Text style={styles.bestTitle}>{analytics.bestListingTitle}</Text>
+              {/* The trailing "revenue this period" was a raw English literal on
+                  a screen that is otherwise translated. The period is already
+                  named by the selector above, so the existing opSetRevenue key
+                  carries the meaning without inventing a new one. */}
               <Text style={styles.bestRevenue}>
-                €{analytics.bestListingRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} revenue this period
+                {tr('opSetRevenue', language)}: €{analytics.bestListingRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </Text>
             </Card>
           )}
@@ -173,11 +192,10 @@ export default function AnalyticsScreen() {
             <Card style={styles.chartCard}>
               <Text style={styles.chartTitle}>{tr('opSetRevenueBreakdown', language)}</Text>
               {analytics.revenueByPeriod.map((item, i) => {
-                const maxAmount = Math.max(
-                  ...analytics.revenueByPeriod.map(x => x.amount),
-                  1,
-                )
-                const pct = Math.round((item.amount / maxAmount) * 100)
+                // maxAmount was recomputed inside the map, so a year of daily
+                // bars rebuilt and spread the whole array once per row. It does
+                // not vary per row, so it is hoisted above the map now.
+                const pct = Math.round((item.amount / maxRevenueAmount) * 100)
                 // TypeScript needs a string literal type for percentage widths
                 const barWidthValue: `${number}%` = `${pct}%`
                 return (

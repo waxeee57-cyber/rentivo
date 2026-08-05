@@ -21,6 +21,7 @@ import { MOCK_OPERATOR } from '@/lib/mockData'
 import { CATEGORIES } from '@/constants/categories'
 import type { CancellationPolicy, RentalCategory } from '@/types'
 import { updateListing, deleteListing } from '@/lib/api/listings'
+import { uploadListingPhotos } from '@/lib/storage'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { supabase } from '@/lib/supabase'
 import { PricingInsightWidget } from '@/components/operator/PricingInsightWidget'
@@ -107,7 +108,11 @@ export default function EditVehicleScreen() {
     }
     setSaving(true)
     try {
-      const validPhotos = photos.filter((p): p is string => p !== null)
+      // Newly picked photos are local `file://` URIs and have to be uploaded;
+      // the ones already on the listing are https and pass straight through.
+      // Saving the local URIs (what this did) replaced working photos with
+      // paths only this device could resolve.
+      const validPhotos = await uploadListingPhotos(operatorId, photos)
       await updateListing(
         id ?? '',
         {

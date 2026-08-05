@@ -164,11 +164,15 @@ serve(async (req) => {
     if (promo_code && typeof promo_code === 'string') {
       const { data: promo } = await supabase
         .from('rentivo_promo_codes')
-        .select('code, discount_type, discount_value, max_uses, current_uses, valid_from, valid_until, min_booking_value')
+        .select('code, discount_type, discount_value, max_uses, current_uses, valid_from, valid_until, min_booking_value, is_active')
         .eq('code', promo_code.toUpperCase().trim())
         .maybeSingle()
       if (
         promo &&
+        // A code the admin switched off must stop discounting. `is_active` was
+        // added in migration 20260805004; nothing read it before, so
+        // deactivating a code had no effect on pricing.
+        promo.is_active !== false &&
         Number(promo.current_uses) < Number(promo.max_uses) &&
         // valid_from exists on the table and was never checked — a campaign
         // scheduled for next month was live the moment the row was inserted.

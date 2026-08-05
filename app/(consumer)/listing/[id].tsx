@@ -97,7 +97,10 @@ export default function ListingDetailScreen() {
       .select('id, title, category, price_per_day, cover_image_url')
       .eq(col, val)
       .neq('id', listing.id)
-      .eq('is_active', true)
+      // `is_active` does not exist on rentivo_listings; the column is
+      // `available`. PostgREST rejected the whole query, so "More from this
+      // owner" was permanently empty on every listing page.
+      .eq('available', true)
       .limit(3)
       .then(({ data }) => setSimilarListings((data as Listing[]) ?? []))
   }, [listing?.id, listing?.owner_type, listing?.host_id, listing?.operator_id])
