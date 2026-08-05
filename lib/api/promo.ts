@@ -20,6 +20,7 @@ const MOCK_PROMOS: PromoCode[] = [
     valid_from: '2026-01-01T00:00:00Z',
     valid_until: null,
     min_booking_value: 0,
+    is_active: true,
     created_at: '2026-01-01T00:00:00Z',
   },
   {
@@ -32,6 +33,7 @@ const MOCK_PROMOS: PromoCode[] = [
     valid_from: '2026-01-01T00:00:00Z',
     valid_until: null,
     min_booking_value: 100,
+    is_active: true,
     created_at: '2026-01-01T00:00:00Z',
   },
   {
@@ -44,6 +46,7 @@ const MOCK_PROMOS: PromoCode[] = [
     valid_from: '2026-01-01T00:00:00Z',
     valid_until: null,
     min_booking_value: 200,
+    is_active: true,
     created_at: '2026-01-01T00:00:00Z',
   },
 ]
@@ -91,7 +94,22 @@ export async function validatePromoCode(
 
   const promo = data as PromoCode
 
-  if (promo.current_uses >= promo.max_uses) {
+  // These three checks MIRROR create-booking. They were missing here, so the
+  // screen showed "Promo applied: -€49.50" and a Pay button with the discounted
+  // total, while the server dropped the code and charged the full price. The
+  // renter paid more than the button they tapped said — the worst kind of
+  // pricing bug, because it looks like a bait and switch rather than an error.
+  //
+  // `is_active` was added in migration 20260805004 and nothing read it here.
+  if (promo.is_active === false) {
+    return { valid: false, code: null, discount: 0, error: 'Invalid promo code' }
+  }
+  if (promo.valid_from && new Date(promo.valid_from) > new Date()) {
+    return { valid: false, code: null, discount: 0, error: 'Promo code is not active yet' }
+  }
+  // `max_uses` NULL means unlimited. `0 >= null` coerces to `0 >= 0` = true, so
+  // an unlimited code used to read as exhausted on its very first use.
+  if (promo.max_uses != null && promo.current_uses >= promo.max_uses) {
     return { valid: false, code: null, discount: 0, error: 'Promo code has expired' }
   }
   if (promo.valid_until && new Date(promo.valid_until) < new Date()) {

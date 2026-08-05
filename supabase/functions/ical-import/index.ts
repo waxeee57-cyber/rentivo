@@ -66,13 +66,19 @@ async function safeFetchIcal(first: URL): Promise<Response> {
   throw new Error('Too many redirects')
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+
 function parseICalDate(value: string): string {
-  // Handles YYYYMMDD and YYYYMMDDTHHMMSSZ formats
+  // Handles YYYYMMDD and YYYYMMDDTHHMMSSZ formats.
+  //
+  // Anything else returned the raw string, which then went straight into a
+  // `date` column and blew up the entire batch with 22007. A feed we cannot
+  // parse must not be able to take down the dates we can.
   const clean = value.split('T')[0].replace(/Z$/, '')
-  if (clean.length === 8) {
+  if (clean.length === 8 && /^\d{8}$/.test(clean)) {
     return `${clean.slice(0, 4)}-${clean.slice(4, 6)}-${clean.slice(6, 8)}`
   }
-  return clean
+  return ISO_DATE.test(clean) ? clean : ''
 }
 
 function parseVEvents(icalText: string): Array<{ start: string; end: string }> {
@@ -196,27 +202,69 @@ serve(async (req) => {
     let events = parseVEvents(icalText)
     if (events.length > MAX_EVENTS) events = events.slice(0, MAX_EVENTS)
 
-    // Delete existing ical_sync blocks for this (owned) listing
-    await supabase
+    // ── Write BEFORE delete, and check both.
+    //
+    // The old order was: delete every ical_sync block for this listing, then
+    // upsert, then return {synced: true} — with NEITHER statement's error read.
+    // Two ordinary things made the upsert fail while the delete had already
+    // landed, leaving the listing wide open on dates that are sold on Airbnb:
+    //
+    //   * Two VEVENTs sharing a DTSTART (same-day turnover is routine). The
+    //     upsert targets a real UNIQUE (listing_id, blocked_date), so Postgres
+    //     raises 21000 "ON CONFLICT DO UPDATE command cannot affect row a second
+    //     time" and rejects the WHOLE batch.
+    //   * Any DTSTART that is not 8 characters. parseICalDate returned it raw,
+    //     so 'garbage' reached a date column and Postgres raised 22007.
+    //
+    // The operator's screen said "synced N events" either way, and useICalSync
+    // re-ran it every four hours. That is a double-booking generator.
+    //
+    // Deduplicating by blocked_date keeps the widest range for a given start,
+    // which is the safe direction: over-blocking costs a booking, under-blocking
+    // costs a double sale.
+    const byStart = new Map<string, { listing_id: string; blocked_date: string; end_date: string; reason: string }>()
+    for (const e of events) {
+      if (!ISO_DATE.test(e.start) || !ISO_DATE.test(e.end)) {
+        console.warn('[ical-import] skipping event with unparseable dates', e.start, e.end)
+        continue
+      }
+      const previous = byStart.get(e.start)
+      if (!previous || e.end > previous.end_date) {
+        byStart.set(e.start, {
+          listing_id, blocked_date: e.start, end_date: e.end, reason: 'ical_sync',
+        })
+      }
+    }
+    const rows = [...byStart.values()]
+
+    if (rows.length > 0) {
+      const { error: upsertError } = await supabase
+        .from('rentivo_availability')
+        .upsert(rows, { onConflict: 'listing_id,blocked_date', ignoreDuplicates: false })
+      if (upsertError) {
+        // Nothing has been deleted yet, so the previous sync's blocks are still
+        // standing. Fail loudly instead of reporting a sync that did not happen.
+        console.error('[ical-import] upsert failed, keeping existing blocks', listing_id, upsertError)
+        throw new Error(`Could not write the imported dates: ${upsertError.message}`)
+      }
+    }
+
+    // Only now clear the blocks this feed no longer contains.
+    const keep = rows.map(r => r.blocked_date)
+    let stale = supabase
       .from('rentivo_availability')
       .delete()
       .eq('listing_id', listing_id)
       .eq('reason', 'ical_sync')
-
-    // Upsert new blocked date ranges — ON CONFLICT DO UPDATE handles overlap with manual blocks
-    if (events.length > 0) {
-      const rows = events.map((e) => ({
-        listing_id,
-        blocked_date: e.start,
-        end_date: e.end,
-        reason: 'ical_sync',
-      }))
-      await supabase
-        .from('rentivo_availability')
-        .upsert(rows, { onConflict: 'listing_id,blocked_date', ignoreDuplicates: false })
+    if (keep.length > 0) stale = stale.not('blocked_date', 'in', `(${keep.join(',')})`)
+    const { error: deleteError } = await stale
+    if (deleteError) {
+      // Not fatal: the new dates are in, so the calendar is correct plus some
+      // stale blocks. Over-blocking is the safe failure direction.
+      console.error('[ical-import] stale block cleanup failed', listing_id, deleteError)
     }
 
-    return new Response(JSON.stringify({ count: events.length, synced: true }), {
+    return new Response(JSON.stringify({ count: rows.length, synced: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {

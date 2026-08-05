@@ -15,14 +15,18 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { useToastStore } from '@/lib/store/useToastStore'
+import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
+import { captureException } from '@/lib/sentry'
 import { useColors } from '@/lib/hooks/useColors'
+import { t } from '@/constants/i18n'
 
 export default function ConsumerSignScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
+  const language = useAuthStore(s => s.language)
   const { showToast } = useToastStore()
   const [paths, setPaths] = useState<string[]>([])
   const [currentPath, setCurrentPath] = useState('')
@@ -59,6 +63,7 @@ export default function ConsumerSignScreen() {
 
   const handleSign = async () => {
     if (!hasSignature) {
+      // i18n-pending: csgSignFirst
       showToast({ message: 'Please sign before continuing', type: 'error' })
       return
     }
@@ -66,7 +71,19 @@ export default function ConsumerSignScreen() {
     const signatureData = [...paths, currentPath].filter(Boolean).join(' ')
 
     if (!Config.useMock) {
-      const { error } = await supabase
+      // The UPDATE had no `.select()`. supabase-js reports no error for an
+      // update that matched zero rows, so a booking the RLS policy would not let
+      // this user touch — or a bookingId that does not exist — produced
+      // "Contract signed successfully!" over a signature column still holding
+      // NULL. lib/api/contracts.ts already solves exactly this with `.select('id')`
+      // plus an empty-array check; that helper writes consumer_signature /
+      // contract_signed_at, whereas the live contract flow this screen belongs to
+      // uses guest_signature / guest_signed_at / contract_status (the operator
+      // side in app/(operator)/bookings/sign reads contract_status and moves it
+      // on to 'fully_signed'). Routing through the helper would write the wrong
+      // columns and never set contract_status, so the CHECK it performs is
+      // applied here instead of the columns being changed.
+      const { data, error } = await supabase
         .from('rentivo_bookings')
         .update({
           guest_signature: signatureData,
@@ -74,13 +91,21 @@ export default function ConsumerSignScreen() {
           contract_status: 'guest_signed',
         })
         .eq('id', bookingId ?? '')
-      if (error) {
+        .select('id')
+
+      if (error || !data || data.length === 0) {
+        // i18n-pending: csgSignFailed
         showToast({ message: 'Signing failed. Please try again.', type: 'error' })
+        captureException(
+          error ?? new Error('Signature update matched no booking row'),
+          { scope: 'booking.sign', bookingId },
+        )
         setSigning(false)
         return
       }
     }
 
+    // i18n-pending: csgSigned
     showToast({ message: 'Contract signed successfully!', type: 'success' })
     setSigning(false)
     router.back()
@@ -88,13 +113,17 @@ export default function ConsumerSignScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* i18n-pending: csgSignContractTitle */}
       <ScreenHeader title="Sign Contract" />
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
         <Card style={styles.info}>
-          <Text style={styles.infoTitle}>Rental Agreement</Text>
+          <Text style={styles.infoTitle}>{t('rentalAgreement', language)}</Text>
+          {/* i18n-pending: csgEidasNotice — a screen asserting eIDAS compliance
+              cannot present its own legal notice in a language the signer may
+              not read. */}
           <Text style={styles.infoText}>
             By signing below, you agree to the rental terms and conditions.
             This is an eIDAS-compliant Simple Electronic Signature (SES) under
@@ -103,10 +132,11 @@ export default function ConsumerSignScreen() {
         </Card>
 
         <Card style={styles.padCard}>
-          <Text style={styles.padLabel}>Sign here</Text>
+          <Text style={styles.padLabel}>{t('signHere', language)}</Text>
           <View
             style={styles.signaturePad}
             {...panResponder.panHandlers}
+            // i18n-pending: csgSignatureArea
             accessibilityLabel="Signature drawing area"
           >
             <Svg width="100%" height={160}>
@@ -130,6 +160,7 @@ export default function ConsumerSignScreen() {
             </Svg>
             {!hasSignature && (
               <View style={styles.placeholderContainer} pointerEvents="none">
+                {/* i18n-pending: csgDrawAbove */}
                 <Text style={styles.placeholder}>Draw your signature above</Text>
               </View>
             )}
@@ -138,18 +169,22 @@ export default function ConsumerSignScreen() {
           <TouchableOpacity
             style={styles.clearBtn}
             onPress={clearSignature}
+            accessibilityRole="button"
+            // i18n-pending: csgClearSignatureLabel
             accessibilityLabel="Clear signature"
           >
-            <Text style={styles.clearText}>Clear</Text>
+            <Text style={styles.clearText}>{t('clearSignature', language)}</Text>
           </TouchableOpacity>
         </Card>
 
         <Button
-          title={signing ? 'Signing...' : 'Sign & Continue'}
-          onPress={handleSign}
+          // i18n-pending: csgSigning
+          title={signing ? 'Signing...' : t('confirmSignature', language)}
+          onPress={() => void handleSign()}
           loading={signing}
           disabled={!hasSignature || signing}
           fullWidth
+          // i18n-pending: csgSignAndContinueLabel
           accessibilityLabel="Sign contract and continue"
         />
       </ScrollView>

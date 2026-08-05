@@ -84,25 +84,66 @@ export async function toggleWishlistItem(listing: Listing, userId: string) {
 /** See the comment on the select in `syncWishlistFromSupabase`. */
 const WISHLIST_MAX_ROWS = 500
 
+/**
+ * Pulls the server's saved listings into the local store. This is a MERGE, in one
+ * direction only: rows the server knows about are added, and nothing local is ever
+ * removed.
+ *
+ * It used to do the opposite — filter local state down to whatever the select
+ * returned — which is wrong in both directions this function is called in. Signing
+ * in on a fresh device has an empty server-side result for a device that has been
+ * collecting saves locally, so the whole wishlist was deleted; and because the
+ * pruning happened instead of a fetch, a listing saved on one device never appeared
+ * on a second one, since its id was returned but its Listing was never loaded.
+ *
+ * Removal stays where the user actually performs it — `toggleWishlistItem` deletes
+ * from both sides at once — so a sync has no business inferring deletions.
+ */
 export async function syncWishlistFromSupabase(userId: string) {
   const { data, error } = await supabase
     .from('rentivo_wishlist')
     .select('listing_id')
     .eq('user_id', userId)
     // Bounded window, not paging: a wishlist is one person's hand-picked list, so
-    // 500 is far past any real one. It has to be a COMPLETE read though — the
-    // response below PRUNES the local store, so a truncated page would delete saved
-    // listings. Hence the ceiling plus the guard underneath.
+    // 500 is far past any real one. A truncated page is now harmless — merging
+    // fewer rows loses nothing, whereas the old pruning read would have deleted
+    // every save it simply had not fetched.
     .limit(WISHLIST_MAX_ROWS)
 
-  // An error (offline, RLS denial) is not "your wishlist is empty" — pruning against
-  // a failed read would wipe every locally saved listing. Same for a response that
-  // reached the ceiling: we cannot tell a complete list from a truncated one, so we
-  // leave the local store alone rather than delete rows we simply did not fetch.
-  if (error || !data) return
-  if (data.length >= WISHLIST_MAX_ROWS) return
+  if (error || !data) {
+    if (error) captureException(error, { scope: 'syncWishlistFromSupabase.read' })
+    return
+  }
 
-  useWishlistStore.setState(state => ({
-    items: state.items.filter(item => data.some(d => d.listing_id === item.id)),
-  }))
+  // Only fetch the listings we do not already hold. An empty result here is the
+  // ordinary case for a user whose devices are already in step, and it must stay a
+  // no-op rather than an instruction to clear anything.
+  const localIds = new Set(useWishlistStore.getState().items.map(i => i.id))
+  const missingIds = data
+    .map(row => (row as { listing_id: string }).listing_id)
+    .filter(listingId => !localIds.has(listingId))
+  if (missingIds.length === 0) return
+
+  // The wishlist table only stores ids; the store holds whole Listings because the
+  // Wishlist tab renders cards. Same select shape as lib/api/listings.ts so the
+  // merged rows carry their operator and render identically to fetched ones.
+  const { data: listings, error: listingsError } = await supabase
+    .from('rentivo_listings')
+    .select('*, operator:rentivo_operators(*)')
+    .in('id', missingIds)
+    // Bounded by the same cap the wishlist query above uses, so a corrupted or
+    // oversized remote list cannot pull the listings table down a phone
+    // connection.
+    .limit(WISHLIST_MAX_ROWS)
+
+  if (listingsError || !listings) {
+    if (listingsError) captureException(listingsError, { scope: 'syncWishlistFromSupabase.listings' })
+    return
+  }
+
+  useWishlistStore.setState(state => {
+    const known = new Set(state.items.map(i => i.id))
+    const additions = (listings as Listing[]).filter(l => !known.has(l.id))
+    return additions.length > 0 ? { items: [...state.items, ...additions] } : state
+  })
 }

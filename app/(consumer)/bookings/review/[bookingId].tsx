@@ -17,6 +17,7 @@ import { t } from '@/constants/i18n'
 import { Config } from '@/constants/config'
 import { formatDateRange } from '@/lib/utils/formatDate'
 import { supabase } from '@/lib/supabase'
+import { captureException } from '@/lib/sentry'
 import { useColors } from '@/lib/hooks/useColors'
 
 const REVIEW_TAGS = [
@@ -105,10 +106,21 @@ export default function ReviewScreen() {
           comment.trim(),
         ].filter(Boolean).join('\n\n')
 
+        // rentivo_bookings.operator_id is NULL for every host-owned listing.
+        // Sending '' into a uuid column made Postgres reject the whole insert
+        // with 22P02, so no review on a host listing could ever be stored —
+        // and the bare catch below turned that into a generic "try again" the
+        // user could never get past. NULL is what the column actually allows.
+        // listing_id is NOT NULL, so it gets a real guard rather than a default.
+        const listingId = booking?.listing_id
+        if (!listingId) {
+          throw new Error(`Booking ${id} has no listing_id; a review cannot be stored against it`)
+        }
+
         const { error } = await supabase.from('rentivo_reviews').insert({
           booking_id: id,
-          listing_id: booking?.listing_id ?? '',
-          operator_id: booking?.operator_id ?? '',
+          listing_id: listingId,
+          operator_id: booking?.operator_id ?? null,
           user_id: user.id,
           rating,
           comment: fullComment || null,
@@ -118,7 +130,11 @@ export default function ReviewScreen() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       setDone(true)
       showToast({ message: t('cbkReviewSubmitted', language), type: 'success' })
-    } catch {
+    } catch (e) {
+      // The bare `catch {}` swallowed the reason. Reviews on host listings have
+      // been failing with 22P02 and nothing anywhere recorded why, because the
+      // user only ever saw the generic retry toast.
+      captureException(e, { scope: 'review.submit', bookingId: id })
       showToast({ message: t('cbkReviewSubmitFailed', language), type: 'error' })
     } finally {
       setSubmitting(false)

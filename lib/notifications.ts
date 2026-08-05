@@ -164,6 +164,33 @@ export async function scheduleReturnReminder(
 
 const EXPO_PUSH_API = 'https://exp.host/--/api/v2/push/send'
 
+/**
+ * Find a recipient's Expo push token in the tables savePushToken actually writes.
+ *
+ * A recipient can be a traveler or an owner, and the two live in different
+ * tables, so both are consulted. `maybeSingle` on each rather than a join: there
+ * is no relationship between them, and an account can legitimately be both.
+ */
+async function lookupPushToken(
+  authId: string,
+): Promise<{ token: string | null; error: unknown }> {
+  const { data: user, error: userError } = await supabase
+    .from('rentivo_users')
+    .select('push_token')
+    .eq('auth_id', authId)
+    .maybeSingle()
+  if (userError) return { token: null, error: userError }
+  if (user?.push_token) return { token: user.push_token as string, error: null }
+
+  const { data: operator, error: operatorError } = await supabase
+    .from('rentivo_operators')
+    .select('push_token')
+    .eq('auth_id', authId)
+    .maybeSingle()
+  if (operatorError) return { token: null, error: operatorError }
+  return { token: (operator?.push_token as string | null) ?? null, error: null }
+}
+
 export async function sendChatNotification(params: {
   recipientUserId: string
   senderName: string
@@ -173,11 +200,13 @@ export async function sendChatNotification(params: {
   if (Config.useMock) return
 
   try {
-    const { data: tokenData, error } = await supabase
-      .from('rentivo_push_tokens')
-      .select('token')
-      .eq('auth_id', params.recipientUserId)
-      .maybeSingle()
+    // `rentivo_push_tokens` DOES NOT EXIST. savePushToken (above) writes the
+    // token to rentivo_users.push_token / rentivo_operators.push_token, so the
+    // write path and the read path were different stores and every lookup came
+    // back 42P01. Not one chat or booking push has ever been delivered — the
+    // error handling below worked perfectly and reported a table-not-found to
+    // Sentry every single time.
+    const { token, error } = await lookupPushToken(params.recipientUserId)
 
     // A query error is NOT "this user has no push token". An RLS denial or a dropped
     // connection would otherwise be indistinguishable from a genuine opt-out, and
@@ -188,7 +217,8 @@ export async function sendChatNotification(params: {
       captureException(error, { scope: 'sendChatNotification.tokenLookup', bookingId: params.bookingId })
       return
     }
-    if (!tokenData?.token) return
+    if (!token) return
+    const tokenData = { token }
 
     await fetch(EXPO_PUSH_API, {
       method: 'POST',
@@ -230,11 +260,8 @@ export async function sendBookingNotification(params: {
   if (Config.useMock) return
 
   try {
-    const { data: tokenData, error } = await supabase
-      .from('rentivo_push_tokens')
-      .select('token')
-      .eq('auth_id', params.recipientUserId)
-      .maybeSingle()
+    // See sendChatNotification: rentivo_push_tokens never existed.
+    const { token, error } = await lookupPushToken(params.recipientUserId)
 
     // Same reasoning as sendChatNotification: an infrastructure failure must not be
     // read as "opted out of push".
@@ -242,7 +269,8 @@ export async function sendBookingNotification(params: {
       captureException(error, { scope: 'sendBookingNotification.tokenLookup', bookingId: params.bookingId, type: params.type })
       return
     }
-    if (!tokenData?.token) return
+    if (!token) return
+    const tokenData = { token }
 
     await fetch(EXPO_PUSH_API, {
       method: 'POST',

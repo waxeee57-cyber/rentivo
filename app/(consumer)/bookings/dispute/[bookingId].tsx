@@ -8,25 +8,44 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { supabase } from '@/lib/supabase'
+import { captureException } from '@/lib/sentry'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
 
-const DISPUTE_REASONS = [
-  'Vehicle not as described',
-  'Vehicle not available at pickup',
-  'Damage charges dispute',
-  'Overcharged',
-  'Safety concern',
-  'Other',
+/**
+ * `value` is what goes into rentivo_disputes.reason; `label` is what the user
+ * reads. They were the same English sentence before, which broke both halves at
+ * once: an operator or admin filtering the column had to string-match prose that
+ * changes whenever the copy is edited, and the buttons stayed English in a
+ * trilingual app. The table is empty, so no stored value needs preserving.
+ *
+ * Labels are English literals until the keys below land in constants/i18n.ts —
+ * see docs/i18n-pending-consumerfix.json.
+ */
+const DISPUTE_REASONS: Array<{ value: string; label: string }> = [
+  // i18n-pending: cbkDisputeReasonNotAsDescribed
+  { value: 'vehicle_not_as_described', label: 'Vehicle not as described' },
+  // i18n-pending: cbkDisputeReasonNotAvailable
+  { value: 'vehicle_not_available', label: 'Vehicle not available at pickup' },
+  // i18n-pending: cbkDisputeReasonDamageCharges
+  { value: 'damage_charges', label: 'Damage charges dispute' },
+  // i18n-pending: cbkDisputeReasonOvercharged
+  { value: 'overcharged', label: 'Overcharged' },
+  // i18n-pending: cbkDisputeReasonSafety
+  { value: 'safety_concern', label: 'Safety concern' },
+  // i18n-pending: cbkDisputeReasonOther
+  { value: 'other', label: 'Other' },
 ]
 
 export default function ConsumerDisputeScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
-  const { user, language } = useAuthStore()
+  // Only `language` is read here now: the auth id for the insert comes from the
+  // live Supabase session, not from the persisted store.
+  const { language } = useAuthStore()
   const { showToast } = useToastStore()
   const [selectedReason, setSelectedReason] = useState('')
   const [description, setDescription] = useState('')
@@ -40,10 +59,26 @@ export default function ConsumerDisputeScreen() {
     setSubmitting(true)
     try {
       if (!Config.useMock) {
+        // raised_by_auth_id is NOT NULL and has to equal auth.uid(). It was read
+        // from the persisted Zustand user, which can be undefined while a
+        // Supabase session is live — that sent no value at all into a NOT NULL
+        // uuid column, and the bare catch below turned the rejection into a
+        // generic toast that named nothing.
+        const { data: { session } } = await supabase.auth.getSession()
+        const authUserId = session?.user?.id
+        if (!authUserId) {
+          showToast({ message: t('cbkMustBeLoggedIn', language), type: 'error' })
+          return
+        }
+        if (!bookingId) {
+          throw new Error('Dispute submitted without a bookingId')
+        }
+
         const { error } = await supabase.from('rentivo_disputes').insert({
           booking_id: bookingId,
-          raised_by_auth_id: user?.auth_id,
+          raised_by_auth_id: authUserId,
           raised_by_role: 'consumer',
+          // The stable machine key, not the label the user tapped.
           reason: selectedReason,
           description: description.trim() || null,
           status: 'open',
@@ -52,7 +87,10 @@ export default function ConsumerDisputeScreen() {
       }
       showToast({ message: t('cbkDisputeSubmitted', language), type: 'success' })
       router.back()
-    } catch {
+    } catch (e) {
+      // `catch {}` hid every real cause here: a dispute is the user's escalation
+      // path, so a failure to file one has to be reported somewhere.
+      captureException(e, { scope: 'dispute.submit', bookingId })
       showToast({ message: t('cbkDisputeFailed', language), type: 'error' })
     } finally {
       setSubmitting(false)
@@ -67,13 +105,16 @@ export default function ConsumerDisputeScreen() {
           <Text style={styles.sectionTitle}>{t('cbkReason', language)}</Text>
           {DISPUTE_REASONS.map(r => (
             <TouchableOpacity
-              key={r}
-              style={[styles.reasonBtn, selectedReason === r && styles.reasonBtnActive]}
-              onPress={() => setSelectedReason(r)}
-              accessibilityLabel={r}
+              key={r.value}
+              style={[styles.reasonBtn, selectedReason === r.value && styles.reasonBtnActive]}
+              onPress={() => setSelectedReason(r.value)}
+              accessibilityLabel={r.label}
               accessibilityRole="radio"
+              accessibilityState={{ checked: selectedReason === r.value }}
             >
-              <Text style={[styles.reasonText, selectedReason === r && styles.reasonTextActive]}>{r}</Text>
+              <Text style={[styles.reasonText, selectedReason === r.value && styles.reasonTextActive]}>
+                {r.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </Card>

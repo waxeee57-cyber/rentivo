@@ -385,11 +385,17 @@ export interface PromoCode {
   code: string
   discount_type: 'percent' | 'fixed'
   discount_value: number
-  max_uses: number
+  // NULL means unlimited. It was typed as a plain number, and `uses >= null`
+  // coerces to `uses >= 0`, so an unlimited code read as exhausted on its first
+  // use everywhere the cap was checked.
+  max_uses: number | null
   current_uses: number
-  valid_from: string
+  valid_from: string | null
   valid_until: string | null
   min_booking_value: number
+  // Added by migration 20260805004. The admin screen wrote it and the pricing
+  // path read it while the type did not carry it.
+  is_active: boolean
   created_at: string
 }
 

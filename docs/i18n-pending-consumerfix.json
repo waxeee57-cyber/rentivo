@@ -1,0 +1,102 @@
+{
+  "cbkChatSendFailed": {
+    "en": "Message not sent. Please try again.",
+    "es": "No se envió el mensaje. Inténtalo de nuevo.",
+    "hu": "Az üzenet nem lett elküldve. Kérjük, próbáld újra."
+  },
+  "feedShareMessage": {
+    "en": "Check out {title} on Rentivo — {price}",
+    "es": "Mira {title} en Rentivo — {price}",
+    "hu": "Nézd meg: {title} a Rentivón — {price}"
+  },
+  "cbkDisputeReasonNotAsDescribed": {
+    "en": "Vehicle not as described",
+    "es": "El vehículo no es como se describe",
+    "hu": "A jármű nem felel meg a leírásnak"
+  },
+  "cbkDisputeReasonNotAvailable": {
+    "en": "Vehicle not available at pickup",
+    "es": "El vehículo no estaba disponible en la recogida",
+    "hu": "A jármű nem volt elérhető az átvételkor"
+  },
+  "cbkDisputeReasonDamageCharges": {
+    "en": "Damage charges dispute",
+    "es": "Disputa por cargos por daños",
+    "hu": "Kifogás a kárigénnyel szemben"
+  },
+  "cbkDisputeReasonOvercharged": {
+    "en": "Overcharged",
+    "es": "Cobro excesivo",
+    "hu": "Túlszámlázás"
+  },
+  "cbkDisputeReasonSafety": {
+    "en": "Safety concern",
+    "es": "Problema de seguridad",
+    "hu": "Biztonsági aggály"
+  },
+  "cbkDisputeReasonOther": {
+    "en": "Other",
+    "es": "Otro",
+    "hu": "Egyéb"
+  },
+  "csgSignContractTitle": {
+    "en": "Sign Contract",
+    "es": "Firmar contrato",
+    "hu": "Szerződés aláírása"
+  },
+  "csgEidasNotice": {
+    "en": "By signing below, you agree to the rental terms and conditions. This is an eIDAS-compliant Simple Electronic Signature (SES) under Regulation (EU) No 910/2014.",
+    "es": "Al firmar a continuación, aceptas los términos y condiciones del alquiler. Es una firma electrónica simple (SES) conforme al eIDAS, según el Reglamento (UE) n.º 910/2014.",
+    "hu": "Az alábbi aláírással elfogadod a bérlési feltételeket. Ez a 910/2014/EU rendelet szerinti, eIDAS-megfelelő egyszerű elektronikus aláírás (SES)."
+  },
+  "csgDrawAbove": {
+    "en": "Draw your signature above",
+    "es": "Dibuja tu firma arriba",
+    "hu": "Rajzold az aláírásod a fenti mezőbe"
+  },
+  "csgSignatureArea": {
+    "en": "Signature drawing area",
+    "es": "Área para dibujar la firma",
+    "hu": "Aláírásrajzoló terület"
+  },
+  "csgSignFirst": {
+    "en": "Please sign before continuing",
+    "es": "Firma antes de continuar",
+    "hu": "Kérjük, írd alá a folytatás előtt"
+  },
+  "csgSigning": {
+    "en": "Signing...",
+    "es": "Firmando...",
+    "hu": "Aláírás..."
+  },
+  "csgSigned": {
+    "en": "Contract signed successfully!",
+    "es": "¡Contrato firmado correctamente!",
+    "hu": "A szerződés aláírása sikeres!"
+  },
+  "csgSignFailed": {
+    "en": "Signing failed. Please try again.",
+    "es": "La firma falló. Inténtalo de nuevo.",
+    "hu": "Az aláírás nem sikerült. Kérjük, próbáld újra."
+  },
+  "csgSignAndContinueLabel": {
+    "en": "Sign contract and continue",
+    "es": "Firmar el contrato y continuar",
+    "hu": "Szerződés aláírása és folytatás"
+  },
+  "csgClearSignatureLabel": {
+    "en": "Clear signature",
+    "es": "Borrar firma",
+    "hu": "Aláírás törlése"
+  },
+  "cprNtfAlwaysOn": {
+    "en": "Always on",
+    "es": "Siempre activo",
+    "hu": "Mindig bekapcsolva"
+  },
+  "cprNtfServiceMessagesNote": {
+    "en": "Booking and payment updates are part of your rental agreement, so they are always sent.",
+    "es": "Las actualizaciones de reservas y pagos forman parte de tu contrato de alquiler, por lo que siempre se envían.",
+    "hu": "A foglalási és fizetési értesítések a bérleti szerződés részét képezik, ezért mindig elküldjük őket."
+  }
+}

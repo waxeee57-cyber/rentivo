@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
   View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator,
-  useWindowDimensions, type ViewToken,
+  Share, useWindowDimensions, type ViewToken,
 } from 'react-native'
 import Animated, { useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -11,8 +11,9 @@ import { router } from 'expo-router'
 import { Fonts, Radius } from '@/constants/colors'
 import { useColors } from '@/lib/hooks/useColors'
 import { useListings } from '@/lib/hooks/useListings'
-import { useWishlistStore } from '@/lib/store/useWishlistStore'
+import { useWishlistStore, toggleWishlistItem } from '@/lib/store/useWishlistStore'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { formatPricePerDay } from '@/lib/utils/formatCurrency'
 import { FeedCard } from '@/components/feed/FeedCard'
 import { DensityGrid } from '@/components/feed/DensityGrid'
 import { ShortlistTray } from '@/components/feed/ShortlistTray'
@@ -48,6 +49,7 @@ export default function FeedScreen() {
   const insets = useSafeAreaInsets()
   const { height } = useWindowDimensions()
   const lang: Lang = useAuthStore(s => s.language)
+  const userId = useAuthStore(s => s.user?.id ?? null)
 
   const { listings, loading, error } = useListings()
   const wishlist = useWishlistStore()
@@ -92,13 +94,29 @@ export default function FeedScreen() {
     setDense(false)
   }, [listings])
 
-  const onToggleSave = useCallback((listing: Listing) => { wishlist.toggle(listing) }, [wishlist])
+  // This called the pure Zustand `wishlist.toggle`, which only ever touches the
+  // local persisted store — hearting from the feed never wrote rentivo_wishlist.
+  // The listing then disappeared the next time the Wishlist tab synced against
+  // the server. toggleWishlistItem is what every other surface uses (see
+  // app/(consumer)/listing/[id].tsx): it mirrors the flip to the table and puts
+  // local state back if the write is rejected.
+  const onToggleSave = useCallback((listing: Listing) => {
+    if (userId) void toggleWishlistItem(listing, userId)
+  }, [userId])
   const onReserve = useCallback((listing: Listing) => {
     router.push(`/(consumer)/booking/${listing.id}`)
   }, [])
+  // Was a router.push to the listing detail screen, which is navigation, not
+  // sharing — the share affordance moved the user away from the feed instead of
+  // opening the share sheet. Same payload the detail screen sends, so a link
+  // shared from either surface reads identically.
   const onShare = useCallback((listing: Listing) => {
-    router.push(`/(consumer)/listing/${listing.id}`)
-  }, [])
+    void Share.share({
+      title: listing.title,
+      // i18n-pending: feedShareMessage
+      message: `Check out ${listing.title} on Rentivo — ${formatPricePerDay(listing.price_per_day, lang)}`,
+    })
+  }, [lang])
 
   const savedIds = useMemo(() => new Set(wishlist.items.map(i => i.id)), [wishlist.items])
 

@@ -17,6 +17,7 @@ import { sendChatNotification } from '@/lib/notifications'
 import { translateMessage } from '@/lib/api/translate'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useToastStore } from '@/lib/store/useToastStore'
+import { captureException } from '@/lib/sentry'
 import { t } from '@/constants/i18n'
 import type { Message, Conversation } from '@/types'
 import { format } from 'date-fns'
@@ -224,6 +225,18 @@ export default function ConsumerChatScreen() {
       return
     }
 
+    // The optimistic bubble is a PROMISE that the message was stored. Every
+    // failure path below has to take it back down, otherwise the user reads a
+    // message on screen that no server ever accepted and only finds out it was
+    // never delivered when the thread reloads without it.
+    const failSend = (err: unknown, scope: string) => {
+      setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id))
+      setInputText(text)
+      captureException(err, { scope, bookingId: id })
+      // i18n-pending: cbkChatSendFailed
+      showToast({ message: 'Message not sent. Please try again.', type: 'error' })
+    }
+
     try {
       // Authoritative auth id — must equal auth.uid() for the chat RLS INSERT
       // policy (msg_participant_insert: sender_id = auth.uid()). Demo / expired
@@ -238,29 +251,61 @@ export default function ConsumerChatScreen() {
       }
       let convId = conversation?.id
       if (!convId) {
-        const { data: newConv } = await supabase
+        // rentivo_bookings.operator_id is NULL for every host-owned listing, and
+        // '' is not a uuid, so the old `?? ''` made Postgres reject the insert
+        // with 22P02. The error was never destructured, so `newConv` came back
+        // null, `convId` stayed undefined and the function bailed inside a
+        // try/finally with no catch — leaving the bubble on screen over nothing.
+        //
+        // rentivo_conversations also carries CHECK (num_nonnulls(operator_id,
+        // host_id) = 1), so exactly one owner column may be set: operator_id for
+        // operator stock, host_id for host stock. listing_id is NOT NULL, so a
+        // booking without one cannot open a conversation at all.
+        const listingId = booking?.listing_id ?? null
+        const operatorId = booking?.operator_id ?? null
+        const hostId = booking?.host_id ?? null
+        if (!listingId || (operatorId === null) === (hostId === null)) {
+          failSend(
+            new Error(`Booking ${id} has no listing_id, or not exactly one owner id, for a conversation`),
+            'chat.conversation.ids',
+          )
+          return
+        }
+        const { data: newConv, error: convError } = await supabase
           .from('rentivo_conversations')
           .insert({
             booking_id: id,
-            listing_id: booking?.listing_id ?? '',
-            operator_id: booking?.operator_id ?? '',
+            listing_id: listingId,
+            operator_id: operatorId,
+            host_id: hostId,
             user_id: authUserId,
           })
           .select()
           .single()
-        if (newConv) {
-          setConversation(newConv as Conversation)
-          convId = (newConv as Conversation).id
+        if (convError || !newConv) {
+          failSend(convError ?? new Error('Conversation insert returned no row'), 'chat.conversation.insert')
+          return
         }
+        setConversation(newConv as Conversation)
+        convId = (newConv as Conversation).id
       }
-      if (!convId) return
-      await supabase.from('rentivo_messages').insert({
+      // This insert discarded its error too. An RLS denial here is silent in
+      // supabase-js (it resolves, it does not reject), so the bubble stayed up
+      // over a message row that was never written.
+      const { error: msgError } = await supabase.from('rentivo_messages').insert({
         conversation_id: convId,
         sender_role: 'consumer',
         sender_id: authUserId,
         content: text,
       })
-      await supabase
+      if (msgError) {
+        failSend(msgError, 'chat.message.insert')
+        return
+      }
+      // The message IS stored past this point, so a failed preview update must
+      // NOT roll the bubble back — the only casualty is the conversation-list
+      // preview and unread badge. Report it and let the send stand.
+      const { error: previewError } = await supabase
         .from('rentivo_conversations')
         .update({
           last_message: text,
@@ -268,6 +313,9 @@ export default function ConsumerChatScreen() {
           unread_operator: (conversation?.unread_operator ?? 0) + 1,
         })
         .eq('id', convId)
+      if (previewError) {
+        captureException(previewError, { scope: 'chat.conversation.preview', conversationId: convId })
+      }
       // Notify operator about new consumer message
       if (booking?.operator?.auth_id) {
         void sendChatNotification({

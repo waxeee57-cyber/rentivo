@@ -17,6 +17,7 @@ import { t } from '@/constants/i18n'
 import { useLoyalty } from '@/lib/hooks/useLoyalty'
 import { getTierColor } from '@/lib/loyalty'
 import { supabase } from '@/lib/supabase'
+import { captureException } from '@/lib/sentry'
 import { useThemeStore } from '@/lib/store/useThemeStore'
 import { useColors } from '@/lib/hooks/useColors'
 
@@ -65,11 +66,20 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (Config.useMock || !user?.id) return
+    const authUserId = user.id
     supabase
       .from('rentivo_reviews')
+      // The filter was `.eq('reviewer_id', ...)`. rentivo_reviews has no
+      // `reviewer_id` column — the author is `user_id` (FK to auth.users) — so
+      // PostgREST rejected the request and the discarded error left every
+      // profile reading "0 reviews" with no rating, for everybody.
       .select('rating')
-      .eq('reviewer_id', user.id)
-      .then(({ data }) => {
+      .eq('user_id', authUserId)
+      .then(({ data, error }) => {
+        if (error) {
+          captureException(error, { scope: 'profile.reviewStats' })
+          return
+        }
         const rows = data ?? []
         setReviewCount(rows.length)
         if (rows.length > 0) {

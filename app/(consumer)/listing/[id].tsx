@@ -29,6 +29,7 @@ import { Config } from '@/constants/config'
 import { MOCK_REVIEWS, MOCK_LISTINGS } from '@/lib/mockData'
 import { useReviews } from '@/lib/hooks/useReviews'
 import { supabase } from '@/lib/supabase'
+import { captureException } from '@/lib/sentry'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useWishlistStore, toggleWishlistItem } from '@/lib/store/useWishlistStore'
 import { useRecentlyViewedStore } from '@/lib/store/useRecentlyViewedStore'
@@ -162,17 +163,46 @@ export default function ListingDetailScreen() {
           onPress: async () => {
             try {
               const { supabase: sb } = await import('@/lib/supabase')
-              await sb.from('rentivo_reports').insert({
-                reporter_id: user?.id ?? null,
+              // The reporter id has to come from the live session, not the
+              // persisted Zustand store. The WITH CHECK on rentivo_reports is
+              // (auth.uid() IS NOT NULL AND reporter_id = auth.uid()) OR
+              // (auth.uid() IS NULL AND reporter_id IS NULL), and the store can
+              // be null while a Supabase session is still active — that pairing
+              // sent reporter_id: null on an authenticated request, which RLS
+              // refused with 42501 while the user was thanked anyway.
+              const { data: { session } } = await sb.auth.getSession()
+              const reporterId = session?.user?.id ?? null
+              const insert = sb.from('rentivo_reports').insert({
+                reporter_id: reporterId,
                 listing_id: listing.id,
                 operator_id: listing.operator_id ?? null,
                 reason: r.value,
               })
+
+              if (reporterId) {
+                // RETURNING is filtered by the SELECT policy on the table
+                // (auth.uid() = reporter_id), so only a signed-in reporter can
+                // read their own new row back. Ask for it: it is the only proof
+                // the report landed. Anonymous reports are a supported path and
+                // can never satisfy that policy, so they check the error alone.
+                const { data, error } = await insert.select('id')
+                if (error) throw error
+                if (!data || data.length === 0) {
+                  throw new Error('Report insert returned no row')
+                }
+              } else {
+                const { error } = await insert
+                if (error) throw error
+              }
+
+              // Only now. Under DSA Article 16 this message is a receipt, and it
+              // was previously printed unconditionally over a discarded error.
               Alert.alert(
                 t('ternThankYou', language),
                 t('ternReportReceived', language),
               )
-            } catch {
+            } catch (e) {
+              captureException(e, { scope: 'listing.report', listingId: listing.id })
               Alert.alert(
                 t('opFleet2Error', language),
                 t('ternCouldNotReport', language),

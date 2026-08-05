@@ -146,11 +146,22 @@ serve(async (req) => {
         .select('discount_type, discount_value, max_uses, current_uses, valid_until, min_booking_value')
         .eq('code', String(booking.promo_code).toUpperCase().trim())
         .maybeSingle()
-      if (
-        p &&
-        Number(p.current_uses) < Number(p.max_uses) &&
-        (!p.valid_until || new Date(p.valid_until) >= new Date())
-      ) {
+      // The redemption cap and the expiry are NOT re-tested here, on purpose.
+      //
+      // create-booking already redeemed this code for this booking: it called
+      // increment_promo_use, so by the time we get here current_uses has moved
+      // and, for the LAST redeemer of a max_uses code, current_uses === max_uses.
+      // Re-testing `<` therefore dropped the discount for that renter, no tier
+      // could then reconstruct their persisted total, and the 400 below made
+      // their booking permanently unpayable — while re-creating it quoted a
+      // HIGHER price, because the code was now exhausted. The same thing
+      // happened to anyone whose valid_until passed between booking and paying.
+      //
+      // The question here is not "is this code still redeemable" — it is "was
+      // this code legitimately applied to THIS booking", which create-booking
+      // already answered. What must stay server-side is the discount VALUE, so
+      // a client cannot invent one; that is what this lookup is for.
+      if (p) {
         promo = {
           discount_type: String(p.discount_type),
           discount_value: numOr0(p.discount_value),

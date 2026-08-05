@@ -11,6 +11,7 @@ import { Spacing, Radius, Fonts } from '@/constants/colors'
 import { Button } from '@/components/ui/Button'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
+import { captureException } from '@/lib/sentry'
 import { useColors } from '@/lib/hooks/useColors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
@@ -21,6 +22,19 @@ const cprT = (key: string, lang: 'en' | 'es' | 'hu'): string =>
   t(key as unknown as TranslationKey, lang)
 
 type Step = 1 | 2 | 3
+
+/**
+ * The three KYC photos map one-to-one onto three real rentivo_users columns.
+ * There is no `verification_docs` array column on that table and never was, so
+ * the step number has to resolve to a column name before anything is written.
+ */
+type DocColumn = 'license_front_url' | 'license_back_url' | 'selfie_url'
+
+const DOC_COLUMN_FOR_STEP: Record<Step, DocColumn> = {
+  1: 'license_front_url',
+  2: 'license_back_url',
+  3: 'selfie_url',
+}
 
 export default function VerifyScreen() {
   const C = useColors()
@@ -97,10 +111,12 @@ export default function VerifyScreen() {
         return
       }
       const userId = session.user.id
-      const uploadedUrls: string[] = []
+      const docUrls: Partial<Record<DocColumn, string>> = {}
 
       for (const [stepKey, uri] of Object.entries(photos)) {
         if (!uri) continue
+        const column = DOC_COLUMN_FOR_STEP[Number(stepKey) as Step]
+        if (!column) continue
         const ext = uri.split('.').pop() ?? 'jpg'
         const path = `kyc/${userId}/step${stepKey}_${Date.now()}.${ext}`
         const response = await fetch(uri)
@@ -112,19 +128,46 @@ export default function VerifyScreen() {
         const { data: { publicUrl } } = supabase.storage
           .from('verification-docs')
           .getPublicUrl(path)
-        uploadedUrls.push(publicUrl)
+        docUrls[column] = publicUrl
       }
 
-      await supabase
+      // rentivo_users has no `verification_docs` column — the three documents
+      // live in license_front_url / license_back_url / selfie_url. PostgREST
+      // rejects a statement that names an unknown column, so the old write
+      // failed as a WHOLE: verification_status was never set either, and
+      // because the error was not destructured the success screen appeared
+      // anyway. The user photographed their licence, the files reached storage,
+      // and nothing on the profile recorded that they had ever done it.
+      //
+      // 'pending' is one of the four values allowed by
+      // rentivo_users_verification_status_check (unverified | pending |
+      // verified | rejected).
+      //
+      // Matched on `id`, not `auth_id`, because `id` is what the RLS UPDATE
+      // policy checks (auth.uid() = id) and what the FK to auth.users points at.
+      const { data: updated, error: updateError } = await supabase
         .from('rentivo_users')
         .update({
           verification_status: 'pending',
-          verification_docs: uploadedUrls,
+          ...docUrls,
         })
-        .eq('auth_id', userId)
+        .eq('id', userId)
+        .select('id')
+
+      if (updateError) throw updateError
+      // supabase-js reports no error for an UPDATE that matched zero rows, so
+      // without this check a missing or RLS-invisible profile row would still
+      // show "submitted for review" over documents nothing is pointing at.
+      if (!updated || updated.length === 0) {
+        throw new Error('Verification documents were uploaded but no user row was updated')
+      }
 
       setSubmitted(true)
-    } catch {
+    } catch (e) {
+      // Identity documents are the one thing a user cannot re-check for
+      // themselves, so a failure here has to be recorded somewhere other than
+      // an alert the user dismisses.
+      captureException(e, { scope: 'verify.submitDocuments' })
       Alert.alert(t('opFleet2Error', language), cprT('cprSubmitDocsFailed', language))
     }
   }
