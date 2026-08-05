@@ -1,6 +1,15 @@
 import { supabase } from '@/lib/supabase'
 import * as FileSystem from 'expo-file-system/legacy'
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator'
+// Required lazily, inside a try, on purpose.
+//
+// expo-image-manipulator resolves its native module at import time, so a static
+// import throws "Cannot find native module 'ExpoImageManipulator'" on any build
+// made before the package was added — and because this module is imported by
+// the damage and listing screens, that would take those screens down entirely
+// on an older dev client. Resizing is an optimisation; failing to resize must
+// never cost the user their photo.
+type ManipulatorModule = typeof import('expo-image-manipulator')
+let manipulator: ManipulatorModule | null | undefined
 
 /**
  * Shrink a camera-roll image before it goes anywhere near the network.
@@ -21,10 +30,20 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator'
 const MAX_EDGE = 1600
 
 async function shrink(localUri: string): Promise<string> {
+  if (manipulator === undefined) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      manipulator = require('expo-image-manipulator') as ManipulatorModule
+    } catch {
+      manipulator = null
+    }
+  }
+  if (!manipulator) return localUri
+
   try {
-    const ctx = ImageManipulator.manipulate(localUri).resize({ width: MAX_EDGE })
+    const ctx = manipulator.ImageManipulator.manipulate(localUri).resize({ width: MAX_EDGE })
     const image = await ctx.renderAsync()
-    const out = await image.saveAsync({ compress: 0.75, format: SaveFormat.JPEG })
+    const out = await image.saveAsync({ compress: 0.75, format: manipulator.SaveFormat.JPEG })
     return out.uri
   } catch {
     return localUri
