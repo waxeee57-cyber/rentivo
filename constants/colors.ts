@@ -6,11 +6,26 @@ export const DarkColors = {
   surfaceWarm:    '#1D2839',
   surfaceHover:   '#223048',
 
-  // Primary — brightened amber for AA contrast on the dark surfaces
-  primary:        '#F0B15C',
-  primaryDark:    '#D89438',
-  primarySurface: 'rgba(240,177,92,0.12)',
-  primarySubtle:  'rgba(240,177,92,0.12)',
+  // Primary — the brand coral, lifted for dark surfaces.
+  //
+  // This was amber #F0B15C, which meant the product had TWO brand hues: coral
+  // (H≈17°) in light mode, gold (H≈38°) in dark. app.json pins
+  // `userInterfaceStyle: "dark"`, and `Colors` below aliases DarkColors — so
+  // gold was the colour every user actually saw, and the colour every
+  // un-themed call site inherited. Gold-on-navy is the luxury cue the
+  // positioning no longer trades on; deleting the word while shipping the
+  // pigment changes nothing.
+  //
+  // Same hue as the light primary, lifted in value so it clears AA on dark.
+  // Measured: textInverse #0A1220 on this fill = 7.25:1 (Button 'primary'
+  // renders its label in textInverse). As text: 7.25:1 on background,
+  // 6.53:1 on surface, 5.12:1 on surfaceHover.
+  primary:        '#FF7A45',
+  // Held strictly darker so the pressed ramp still reads as "deeper";
+  // textInverse on it is still 5.19:1.
+  primaryDark:    '#E05E2E',
+  primarySurface: 'rgba(255,122,69,0.12)',
+  primarySubtle:  'rgba(255,122,69,0.12)',
 
   // Text
   text:           '#F2F0EB',
@@ -24,7 +39,11 @@ export const DarkColors = {
   // Borders — visible hairlines (cards used to melt into the navy)
   border:         '#26334A',
   borderWarm:     '#324159',
-  borderGold:     'rgba(240,177,92,0.3)',
+  // Renamed from the old gold-named border token. The light palette's value
+  // had been coral for a while, so the name was already false there — and
+  // here it was still pigment gold, putting a gold hairline on cards,
+  // vouchers, the date picker and onboarding in the theme users actually run.
+  borderAccent:   'rgba(255,122,69,0.30)',
   // WCAG 1.4.11 needs 3:1 for meaningful UI boundaries, and `border` only
   // manages 1.04:1 on surfaceHover — fine for a decorative divider, not for
   // something you must locate (input outlines, focusable cards). Use this
@@ -38,6 +57,9 @@ export const DarkColors = {
   successSurface: 'rgba(78,203,141,0.14)',
   error:          '#F27E72',
   errorSurface:   'rgba(242,126,114,0.14)',
+  // Stays amber on purpose. It used to be byte-identical to `primary`, which
+  // made a caution state indistinguishable from a call to action; now that
+  // primary is coral, amber is free to mean only "caution".
   warning:        '#F0B15C',
   warningSurface: 'rgba(240,177,92,0.14)',
   info:           '#5FA8EE',
@@ -59,7 +81,13 @@ export const DarkColors = {
   // Deep navy — the ink anchor; CTA fill in light mode
   navy:           '#0A1628',
 
-  // Tier / loyalty gold. Lives in the palette so it themes — it used to be a
+  // Tier / loyalty gold. SCOPE: the Gold rung of the loyalty ladder and the
+  // top operator tier — nothing else. A Gold tier is a rank name, the way it
+  // is for every airline; it is not brand chrome. Do not reach for this token
+  // for CTAs, borders or glows: that is what `primary` is for, and reaching
+  // for gold is how the app ended up with a gold theme in the first place.
+  //
+  // Lives in the palette so it themes — it used to be a
   // fourth brand orange hardcoded outside both palettes (operator-tier.ts,
   // loyalty.ts), which meant it never adapted to light mode.
   // 8.78:1 on background, 7.90:1 on surface, 6.96:1 on surfaceWarm,
@@ -67,7 +95,7 @@ export const DarkColors = {
   gold:           '#E8A44A',
 
   // Backward-compat aliases
-  primaryLight:   '#F5C878',
+  primaryLight:   '#FF9A70',
   surfaceCard:    '#1D2839',
   borderLight:    '#26334A',
   dark:           '#0A1220',
@@ -107,7 +135,7 @@ export const LightColors = {
   // Borders — warm hairlines
   border:         '#E8E4DE',
   borderWarm:     '#DDD8D0',
-  borderGold:     'rgba(196,64,10,0.25)',
+  borderAccent:   'rgba(196,64,10,0.25)',
   // WCAG 1.4.11 needs 3:1 for meaningful UI boundaries, and `border` only
   // manages 1.27:1 on white — fine for a decorative divider, not for something
   // you must be able to locate (input outlines, focusable cards). Use this
@@ -215,10 +243,12 @@ export const Shadow = {
     shadowRadius: 28,
     elevation: 9,
   },
-  gold: {
-    // Same source of truth as the palette token, so the tier accent can never
-    // drift into a fifth hardcoded orange.
-    shadowColor: DarkColors.gold,
+  accent: {
+    // Renamed from `gold` and re-sourced from `primary`. Its two call sites
+    // are the selected map pin and a home-screen card — both of which fill
+    // with C.primary, so a shadow sourced from `gold` put a gold glow under a
+    // coral bubble. Brand glow follows the brand colour; `gold` is tiers only.
+    shadowColor: DarkColors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.22,
     shadowRadius: 16,

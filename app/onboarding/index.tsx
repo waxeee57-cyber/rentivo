@@ -212,7 +212,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: 60,
     backgroundColor: 'rgba(232,164,74,0.12)',
     borderWidth: 1,
-    borderColor: C.borderGold,
+    borderColor: C.borderAccent,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.xl,
@@ -245,7 +245,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: C.borderGold,
+    borderColor: C.borderAccent,
   },
   trustBadgeText: {
     fontSize: 13,
@@ -277,7 +277,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 52,
-    ...Shadow.gold,
+    ...Shadow.accent,
   },
   primaryBtnText: {
     ...Typography.h4,

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 349 89" width="349" height="89">
+  <!--
+    Rentivo horizontal lockup. Mark + wordmark + the accent full stop.
+
+    The stop is not decoration: the brand line is "Rent anything." and the
+    period is the confidence in it. It is also the ONLY place the accent
+    colour appears, which is the same rule the app follows everywhere else.
+
+    The type is OUTLINED, not <text font-family="Manrope">. Live text is
+    exactly what made the previous gold-R icon unshippable - it rendered
+    differently, or not at all, wherever the font was missing. Set in Manrope
+    ExtraBold, -2.6 tracking, kerned from the font's own kern table.
+
+    Geometry is derived, not eyeballed: the mark is 1.28x the measured cap
+    height, mark and type sit on the SAME baseline, and the left margin is the
+    mark's ink EDGE, not its centre (centring it there pushed 16.5 units of
+    stroke outside the viewBox and sliced the bowl off).
+
+    Recolour by setting --rentivo-ink / --rentivo-accent; the hex values are
+    fallbacks for renderers without CSS variable support.
+  -->
+  <g transform="translate(33.68 44.41) scale(0.7156) translate(-52.0 -50.0)">
+    
+  <g fill="none" stroke="var(--rentivo-ink, #0A1628)" stroke-width="13"
+     stroke-linecap="round" stroke-linejoin="round">
+    <!-- stem -->
+    <path d="M 31 14 L 31 86"/>
+    <!-- bowl: narrow, so the counter stays open at 16px. Ends at 46, a hair
+         above optical centre, or the letter reads bottom-heavy. -->
+    <path d="M 31 14 L 54 14 A 16 16 0 0 1 54 46 L 31 46"/>
+    <!-- leg: a decisive diagonal that CLEARS the stem, then a short inward
+         terminal at the foot. The earlier version curved back until it met the
+         stem and closed a second bowl - the mark read as a B. The return
+         gesture has to stay open or it eats the letter. -->
+    <path d="M 52 46 L 72 79 C 74 83 71 86 67 84"/>
+  </g>
+  </g>
+  <g transform="translate(78.07 74.83)" fill="var(--rentivo-ink, #0A1628)"><g transform="translate(0.00 0) scale(0.033000 -0.033000)"><path d="M140.00 0.00V1440.00H748.00Q769.00 1440.00 804.50 1438.50Q840.00 1437.00 868.00 1432.00Q997.00 1412.00 1079.50 1347.00Q1162.00 1282.00 1201.00 1183.50Q1240.00 1085.00 1240.00 964.00Q1240.00 783.00 1150.00 654.50Q1060.00 526.00 868.00 496.00L748.00 488.00H412.00V0.00ZM952.00 0.00 668.00 586.00 948.00 640.00 1260.00 0.00ZM412.00 742.00H736.00Q757.00 742.00 782.00 744.00Q807.00 746.00 828.00 752.00Q883.00 767.00 913.00 802.50Q943.00 838.00 954.50 881.50Q966.00 925.00 966.00 964.00Q966.00 1003.00 954.50 1046.50Q943.00 1090.00 913.00 1125.50Q883.00 1161.00 828.00 1176.00Q807.00 1182.00 782.00 1184.00Q757.00 1186.00 736.00 1186.00H412.00Z"/></g><g transform="translate(41.62 0) scale(0.033000 -0.033000)"><path d="M642.00 -30.00Q476.00 -30.00 349.50 41.50Q223.00 113.00 151.50 238.50Q80.00 364.00 80.00 526.00Q80.00 703.00 150.00 834.00Q220.00 965.00 343.00 1037.50Q466.00 1110.00 626.00 1110.00Q796.00 1110.00 915.00 1030.00Q1034.00 950.00 1091.00 805.00Q1148.00 660.00 1131.00 464.00H862.00V564.00Q862.00 729.00 809.50 801.50Q757.00 874.00 638.00 874.00Q499.00 874.00 433.50 789.50Q368.00 705.00 368.00 540.00Q368.00 389.00 433.50 306.50Q499.00 224.00 626.00 224.00Q706.00 224.00 763.00 259.00Q820.00 294.00 850.00 360.00L1122.00 282.00Q1061.00 134.00 929.50 52.00Q798.00 -30.00 642.00 -30.00ZM284.00 464.00V666.00H1000.00V464.00Z"/></g><g transform="translate(79.15 0) scale(0.033000 -0.033000)"><path d="M876.00 0.00V510.00Q876.00 547.00 872.00 604.50Q868.00 662.00 847.00 720.00Q826.00 778.00 778.50 817.00Q731.00 856.00 644.00 856.00Q609.00 856.00 569.00 845.00Q529.00 834.00 494.00 802.50Q459.00 771.00 436.50 710.00Q414.00 649.00 414.00 548.00L258.00 622.00Q258.00 750.00 310.00 862.00Q362.00 974.00 466.50 1043.00Q571.00 1112.00 730.00 1112.00Q857.00 1112.00 937.00 1069.00Q1017.00 1026.00 1061.50 960.00Q1106.00 894.00 1125.00 822.50Q1144.00 751.00 1148.00 692.00Q1152.00 633.00 1152.00 606.00V0.00ZM138.00 0.00V1080.00H380.00V722.00H414.00V0.00Z"/></g><g transform="translate(118.52 0) scale(0.033000 -0.033000)"><path d="M788.00 0.00Q676.00 -21.00 568.50 -18.50Q461.00 -16.00 376.50 19.50Q292.00 55.00 248.00 134.00Q208.00 208.00 206.00 284.50Q204.00 361.00 204.00 458.00V1380.00H476.00V474.00Q476.00 411.00 477.50 360.50Q479.00 310.00 498.00 280.00Q534.00 223.00 613.00 218.00Q692.00 213.00 788.00 226.00ZM20.00 870.00V1080.00H788.00V870.00Z"/></g><g transform="translate(145.23 0) scale(0.033000 -0.033000)"><path d="M160.00 1230.00V1470.00H432.00V1230.00ZM160.00 0.00V1080.00H432.00V0.00Z"/></g><g transform="translate(162.16 0) scale(0.033000 -0.033000)"><path d="M432.00 0.00 40.00 1080.00H312.00L568.00 332.00L824.00 1080.00H1096.00L704.00 0.00Z"/></g><g transform="translate(197.05 0) scale(0.033000 -0.033000)"><path d="M626.00 -30.00Q463.00 -30.00 340.00 43.00Q217.00 116.00 148.50 244.50Q80.00 373.00 80.00 540.00Q80.00 709.00 150.00 837.50Q220.00 966.00 343.00 1038.00Q466.00 1110.00 626.00 1110.00Q789.00 1110.00 912.50 1037.00Q1036.00 964.00 1105.00 835.50Q1174.00 707.00 1174.00 540.00Q1174.00 372.00 1104.50 243.50Q1035.00 115.00 911.50 42.50Q788.00 -30.00 626.00 -30.00ZM626.00 224.00Q757.00 224.00 821.50 312.50Q886.00 401.00 886.00 540.00Q886.00 684.00 820.50 770.00Q755.00 856.00 626.00 856.00Q537.00 856.00 480.00 816.00Q423.00 776.00 395.50 705.00Q368.00 634.00 368.00 540.00Q368.00 395.00 433.50 309.50Q499.00 224.00 626.00 224.00Z"/></g></g>
+  <circle cx="327.59" cy="67.90" r="6.93" fill="var(--rentivo-accent, #C4400A)"/>
+</svg>

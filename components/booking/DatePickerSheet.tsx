@@ -268,7 +268,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   breakdownValue: { fontFamily: Fonts.regular, fontSize: 13, color: C.textSecondary, fontVariant: ['tabular-nums'] },
   breakdownTotalRow: {
     marginTop: 4, paddingTop: 6,
-    borderTopWidth: 1, borderTopColor: C.borderGold,
+    borderTopWidth: 1, borderTopColor: C.borderAccent,
   },
   breakdownTotalLabel: { fontSize: 14, fontFamily: Fonts.bold, color: C.text },
   breakdownTotalValue: { fontSize: 14, fontFamily: Fonts.bold, color: C.text, fontVariant: ['tabular-nums'] },

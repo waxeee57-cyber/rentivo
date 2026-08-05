@@ -214,7 +214,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,
     borderWidth: 1,
-    borderColor: C.borderGold,
+    borderColor: C.borderAccent,
   },
   inspectBtnText: {
     fontSize: 11,

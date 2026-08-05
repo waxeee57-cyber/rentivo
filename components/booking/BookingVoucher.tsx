@@ -173,7 +173,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     paddingVertical: Spacing.sm,
     borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: C.borderGold,
+    borderColor: C.borderAccent,
     backgroundColor: C.primarySurface,
     alignItems: 'center',
     justifyContent: 'center',

@@ -428,7 +428,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: 42,
     backgroundColor: C.primarySurface,
     borderWidth: 1,
-    borderColor: C.borderGold,
+    borderColor: C.borderAccent,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.xl,

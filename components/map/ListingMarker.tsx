@@ -60,7 +60,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   bubbleSelected: {
     backgroundColor: C.primary,
     borderColor: C.primary,
-    ...Shadow.gold,
+    ...Shadow.accent,
   },
   label: {
     fontSize: 13,

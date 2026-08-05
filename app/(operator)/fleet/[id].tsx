@@ -575,7 +575,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   pricingBtn: {
     marginTop: Spacing.sm, padding: Spacing.md,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.xs,
-    borderWidth: 1, borderColor: C.borderGold,
+    borderWidth: 1, borderColor: C.borderAccent,
     borderRadius: Radius.lg, backgroundColor: C.surface,
     minHeight: 44,
   },

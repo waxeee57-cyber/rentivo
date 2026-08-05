@@ -646,7 +646,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: Radius.md,
     padding: Spacing.md,
     borderWidth: 1,
-    borderColor: C.borderGold,
+    borderColor: C.borderAccent,
   },
   referralDesc: { color: C.textSecondary, fontFamily: Fonts.regular, fontSize: 13, marginBottom: Spacing.md, lineHeight: 20 },
   referralCodeRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
