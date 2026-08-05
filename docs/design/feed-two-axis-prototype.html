@@ -1,0 +1,303 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0A1628">
+<title>Rentivo — feed prototype</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Archivo:wdth,wght@62..125,600..800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#05080f}
+body{font-family:Manrope,system-ui,sans-serif;color:#F2F0EB}
+.feed{height:100dvh;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none}
+.feed::-webkit-scrollbar{display:none}
+.card{position:relative;height:100dvh;scroll-snap-align:start;scroll-snap-stop:always;
+      overflow:hidden;background:#0A1628}
+.rail{position:absolute;inset:0;display:flex;overflow-x:scroll;scroll-snap-type:x mandatory;
+      scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.pane{flex:0 0 100%;height:100%;scroll-snap-align:start;position:relative}
+.pane img{width:100%;height:100%;object-fit:cover;display:block}
+.pane-detail{background:#0A1628;position:relative;z-index:3}
+.eyebrow{--x:0}
+.detail{position:absolute;top:100px;left:22px;right:22px;bottom:47%;overflow-y:auto;
+        scrollbar-width:none;-webkit-mask-image:linear-gradient(180deg,#000 88%,transparent 100%)}
+.detail::-webkit-scrollbar{display:none}
+.inc{list-style:none;margin-top:12px}
+.inc li{padding:9px 0 9px 22px;border-bottom:1px solid rgba(242,240,235,.12);font-size:14px;
+        position:relative;color:rgba(242,240,235,.86)}
+.inc li:before{content:"";position:absolute;left:2px;top:16px;width:7px;height:7px;
+               border-radius:99px;background:#FF7A45}
+.mt{margin-top:22px}
+.rec{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+.rec td{padding:8px 0;border-bottom:1px solid rgba(242,240,235,.12);color:rgba(242,240,235,.72)}
+.rec td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:#F2F0EB}
+.rec .tot td{font-weight:800;color:#F2F0EB;font-size:16px}
+.rec .own td{color:#5FD3A0;border-bottom:none}
+.rec .own td:last-child{color:#5FD3A0}
+.fine{margin-top:12px;font-size:12px;color:rgba(242,240,235,.5);line-height:1.5}
+.scrim{position:absolute;inset:0;pointer-events:none;z-index:2;background:
+  linear-gradient(180deg,rgba(10,22,40,.9) 0%,rgba(10,22,40,.3) 12%,rgba(10,22,40,0) 24%,
+                  rgba(10,22,40,.9) 46%,#0A1628 57%)}
+.ctx{position:absolute;z-index:4;top:0;left:0;right:0;padding:52px 20px 12px;display:flex;
+     justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}
+.where{font-weight:800;font-size:16px}
+.when{font-size:13px;color:rgba(242,240,235,.68);margin-top:2px}
+.edit{pointer-events:auto;background:none;border:1px solid rgba(242,240,235,.36);color:#F2F0EB;
+      font:700 12px Manrope;padding:7px 13px;border-radius:99px}
+.hdots{position:absolute;z-index:4;top:108px;left:0;right:0;display:flex;justify-content:center;gap:5px;
+       pointer-events:none}
+.hdots .d{width:5px;height:5px;border-radius:99px;background:rgba(242,240,235,.32);transition:.3s}
+.hdots .d.on{background:#F2F0EB;width:16px}
+.foot{position:absolute;z-index:4;left:0;right:0;bottom:0;padding:0 22px 30px;min-height:46%;
+      display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none}
+.foot .edit,.foot button{pointer-events:auto}
+.eyebrow{font:700 10.5px Manrope;letter-spacing:.17em;text-transform:uppercase;color:#FF7A45}
+.title{font-family:Archivo,system-ui,sans-serif;font-variation-settings:'wdth' 112;font-weight:800;
+       font-size:36px;line-height:.96;letter-spacing:-.035em;margin-top:8px}
+.sub{font-size:13.5px;color:rgba(242,240,235,.62);margin-top:6px}
+.specs{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12.5px;flex-wrap:wrap;
+       color:rgba(242,240,235,.68)}
+.specs i{width:3px;height:3px;border-radius:99px;background:rgba(242,240,235,.3)}
+.money{margin-top:15px;border-top:1px solid rgba(242,240,235,.16);padding-top:13px}
+.mrow{display:flex;align-items:flex-end;gap:18px}
+.day{font:800 38px Manrope;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.unit{font-size:15px;color:rgba(242,240,235,.6);margin-left:3px}
+.tot2,.dep{display:flex;flex-direction:column;padding-left:18px;
+           border-left:1px solid rgba(242,240,235,.16)}
+.tl{font:700 9.5px Manrope;letter-spacing:.13em;text-transform:uppercase;color:rgba(242,240,235,.52)}
+.tv{font:800 19px Manrope;font-variant-numeric:tabular-nums;margin-top:3px}
+.dep.z .tv{color:#5FD3A0}
+.host{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12.5px;min-width:0}
+.ava{width:25px;height:25px;border-radius:99px;background:#FF7A45;color:#0A1628;display:grid;
+     place-items:center;font:800 11.5px Manrope;flex:none}
+.hn{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+.ht{color:rgba(242,240,235,.55);white-space:nowrap}
+.chip{margin-left:auto;flex:none;white-space:nowrap;border:1px solid rgba(242,240,235,.3);
+      border-radius:99px;padding:5px 10px;font:700 10.5px Manrope;color:rgba(242,240,235,.75)}
+.chip.live{border-color:rgba(95,211,160,.5);color:#5FD3A0}
+.cta{display:flex;gap:8px;margin-top:15px}
+.go{flex:1;background:#FF7A45;color:#0A1628;border:none;border-radius:99px;padding:15px;
+    font:800 15px Manrope}
+.gh{width:50px;border:1px solid rgba(242,240,235,.26);background:none;color:#F2F0EB;
+    border-radius:99px;font-size:16px}
+.hint{position:fixed;bottom:0;left:0;right:0;text-align:center;padding:8px;font-size:11px;
+      color:rgba(242,240,235,.32);pointer-events:none;z-index:5}
+@media (prefers-reduced-motion:reduce){.feed,.rail{scroll-behavior:auto}}
+</style></head><body>
+<main class="feed">
+<article class="card" id="v0">
+  <div class="rail" data-rail><div class="pane"><img src="https://images.unsplash.com/photo-1573401491021-c5f127195de0?w=1400&q=80&auto=format&fit=crop" alt="Classic Fiat 500" loading="eager"></div><div class="pane"><img src="https://images.unsplash.com/photo-1644602558641-4c76e66cc6b5?w=1400&q=80&auto=format&fit=crop" alt="Classic Fiat 500" loading="lazy"></div><div class="pane"><img src="https://images.unsplash.com/photo-1641979239304-4f7eca50a85d?w=1400&q=80&auto=format&fit=crop" alt="Classic Fiat 500" loading="lazy"></div><div class="pane pane-detail">
+      <div class="detail">
+        <p class="eyebrow">What you get</p>
+        <ul class="inc"><li>Unlimited kilometres</li><li>Second driver</li><li>Airport pickup, Naples NAP</li><li>Free cancellation to 48h</li></ul>
+        <p class="eyebrow mt">Where the money goes</p>
+        <table class="rec">
+          <tr><td>&euro;35 &times; 7 days</td><td>&euro;220</td></tr>
+          <tr><td>Service fee</td><td>&euro;25</td></tr>
+          <tr class="tot"><td>You pay</td><td>&euro;245</td></tr>
+          <tr class="own"><td>Giulia M. receives</td><td>&euro;220</td></tr>
+        </table>
+        <p class="fine">Deposit &euro;0 with the damage waiver. No charge until the owner confirms.</p>
+      </div>
+    </div></div>
+  <div class="scrim"></div>
+
+  <header class="ctx">
+    <div><p class="where">Positano, IT</p><p class="when">14 Aug &middot; 7 nights &middot; 2 guests</p></div>
+    <button class="edit">Change</button>
+  </header>
+
+  <div class="hdots" data-dots><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i></div>
+
+  <div class="foot">
+    <p class="eyebrow">Car</p>
+    <h2 class="title">Classic Fiat 500</h2>
+    <p class="sub">Sunflower Yellow · 1972</p>
+    <div class="specs"><span>4 seats</span><i></i><span>2 bags</span><i></i><span>Manual</span><i></i><span>&#9733; 4.7 (18)</span></div>
+
+    <div class="money">
+      <div class="mrow">
+        <div><span class="day">&euro;35</span><span class="unit">/day</span></div>
+        <div class="tot2"><span class="tl">7 days</span><span class="tv">&euro;245</span></div>
+        <div class="dep z"><span class="tl">Deposit</span><span class="tv">&euro;0</span></div>
+      </div>
+    </div>
+
+    <div class="host">
+      <span class="ava">G</span>
+      <span class="hn">Giulia M.</span><span class="ht">Private host</span><span class="chip live">Instant book</span>
+    </div>
+
+    <div class="cta">
+      <button class="go">Reserve &mdash; &euro;245</button>
+      <button class="gh" aria-label="Shortlist">&#9825;</button>
+      <button class="gh" aria-label="Share">&#8599;</button>
+    </div>
+  </div>
+</article>
+<article class="card" id="v1">
+  <div class="rail" data-rail><div class="pane"><img src="https://images.unsplash.com/photo-1554223789-df81106a45ed?w=1400&q=80&auto=format&fit=crop" alt="Vespa GTS 300" loading="eager"></div><div class="pane"><img src="https://images.unsplash.com/photo-1697646382333-0d14cf52b20e?w=1400&q=80&auto=format&fit=crop" alt="Vespa GTS 300" loading="lazy"></div><div class="pane"><img src="https://images.unsplash.com/photo-1596036753691-6fef728e62cc?w=1400&q=80&auto=format&fit=crop" alt="Vespa GTS 300" loading="lazy"></div><div class="pane pane-detail">
+      <div class="detail">
+        <p class="eyebrow">What you get</p>
+        <ul class="inc"><li>Two helmets</li><li>Top case, 30 L</li><li>Delivery within old town</li><li>Free cancellation to 24h</li></ul>
+        <p class="eyebrow mt">Where the money goes</p>
+        <table class="rec">
+          <tr><td>&euro;45 &times; 4 days</td><td>&euro;162</td></tr>
+          <tr><td>Service fee</td><td>&euro;18</td></tr>
+          <tr class="tot"><td>You pay</td><td>&euro;180</td></tr>
+          <tr class="own"><td>Adriatic Rides receives</td><td>&euro;162</td></tr>
+        </table>
+        <p class="fine">Deposit &euro;0 with the damage waiver. No charge until the owner confirms.</p>
+      </div>
+    </div></div>
+  <div class="scrim"></div>
+
+  <header class="ctx">
+    <div><p class="where">Dubrovnik, HR</p><p class="when">14 Aug &middot; 4 nights &middot; 2 guests</p></div>
+    <button class="edit">Change</button>
+  </header>
+
+  <div class="hdots" data-dots><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i></div>
+
+  <div class="foot">
+    <p class="eyebrow">Scooter</p>
+    <h2 class="title">Vespa GTS 300</h2>
+    <p class="sub">Coral Orange · 2023</p>
+    <div class="specs"><span>2 seats</span><i></i><span>1 bag</span><i></i><span>Automatic</span><i></i><span>&#9733; 4.8 (31)</span></div>
+
+    <div class="money">
+      <div class="mrow">
+        <div><span class="day">&euro;45</span><span class="unit">/day</span></div>
+        <div class="tot2"><span class="tl">4 days</span><span class="tv">&euro;180</span></div>
+        <div class="dep z"><span class="tl">Deposit</span><span class="tv">&euro;0</span></div>
+      </div>
+    </div>
+
+    <div class="host">
+      <span class="ava">A</span>
+      <span class="hn">Adriatic Rides</span><span class="ht">Verified operator</span><span class="chip live">Instant book</span>
+    </div>
+
+    <div class="cta">
+      <button class="go">Reserve &mdash; &euro;180</button>
+      <button class="gh" aria-label="Shortlist">&#9825;</button>
+      <button class="gh" aria-label="Share">&#8599;</button>
+    </div>
+  </div>
+</article>
+<article class="card" id="v2">
+  <div class="rail" data-rail><div class="pane"><img src="https://images.unsplash.com/photo-1540946485063-a40da27545f8?w=1400&q=80&auto=format&fit=crop" alt="Bénéteau Oceanis 32" loading="eager"></div><div class="pane"><img src="https://images.unsplash.com/photo-1546214755-c5d22447b43b?w=1400&q=80&auto=format&fit=crop" alt="Bénéteau Oceanis 32" loading="lazy"></div><div class="pane"><img src="https://images.unsplash.com/photo-1526761122248-c31c93f8b2b9?w=1400&q=80&auto=format&fit=crop" alt="Bénéteau Oceanis 32" loading="lazy"></div><div class="pane pane-detail">
+      <div class="detail">
+        <p class="eyebrow">What you get</p>
+        <ul class="inc"><li>Fuel for 4 engine hours</li><li>Safety kit and life jackets</li><li>Mooring at Vlychada</li><li>Skipper +€120/day</li></ul>
+        <p class="eyebrow mt">Where the money goes</p>
+        <table class="rec">
+          <tr><td>&euro;350 &times; 3 days</td><td>&euro;945</td></tr>
+          <tr><td>Service fee</td><td>&euro;105</td></tr>
+          <tr class="tot"><td>You pay</td><td>&euro;1 050</td></tr>
+          <tr class="own"><td>Aegean Charter receives</td><td>&euro;945</td></tr>
+        </table>
+        <p class="fine">Deposit &euro;600, refunded after return. No charge until the owner confirms.</p>
+      </div>
+    </div></div>
+  <div class="scrim"></div>
+
+  <header class="ctx">
+    <div><p class="where">Santorini, GR</p><p class="when">14 Aug &middot; 3 nights &middot; 2 guests</p></div>
+    <button class="edit">Change</button>
+  </header>
+
+  <div class="hdots" data-dots><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i></div>
+
+  <div class="foot">
+    <p class="eyebrow">Boat</p>
+    <h2 class="title">Bénéteau Oceanis 32</h2>
+    <p class="sub">Skipper optional · 2021</p>
+    <div class="specs"><span>8 seats</span><i></i><span>Sail</span><i></i><span>&#9733; 5.0 (9)</span></div>
+
+    <div class="money">
+      <div class="mrow">
+        <div><span class="day">&euro;350</span><span class="unit">/day</span></div>
+        <div class="tot2"><span class="tl">3 days</span><span class="tv">&euro;1 050</span></div>
+        <div class="dep "><span class="tl">Deposit</span><span class="tv">&euro;600</span></div>
+      </div>
+    </div>
+
+    <div class="host">
+      <span class="ava">A</span>
+      <span class="hn">Aegean Charter</span><span class="ht">Verified operator</span><span class="chip">Request</span>
+    </div>
+
+    <div class="cta">
+      <button class="go">Reserve &mdash; &euro;1 050</button>
+      <button class="gh" aria-label="Shortlist">&#9825;</button>
+      <button class="gh" aria-label="Share">&#8599;</button>
+    </div>
+  </div>
+</article>
+<article class="card" id="v3">
+  <div class="rail" data-rail><div class="pane"><img src="https://images.unsplash.com/photo-1741905358565-5ae6835ac172?w=1400&q=80&auto=format&fit=crop" alt="Land Rover Defender 110" loading="eager"></div><div class="pane"><img src="https://images.unsplash.com/photo-1502489597346-dad15683d4c2?w=1400&q=80&auto=format&fit=crop" alt="Land Rover Defender 110" loading="lazy"></div><div class="pane"><img src="https://images.unsplash.com/photo-1490902931801-d6f80ca94fe4?w=1400&q=80&auto=format&fit=crop" alt="Land Rover Defender 110" loading="lazy"></div><div class="pane pane-detail">
+      <div class="detail">
+        <p class="eyebrow">What you get</p>
+        <ul class="inc"><li>Unlimited kilometres</li><li>Roof rack</li><li>Delivery to Málaga AGP</li><li>Free cancellation to 48h</li></ul>
+        <p class="eyebrow mt">Where the money goes</p>
+        <table class="rec">
+          <tr><td>&euro;140 &times; 5 days</td><td>&euro;630</td></tr>
+          <tr><td>Service fee</td><td>&euro;70</td></tr>
+          <tr class="tot"><td>You pay</td><td>&euro;700</td></tr>
+          <tr class="own"><td>Costa Fleet receives</td><td>&euro;630</td></tr>
+        </table>
+        <p class="fine">Deposit &euro;0 with the damage waiver. No charge until the owner confirms.</p>
+      </div>
+    </div></div>
+  <div class="scrim"></div>
+
+  <header class="ctx">
+    <div><p class="where">Marbella, ES</p><p class="when">14 Aug &middot; 5 nights &middot; 2 guests</p></div>
+    <button class="edit">Change</button>
+  </header>
+
+  <div class="hdots" data-dots><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i></div>
+
+  <div class="foot">
+    <p class="eyebrow">Car</p>
+    <h2 class="title">Land Rover Defender 110</h2>
+    <p class="sub">Santorini Black · 2023</p>
+    <div class="specs"><span>5 seats</span><i></i><span>4 bags</span><i></i><span>Automatic</span><i></i><span>&#9733; 4.9 (64)</span></div>
+
+    <div class="money">
+      <div class="mrow">
+        <div><span class="day">&euro;140</span><span class="unit">/day</span></div>
+        <div class="tot2"><span class="tl">5 days</span><span class="tv">&euro;700</span></div>
+        <div class="dep z"><span class="tl">Deposit</span><span class="tv">&euro;0</span></div>
+      </div>
+    </div>
+
+    <div class="host">
+      <span class="ava">C</span>
+      <span class="hn">Costa Fleet</span><span class="ht">Verified operator</span><span class="chip live">Instant book</span>
+    </div>
+
+    <div class="cta">
+      <button class="go">Reserve &mdash; &euro;700</button>
+      <button class="gh" aria-label="Shortlist">&#9825;</button>
+      <button class="gh" aria-label="Share">&#8599;</button>
+    </div>
+  </div>
+</article></main>
+<p class="hint">swipe up for the next vehicle &middot; sideways for this one</p>
+<script>
+// Horizontal position indicator per card. Kept in JS rather than CSS because
+// the dot has to follow a scroll position, and a scroll-linked indicator is
+// the only affordance telling you there IS a sideways axis at all.
+for (const rail of document.querySelectorAll('[data-rail]')) {
+  const dots = rail.parentElement.querySelector('[data-dots]').children
+  const sync = () => {
+    const i = Math.round(rail.scrollLeft / rail.clientWidth)
+    for (let k = 0; k < dots.length; k++) dots[k].classList.toggle('on', k === i)
+  }
+  rail.addEventListener('scroll', sync, { passive: true }); sync()
+}
+</script>
+</body></html>
