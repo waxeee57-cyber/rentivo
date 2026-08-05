@@ -148,7 +148,26 @@ add('fontFamily_with_fontWeight', fauxBold, [...new Set(fauxWorst)].slice(0, 10)
 // (check + close). Regional indicators (flags) are excluded too — a country
 // flag carries information no monoline icon can, and the language picker
 // deliberately keeps them.
-const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{2604}\u{2607}-\u{2712}\u{2718}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/u
+//
+// WIDENED after the same sweep on rentivo-web surfaced glyphs this silently
+// passed. The old floor of U+1F300 missed everything below it, and the
+// U+2600-27BF windows missed a whole plane of pictographs:
+//   U+1F000-1F1E5 / U+1F200-1F2FF  mahjong, dominoes, cards, enclosed glyphs
+//   U+23E9-23FA                    media controls, ⏰ U+23F0, ⏳ U+23F3
+//   U+2049 U+203C U+24C2 U+3030 U+303D U+3297 U+3299
+// Regional indicators U+1F1E6-1F1FF stay OUT of the pattern, deliberately, for
+// the reason above — which is why the first range stops at U+1F1E5 and the
+// next resumes at U+1F200 rather than spanning straight through.
+// A gate that quietly passes the emoji it cannot see is worse than no gate.
+const EMOJI = new RegExp(
+  '[' +
+  '\\u{1F000}-\\u{1F1E5}\\u{1F200}-\\u{1FAFF}' +
+  '\\u{2600}-\\u{2604}\\u{2607}-\\u{2712}\\u{2718}-\\u{27BF}' +
+  '\\u{2B00}-\\u{2BFF}' +
+  '\\u{23E9}-\\u{23FA}' +
+  '\\u{2049}\\u{203C}\\u{24C2}\\u{3030}\\u{303D}\\u{3297}\\u{3299}' +
+  '\\u{FE0F}' +
+  ']', 'u')
 let emoji = 0
 const emojiWorst = []
 for (const f of APP) {
