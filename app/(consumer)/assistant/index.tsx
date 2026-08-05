@@ -23,7 +23,7 @@ interface ChatMessage {
 const MOCK_REPLIES: Record<string, string> = {
   default: 'I can help you find the perfect rental! We have cars, boats, villas, and more available in Marbella and Budapest. What are you looking for?',
   car: 'Great choice! We have sedans from €45/day and SUVs from €75/day in Marbella. Would you like to see available dates?',
-  boat: 'We have kayaks from €25/day and luxury yachts from €350/day. Most are available in the Costa del Sol area.',
+  boat: 'We have kayaks from €25/day and yachts from €350/day. Most are available in the Costa del Sol area.',
   weekend: 'This weekend we have 12 vehicles available in Marbella and 8 in Budapest. Shall I filter by category?',
 }
 

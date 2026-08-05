@@ -14,7 +14,7 @@ import { useColors } from '@/lib/hooks/useColors'
 // lets all 29 call sites keep their margins/minWidth/flex without reflowing.
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
-// Quiet-luxury press: a 4% dip, not a bounce. High stiffness + damping 15 is
+// Ink-first press: a 4% dip, not a bounce. High stiffness + damping 15 is
 // effectively critically damped, so it settles in ~150ms and never overshoots
 // past its resting size on release.
 const PRESS_SPRING = { damping: 15, stiffness: 400 } as const

@@ -54,7 +54,7 @@ export function TierBadge({ tier, size = 'sm', audience = 'supplier', operator }
       </View>
     )
   }
-  // Quiet-luxury: no box, no emoji — a small colored caps label carries the tier
+  // Ink-first: no box, no emoji — a small colored caps label carries the tier
   return (
     <View style={[styles.badge, isSmall ? styles.sm : styles.md]}>
       <Text style={[styles.label, { color: def.color }, isSmall ? styles.labelSm : styles.labelMd]}>

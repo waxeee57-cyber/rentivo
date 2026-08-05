@@ -16,7 +16,7 @@ import { useColors } from '@/lib/hooks/useColors'
 // open/close motion is unchanged for sheets shorter than that.
 const CLOSED_OFFSET = 300
 
-// Quiet-luxury settle: damping 22 against stiffness 260 is over-damped, so the
+// Ink-first settle: damping 22 against stiffness 260 is over-damped, so the
 // sheet glides to rest in ~240ms with no rubber-band overshoot at the top.
 const SHEET_SPRING = { damping: 22, stiffness: 260 } as const
 

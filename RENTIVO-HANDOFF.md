@@ -32,7 +32,12 @@
   - `android/app/build/outputs/bundle/release/app-release.aab` (~92 MB) ← **ez megy a Play Console-ba**
 - Aláírás verifikálva: `apksigner verify --print-certs` → `CN=Rentivo`, SHA-256 `ad5268dd3f6c…`
 
-### Design — „quiet luxury / ink-first" (Roli választása 3 irány közül)
+### Design — „ink-first" (Roli választása 3 irány közül)
+<!-- NÉVVÁLTÁS (2026-08-05): az irány belső neve tartalmazta a „luxury" szót.
+     A design maga (visszafogottság, ink-first, EGY akcentus, valódi tipográfia)
+     változatlanul érvényes — csak a NÉV ment el, mert a dokumentumokból újra és
+     újra visszaszivárogtatta a törölt pozicionálást a copyba. Ne nevezd vissza. -->
+
 A gyökér-diagnózis: chrome-túlsúly (3 vezérlősor a tartalom előtt), narancs-infláció (7+ narancs elem/képernyő), 2016-os „kép a kártyában" minta, badge-leves.
 
 Implementálva:
@@ -42,7 +47,7 @@ Implementálva:
 - **Manrope brand-font** (`@expo-google-fonts/manrope`, betöltve `app/_layout.tsx`-ben) minden címsoron + áron. `constants/colors.ts` → új `Fonts` export + `Typography` skála `fontFamily`-vel.
 - **Floating tab dock** — mind a 3 layoutban (`(consumer)`, `(host)`, `(operator)`): `marginHorizontal: 14, marginBottom: 26, height: 64, borderRadius: 26`, surface bg + hairline border + puha árnyék. **Fontos:** `position:'absolute'` NEM működik (a navigátor felülírja) — margin-alapú a helyes megoldás. A `ListingPreviewSheet` `bottom: 100`-ra állítva, hogy elkerülje a dockot.
 - **Emoji-purge** — i18n + profil-labelek (`🌙 ⚠️ 🆔 💳 🛡 🗑 🔍 🚗 🔗`), zászlók a nyelvi chipekről.
-- Dark mode külön verifikálva (mély navy + világos ink-pillek) — prémium hatás.
+- Dark mode külön verifikálva (mély navy + világos ink-pillek) — minden szövegtoken AA kontraszton mindkét témában.
 
 ### Emulátor-felbontás (Roli két panasza egy gyökérrel)
 „Kiegyenesedő körvonalak" + „rossz felbontású képek" oka: az emulátor **320×640 / 160 dpi** (ldpi) volt.
@@ -121,7 +126,7 @@ Commit előtt ellenőrizd, hogy ezek **NEM** mennek be:
 
 Javasolt bontás:
 ```
-feat(design): quiet-luxury ink-first redesign + Manrope brand type + floating tab dock
+feat(design): ink-first redesign + Manrope brand type + floating tab dock
 feat(map): Leaflet WebView map with price pins (Search + Explore)
 chore(release): own upload keystore + signing config
 chore(store): Play Store asset pack + EN/HU listing copy

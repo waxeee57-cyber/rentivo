@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     borderWidth: 1,
     marginRight: Spacing.sm,
-    // Shared elevation token instead of a bespoke pure-black shadow. The active
+    // Shared elevation token instead of a one-off pure-black shadow. The active
     // state still overrides shadowOpacity/elevation inline to lift the pill,
     // and Shadow.sm supplies an elevation so Android renders the inactive one.
     ...Shadow.sm,

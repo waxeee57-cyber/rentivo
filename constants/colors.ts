@@ -56,7 +56,7 @@ export const DarkColors = {
   white:          '#FFFFFF',
   black:          '#000000',
 
-  // Luxury anchor — CTA fill in light mode, deep navy
+  // Deep navy — the ink anchor; CTA fill in light mode
   navy:           '#0A1628',
 
   // Tier / loyalty gold. Lives in the palette so it themes — it used to be a
@@ -143,7 +143,7 @@ export const LightColors = {
   white:          '#FFFFFF',
   black:          '#000000',
 
-  // Luxury anchor — CTA fill in light mode, deep navy
+  // Deep navy — the ink anchor; CTA fill in light mode
   navy:           '#0A1628',
 
   // Tier / loyalty gold — light-mode counterpart of DarkColors.gold. The dark

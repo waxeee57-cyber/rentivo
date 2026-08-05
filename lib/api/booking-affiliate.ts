@@ -221,7 +221,7 @@ export const MOCK_BOOKING_RESULTS: ExternalListing[] = [
     platform: 'booking',
     external_id: 'booking-123',
     title: 'Hotel Marbella Club',
-    description: 'Luxury beachfront hotel in Marbella.',
+    description: 'Beachfront hotel in Marbella. 234 reviews, 4.8 average.',
     category: 'villa',
     price_per_day: 28000,
     currency: 'EUR',

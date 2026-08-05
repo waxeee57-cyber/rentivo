@@ -89,7 +89,7 @@ export async function syncWishlistFromSupabase(userId: string) {
     .from('rentivo_wishlist')
     .select('listing_id')
     .eq('user_id', userId)
-    // Bounded window, not paging: a wishlist is one person's hand-curated list, so
+    // Bounded window, not paging: a wishlist is one person's hand-picked list, so
     // 500 is far past any real one. It has to be a COMPLETE read though — the
     // response below PRUNES the local store, so a truncated page would delete saved
     // listings. Hence the ceiling plus the guard underneath.

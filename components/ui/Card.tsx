@@ -26,7 +26,7 @@ function makeStyles(C: ReturnType<typeof useColors>) {
     borderRadius: Radius.xl,
     borderWidth: 1,
     borderColor: C.border,
-    // Shared elevation token instead of a bespoke pure-black shadow at 0.3 —
+    // Shared elevation token instead of a one-off pure-black shadow at 0.3 —
     // 5x the design scale, which smeared grey over the warm light-mode
     // surfaces. Shadow.sm carries its own elevation, so Android still renders.
     ...Shadow.sm,

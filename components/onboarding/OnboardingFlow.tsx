@@ -92,7 +92,7 @@ function HeroRotation() {
     //    with a 45s wait for the hero title timing out on an otherwise healthy
     //    16.2s cold start;
     //  · it burns CPU and battery for as long as the user reads the screen;
-    //  · a hero that never stops moving reads as restless, not premium.
+    //  · a hero that never stops moving reads as restless rather than settled.
     // Showing each category once still does the whole job: proving the
     // catalogue is not just villas.
     let step = 0

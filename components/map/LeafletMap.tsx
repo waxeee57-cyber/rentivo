@@ -31,7 +31,7 @@ function buildHtml(pins: LeafletPin[], centerLat: number, centerLng: number, zoo
     : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
   const pinBg = isDark ? '#141D2E' : '#FFFFFF'
   const pinInk = isDark ? '#F2F0EB' : '#1A1F2B'
-  // Selected pin = ink fill (quiet-luxury: accent reserved for CTAs)
+  // Selected pin = ink fill (ink-first: accent reserved for CTAs)
   const pinSel = isDark ? '#F2F0EB' : '#0A1628'
   const pinSelInk = isDark ? '#0A1220' : '#FFFFFF'
   const pinsJson = JSON.stringify(pins)

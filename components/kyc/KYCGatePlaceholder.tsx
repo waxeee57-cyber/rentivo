@@ -18,9 +18,9 @@
  * - Fallback: ha Stripe Identity nem fed egy EU országot
  * - Előny: ingyenes alap tier, ZK proof alapú, GDPR by design
  *
- * KAPU 3 — Veriff (premium, gyors):
+ * KAPU 3 — Veriff (gyors, fizetős):
  * - 12,000+ dokumentum típus, 6 másodperces döntés
- * - Use case: magas értékű bérletek (yacht, luxury car)
+ * - Use case: magas kaucióértékű bérletek (yacht, 150 €/nap feletti autó)
  * - Ár: ~$0.80-1.50/check
  *
  * IMPLEMENTÁLÁS AMIKOR:

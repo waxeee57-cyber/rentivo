@@ -53,7 +53,10 @@ export const translations = {
     insuranceBasicDesc: 'No waiver. The full security deposit applies and you remain liable for damage.',
     insuranceStandard: 'Standard',
     insuranceStandardDesc: 'Security deposit set to €0 and your liability for damage to the vehicle is reduced.',
-    insurancePremium: 'Premium',
+    // Tier LABEL only. The id stays `premium` (persisted as `insurance_id`), but
+    // the displayed word named a price bracket instead of the cover it buys —
+    // "Full" states the difference from Standard, which merely reduces liability.
+    insurancePremium: 'Full',
     insurancePremiumDesc: 'Security deposit set to €0 and Rentivo waives your liability for damage to the vehicle.',
     insuranceRecommended: 'Recommended',
     insurancePerDay: '/ day',
@@ -1284,7 +1287,7 @@ export const translations = {
     insuranceBasicDesc: 'Sin exención. Se aplica la fianza completa y sigues siendo responsable de los daños.',
     insuranceStandard: 'Estándar',
     insuranceStandardDesc: 'Fianza a €0 y se reduce tu responsabilidad por daños al vehículo.',
-    insurancePremium: 'Premium',
+    insurancePremium: 'Completa',
     insurancePremiumDesc: 'Fianza a €0 y Rentivo asume tu responsabilidad por daños al vehículo.',
     insuranceRecommended: 'Recomendado',
     insurancePerDay: '/ día',
@@ -2474,7 +2477,7 @@ export const translations = {
     insuranceBasicDesc: 'Nincs átvállalás. A teljes kaució érvényes, a károkért te felelsz.',
     insuranceStandard: 'Standard',
     insuranceStandardDesc: 'A kaució 0 €, és csökken a járműben okozott kárért viselt felelősséged.',
-    insurancePremium: 'Prémium',
+    insurancePremium: 'Teljes',
     insurancePremiumDesc: 'A kaució 0 €, és a járműben okozott kárért viselt felelősségedet a Rentivo átvállalja.',
     insuranceRecommended: 'Ajánlott',
     insurancePerDay: '/ nap',

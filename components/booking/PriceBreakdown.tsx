@@ -41,7 +41,7 @@ export function PriceBreakdown({
       />
       {insuranceTotal !== null && insuranceName !== undefined && (
         <Row
-          // Category first, tier second: "Damage waiver — Premium". The old
+          // Category first, tier second: "Damage waiver — Full". The old
           // "{tier} {category}" order produced ungrammatical Spanish/Hungarian
           // once the category stopped being the single word "insurance".
           label={`${t('insurance', language)} — ${insuranceName}`}
