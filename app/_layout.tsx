@@ -3,6 +3,9 @@ import { useFonts } from 'expo-font'
 import {
   Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold,
 } from '@expo-google-fonts/manrope'
+// Display face, used only on the feed card's title and rate. Two weights, not
+// the family: an unused weight is a download nobody asked for.
+import { Archivo_700Bold, Archivo_800ExtraBold } from '@expo-google-fonts/archivo'
 import * as SplashScreen from 'expo-splash-screen'
 import { Ionicons } from '@expo/vector-icons'
 import { Stack, router, usePathname } from 'expo-router'
@@ -177,6 +180,8 @@ function RootLayoutInner() {
     Manrope_600SemiBold,
     Manrope_700Bold,
     Manrope_800ExtraBold,
+    Archivo_700Bold,
+    Archivo_800ExtraBold,
   })
   const isDark = useThemeStore(s => s.isDark)
 

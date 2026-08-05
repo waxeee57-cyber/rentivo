@@ -153,6 +153,11 @@ export default function ConsumerLayout() {
       />
 
       {/* Hidden screens */}
+      {/* Discover. A deep screen rather than a sixth tab: the dock is already
+          at five, the feed is top-of-funnel reached from Explore rather than a
+          peer of Bookings or Profile, and adding a tab would move every
+          existing Maestro selector. */}
+      <Tabs.Screen name="feed/index" options={DEEP_SCREEN} />
       <Tabs.Screen name="wishlist/index" options={DEEP_SCREEN} />
       <Tabs.Screen name="listing/[id]" options={DEEP_SCREEN} />
       <Tabs.Screen name="listing/reviews/[id]" options={DEEP_SCREEN} />

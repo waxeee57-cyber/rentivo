@@ -380,6 +380,22 @@ export default function ExploreScreen() {
         <TouchableOpacity style={styles.filterBtn} onPress={() => setShowFilterSheet(true)} accessibilityLabel="Sort and filter" accessibilityRole="button">
           <Ionicons name="options-outline" size={16} color={C.primary} />
         </TouchableOpacity>
+        {/* Entry to the feed. Explore is the map-and-filter surface, which is
+            the tool you want once you know what you are after; the feed is for
+            the state before that. Sitting them side by side is deliberate -
+            neither replaces the other. */}
+        <TouchableOpacity
+          testID="open-feed"
+          style={styles.filterBtn}
+          onPress={() => {
+            void impactAsync(ImpactFeedbackStyle.Light)
+            router.push('/(consumer)/feed')
+          }}
+          accessibilityLabel={t('feedFeed', language)}
+          accessibilityRole="button"
+        >
+          <Ionicons name="albums-outline" size={16} color={C.primary} />
+        </TouchableOpacity>
       </View>
 
       {/* Floating category filter */}

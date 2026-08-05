@@ -275,6 +275,17 @@ export const Fonts = {
   semibold:  'Manrope_600SemiBold',
   bold:      'Manrope_700Bold',
   extrabold: 'Manrope_800ExtraBold',
+
+  // DISPLAY face, for headline moments only - the feed card title and the
+  // rate, nothing else. Archivo is a signage grotesque, and at 40px against a
+  // full-bleed photograph that is exactly the job: Manrope is a fine interface
+  // face but it has almost no voice at display size. Same face the marketing
+  // site uses, so the front door and the product finally read as one brand.
+  //
+  // Do NOT reach for this on body copy or labels. A display face used
+  // everywhere stops being a display face.
+  display:     'Archivo_800ExtraBold',
+  displayBold: 'Archivo_700Bold',
 }
 
 // Type scale with negative tracking on display sizes (default tracking on
