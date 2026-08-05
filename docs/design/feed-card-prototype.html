@@ -1,0 +1,222 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Archivo:wdth,wght@62..125,600..800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+body{background:#05080f;font-family:Manrope,system-ui,sans-serif;display:flex;gap:34px;padding:34px}
+.card{position:relative;width:393px;height:852px;overflow:hidden;border-radius:38px;
+      background:#0A1628;color:#F2F0EB;flex:none}
+.shot{position:absolute;inset:0;width:100%;height:56%;object-fit:cover}
+.veil{position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(10,22,40,.92) 0%,rgba(10,22,40,.35) 13%,rgba(10,22,40,0) 26%,rgba(10,22,40,.92) 47%,#0A1628 56%)}
+.ctx{position:absolute;top:0;left:0;right:0;padding:56px 20px 14px;display:flex;
+     align-items:flex-start;justify-content:space-between;gap:12px}
+.where{font-weight:800;font-size:16px;letter-spacing:-.01em}
+.when{font-size:13px;color:rgba(242,240,235,.66);margin-top:2px}
+.edit{background:none;border:1px solid rgba(242,240,235,.34);color:#F2F0EB;font:600 12px Manrope;
+      padding:7px 13px;border-radius:99px;font-family:inherit}
+.idx{position:absolute;top:112px;right:20px;font:700 11px Manrope;letter-spacing:.14em;
+     color:rgba(242,240,235,.8)}
+.body{position:absolute;left:0;right:0;bottom:0;padding:0 22px 26px;min-height:47%;display:flex;flex-direction:column;justify-content:flex-end}
+.eyebrow{font:700 10.5px Manrope;letter-spacing:.17em;text-transform:uppercase;color:#FF7A45}
+.title{font-family:Archivo,system-ui,sans-serif;font-variation-settings:'wdth' 112;
+       font-weight:800;font-size:38px;line-height:.96;letter-spacing:-.035em;margin-top:9px}
+.sub{font-size:14px;color:rgba(242,240,235,.62);margin-top:7px}
+.specs{display:flex;align-items:center;gap:9px;margin-top:14px;font-size:12.5px;
+       color:rgba(242,240,235,.66);flex-wrap:wrap}
+.specs i{width:3px;height:3px;border-radius:99px;background:rgba(242,240,235,.3)}
+.money{margin-top:18px;border-top:1px solid rgba(242,240,235,.16);padding-top:15px}
+.m-main{display:flex;align-items:baseline;gap:5px}
+.m-day{font:800 44px Manrope;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.m-unit{font-size:16px;color:rgba(242,240,235,.6)}
+.m-split{display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-top:13px;
+         background:rgba(242,240,235,.14);border-radius:14px;overflow:hidden}
+.m-cell{background:#0A1628;padding:12px 14px}
+.m-lab{font:700 10px Manrope;letter-spacing:.13em;text-transform:uppercase;color:rgba(242,240,235,.5)}
+.m-val{font:800 24px Manrope;font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-top:5px}
+.m-note{font-size:11.5px;color:rgba(242,240,235,.5);margin-top:3px}
+.dep-zero .m-val{color:#5FD3A0}
+.host{display:flex;align-items:center;gap:9px;margin-top:16px;font-size:12.5px;min-width:0}
+.ava{width:26px;height:26px;border-radius:99px;background:#FF7A45;color:#0A1628;
+     display:grid;place-items:center;font:800 12px Manrope}
+.hname{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.htype{white-space:nowrap}
+.htype{color:rgba(242,240,235,.55)}
+.chip{margin-left:auto;flex:none;white-space:nowrap;border:1px solid rgba(242,240,235,.3);border-radius:99px;
+      padding:5px 11px;font:700 11px Manrope;color:rgba(242,240,235,.75)}
+.chip-live{border-color:rgba(95,211,160,.5);color:#5FD3A0}
+.cta{display:flex;gap:9px;margin-top:18px}
+.go{flex:1;background:#FF7A45;color:#0A1628;border:none;border-radius:99px;padding:16px;
+    font:800 15.5px Manrope;font-family:inherit;letter-spacing:-.01em}
+.ghost{width:52px;border:1px solid rgba(242,240,235,.26);background:none;color:#F2F0EB;
+       border-radius:99px;font-size:17px}
+</style></head><body>
+
+<section class="card">
+  <img class="shot" src="https://images.unsplash.com/photo-1573401491021-c5f127195de0?w=1200&q=80&auto=format&fit=crop" alt="">
+  <div class="veil"></div>
+
+  <header class="ctx">
+    <div>
+      <p class="where">Positano, IT</p>
+      <p class="when">14 Aug &middot; 7 nights &middot; 2 guests</p>
+    </div>
+    <button class="edit">Change</button>
+  </header>
+
+  <div class="idx">1 / 3</div>
+
+  <div class="body">
+    <p class="eyebrow">Car</p>
+    <h2 class="title">Classic Fiat 500</h2>
+    <p class="sub">Sunflower Yellow · 1972</p>
+
+    <div class="specs"><span>4 seats</span><i></i><span>2 bags</span><i></i><span>Manual</span><i></i><span>&#9733; 4.7 (18)</span></div>
+
+    <!-- The money block. This is the whole argument: no strikethrough, no
+         "was", no percentage. The number you compare on AND the number you
+         actually pay, side by side, with the deposit next to them. -->
+    <div class="money">
+      <div class="m-main">
+        <span class="m-day">&euro;35</span><span class="m-unit">/day</span>
+      </div>
+      <div class="m-split">
+        <div class="m-cell">
+          <p class="m-lab">Total, 7 days</p>
+          <p class="m-val">&euro;245</p>
+          <p class="m-note">service fee included</p>
+        </div>
+        <div class="m-cell dep-zero">
+          <p class="m-lab">Deposit</p>
+          <p class="m-val">&euro;0</p>
+          <p class="m-note">with waiver</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="host">
+      <span class="ava">G</span>
+      <span class="hname">Giulia M.</span>
+      <span class="htype">Private host</span>
+      <span class="chip chip-live">Instant book</span>
+    </div>
+
+    <div class="cta">
+      <button class="go">Reserve &mdash; &euro;245</button>
+      <button class="ghost" aria-label="Save">&#9825;</button>
+      <button class="ghost" aria-label="Share">&#8599;</button>
+    </div>
+  </div>
+</section>
+<section class="card">
+  <img class="shot" src="https://images.unsplash.com/photo-1554223789-df81106a45ed?w=1200&q=80&auto=format&fit=crop" alt="">
+  <div class="veil"></div>
+
+  <header class="ctx">
+    <div>
+      <p class="where">Dubrovnik, HR</p>
+      <p class="when">14 Aug &middot; 4 nights &middot; 2 guests</p>
+    </div>
+    <button class="edit">Change</button>
+  </header>
+
+  <div class="idx">2 / 3</div>
+
+  <div class="body">
+    <p class="eyebrow">Scooter</p>
+    <h2 class="title">Vespa GTS 300</h2>
+    <p class="sub">Coral Orange · 2023</p>
+
+    <div class="specs"><span>2 seats</span><i></i><span>1 bag</span><i></i><span>Automatic</span><i></i><span>&#9733; 4.8 (31)</span></div>
+
+    <!-- The money block. This is the whole argument: no strikethrough, no
+         "was", no percentage. The number you compare on AND the number you
+         actually pay, side by side, with the deposit next to them. -->
+    <div class="money">
+      <div class="m-main">
+        <span class="m-day">&euro;45</span><span class="m-unit">/day</span>
+      </div>
+      <div class="m-split">
+        <div class="m-cell">
+          <p class="m-lab">Total, 4 days</p>
+          <p class="m-val">&euro;180</p>
+          <p class="m-note">service fee included</p>
+        </div>
+        <div class="m-cell dep-zero">
+          <p class="m-lab">Deposit</p>
+          <p class="m-val">&euro;0</p>
+          <p class="m-note">with waiver</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="host">
+      <span class="ava">A</span>
+      <span class="hname">Adriatic Rides</span>
+      <span class="htype">Verified operator</span>
+      <span class="chip chip-live">Instant book</span>
+    </div>
+
+    <div class="cta">
+      <button class="go">Reserve &mdash; &euro;180</button>
+      <button class="ghost" aria-label="Save">&#9825;</button>
+      <button class="ghost" aria-label="Share">&#8599;</button>
+    </div>
+  </div>
+</section>
+<section class="card">
+  <img class="shot" src="https://images.unsplash.com/photo-1540946485063-a40da27545f8?w=1200&q=80&auto=format&fit=crop" alt="">
+  <div class="veil"></div>
+
+  <header class="ctx">
+    <div>
+      <p class="where">Santorini, GR</p>
+      <p class="when">14 Aug &middot; 3 nights &middot; 2 guests</p>
+    </div>
+    <button class="edit">Change</button>
+  </header>
+
+  <div class="idx">3 / 3</div>
+
+  <div class="body">
+    <p class="eyebrow">Boat</p>
+    <h2 class="title">Bénéteau Oceanis 32</h2>
+    <p class="sub">Skipper optional · 2021</p>
+
+    <div class="specs"><span>8 seats</span><i></i><span>Sail</span><i></i><span>&#9733; 5.0 (9)</span></div>
+
+    <!-- The money block. This is the whole argument: no strikethrough, no
+         "was", no percentage. The number you compare on AND the number you
+         actually pay, side by side, with the deposit next to them. -->
+    <div class="money">
+      <div class="m-main">
+        <span class="m-day">&euro;350</span><span class="m-unit">/day</span>
+      </div>
+      <div class="m-split">
+        <div class="m-cell">
+          <p class="m-lab">Total, 3 days</p>
+          <p class="m-val">&euro;1 050</p>
+          <p class="m-note">service fee included</p>
+        </div>
+        <div class="m-cell ">
+          <p class="m-lab">Deposit</p>
+          <p class="m-val">&euro;600</p>
+          <p class="m-note">refundable</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="host">
+      <span class="ava">A</span>
+      <span class="hname">Aegean Charter</span>
+      <span class="htype">Verified operator</span>
+      <span class="chip">Request to book</span>
+    </div>
+
+    <div class="cta">
+      <button class="go">Reserve &mdash; &euro;1 050</button>
+      <button class="ghost" aria-label="Save">&#9825;</button>
+      <button class="ghost" aria-label="Share">&#8599;</button>
+    </div>
+  </div>
+</section>
+</body></html>
