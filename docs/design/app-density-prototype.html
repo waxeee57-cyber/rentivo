@@ -1,0 +1,412 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0A1628"><title>Rentivo</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Archivo:wdth,wght@62..125,600..800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#060a12;font-family:Manrope,system-ui,sans-serif;color:#F2F0EB}
+button{font:inherit;color:inherit;background:none;border:none}
+.eb{font:700 10.5px Manrope;letter-spacing:.17em;text-transform:uppercase;color:#FF7A45}
+
+/* ── density levels. One space, three densities, not three screens. ───── */
+.level{position:fixed;inset:0;transition:transform .62s cubic-bezier(.16,1,.3,1),opacity .42s cubic-bezier(.16,1,.3,1)}
+body[data-v="feed"] .lv-feed{transform:scale(1);opacity:1;pointer-events:auto}
+body[data-v="feed"] .lv-grid{transform:scale(1.14);opacity:0;pointer-events:none}
+body[data-v="grid"] .lv-feed{transform:scale(.88);opacity:0;pointer-events:none}
+body[data-v="grid"] .lv-grid{transform:scale(1);opacity:1;pointer-events:auto}
+
+/* ── level 1: feed ────────────────────────────────────────────────────── */
+.feed{height:100dvh;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none}
+.feed::-webkit-scrollbar{display:none}
+.card{position:relative;height:100dvh;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;background:#0A1628}
+.rail{position:absolute;inset:0;display:flex;overflow-x:scroll;scroll-snap-type:x mandatory;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.pane{flex:0 0 100%;height:100%;scroll-snap-align:start;position:relative}
+.pane img{width:100%;height:100%;object-fit:cover;display:block}
+.detailpane{background:#0A1628;z-index:3}
+.detail{position:absolute;top:96px;left:22px;right:22px;bottom:46%;overflow-y:auto;scrollbar-width:none;
+        -webkit-mask-image:linear-gradient(180deg,#000 88%,transparent 100%)}
+.detail::-webkit-scrollbar{display:none}
+.inc{list-style:none;margin-top:10px}
+.inc li{padding:9px 0 9px 21px;border-bottom:1px solid rgba(242,240,235,.12);font-size:14px;position:relative;color:rgba(242,240,235,.86)}
+.inc li:before{content:"";position:absolute;left:2px;top:16px;width:7px;height:7px;border-radius:99px;background:#FF7A45}
+.mt{margin-top:20px}
+.rec{width:100%;border-collapse:collapse;margin-top:9px;font-size:14px}
+.rec td{padding:8px 0;border-bottom:1px solid rgba(242,240,235,.12);color:rgba(242,240,235,.72)}
+.rec td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:#F2F0EB}
+.rec .tt td{font-weight:800;color:#F2F0EB;font-size:16px;border-bottom:none}
+.fine{margin-top:11px;font-size:12px;color:rgba(242,240,235,.5);line-height:1.5}
+.scrim{position:absolute;inset:0;pointer-events:none;z-index:2;background:linear-gradient(180deg,
+  rgba(10,22,40,.86) 0%,rgba(10,22,40,.28) 12%,rgba(10,22,40,0) 25%,rgba(10,22,40,.9) 46%,#0A1628 57%)}
+.dots{position:absolute;z-index:4;top:104px;left:0;right:0;display:flex;justify-content:center;gap:5px;pointer-events:none}
+.dots i{width:5px;height:5px;border-radius:99px;background:rgba(242,240,235,.32);transition:.3s}
+.dots i.on{background:#F2F0EB;width:16px}
+.foot{position:absolute;z-index:4;left:0;right:0;bottom:0;padding:0 22px 96px;min-height:46%;
+      display:flex;flex-direction:column;justify-content:flex-end}
+.ttl{font-family:Archivo,system-ui,sans-serif;font-variation-settings:'wdth' 112;font-weight:800;
+     font-size:34px;line-height:.97;letter-spacing:-.035em;margin-top:8px}
+.sb{font-size:13.5px;color:rgba(242,240,235,.62);margin-top:6px}
+.sp{display:flex;align-items:center;gap:8px;margin-top:11px;font-size:12.5px;flex-wrap:wrap;color:rgba(242,240,235,.68)}
+.sp i{width:3px;height:3px;border-radius:99px;background:rgba(242,240,235,.3)}
+.mn{display:flex;align-items:flex-end;gap:16px;margin-top:14px;border-top:1px solid rgba(242,240,235,.16);padding-top:12px}
+.d{font:800 36px Manrope;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.u{font-size:15px;color:rgba(242,240,235,.6);margin-left:3px}
+.mn .c{display:flex;flex-direction:column;padding-left:16px;border-left:1px solid rgba(242,240,235,.16)}
+.l{font:700 9.5px Manrope;letter-spacing:.13em;text-transform:uppercase;color:rgba(242,240,235,.52)}
+.v{font:800 18px Manrope;font-variant-numeric:tabular-nums;margin-top:3px}
+.mn .c.z .v{color:#5FD3A0}
+.hs{display:flex;align-items:center;gap:8px;margin-top:13px;font-size:12.5px;min-width:0}
+.av{width:24px;height:24px;border-radius:99px;background:#FF7A45;color:#0A1628;display:grid;place-items:center;font:800 11px Manrope;flex:none}
+.hn{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:105px}
+.hy{color:rgba(242,240,235,.55);white-space:nowrap}
+.chip{margin-left:auto;flex:none;white-space:nowrap;border:1px solid rgba(242,240,235,.3);border-radius:99px;
+      padding:5px 10px;font:700 10.5px Manrope;color:rgba(242,240,235,.75)}
+.chip.live{border-color:rgba(95,211,160,.5);color:#5FD3A0}
+.cta{display:flex;gap:8px;margin-top:14px}
+.go{flex:1;background:#FF7A45;color:#0A1628;border-radius:99px;padding:15px;font:800 15px Manrope}
+.gh{width:50px;border:1px solid rgba(242,240,235,.26);border-radius:99px;font-size:16px;transition:.35s cubic-bezier(.16,1,.3,1)}
+.gh.on{background:#FF7A45;border-color:#FF7A45;color:#0A1628}
+
+/* ── level 2: grid ────────────────────────────────────────────────────── */
+.lv-grid{background:#0A1628;overflow-y:auto;padding:92px 14px 120px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:3/4;text-align:left;display:block}
+.tile img{width:100%;height:100%;object-fit:cover;display:block}
+.tile:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 38%,rgba(10,22,40,.92) 100%)}
+.tinfo{position:absolute;z-index:2;left:11px;right:11px;bottom:10px;display:flex;flex-direction:column;gap:1px}
+.tinfo b{font-size:13px;line-height:1.2}
+.tinfo em{font-style:normal;font-size:11px;color:rgba(242,240,235,.62)}
+.tp{margin-top:4px;font:800 17px Manrope;font-variant-numeric:tabular-nums}
+.tp small{font-weight:600;font-size:11px;color:rgba(242,240,235,.6)}
+.tsave{position:absolute;z-index:3;top:8px;right:8px;width:30px;height:30px;border-radius:99px;
+       background:rgba(10,22,40,.55);backdrop-filter:blur(6px);display:grid;place-items:center;font-size:14px;transition:.3s}
+.tsave.on{background:#FF7A45;color:#0A1628}
+
+/* ── chrome ───────────────────────────────────────────────────────────── */
+.top{position:fixed;z-index:20;top:0;left:0;right:0;padding:48px 16px 10px;display:flex;align-items:center;gap:10px;
+     background:linear-gradient(180deg,rgba(10,22,40,.85),rgba(10,22,40,0))}
+.where{font-weight:800;font-size:15px}.when{font-size:12px;color:rgba(242,240,235,.66)}
+.zoom{margin-left:auto;display:flex;align-items:center;gap:6px;border:1px solid rgba(242,240,235,.28);
+      border-radius:99px;padding:7px 13px;font:700 12px Manrope}
+.zoom svg{width:13px;height:13px}
+
+/* Shortlist tray: the bridge from browsing to deciding. It is a persistent
+   edge, not a screen you navigate to, so gathering never interrupts looking. */
+.tray{position:fixed;z-index:30;left:12px;right:12px;bottom:12px;border-radius:22px;background:rgba(20,29,46,.94);
+      backdrop-filter:blur(16px);border:1px solid rgba(242,240,235,.14);padding:10px 12px;display:flex;
+      align-items:center;gap:9px;transform:translateY(140%);transition:transform .55s cubic-bezier(.16,1,.3,1)}
+body.has-list .tray{transform:translateY(0)}
+.thumbs{display:flex;gap:-6px}
+.thumbs img{width:34px;height:34px;border-radius:10px;object-fit:cover;margin-right:-8px;
+            border:1.5px solid #141D2E}
+.tcount{font-size:12.5px;color:rgba(242,240,235,.7);margin-left:12px}
+.tcount b{color:#F2F0EB}
+.tgo{margin-left:auto;background:#F2F0EB;color:#0A1628;border-radius:99px;padding:9px 15px;font:800 12.5px Manrope}
+
+/* Compare: aligned columns, because deciding is a column task. */
+.cmp{position:fixed;z-index:40;inset:0;background:#0A1628;transform:translateY(101%);
+     transition:transform .55s cubic-bezier(.16,1,.3,1);overflow-y:auto;padding:52px 0 40px}
+body.cmp-open .cmp{transform:translateY(0)}
+.cmph{display:flex;align-items:center;padding:0 18px 14px}
+.cmph h3{font-family:Archivo,system-ui,sans-serif;font-variation-settings:'wdth' 110;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.cmpx{margin-left:auto;width:34px;height:34px;border-radius:99px;border:1px solid rgba(242,240,235,.24);font-size:15px}
+.cwrap{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.cwrap::-webkit-scrollbar{display:none}
+.ctab{border-collapse:collapse;font-size:13px;min-width:100%}
+.ctab th:not(:first-child),.ctab td:not(:first-child){min-width:104px}
+.ctab th:first-child,.ctab td:first-child{position:sticky;left:0;background:#0A1628;z-index:2}
+.ctab th,.ctab td{padding:11px 10px;border-bottom:1px solid rgba(242,240,235,.12);text-align:right;
+                  font-variant-numeric:tabular-nums;white-space:nowrap}
+.ctab th:first-child,.ctab td:first-child{text-align:left;color:rgba(242,240,235,.55);
+      font:700 9.5px Manrope;letter-spacing:.13em;text-transform:uppercase;padding-left:18px;width:96px}
+.ctab thead th{vertical-align:bottom;font-weight:800;font-size:12.5px;line-height:1.25;white-space:normal}
+.ctab thead img{width:100%;height:62px;object-fit:cover;border-radius:11px;margin-bottom:6px;display:block}
+.best{color:#5FD3A0}
+.cmpnote{padding:16px 18px 0;font-size:12px;color:rgba(242,240,235,.5);line-height:1.55}
+.empty{padding:60px 24px;text-align:center;color:rgba(242,240,235,.5);font-size:14px}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}.feed,.rail{scroll-behavior:auto}}
+</style></head>
+<body data-v="feed">
+
+<div class="top">
+  <div><p class="where">Mediterranean</p><p class="when">14 Aug &middot; 2 guests</p></div>
+  <button class="zoom" id="zoom">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+      <rect x="1.5" y="1.5" width="5" height="5" rx="1"/><rect x="9.5" y="1.5" width="5" height="5" rx="1"/>
+      <rect x="1.5" y="9.5" width="5" height="5" rx="1"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/>
+    </svg><span id="zlab">Grid</span>
+  </button>
+</div>
+
+<main class="level lv-feed"><div class="feed"><article class="card" data-id="fiat">
+  <div class="rail" data-rail><div class="pane"><img src="https://images.unsplash.com/photo-1573401491021-c5f127195de0?w=1200&q=80&auto=format&fit=crop" alt="Classic Fiat 500" loading="eager"></div><div class="pane"><img src="https://images.unsplash.com/photo-1644602558641-4c76e66cc6b5?w=1200&q=80&auto=format&fit=crop" alt="Classic Fiat 500" loading="lazy"></div><div class="pane"><img src="https://images.unsplash.com/photo-1641979239304-4f7eca50a85d?w=1200&q=80&auto=format&fit=crop" alt="Classic Fiat 500" loading="lazy"></div><div class="pane detailpane"><div class="detail">
+      <p class="eb">What you get</p><ul class="inc"><li>Unlimited kilometres</li><li>Second driver</li><li>Airport pickup, Naples NAP</li><li>Free cancellation to 48h</li></ul>
+      <p class="eb mt">Where the money goes</p>
+      <table class="rec">
+        <tr><td>&euro;35 &times; 7 days</td><td>&euro;220</td></tr>
+        <tr><td>Service fee</td><td>&euro;25</td></tr>
+        <tr class="tt"><td>You pay</td><td>&euro;245</td></tr>
+      </table>
+      <p class="fine">Deposit &euro;0 with the damage waiver. Nothing is charged until Giulia M. confirms.</p>
+    </div></div></div><div class="scrim"></div>
+  <div class="dots" data-dots><i></i><i></i><i></i><i></i></div>
+  <div class="foot">
+    <p class="eb">Car</p><h2 class="ttl">Classic Fiat 500</h2><p class="sb">Sunflower Yellow · 1972</p>
+    <div class="sp"><span>4 seats</span><i></i><span>2 bags</span><i></i><span>Manual</span><i></i><span>&#9733; 4.7 (18)</span></div>
+    <div class="mn">
+      <div><span class="d">&euro;35</span><span class="u">/day</span></div>
+      <div class="c"><span class="l">7 days</span><span class="v">&euro;245</span></div>
+      <div class="c z"><span class="l">Deposit</span><span class="v">&euro;0</span></div>
+    </div>
+    <div class="hs"><span class="av">G</span><span class="hn">Giulia M.</span>
+      <span class="hy">Private host</span><span class="chip live">Instant book</span></div>
+    <div class="cta">
+      <button class="go">Reserve &mdash; &euro;245</button>
+      <button class="gh save" data-save="fiat" aria-label="Shortlist">&#9825;</button>
+      <button class="gh" aria-label="Share">&#8599;</button>
+    </div>
+  </div>
+</article><article class="card" data-id="vespa">
+  <div class="rail" data-rail><div class="pane"><img src="https://images.unsplash.com/photo-1554223789-df81106a45ed?w=1200&q=80&auto=format&fit=crop" alt="Vespa GTS 300" loading="eager"></div><div class="pane"><img src="https://images.unsplash.com/photo-1697646382333-0d14cf52b20e?w=1200&q=80&auto=format&fit=crop" alt="Vespa GTS 300" loading="lazy"></div><div class="pane"><img src="https://images.unsplash.com/photo-1596036753691-6fef728e62cc?w=1200&q=80&auto=format&fit=crop" alt="Vespa GTS 300" loading="lazy"></div><div class="pane detailpane"><div class="detail">
+      <p class="eb">What you get</p><ul class="inc"><li>Two helmets</li><li>Top case, 30 L</li><li>Delivery in the old town</li><li>Free cancellation to 24h</li></ul>
+      <p class="eb mt">Where the money goes</p>
+      <table class="rec">
+        <tr><td>&euro;45 &times; 4 days</td><td>&euro;162</td></tr>
+        <tr><td>Service fee</td><td>&euro;18</td></tr>
+        <tr class="tt"><td>You pay</td><td>&euro;180</td></tr>
+      </table>
+      <p class="fine">Deposit &euro;0 with the damage waiver. Nothing is charged until Adriatic Rides confirms.</p>
+    </div></div></div><div class="scrim"></div>
+  <div class="dots" data-dots><i></i><i></i><i></i><i></i></div>
+  <div class="foot">
+    <p class="eb">Scooter</p><h2 class="ttl">Vespa GTS 300</h2><p class="sb">Coral Orange · 2023</p>
+    <div class="sp"><span>2 seats</span><i></i><span>1 bag</span><i></i><span>Automatic</span><i></i><span>&#9733; 4.8 (31)</span></div>
+    <div class="mn">
+      <div><span class="d">&euro;45</span><span class="u">/day</span></div>
+      <div class="c"><span class="l">4 days</span><span class="v">&euro;180</span></div>
+      <div class="c z"><span class="l">Deposit</span><span class="v">&euro;0</span></div>
+    </div>
+    <div class="hs"><span class="av">A</span><span class="hn">Adriatic Rides</span>
+      <span class="hy">Verified operator</span><span class="chip live">Instant book</span></div>
+    <div class="cta">
+      <button class="go">Reserve &mdash; &euro;180</button>
+      <button class="gh save" data-save="vespa" aria-label="Shortlist">&#9825;</button>
+      <button class="gh" aria-label="Share">&#8599;</button>
+    </div>
+  </div>
+</article><article class="card" data-id="defender">
+  <div class="rail" data-rail><div class="pane"><img src="https://images.unsplash.com/photo-1741905358565-5ae6835ac172?w=1200&q=80&auto=format&fit=crop" alt="Land Rover Defender 110" loading="lazy"></div><div class="pane"><img src="https://images.unsplash.com/photo-1502489597346-dad15683d4c2?w=1200&q=80&auto=format&fit=crop" alt="Land Rover Defender 110" loading="lazy"></div><div class="pane"><img src="https://images.unsplash.com/photo-1490902931801-d6f80ca94fe4?w=1200&q=80&auto=format&fit=crop" alt="Land Rover Defender 110" loading="lazy"></div><div class="pane detailpane"><div class="detail">
+      <p class="eb">What you get</p><ul class="inc"><li>Unlimited kilometres</li><li>Roof rack</li><li>Delivery to Málaga AGP</li><li>Free cancellation to 48h</li></ul>
+      <p class="eb mt">Where the money goes</p>
+      <table class="rec">
+        <tr><td>&euro;140 &times; 5 days</td><td>&euro;630</td></tr>
+        <tr><td>Service fee</td><td>&euro;70</td></tr>
+        <tr class="tt"><td>You pay</td><td>&euro;700</td></tr>
+      </table>
+      <p class="fine">Deposit &euro;0 with the damage waiver. Nothing is charged until Costa Fleet confirms.</p>
+    </div></div></div><div class="scrim"></div>
+  <div class="dots" data-dots><i></i><i></i><i></i><i></i></div>
+  <div class="foot">
+    <p class="eb">Car</p><h2 class="ttl">Land Rover Defender 110</h2><p class="sb">Santorini Black · 2023</p>
+    <div class="sp"><span>5 seats</span><i></i><span>4 bags</span><i></i><span>Automatic</span><i></i><span>&#9733; 4.9 (64)</span></div>
+    <div class="mn">
+      <div><span class="d">&euro;140</span><span class="u">/day</span></div>
+      <div class="c"><span class="l">5 days</span><span class="v">&euro;700</span></div>
+      <div class="c z"><span class="l">Deposit</span><span class="v">&euro;0</span></div>
+    </div>
+    <div class="hs"><span class="av">C</span><span class="hn">Costa Fleet</span>
+      <span class="hy">Verified operator</span><span class="chip live">Instant book</span></div>
+    <div class="cta">
+      <button class="go">Reserve &mdash; &euro;700</button>
+      <button class="gh save" data-save="defender" aria-label="Shortlist">&#9825;</button>
+      <button class="gh" aria-label="Share">&#8599;</button>
+    </div>
+  </div>
+</article><article class="card" data-id="boat">
+  <div class="rail" data-rail><div class="pane"><img src="https://images.unsplash.com/photo-1540946485063-a40da27545f8?w=1200&q=80&auto=format&fit=crop" alt="Bénéteau Oceanis 32" loading="lazy"></div><div class="pane"><img src="https://images.unsplash.com/photo-1546214755-c5d22447b43b?w=1200&q=80&auto=format&fit=crop" alt="Bénéteau Oceanis 32" loading="lazy"></div><div class="pane"><img src="https://images.unsplash.com/photo-1526761122248-c31c93f8b2b9?w=1200&q=80&auto=format&fit=crop" alt="Bénéteau Oceanis 32" loading="lazy"></div><div class="pane detailpane"><div class="detail">
+      <p class="eb">What you get</p><ul class="inc"><li>Fuel, 4 engine hours</li><li>Safety kit</li><li>Mooring at Vlychada</li><li>Skipper +€120/day</li></ul>
+      <p class="eb mt">Where the money goes</p>
+      <table class="rec">
+        <tr><td>&euro;350 &times; 3 days</td><td>&euro;945</td></tr>
+        <tr><td>Service fee</td><td>&euro;105</td></tr>
+        <tr class="tt"><td>You pay</td><td>&euro;1 050</td></tr>
+      </table>
+      <p class="fine">Deposit &euro;600, returned after drop-off. Nothing is charged until Aegean Charter confirms.</p>
+    </div></div></div><div class="scrim"></div>
+  <div class="dots" data-dots><i></i><i></i><i></i><i></i></div>
+  <div class="foot">
+    <p class="eb">Boat</p><h2 class="ttl">Bénéteau Oceanis 32</h2><p class="sb">Skipper optional · 2021</p>
+    <div class="sp"><span>8 seats</span><i></i><span>Sail</span><i></i><span>&#9733; 5.0 (9)</span></div>
+    <div class="mn">
+      <div><span class="d">&euro;350</span><span class="u">/day</span></div>
+      <div class="c"><span class="l">3 days</span><span class="v">&euro;1 050</span></div>
+      <div class="c "><span class="l">Deposit</span><span class="v">&euro;600</span></div>
+    </div>
+    <div class="hs"><span class="av">A</span><span class="hn">Aegean Charter</span>
+      <span class="hy">Verified operator</span><span class="chip">Request</span></div>
+    <div class="cta">
+      <button class="go">Reserve &mdash; &euro;1 050</button>
+      <button class="gh save" data-save="boat" aria-label="Shortlist">&#9825;</button>
+      <button class="gh" aria-label="Share">&#8599;</button>
+    </div>
+  </div>
+</article><article class="card" data-id="jet">
+  <div class="rail" data-rail><div class="pane"><img src="https://images.unsplash.com/photo-1638100191048-33f8e6d07505?w=1200&q=80&auto=format&fit=crop" alt="Sea-Doo Spark Trixx" loading="lazy"></div><div class="pane"><img src="https://images.unsplash.com/photo-1558961078-beebe6540096?w=1200&q=80&auto=format&fit=crop" alt="Sea-Doo Spark Trixx" loading="lazy"></div><div class="pane"><img src="https://images.unsplash.com/photo-1524061508355-90afbf7fcf03?w=1200&q=80&auto=format&fit=crop" alt="Sea-Doo Spark Trixx" loading="lazy"></div><div class="pane detailpane"><div class="detail">
+      <p class="eb">What you get</p><ul class="inc"><li>Life jackets</li><li>Fuel included</li><li>Beach launch</li><li>Free cancellation to 24h</li></ul>
+      <p class="eb mt">Where the money goes</p>
+      <table class="rec">
+        <tr><td>&euro;120 &times; 2 days</td><td>&euro;216</td></tr>
+        <tr><td>Service fee</td><td>&euro;24</td></tr>
+        <tr class="tt"><td>You pay</td><td>&euro;240</td></tr>
+      </table>
+      <p class="fine">Deposit &euro;200, returned after drop-off. Nothing is charged until Balear Watersports confirms.</p>
+    </div></div></div><div class="scrim"></div>
+  <div class="dots" data-dots><i></i><i></i><i></i><i></i></div>
+  <div class="foot">
+    <p class="eb">Jet ski</p><h2 class="ttl">Sea-Doo Spark Trixx</h2><p class="sb">Two-up · 2024</p>
+    <div class="sp"><span>2 seats</span><i></i><span>Automatic</span><i></i><span>&#9733; 4.6 (22)</span></div>
+    <div class="mn">
+      <div><span class="d">&euro;120</span><span class="u">/day</span></div>
+      <div class="c"><span class="l">2 days</span><span class="v">&euro;240</span></div>
+      <div class="c "><span class="l">Deposit</span><span class="v">&euro;200</span></div>
+    </div>
+    <div class="hs"><span class="av">B</span><span class="hn">Balear Watersports</span>
+      <span class="hy">Verified operator</span><span class="chip live">Instant book</span></div>
+    <div class="cta">
+      <button class="go">Reserve &mdash; &euro;240</button>
+      <button class="gh save" data-save="jet" aria-label="Shortlist">&#9825;</button>
+      <button class="gh" aria-label="Share">&#8599;</button>
+    </div>
+  </div>
+</article></div></main>
+
+<section class="level lv-grid"><div class="grid"><button class="tile" data-goto="fiat">
+  <img src="https://images.unsplash.com/photo-1573401491021-c5f127195de0?w=1200&q=80&auto=format&fit=crop" alt="Classic Fiat 500" loading="lazy">
+  <span class="tsave" data-save="fiat" role="button" aria-label="Shortlist">&#9825;</span>
+  <span class="tinfo"><b>Classic Fiat 500</b><em>Positano, IT</em>
+    <span class="tp">&euro;35<small>/day</small></span></span>
+</button><button class="tile" data-goto="vespa">
+  <img src="https://images.unsplash.com/photo-1554223789-df81106a45ed?w=1200&q=80&auto=format&fit=crop" alt="Vespa GTS 300" loading="lazy">
+  <span class="tsave" data-save="vespa" role="button" aria-label="Shortlist">&#9825;</span>
+  <span class="tinfo"><b>Vespa GTS 300</b><em>Dubrovnik, HR</em>
+    <span class="tp">&euro;45<small>/day</small></span></span>
+</button><button class="tile" data-goto="defender">
+  <img src="https://images.unsplash.com/photo-1741905358565-5ae6835ac172?w=1200&q=80&auto=format&fit=crop" alt="Land Rover Defender 110" loading="lazy">
+  <span class="tsave" data-save="defender" role="button" aria-label="Shortlist">&#9825;</span>
+  <span class="tinfo"><b>Land Rover Defender 110</b><em>Marbella, ES</em>
+    <span class="tp">&euro;140<small>/day</small></span></span>
+</button><button class="tile" data-goto="boat">
+  <img src="https://images.unsplash.com/photo-1540946485063-a40da27545f8?w=1200&q=80&auto=format&fit=crop" alt="Bénéteau Oceanis 32" loading="lazy">
+  <span class="tsave" data-save="boat" role="button" aria-label="Shortlist">&#9825;</span>
+  <span class="tinfo"><b>Bénéteau Oceanis 32</b><em>Santorini, GR</em>
+    <span class="tp">&euro;350<small>/day</small></span></span>
+</button><button class="tile" data-goto="jet">
+  <img src="https://images.unsplash.com/photo-1638100191048-33f8e6d07505?w=1200&q=80&auto=format&fit=crop" alt="Sea-Doo Spark Trixx" loading="lazy">
+  <span class="tsave" data-save="jet" role="button" aria-label="Shortlist">&#9825;</span>
+  <span class="tinfo"><b>Sea-Doo Spark Trixx</b><em>Ibiza, ES</em>
+    <span class="tp">&euro;120<small>/day</small></span></span>
+</button></div></section>
+
+<aside class="tray">
+  <div class="thumbs" id="thumbs"></div>
+  <span class="tcount" id="tcount"></span>
+  <button class="tgo" id="tgo">Compare</button>
+</aside>
+
+<section class="cmp">
+  <div class="cmph"><h3>Side by side</h3><button class="cmpx" id="cmpx">&times;</button></div>
+  <div id="cmpbody"></div>
+</section>
+
+<script>
+const D = {"fiat":{"t":"Classic Fiat 500","city":"Positano, IT","day":35,"days":7,"tot":245,"dep":0,"seats":4,"tr":"Manual","rat":"4.7","inst":1,"img":"https://images.unsplash.com/photo-1573401491021-c5f127195de0?w=1200&q=80&auto=format&fit=crop"},"vespa":{"t":"Vespa GTS 300","city":"Dubrovnik, HR","day":45,"days":4,"tot":180,"dep":0,"seats":2,"tr":"Automatic","rat":"4.8","inst":1,"img":"https://images.unsplash.com/photo-1554223789-df81106a45ed?w=1200&q=80&auto=format&fit=crop"},"defender":{"t":"Land Rover Defender 110","city":"Marbella, ES","day":140,"days":5,"tot":700,"dep":0,"seats":5,"tr":"Automatic","rat":"4.9","inst":1,"img":"https://images.unsplash.com/photo-1741905358565-5ae6835ac172?w=1200&q=80&auto=format&fit=crop"},"boat":{"t":"Bénéteau Oceanis 32","city":"Santorini, GR","day":350,"days":3,"tot":1050,"dep":600,"seats":8,"tr":"Sail","rat":"5.0","inst":0,"img":"https://images.unsplash.com/photo-1540946485063-a40da27545f8?w=1200&q=80&auto=format&fit=crop"},"jet":{"t":"Sea-Doo Spark Trixx","city":"Ibiza, ES","day":120,"days":2,"tot":240,"dep":200,"seats":2,"tr":"Automatic","rat":"4.6","inst":1,"img":"https://images.unsplash.com/photo-1638100191048-33f8e6d07505?w=1200&q=80&auto=format&fit=crop"}};
+const eur = n => '\u20AC' + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const list = new Set();
+
+// Horizontal position indicator. Without it there is no affordance telling you
+// a sideways axis exists at all.
+for (const rail of document.querySelectorAll('[data-rail]')) {
+  const dots = rail.parentElement.querySelector('[data-dots]').children;
+  const sync = () => {
+    const i = Math.round(rail.scrollLeft / rail.clientWidth);
+    for (let k = 0; k < dots.length; k++) dots[k].classList.toggle('on', k === i);
+  };
+  rail.addEventListener('scroll', sync, { passive: true }); sync();
+}
+
+// Density switch. Feed <-> grid is a ZOOM, not a navigation: the same items,
+// same scroll position, different density. Navigating between them as separate
+// screens is what makes every other rental app feel like filling in a form.
+const setView = v => {
+  document.body.dataset.v = v;
+  document.getElementById('zlab').textContent = v === 'feed' ? 'Grid' : 'Feed';
+};
+document.getElementById('zoom').addEventListener('click', () =>
+  setView(document.body.dataset.v === 'feed' ? 'grid' : 'feed'));
+
+// Tapping a tile zooms back INTO that vehicle, not to a detail page. Position
+// is preserved in both directions, so gathering never costs you your place.
+for (const t of document.querySelectorAll('[data-goto]')) {
+  t.addEventListener('click', e => {
+    if (e.target.closest('[data-save]')) return;
+    const card = document.querySelector(`.card[data-id="${t.dataset.goto}"]`);
+    document.querySelector('.feed').scrollTop = card.offsetTop;
+    setView('feed');
+  });
+}
+
+const renderTray = () => {
+  document.body.classList.toggle('has-list', list.size > 0);
+  const th = document.getElementById('thumbs');
+  th.innerHTML = [...list].slice(0, 4).map(id => `<img src="${D[id].img}" alt="">`).join('');
+  document.getElementById('tcount').innerHTML =
+    `<b>${list.size}</b> shortlisted`;
+};
+
+for (const b of document.querySelectorAll('[data-save]')) {
+  b.addEventListener('click', e => {
+    e.stopPropagation();
+    const id = b.dataset.save;
+    list.has(id) ? list.delete(id) : list.add(id);
+    for (const el of document.querySelectorAll(`[data-save="${id}"]`))
+      el.classList.toggle('on', list.has(id));
+    renderTray();
+  });
+}
+
+// Compare. Deciding between four vehicles is a COLUMN task - the feed cannot
+// do it and pretending otherwise is how a browse surface kills conversion.
+const buildCompare = () => {
+  const ids = [...list];
+  const body = document.getElementById('cmpbody');
+  if (!ids.length) { body.innerHTML = '<p class="empty">Tap the heart on anything you like. They land here, side by side.</p>'; return; }
+  const rows = [
+    ['Per day',  id => eur(D[id].day),  ids => Math.min(...ids.map(i => D[i].day))],
+    ['Days',     id => D[id].days,      null],
+    ['Total',    id => eur(D[id].tot),  ids => Math.min(...ids.map(i => D[i].tot))],
+    ['Deposit',  id => eur(D[id].dep),  ids => Math.min(...ids.map(i => D[i].dep))],
+    ['Seats',    id => D[id].seats,     null],
+    ['Gearbox',  id => D[id].tr,        null],
+    ['Rating',   id => D[id].rat,       null],
+    ['Booking',  id => D[id].inst ? 'Instant' : 'On request', null],
+  ];
+  let h = '<div class="cwrap"><table class="ctab"><thead><tr><th></th>' + ids.map(id =>
+    `<th><img src="${D[id].img}" alt="">${D[id].t}</th>`).join('') + '</tr></thead><tbody>';
+  for (const [label, get, best] of rows) {
+    const b = best ? best(ids) : null;
+    h += `<tr><td>${label}</td>` + ids.map(id => {
+      const raw = best ? (label === 'Per day' ? D[id].day : label === 'Total' ? D[id].tot : D[id].dep) : null;
+      const win = b !== null && raw === b && ids.length > 1;
+      return `<td class="${win ? 'best' : ''}">${get(id)}</td>`;
+    }).join('') + '</tr>';
+  }
+  h += '</tbody></table></div><p class="cmpnote">Green is the lowest in that row. Totals already include the service fee, and the deposit is what you would have blocked on your card - not an extra cost.</p>';
+  body.innerHTML = h;
+};
+
+document.getElementById('tgo').addEventListener('click', () => { buildCompare(); document.body.classList.add('cmp-open'); });
+document.getElementById('cmpx').addEventListener('click', () => document.body.classList.remove('cmp-open'));
+renderTray();
+</script>
+</body></html>
