@@ -124,7 +124,14 @@ export default function TeamScreen() {
 
   const handleRemove = async (memberId: string) => {
     if (!Config.useMock) {
-      await supabase.from('rentivo_operator_staff').delete().eq('id', memberId)
+      // A 0-row delete (RLS/stale id) is NOT an error to supabase-js, so a failed
+      // removal used to still toast "removed" while the member kept access.
+      const { data, error } = await supabase
+        .from('rentivo_operator_staff').delete().eq('id', memberId).select('id')
+      if (error || !data || data.length === 0) {
+        showToast({ message: tr('opSetActionFailed', language), type: 'error' })
+        return
+      }
     }
     setStaff(prev => prev.filter(s => s.id !== memberId))
     showToast({ message: tr('opSetMemberRemoved', language), type: 'success' })

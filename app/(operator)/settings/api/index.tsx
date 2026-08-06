@@ -108,10 +108,17 @@ export default function ApiSettingsScreen() {
         style: 'destructive',
         onPress: async () => {
           if (!Config.useMock) {
-            await supabase
+            // supabase-js reports NO error on a 0-row update (RLS/stale id), so a
+            // failed revoke used to still show "revoked" while the key stayed live.
+            const { data, error } = await supabase
               .from('rentivo_api_keys')
               .update({ is_active: false })
               .eq('id', keyId)
+              .select('id')
+            if (error || !data || data.length === 0) {
+              showToast({ message: tr('opSetActionFailed', language), type: 'error' })
+              return
+            }
           }
           setApiKeys(prev => prev.map(k => k.id === keyId ? { ...k, is_active: false } : k))
           showToast({ message: tr('opSetApiKeyRevoked', language), type: 'success' })
