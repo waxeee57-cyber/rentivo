@@ -26,8 +26,10 @@ tags:
     text: "My Trips"
 
 # Tab-ok láthatóak
-- assertVisible:
-    text: "Upcoming"
+- extendedWaitUntil:
+    visible:
+      text: "Upcoming"
+    timeout: 10000
 
 # Üres state esetén: CTA gomb látható
 - assertNotVisible:
