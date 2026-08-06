@@ -311,6 +311,63 @@ async function main() {
     `status=${dead.status} total=${dead.body?.total_amount} (undiscounted ${FULL_PRICE})`,
   )
 
+  // ── The redemption counter, and the RPC that moves it ─────────────────────
+  //
+  // `max_uses` is only a budget if something counts against it. create-booking
+  // redeems through increment_promo_use(), so the counter moving is the proof
+  // the campaign cap is enforced at all — asserted here rather than assumed,
+  // because the discount lands on the booking whether or not redemption ran.
+  const afterUse = (await rows(admin.token,
+    `rentivo_promo_codes?code=eq.${PROMO_CODE}&select=current_uses,max_uses`))[0]
+  step(
+    Number(afterUse?.current_uses) > 0,
+    'redeeming through create-booking moved current_uses, so max_uses is a real cap',
+    JSON.stringify(afterUse),
+  )
+
+  // ...and nobody else may move it.
+  //
+  // This was open. 20260804001 wrote `REVOKE ALL ... FROM PUBLIC` and believed
+  // it was closed; on Supabase `anon` and `authenticated` hold their own explicit
+  // grants, which a revoke from PUBLIC does not touch. An unauthenticated POST
+  // carrying only the publishable key returned `true` and moved the counter, so
+  // any campaign with a cap could be drained to zero before a real customer
+  // redeemed once. The grant is the whole defence — there is no policy on an RPC.
+  const rpcAsUser = await sb('/rest/v1/rpc/increment_promo_use', {
+    method: 'POST',
+    body: JSON.stringify({ p_code: PROMO_CODE }),
+  }, user.token)
+  step(
+    rpcAsUser.status === 401 || rpcAsUser.status === 403 || rpcAsUser.body?.code === '42501',
+    'a signed-in user CANNOT call increment_promo_use directly',
+    `status=${rpcAsUser.status} ${JSON.stringify(rpcAsUser.body).slice(0, 140)}`,
+  )
+  const rpcAsAnon = await sb('/rest/v1/rpc/increment_promo_use', {
+    method: 'POST',
+    body: JSON.stringify({ p_code: PROMO_CODE }),
+  })
+  step(
+    rpcAsAnon.status === 401 || rpcAsAnon.status === 403 || rpcAsAnon.body?.code === '42501',
+    'an anonymous caller CANNOT call increment_promo_use either',
+    `status=${rpcAsAnon.status} ${JSON.stringify(rpcAsAnon.body).slice(0, 140)}`,
+  )
+  const notDrained = (await rows(admin.token,
+    `rentivo_promo_codes?code=eq.${PROMO_CODE}&select=current_uses`))[0]
+  step(
+    Number(notDrained?.current_uses) === Number(afterUse?.current_uses),
+    'neither refused call moved the counter',
+    `${afterUse?.current_uses} -> ${notDrained?.current_uses}`,
+  )
+
+  // The Stripe event ledger is service-role only by grant as well as by RLS, so
+  // "no rows" cannot be mistaken for "RLS is hiding them from me".
+  const events = await sb('/rest/v1/rentivo_stripe_events?select=id&limit=1', {}, user.token)
+  step(
+    events.status === 401 || events.status === 403 || events.body?.code === '42501',
+    'the Stripe event ledger is not readable by a signed-in user',
+    `status=${events.status} ${JSON.stringify(events.body).slice(0, 140)}`,
+  )
+
   section('7. non-admin promo writes are refused')
   const promoWrite = refused(await patch(user.token, `rentivo_promo_codes?code=eq.${PROMO_CODE}`, { is_active: true }))
   step(promoWrite.ok, 'non-admin reactivating a promo code is refused', promoWrite.how)

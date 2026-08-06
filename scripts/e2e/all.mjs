@@ -35,6 +35,10 @@ const only = argv.filter(a => !a.startsWith('--'))
  * not something a suite runner can drive on its own.
  */
 const SUITES = [
+  // First, and it touches nothing: it only asks what a stranger holding the
+  // publishable key can reach. Cheap, and it is the suite most likely to be the
+  // reason to stop and read before any of the others matter.
+  { name: 'anon-surface', file: 'anon-surface.mjs' },
   { name: 'money-path', file: 'money-path.mjs' },
   { name: 'contract', file: 'contract.mjs' },
   { name: 'damage-deposit', file: 'damage-deposit.mjs' },

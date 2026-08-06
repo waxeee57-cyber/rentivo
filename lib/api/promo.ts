@@ -73,11 +73,20 @@ export async function validatePromoCode(
     return { valid: true, code: promo, discount }
   }
 
-  const { data, error } = await supabase
-    .from('rentivo_promo_codes')
-    .select('*')
-    .eq('code', code.toUpperCase().trim())
-    .maybeSingle()
+  // Through the lookup function, NOT the table.
+  //
+  // Selecting from rentivo_promo_codes used to work for anyone, filter or no
+  // filter, so `select *` handed a stranger every live campaign — code, percent,
+  // cap and uses remaining. A promo code is worth exactly as much as the fact
+  // that only its recipient knows it, so the table is no longer readable and
+  // rentivo_lookup_promo answers for ONE code you already have.
+  //
+  // It returns the row raw and leaves the verdict here on purpose: the three
+  // checks below mirror create-booking, and pushing them into SQL would let the
+  // client's "Promo applied" and the server's actual charge drift apart again.
+  const { data: found, error } = await supabase
+    .rpc('rentivo_lookup_promo', { p_code: code.toUpperCase().trim() })
+  const data = Array.isArray(found) ? found[0] ?? null : (found ?? null)
 
   // An infrastructure failure (network drop, RLS denial) is NOT a wrong code. Telling
   // the guest "Invalid promo code" makes them give up on a discount that is actually
