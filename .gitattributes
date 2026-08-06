@@ -1,0 +1,47 @@
+# Why this file exists.
+#
+# core.autocrlf=true was set locally, and no .gitattributes existed, so the
+# REPOSITORY ended up storing CRLF in most text blobs. That combination is
+# permanently unstable: git normalises on the way in and converts on the way
+# out, and when the stored blob already carries CR the two passes disagree.
+#
+# What it looked like in practice: `git status` reported 18 modified files with
+# ~7100 changed lines that `git diff --ignore-cr-at-eol` showed as ZERO real
+# changes, `git checkout -- .` did not clear them, and any edit made from a
+# non-Windows tool re-triggered it. A working tree that is dirty no matter what
+# you do is a working tree nobody reads, which is how a real change hides.
+#
+# `text=auto` makes git store LF and hand Windows CRLF, which is the arrangement
+# both sides already expect. Applied with `git add --renormalize .` so the
+# history is corrected once instead of drifting per machine.
+
+* text=auto
+
+# Line endings that must survive regardless of platform.
+*.sh          text eol=lf
+*.bash        text eol=lf
+*.mjs         text eol=lf
+*.ps1         text eol=crlf
+*.bat         text eol=crlf
+*.cmd         text eol=crlf
+
+# Explicitly binary, so git never inspects or rewrites a byte.
+*.png         binary
+*.jpg         binary
+*.jpeg        binary
+*.gif         binary
+*.webp        binary
+*.avif        binary
+*.ico         binary
+*.pdf         binary
+*.zip         binary
+*.jar         binary
+*.keystore    binary
+*.ttf         binary
+*.otf         binary
+*.woff        binary
+*.woff2       binary
+*.mp4         binary
+*.mov         binary
+*.aab         binary
+*.apk         binary
