@@ -12,6 +12,9 @@ import { useColors } from '@/lib/hooks/useColors'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { t } from '@/constants/i18n'
 import { ownerPayout } from '@/lib/utils/payout'
+import { updateBookingStatus, cancelBooking } from '@/lib/api/bookings'
+import { captureException } from '@/lib/sentry'
+import { useToastStore } from '@/lib/store/useToastStore'
 
 function BookingDetailSkeleton() {
   const C = useColors()
@@ -40,6 +43,7 @@ export default function HostBookingDetailScreen() {
   const styles = useMemo(() => makeStyles(C), [C])
   const { id } = useLocalSearchParams<{ id: string }>()
   const { language } = useAuthStore()
+  const { showToast } = useToastStore()
   const { booking: liveBooking, loading } = useBooking(Config.useMock ? null : (id ?? null))
   const booking = Config.useMock
     ? MOCK_BOOKINGS.find(b => b.id === id) ?? MOCK_BOOKINGS[0]
@@ -65,15 +69,42 @@ export default function HostBookingDetailScreen() {
   const payoutDate = new Date(booking.end_date)
   payoutDate.setDate(payoutDate.getDate() + 1)
 
-  const handleConfirm = () => {
-    Alert.alert(t('hostBBookingConfirmedAlert', language), t('hostBGuestNotified', language))
-    router.back()
+  const handleConfirm = async () => {
+    if (!booking) return
+    try {
+      // Real status write (mock-gated inside updateBookingStatus, rowcount-checked).
+      // The button used to only Alert + router.back(), so a host could never
+      // actually confirm a booking.
+      await updateBookingStatus(booking.id, 'confirmed')
+      Alert.alert(t('hostBBookingConfirmedAlert', language), t('hostBGuestNotified', language))
+      router.back()
+    } catch (e) {
+      captureException(e, { screen: 'host/booking-detail', action: 'confirm', bookingId: booking.id })
+      showToast({ message: t('opBkToastConfirmFail', language), type: 'error' })
+    }
   }
 
   const handleDecline = () => {
     Alert.alert(t('hostBDeclineTitle', language), t('hostBGuestRefunded', language), [
       { text: t('cancel', language), style: 'cancel' },
-      { text: t('declineBooking', language), style: 'destructive', onPress: () => router.back() },
+      {
+        text: t('declineBooking', language),
+        style: 'destructive',
+        // Must go through cancelBooking(): it calls the cancel-booking function,
+        // the ONLY path that issues the Stripe refund. The old onPress just
+        // router.back()'d — so the on-screen "guest will be refunded" promise was
+        // a lie and the guest's money never moved (chargeback material).
+        onPress: async () => {
+          if (!booking) return
+          try {
+            if (!Config.useMock) await cancelBooking(booking.id)
+            router.back()
+          } catch (e) {
+            captureException(e, { screen: 'host/booking-detail', action: 'decline', bookingId: booking.id })
+            showToast({ message: t('opBkToastDeclineFail', language), type: 'error' })
+          }
+        },
+      },
     ])
   }
 
