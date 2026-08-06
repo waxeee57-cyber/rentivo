@@ -225,7 +225,11 @@ serve(async (req) => {
         // added in migration 20260805004; nothing read it before, so
         // deactivating a code had no effect on pricing.
         promo.is_active !== false &&
-        Number(promo.current_uses) < Number(promo.max_uses) &&
+        // max_uses NULL = unlimited. Number(null) is 0, so the old
+        // `current_uses < max_uses` read 0 < 0 = false and silently dropped every
+        // unlimited code — while the client (lib/api/promo.ts) applied it and showed
+        // the discount. Renter charged more than the button said. Mirror the client.
+        (promo.max_uses == null || Number(promo.current_uses) < Number(promo.max_uses)) &&
         // valid_from exists on the table and was never checked — a campaign
         // scheduled for next month was live the moment the row was inserted.
         (!promo.valid_from || new Date(promo.valid_from) <= new Date()) &&
