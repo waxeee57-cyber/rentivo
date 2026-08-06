@@ -114,9 +114,35 @@ utána hangosan elhasal.
 - Expo Go natív route overlay — production EAS buildben nem jelenik meg
 - `operator/fleet/[id].tsx` ~147. sor: `setTimeout(600)` mock-szag a KYC ágban
   (a fő mentés valódi, csak ez az ág) — NEM javítva, scope-on kívül
-- **Supabase dashboard-kapcsolók, amiket kódból nem lehet átállítani:**
-  Auth → leaked password protection KI van kapcsolva (HaveIBeenPwned ellenőrzés);
-  Auth connection pool fixen 10 kapcsolat, százalék-alapúra érdemes váltani.
+### Auth konfiguráció — a Management API-n keresztül állítva (2026-08-06)
+A Supabase CLI tokenje a Windows Credential Managerben van (`Supabase CLI:supabase`,
+**UTF-8** blobként — UTF-16-ként olvasva fél tokent kapsz és egy "JWT could not be
+decoded" hibát). Ezzel a `https://api.supabase.com/v1/projects/<ref>/config/auth`
+végpont írható, és a PATCH csak a küldött mezőket módosítja.
+
+Javítva ma:
+- `site_url`: **`http://localhost:3000` volt ÉLESBEN** → `https://rentivo.domrol.com`.
+  Minden regisztráció-megerősítő e-mail linkje localhostra irányított vissza. A
+  megerősítés maga lefutott, de a felhasználó egy halott oldalon kötött ki, pont
+  a legérzékenyebb pillanatban.
+- `uri_allow_list`: üres volt → `https://rentivo.domrol.com/**,rentivo://**`
+- `password_hibp_enabled`: false → **true** (mérve: `password123` most 422
+  `weak_password`)
+- `db_max_pool_size`: 10 fix kapcsolat → 20 **százalék**
+
+⚠️ **`supabase config push` TILOS**, amíg a `supabase/config.toml` nincs javítva:
+abban `site_url = "http://127.0.0.1:3000"` áll, tehát a push visszaírná a fenti
+hibát élesbe.
+
+### 🔴 A LEGNAGYOBB NYITOTT TÉTEL: e-mail kapacitás
+`rate_limit_email_sent = 2` **óránként, projekt-szinten** — ez a beépített
+Supabase SMTP kapacitása, amit a Supabase maga is csak tesztre ajánl.
+Indulás napján a harmadik regisztráló **semmilyen megerősítő e-mailt nem kap**,
+hibaüzenet nélkül. Ez nem finomhangolás, ez a tölcsér teteje.
+
+Megoldás előkészítve: `scripts/configure-auth-smtp.ps1`. Kell hozzá egy Resend
+fiók, a domrol.com igazolása (SPF + DKIM + return-path CNAME), és
+`RESEND_API_KEY=re_...` a `.env`-be. Utána egy parancs, és a limit 100/óra.
 - **Szándékosan nem javított linter-találatok** (mérve, nem feltételezve):
   - `btree_gist` a `public` sémában — áthelyezése a `rentivo_bookings_no_overlap`
     exclusion constraintet érinti, ami a dupla foglalás ellen véd. A haszon
