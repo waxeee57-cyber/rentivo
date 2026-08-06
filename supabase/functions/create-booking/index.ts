@@ -80,6 +80,27 @@ serve(async (req) => {
         .maybeSingle()
       requiresIdentity = owner?.requires_identity_verification === true
     }
+    // ── Payout gate, enforced HERE.
+    //
+    // Nothing on the server checked whether the owner could actually be paid.
+    // An operator with stripe_onboarded=false published a publicly visible
+    // listing, create-booking returned 200, and only create-payment-intent
+    // refused — leaving a pending booking the renter can never pay, holding
+    // their intent and the dates. The client gate at booking/[listingId].tsx is
+    // a render decision an HTTP caller skips.
+    const payeeTable = listing.host_id ? 'rentivo_hosts' : 'rentivo_operators'
+    const payeeId = listing.host_id ?? listing.operator_id
+    if (payeeId) {
+      const { data: payee } = await supabase
+        .from(payeeTable)
+        .select('stripe_account_id, stripe_onboarded')
+        .eq('id', payeeId)
+        .maybeSingle()
+      if (payee?.stripe_onboarded !== true || !payee?.stripe_account_id) {
+        return jsonError('This listing is not accepting bookings right now', 409)
+      }
+    }
+
     if (requiresIdentity) {
       const { data: verification } = await supabase
         .from('rentivo_identity_verifications')
@@ -264,6 +285,14 @@ serve(async (req) => {
       .insert({
         listing_id,
         operator_id: listing.operator_id ?? null,
+        // host_id and owner_type were NEVER written. Both RLS policies that let a
+        // host see or confirm their own bookings match on host_id, so after a
+        // real paid booking on a host listing the host read zero rows: could not
+        // see the guest, could not confirm, and the host bookings screen was
+        // empty. `authenticated` has no UPDATE on these columns, so no client
+        // could repair it either.
+        host_id: listing.host_id ?? null,
+        owner_type: listing.host_id ? 'host' : 'operator',
         user_id: user.id,
         guest_name, guest_email, guest_phone, guest_nationality, driver_license_no,
         start_date, end_date, total_days: days,

@@ -158,12 +158,20 @@ export default function BookingFlowScreen() {
     )
   }
 
-  // Payout guard — block booking if the operator can't receive payouts yet.
+  // Payout guard — block booking if the OWNER can't receive payouts yet.
   // Without an onboarded Connect account the payment would land on the platform
-  // account with no transfer to the operator. Mock mode bypasses this.
+  // account with no transfer to them. Mock mode bypasses this.
+  //
+  // The owner is the host on a C2C listing and the operator otherwise. This read
+  // `listing.operator` unconditionally, and a host-owned listing has no operator
+  // join, so the guard was false for every host listing regardless of how well
+  // the host was onboarded: not one C2C listing was bookable in the app. The
+  // server enforces the same rule in create-booking now; this is what stops the
+  // renter reaching a dead end rather than what makes it safe.
+  const payee = listing.owner_type === 'host' ? listing.host : listing.operator
   const operatorCanReceivePayments =
     Config.useMock ||
-    (listing.operator?.stripe_onboarded === true && !!listing.operator?.stripe_account_id)
+    (payee?.stripe_onboarded === true && !!payee?.stripe_account_id)
 
   if (!operatorCanReceivePayments) {
     return (

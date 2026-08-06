@@ -222,7 +222,11 @@ serve(async (req) => {
       JSON.stringify({
         cancelled: true,
         refund_amount: refundAmount,
-        refund_percent: percent,
+        // `percent` is the POLICY percentage, computed before we know whether any
+        // money was ever taken. Reporting it raw meant cancelling an unpaid
+        // booking answered "100% refunded, EUR 0" — a contradiction the client
+        // then rendered as a refund promise.
+        refund_percent: wasPaid ? percent : 0,
         refund_id: refundId,
         policy,
       }),

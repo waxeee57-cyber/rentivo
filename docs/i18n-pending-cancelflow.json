@@ -1,0 +1,22 @@
+{
+  "rcFullOwner": {
+    "en": "Full refund - the owner cancelled this booking",
+    "es": "Reembolso completo: el propietario canceló esta reserva",
+    "hu": "Teljes visszatérítés - a tulajdonos mondta le a foglalást"
+  },
+  "opFleetPolicyModerateDesc": {
+    "en": "Full refund 48h+ before, 50% between 24h and 48h",
+    "es": "Reembolso completo 48 h antes o más, 50 % entre 24 h y 48 h",
+    "hu": "Teljes visszatérítés 48 órával korábban, 50% 24 és 48 óra között"
+  },
+  "opFleetPolicyStrictDesc": {
+    "en": "Full refund 72h+ before, otherwise no refund",
+    "es": "Reembolso completo 72 h antes o más; de lo contrario, sin reembolso",
+    "hu": "Teljes visszatérítés 72 órával korábban, egyébként nincs visszatérítés"
+  },
+  "opFleetPolicyFlexibleDesc": {
+    "en": "Full refund 24h+ before, otherwise no refund",
+    "es": "Reembolso completo 24 h antes o más; de lo contrario, sin reembolso",
+    "hu": "Teljes visszatérítés 24 órával korábban, egyébként nincs visszatérítés"
+  }
+}

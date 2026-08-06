@@ -84,7 +84,13 @@ export async function fetchListing(id: string): Promise<Listing | null> {
 
   const { data, error } = await supabase
     .from('rentivo_listings')
-    .select('*, operator:rentivo_operators(*)')
+    // The host has to come back too. The booking screen decides whether the
+    // owner can be paid from `listing.operator`, and a host-owned listing has no
+    // operator join — so that check was false for EVERY host listing however
+    // well onboarded the host was, and the screen refused the booking with "the
+    // operator has not finished setting up payments yet". No host listing was
+    // bookable in the app at all.
+    .select('*, operator:rentivo_operators(*), host:rentivo_hosts(*)')
     .eq('id', id)
     .single()
 

@@ -27,9 +27,16 @@ export default function OperatorSetupScreen() {
     setLoading(true)
     try {
       const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+      // Re-entering setup must not create a second operator record, and must not
+      // dead-end either: `rentivo_operators.auth_id` carries a UNIQUE index, so a
+      // plain insert on the second attempt failed with 23505 and the screen showed
+      // its generic error alert. Anyone who backed out of onboarding — or whose
+      // first attempt errored after the row was written — could never get past
+      // this screen again. Upsert on auth_id, exactly as app/auth/host-setup.tsx
+      // does, so a repeat visit updates the record it already owns.
       const { data, error } = await supabase
         .from('rentivo_operators')
-        .insert({
+        .upsert({
           name,
           slug: `${slug}-${Date.now()}`,
           city,
@@ -38,7 +45,7 @@ export default function OperatorSetupScreen() {
           latitude: 36.5101,
           longitude: -4.8824,
           auth_id: (session as Record<string, unknown> & { user?: { id: string } })?.user?.id,
-        })
+        }, { onConflict: 'auth_id' })
         .select()
         .single()
 

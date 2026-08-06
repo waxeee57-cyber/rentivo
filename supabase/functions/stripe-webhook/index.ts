@@ -110,16 +110,36 @@ async function blockDates(
 
 serve(async (req) => {
   const signature = req.headers.get('stripe-signature')
-  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')
-  if (!signature || !webhookSecret) return new Response('Missing signature', { status: 400 })
 
-  let event: Stripe.Event
-  try {
-    const body = await req.text()
-    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret)
-  } catch {
-    return new Response('Invalid signature', { status: 400 })
+  // TWO secrets, because Stripe has two kinds of endpoint and `connect` cannot be
+  // toggled after creation. A platform endpoint never receives events for a
+  // CONNECTED account, so `account.updated` was never delivered here — 72
+  // payment_intent.succeeded in rentivo_stripe_events and not one account.updated,
+  // ever. The effect: stripe_onboarded could never change, an operator who
+  // finished Connect onboarding stayed `false` forever, and create-payment-intent
+  // refuses to route money to an account that reads as not onboarded. Onboarding
+  // completed at Stripe and never completed here.
+  //
+  // The Connect endpoint has its own signing secret, so both are tried.
+  const secrets = [
+    Deno.env.get('STRIPE_WEBHOOK_SECRET'),
+    Deno.env.get('STRIPE_CONNECT_WEBHOOK_SECRET'),
+  ].filter((s): s is string => !!s)
+
+  if (!signature || secrets.length === 0) return new Response('Missing signature', { status: 400 })
+
+  let event: Stripe.Event | null = null
+  const body = await req.text()
+  for (const secret of secrets) {
+    try {
+      event = await stripe.webhooks.constructEventAsync(body, signature, secret)
+      break
+    } catch {
+      // Try the next secret. Only a body that verifies against NONE of them is
+      // rejected.
+    }
   }
+  if (!event) return new Response('Invalid signature', { status: 400 })
 
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',

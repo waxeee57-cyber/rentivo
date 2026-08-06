@@ -14,6 +14,8 @@ import { Config } from '@/constants/config'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useHostBookings } from '@/lib/hooks/useBookings'
 import { formatDateRange } from '@/lib/utils/formatDate'
+import { formatEURDecimal } from '@/lib/utils/formatCurrency'
+import { ownerPayout } from '@/lib/utils/payout'
 import { updateBookingStatus, cancelBooking } from '@/lib/api/bookings'
 import { captureException } from '@/lib/sentry'
 import type { Booking, BookingStatus } from '@/types'
@@ -59,8 +61,14 @@ function BookingCard({
             {booking.total_days} days · {booking.total_amount > 0 ? `€${booking.total_amount.toFixed(2)}` : '—'}
           </Text>
           {(booking.status === 'confirmed' || booking.status === 'completed' || booking.status === 'active') && (
+            // `total_amount * 0.85` was wrong twice over: 15% has never been the
+            // configured cut (Config.platformCut is 10%), and the fee is charged
+            // to the RENTER on top of the listed price rather than deducted from
+            // the host. create-payment-intent transfers the rental SUBTOTAL to
+            // the owner, so on a €1000 + €100 fee booking this told the host they
+            // were getting €935 when Stripe actually sends them €1000.
             <Text style={styles.payout}>
-              You receive: €{(booking.total_amount * 0.85).toFixed(2)} · 2 business days
+              {t('youReceive', language)}: {formatEURDecimal(ownerPayout(booking), language)} · {t('payoutInfo', language)}
             </Text>
           )}
         </View>

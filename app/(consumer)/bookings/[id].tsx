@@ -21,7 +21,10 @@ import { t } from '@/constants/i18n'
 import { getError } from '@/lib/errors'
 import { formatDate, formatDateRange, isDateToday } from '@/lib/utils/formatDate'
 import { formatEURDecimal } from '@/lib/utils/formatCurrency'
-import { calculateCancellationRefund, getCancellationPolicyColor, getCancellationPolicyLabel } from '@/lib/utils/cancellation'
+import {
+  calculateCancellationRefund, getCancellationPolicyColor, getCancellationPolicyLabel,
+  shouldShowRefundEstimate,
+} from '@/lib/utils/cancellation'
 import { useBooking } from '@/lib/hooks/useBookings'
 import { cancelBooking } from '@/lib/api/bookings'
 import { Config } from '@/constants/config'
@@ -79,7 +82,13 @@ export default function BookingDetailScreen() {
   const returnToday = isDateToday(booking.end_date)
   const policy = (booking.listing?.cancellation_policy ?? 'moderate') as CancellationPolicy
 
-  const refundCalc = ['confirmed', 'pending'].includes(booking.status)
+  // A booking that was never paid gets nothing back, so it must not be shown a
+  // refund figure. `status === 'pending'` is exactly the unpaid state, and the
+  // old condition let it through: an unpaid booking rendered "If you cancel now:
+  // 100% refund (EUR 440.00)" while cancel-booking correctly refunded EUR 0 and
+  // never called Stripe. shouldShowRefundEstimate/1 is the single place that
+  // decision lives now, so the e2e can assert it directly.
+  const refundCalc = shouldShowRefundEstimate(booking.status, booking.payment_status)
     ? calculateCancellationRefund(policy, booking.start_date, booking.total_amount, language)
     : null
 

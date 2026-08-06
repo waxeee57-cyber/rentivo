@@ -215,9 +215,20 @@ export async function cancelBooking(id: string): Promise<{
     refund_percent?: number
     already_cancelled?: boolean
   }
+
+  // `refund_percent` is the POLICY percent, computed before the function knows
+  // whether anything was ever paid. Cancelling an UNPAID booking therefore comes
+  // back as {refund_amount: 0, refund_percent: 100} — verified live against the
+  // deployed function by scripts/e2e/cancellation-matrix.mjs. Handing that 100
+  // straight to a screen renders "100% refunded" over money nobody ever took, so
+  // report the percent the amount actually backs. (An edge-function fix is the
+  // real answer; this stops the app repeating the claim in the meantime.)
+  const refundAmount = raw.refund_amount ?? 0
+  const refundPercent = refundAmount > 0 ? (raw.refund_percent ?? 0) : 0
+
   return {
-    refundAmount: raw.refund_amount ?? 0,
-    refundPercent: raw.refund_percent ?? 0,
+    refundAmount,
+    refundPercent,
     alreadyCancelled: raw.already_cancelled === true,
   }
 }
