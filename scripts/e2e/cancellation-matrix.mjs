@@ -22,11 +22,15 @@
  *
  * ── The one privileged step ────────────────────────────────────────────────
  * Timing bands are a function of the booking's own start_date, so the matrix
- * needs bookings that start in a few hours. Bookings are CREATED in the
- * +300..+360 day window this task owns (so nothing near-term is ever held), and
+ * needs bookings that start in a few hours. Bookings are CREATED inside the date
+ * window FIXTURES.cancellation declares (so nothing near-term is ever held), and
  * their start_date is then moved with a single SQL UPDATE. start_date is not in
  * the `authenticated` column grant, so no client token can do it — which is
  * itself asserted below. The script prints the statement and waits for it.
+ *
+ * That statement is the one thing scripts/e2e/all.mjs cannot drive for itself,
+ * and it is why this suite pauses in the middle of a full run. all.mjs prints
+ * the same SQL up front so it can be fired the moment the pause is reached.
  */
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
@@ -36,6 +40,9 @@ import {
   sb, stripe, signIn, createBooking, payBooking, cancelBooking,
   step, section, finish, sleep, day, TEST_CONNECT_ACCOUNT,
 } from './_lib.mjs'
+import {
+  FIXTURES, CANCELLATION_LISTINGS, PRIVATE_OPERATORS, assertFixture,
+} from './fixtures.mjs'
 
 // ── Fixtures ────────────────────────────────────────────────────────────────
 //
@@ -45,21 +52,13 @@ import {
 //
 // One listing per (policy x canceller) so that two cells in different timing
 // bands never collide on rentivo_bookings_no_overlap, and one spare for the
-// non-matrix scenarios.
-const L = {
-  flexTraveler: 'e2ecafe1-0000-4e2e-9000-000000000001',
-  modTraveler:  'e2ecafe1-0000-4e2e-9000-000000000002',
-  strTraveler:  'e2ecafe1-0000-4e2e-9000-000000000003',
-  // Same moderate policy, priced 401/day so a 1-day booking totals an ODD number
-  // of euros. Half of that is x.50 — the case that catches a client rounding to
-  // whole euros while the server refunds cents.
-  modOdd:       'e2ecafe1-0000-4e2e-9000-000000000004',
-  flexOwner:    'e2ecafe1-0000-4e2e-9000-000000000005',
-  modOwner:     'e2ecafe1-0000-4e2e-9000-000000000006',
-  strOwner:     'e2ecafe1-0000-4e2e-9000-000000000007',
-  scenarios:    'e2ecafe1-0000-4e2e-9000-000000000008',
-}
-const OPERATOR_ID = 'e2ecafe1-0000-4e2e-9000-0000000000aa'
+// non-matrix scenarios. They live in fixtures.mjs now, where every other suite
+// can see that these eight ids are spoken for — fixtures.mjs had `cancellation`
+// pointing at the seeded Porsche Cayenne, which belongs to the PROJECT OWNER's
+// operator and is not one of these at all.
+const L = CANCELLATION_LISTINGS
+const OPERATOR_ID = PRIVATE_OPERATORS.cancellation
+const FX = FIXTURES.cancellation
 
 const TRAVELER = ['e2e-cancel@rentivo.domrol.com', 'e2e-Cancel-Pass-2026!']
 const OWNER    = ['e2e-cancelop@rentivo.domrol.com', 'e2e-CancelOp-Pass-2026!']
@@ -69,14 +68,20 @@ const STRANGER = ['e2e-cancelstranger@rentivo.domrol.com', 'e2e-CancelStranger-P
 const TAG = 'E2E-CANCEL-MATRIX'
 const SHIFT_TIMEOUT_MS = Number(process.env.E2E_SHIFT_TIMEOUT_MS ?? 900000)
 
-// Bookings are created inside +300..+360 and nowhere else. The base rotates so a
-// re-run does not land on the slot a previous run left occupied (a completed
-// booking, for instance, is terminal and keeps holding its dates on purpose).
-const FAR_BASE = 300 + Math.floor(Math.random() * 30)
+// Bookings are created inside this suite's own window and nowhere else. The base
+// used to be `300 + random(30)`, which is what you write when you cannot know
+// what is free: a completed booking is terminal and keeps holding its dates on
+// purpose, so every run had to hope it landed somewhere clear. `pickFarBase`
+// below looks instead, and takes the first base whose 26-day span holds no LIVE
+// booking on any of the eight listings.
+const MATRIX_OFFSETS = [0, 3, 6]
+const SCENARIO_OFFSETS = [12, 15, 18, 21, 24]
+const SPAN = 26
+let FAR_BASE = FX.from
 /** Slot k for a matrix listing (k = 0..2) — three days apart, never adjacent. */
-const slot = k => FAR_BASE + k * 3
+const slot = k => FAR_BASE + MATRIX_OFFSETS[k]
 /** Slot k for the shared scenarios listing (k = 0..4), clear of the matrix ones. */
-const scenarioSlot = k => FAR_BASE + 12 + k * 3
+const scenarioSlot = k => FAR_BASE + SCENARIO_OFFSETS[k]
 
 // ── SPEC ────────────────────────────────────────────────────────────────────
 // The product rule, re-stated here independently of both implementations so a
@@ -106,24 +111,25 @@ const expectedAmount = (total, percent) => Math.round(total * percent) / 100
  * for every d. `band` records which band that is meant to be; the script
  * re-derives the band from the start_date it actually reads back and fails if
  * the cell did not land where it was aimed.
- * `far` is the +300..+360 slot the booking is CREATED on, before the shift.
+ * `k` is which of the three matrix slots the booking is CREATED on, before the
+ * shift; `far` is filled in once pickFarBase() has chosen the base.
  */
 const CELLS = [
-  { id: 'FLEX/>=24h/traveler', listing: L.flexTraveler, policy: 'flexible', d: 2, far: slot(0), by: 'traveler', band: '>=24h' },
-  { id: 'FLEX/<24h/traveler',  listing: L.flexTraveler, policy: 'flexible', d: 1, far: slot(1), by: 'traveler', band: '<24h' },
-  { id: 'MOD/>=48h/traveler',  listing: L.modTraveler,  policy: 'moderate', d: 3, far: slot(0), by: 'traveler', band: '>=48h' },
-  { id: 'MOD/24-48h/traveler', listing: L.modTraveler,  policy: 'moderate', d: 2, far: slot(1), by: 'traveler', band: '24-48h' },
-  { id: 'MOD/<24h/traveler',   listing: L.modTraveler,  policy: 'moderate', d: 1, far: slot(2), by: 'traveler', band: '<24h' },
-  { id: 'STRICT/>=72h/traveler', listing: L.strTraveler, policy: 'strict', d: 4, far: slot(0), by: 'traveler', band: '>=72h' },
-  { id: 'STRICT/<72h/traveler',  listing: L.strTraveler, policy: 'strict', d: 3, far: slot(1), by: 'traveler', band: '<72h' },
-  { id: 'MOD-odd/24-48h/traveler', listing: L.modOdd,   policy: 'moderate', d: 2, far: slot(0), by: 'traveler', band: '24-48h' },
-  { id: 'FLEX/>=24h/owner', listing: L.flexOwner, policy: 'flexible', d: 2, far: slot(0), by: 'owner', band: '>=24h' },
-  { id: 'FLEX/<24h/owner',  listing: L.flexOwner, policy: 'flexible', d: 1, far: slot(1), by: 'owner', band: '<24h' },
-  { id: 'MOD/>=48h/owner',  listing: L.modOwner,  policy: 'moderate', d: 3, far: slot(0), by: 'owner', band: '>=48h' },
-  { id: 'MOD/24-48h/owner', listing: L.modOwner,  policy: 'moderate', d: 2, far: slot(1), by: 'owner', band: '24-48h' },
-  { id: 'MOD/<24h/owner',   listing: L.modOwner,  policy: 'moderate', d: 1, far: slot(2), by: 'owner', band: '<24h' },
-  { id: 'STRICT/>=72h/owner', listing: L.strOwner, policy: 'strict', d: 4, far: slot(0), by: 'owner', band: '>=72h' },
-  { id: 'STRICT/<72h/owner',  listing: L.strOwner, policy: 'strict', d: 3, far: slot(1), by: 'owner', band: '<72h' },
+  { id: 'FLEX/>=24h/traveler', listing: L.flexTraveler, policy: 'flexible', d: 2, k: 0, by: 'traveler', band: '>=24h' },
+  { id: 'FLEX/<24h/traveler',  listing: L.flexTraveler, policy: 'flexible', d: 1, k: 1, by: 'traveler', band: '<24h' },
+  { id: 'MOD/>=48h/traveler',  listing: L.modTraveler,  policy: 'moderate', d: 3, k: 0, by: 'traveler', band: '>=48h' },
+  { id: 'MOD/24-48h/traveler', listing: L.modTraveler,  policy: 'moderate', d: 2, k: 1, by: 'traveler', band: '24-48h' },
+  { id: 'MOD/<24h/traveler',   listing: L.modTraveler,  policy: 'moderate', d: 1, k: 2, by: 'traveler', band: '<24h' },
+  { id: 'STRICT/>=72h/traveler', listing: L.strTraveler, policy: 'strict', d: 4, k: 0, by: 'traveler', band: '>=72h' },
+  { id: 'STRICT/<72h/traveler',  listing: L.strTraveler, policy: 'strict', d: 3, k: 1, by: 'traveler', band: '<72h' },
+  { id: 'MOD-odd/24-48h/traveler', listing: L.modOdd,   policy: 'moderate', d: 2, k: 0, by: 'traveler', band: '24-48h' },
+  { id: 'FLEX/>=24h/owner', listing: L.flexOwner, policy: 'flexible', d: 2, k: 0, by: 'owner', band: '>=24h' },
+  { id: 'FLEX/<24h/owner',  listing: L.flexOwner, policy: 'flexible', d: 1, k: 1, by: 'owner', band: '<24h' },
+  { id: 'MOD/>=48h/owner',  listing: L.modOwner,  policy: 'moderate', d: 3, k: 0, by: 'owner', band: '>=48h' },
+  { id: 'MOD/24-48h/owner', listing: L.modOwner,  policy: 'moderate', d: 2, k: 1, by: 'owner', band: '24-48h' },
+  { id: 'MOD/<24h/owner',   listing: L.modOwner,  policy: 'moderate', d: 1, k: 2, by: 'owner', band: '<24h' },
+  { id: 'STRICT/>=72h/owner', listing: L.strOwner, policy: 'strict', d: 4, k: 0, by: 'owner', band: '>=72h' },
+  { id: 'STRICT/<72h/owner',  listing: L.strOwner, policy: 'strict', d: 3, k: 1, by: 'owner', band: '<72h' },
 ]
 
 /** Which band a measured hoursUntilStart falls in, per policy. */
@@ -269,7 +275,45 @@ step(
   CELLS.filter(c => policyOf[c.listing] !== c.policy).map(c => c.id).join(',') || 'all match',
 )
 
-// ── Phase 1 — book and pay every cell, in the +300..+360 window ─────────────
+// Fail loudly on the wrong vehicle rather than quietly refunding somebody else's.
+const declared = await assertFixture(sb, 'cancellation', traveler.token)
+step(true, 'cancellation fixture is ours', `${declared.row.title}, +${FX.from}..+${FX.to}`)
+
+/**
+ * The first base whose whole span is free of LIVE bookings on all eight listings.
+ *
+ * The completed-booking case at scenarioSlot(3) is terminal on purpose and keeps
+ * holding its night forever, so the base does have to move — but by looking, not
+ * by rolling a die and hoping. It advances one day per run, which gives roughly
+ * (window width - span) runs before the window is genuinely full; that is a
+ * fixture fact worth failing loudly on rather than colliding over.
+ */
+async function pickFarBase(token) {
+  const ids = Object.values(L)
+  const live = await rows(token,
+    `rentivo_bookings?listing_id=in.(${ids.join(',')})&status=neq.cancelled`
+    + `&start_date=gte.${day(FX.from)}&start_date=lte.${day(FX.to)}&select=listing_id,start_date`)
+  const taken = new Set(live.list.map(b => `${b.listing_id}|${b.start_date}`))
+  for (let base = FX.from; base <= FX.to - SPAN; base++) {
+    const needed = []
+    for (const id of ids) for (const k of MATRIX_OFFSETS) needed.push(`${id}|${day(base + k)}`)
+    for (const k of SCENARIO_OFFSETS) needed.push(`${L.scenarios}|${day(base + k)}`)
+    if (needed.every(n => !taken.has(n))) return base
+  }
+  return null
+}
+
+const picked = await pickFarBase(traveler.token)
+if (picked === null) {
+  step(false, `a free ${SPAN}-day base inside +${FX.from}..+${FX.to}`,
+    'every base is blocked by a live booking — the completed-rental fixtures have filled the window')
+  finish()
+}
+FAR_BASE = picked
+for (const c of CELLS) c.far = slot(c.k)
+step(true, 'this run owns a free base', `+${FAR_BASE}..+${FAR_BASE + SPAN}`)
+
+// ── Phase 1 — book and pay every cell, inside this suite's own window ───────
 
 section(`Phase 1 — ${CELLS.length} paid bookings, created at +${slot(0)}..+${scenarioSlot(4)} days`)
 
@@ -297,22 +341,42 @@ section('Phase 1b — start_date shift (the one statement no client token can ru
 // Proof that this genuinely needs the service role: `start_date` is not in the
 // UPDATE column grant for `authenticated`, so a renter cannot move their own
 // booking forward and cash out at 100% under a strict policy.
+const TAMPER_DAY = day(FAR_BASE + SPAN + 1)
 const tamper = await patch(traveler.token, 'rentivo_bookings', `id=eq.${live[0].bookingId}`, {
-  start_date: day(FAR_BASE + 30),
+  start_date: TAMPER_DAY,
 })
 step(
   tamper.status >= 400,
   'a traveler CANNOT move their own start_date (the refund band is not client-settable)',
   `${tamper.status} ${JSON.stringify(tamper.body).slice(0, 140)}`,
 )
+// Asserted as "the value the traveler asked for did not land", not as "the value
+// is still the creation date". The privileged shift below is applied by a human
+// out of band, and if it happens to land between the PATCH and this read the
+// second form fails on a booking nothing went wrong with — an authorisation
+// assertion should not depend on the timing of an unrelated statement.
+// TAMPER_DAY is outside every legitimate value this column can hold here (the
+// creation slot, or the shifted band date), so it is a complete test on its own.
 const untampered = await rows(traveler.token, `rentivo_bookings?id=eq.${live[0].bookingId}&select=start_date`)
-step(untampered.list[0]?.start_date === day(live[0].far), 'and the start_date is unchanged', untampered.list[0]?.start_date)
+const afterTamper = untampered.list[0]?.start_date
+step(
+  afterTamper !== TAMPER_DAY && (afterTamper === day(live[0].far) || afterTamper === day(live[0].d)),
+  'and the start_date the traveler asked for did NOT land',
+  `${afterTamper} (tried ${TAMPER_DAY}, created at ${day(live[0].far)}, band target ${day(live[0].d)})`,
+)
 
+// `created_at > now() - interval '3 hours'` is not cosmetic. The tag matches
+// every booking this suite has ever made, and an interrupted run leaves paid,
+// un-cancelled cells behind carrying it. Without the age filter the statement
+// dragged those old rows onto the same near-term dates as this run's cells and
+// the UPDATE died on rentivo_bookings_no_overlap — which reads as "the shift
+// never happened" and times the suite out fifteen minutes later.
 const SHIFT_SQL = `update public.rentivo_bookings b
 set start_date = current_date + (substring(b.notes from 'shift=([0-9]+)'))::int,
     end_date   = current_date + (substring(b.notes from 'shift=([0-9]+)'))::int + 1
 where b.notes like '${TAG}:%shift=%'
   and b.status <> 'cancelled'
+  and b.created_at > now() - interval '3 hours'
   and b.start_date > current_date + 200;`
 
 console.log('\n  Run this with the service role (Supabase MCP execute_sql), then this')
@@ -758,6 +822,43 @@ step(
   disagreements.length === 0,
   'NO cell shows the renter a number the server does not honour',
   disagreements.map(d => `${d.cell}: client ${d.clientPercent}%/${d.clientAmount} vs server ${d.serverPercent}%/${d.serverAmount}`).join(' | ') || 'all 15 agree',
+)
+
+// ── Cleanup ─────────────────────────────────────────────────────────────────
+
+section('Cleanup — release every night this run held')
+
+// The re-sale at the end of the "dates are released" section is a live booking
+// by design — it is the proof the vehicle became sellable again — and it used to
+// be left behind, so the next run had to roll a random base and hope.
+//
+// Exactly one kind of row legitimately survives: a COMPLETED rental, which
+// cannot be cancelled at all (asserted two sections above) and therefore holds
+// its night forever. The exemption is on the STATUS, not on this run's booking
+// id: every previous run left one too, and treating those as cleanup failures
+// turns a correct terminal state into permanent red.
+const liveInWindow = await rows(traveler.token,
+  `rentivo_bookings?listing_id=in.(${Object.values(L).join(',')})&status=neq.cancelled`
+  + `&start_date=gte.${day(FX.from)}&start_date=lte.${day(FX.to)}&select=id,status,start_date`)
+const cancellable = liveInWindow.list.filter(b => b.status !== 'completed')
+
+let releasedCount = 0
+const unexpected = []
+for (const b of cancellable) {
+  const r = await cancelBooking(traveler.token, b.id)
+  if (r.status === 200) releasedCount++
+  else unexpected.push(`${b.id} ${b.start_date} ${b.status} -> ${r.status}`)
+}
+step(unexpected.length === 0, 'every cancellable booking in this suite\'s window was released',
+  `${releasedCount} of ${cancellable.length} released${unexpected.length ? ', stuck: ' + unexpected.join(', ') : ''}`)
+
+const stillHeld = await rows(traveler.token,
+  `rentivo_bookings?listing_id=in.(${Object.values(L).join(',')})&status=neq.cancelled`
+  + `&start_date=gte.${day(FX.from)}&start_date=lte.${day(FX.to)}&select=id,status,start_date`)
+step(
+  stillHeld.list.every(b => b.status === 'completed'),
+  'the only bookings left holding a night are completed rentals, which are terminal by design',
+  stillHeld.list.map(b => `${b.status}@${b.start_date}`).join(', ') || 'none',
 )
 
 finish()

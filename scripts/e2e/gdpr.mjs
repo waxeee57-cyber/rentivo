@@ -36,14 +36,24 @@
  */
 import { readFileSync } from 'node:fs'
 import {
-  sb, signIn, step, section, finish, day, sleep,
+  sb, signIn, step, section, finish, day, sleep, releaseWindow,
   createBooking, payBooking, readBooking,
 } from './_lib.mjs'
+import { FIXTURES, SHARED_OPERATOR, assertFixture } from './fixtures.mjs'
 
 const USER_EMAIL = 'e2e-gdpr@rentivo.domrol.com'
 const USER_PASS = 'e2e-Gdpr-Pass-2026!'
-const LISTING = '2ef4cd6e-e925-4509-8d0b-b681fe8f521b'
-const OPERATOR = 'f7c4a6b1-d748-4e04-9afd-126f140201e3'
+
+/**
+ * This suite used to book the seeded "Sea Ray Sundancer", which belongs to the
+ * PROJECT OWNER's operator row, in a +200..+240 window admin.mjs was also
+ * booking into. It now owns E2E GDPR Car and +220..+260.
+ */
+const FX = FIXTURES.gdpr
+const LISTING = FX.listing
+const OPERATOR = SHARED_OPERATOR.id
+/** Fixed slot inside the window, cleared at the start of every build. */
+const BOOKING_DAY = FX.from + 4
 const PLACEHOLDER = '00000000-0000-0000-0000-000000000001'
 
 /** Distinctive enough that the residue sweep cannot match it by accident. */
@@ -118,30 +128,29 @@ async function buildResidue(token, uid) {
   // A PAID booking. This is the row that used to make deleteUser fail:
   // rentivo_bookings.user_id -> auth.users is ON DELETE NO ACTION.
   //
-  // Every run leaves a paid booking behind — it is retained on purpose, that
-  // being the whole point of Art. 17(3)(b) — so the next run's dates are taken
-  // by the last run's evidence. Scan forward through the fixture's window
-  // (+200..+240 days, and nothing outside it) for one that is still free.
-  let created = null
-  for (let offset = 200; offset <= 238; offset += 2) {
-    const attempt = await createBooking(token, {
-      listingId: LISTING, start: day(offset), end: day(offset + 2), extra: PII,
-    })
-    if (attempt.status === 200 && attempt.body?.booking_id) {
-      created = attempt
-      step(true, 'booking created', `+${offset}..+${offset + 2} days, id=${attempt.body.booking_id}`)
-      break
-    }
-    if (attempt.status !== 409) {
-      step(false, 'booking created',
-        `status=${attempt.status} ${JSON.stringify(attempt.body).slice(0, 160)}`)
-      return null
-    }
-  }
-  if (!created) {
-    step(false, 'booking created', 'every 2-day window in +200..+240 is already taken by an earlier run')
+  // A build leaves this booking behind on purpose — retaining it past erasure is
+  // the whole point of Art. 17(3)(b), and the `erase` phase needs it. So the
+  // cleanup for this suite runs at the START of a build rather than the end:
+  // release whatever the previous build left in this window, then take one fixed
+  // slot. That is what lets a second build find free dates, and it replaced a
+  // "scan forward from +200 in steps of two until something is free" loop that
+  // silently walked into whichever suite owned the next window along.
+  const released = await releaseWindow(token, LISTING, FX.from, FX.to)
+  step(
+    released.stuck.length === 0,
+    'the previous build\'s retained booking was released',
+    `${released.released.length} of ${released.found} released${released.stuck.length ? ', stuck: ' + released.stuck.join(', ') : ''}`,
+  )
+
+  const created = await createBooking(token, {
+    listingId: LISTING, start: day(BOOKING_DAY), end: day(BOOKING_DAY + 2), extra: PII,
+  })
+  if (created.status !== 200 || !created.body?.booking_id) {
+    step(false, 'booking created',
+      `status=${created.status} ${JSON.stringify(created.body).slice(0, 160)}`)
     return null
   }
+  step(true, 'booking created', `+${BOOKING_DAY}..+${BOOKING_DAY + 2} days, id=${created.body.booking_id}`)
   const bookingId = created.body.booking_id
 
   const paid = await payBooking(token, bookingId)
@@ -160,14 +169,20 @@ async function buildResidue(token, uid) {
 
 /** Everything else the erasure has to reach. */
 async function buildSatellites(token, uid, bookingId) {
-  const wish = await sb('/rest/v1/rentivo_wishlist', {
+  // on_conflict has to NAME the constraint. `resolution=merge-duplicates` alone
+  // targets the PRIMARY KEY, and on both of these tables the primary key is a
+  // generated `id` while the real identity is a separate UNIQUE — so the second
+  // run of this build inserted a fresh id, tripped the unique index, and got a
+  // 409 that had nothing to do with GDPR. Same shape as supabase-js
+  // `.upsert(row, { onConflict: 'user_id' })`.
+  const wish = await sb('/rest/v1/rentivo_wishlist?on_conflict=user_id,listing_id', {
     method: 'POST',
     headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify({ user_id: uid, listing_id: LISTING }),
   }, token)
   step(wish.status < 300, 'wishlist item', `status=${wish.status}`)
 
-  const consent = await sb('/rest/v1/rentivo_consent', {
+  const consent = await sb('/rest/v1/rentivo_consent?on_conflict=user_id', {
     method: 'POST',
     headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify({
@@ -248,9 +263,23 @@ async function signInSubject() {
 
 async function build() {
   const user = await signInSubject()
+  // Fail loudly on the wrong vehicle rather than quietly parking PII on it.
+  const fixture = await assertFixture(sb, 'gdpr', user.token)
+  step(true, 'gdpr fixture is ours', `${fixture.row.title}, +${FX.from}..+${FX.to}`)
   const built = await buildResidue(user.token, user.uid)
   if (!built) return
   await buildSatellites(user.token, user.uid, built.bookingId)
+
+  // Exactly one booking is left holding dates, in this suite's own window, and
+  // the next build releases it. Assert that rather than trusting it.
+  const held = await rows(user.token,
+    `rentivo_bookings?listing_id=eq.${LISTING}&status=neq.cancelled`
+    + `&start_date=gte.${day(FX.from)}&start_date=lte.${day(FX.to)}&select=id`)
+  step(
+    held.length === 1 && held[0].id === built.bookingId,
+    'exactly one retained booking is left in the gdpr window, and it is this run\'s',
+    `${held.length} row(s)`,
+  )
   printSetupSql(user.uid, built.bookingId)
 }
 

@@ -18,9 +18,10 @@
 import { readFileSync } from 'node:fs'
 import { register } from 'node:module'
 import {
-  sb, stripe, signIn, createBooking, payBooking, cancelBooking,
+  sb, stripe, signIn, createBooking, payBooking, cancelBooking, releaseWindow,
   step, section, finish, day, sleep, TEST_CONNECT_ACCOUNT,
 } from './_lib.mjs'
+import { FIXTURES, PRIVATE_HOSTS, assertFixture } from './fixtures.mjs'
 
 const HOST = ['e2e-host@rentivo.domrol.com', 'e2e-Host-Pass-2026!']
 const HOST2 = ['e2e-host2@rentivo.domrol.com', 'e2e-Host2-Pass-2026!']
@@ -35,8 +36,14 @@ const CREATE_BOOKING_FN = 'supabase/functions/create-booking/index.ts'
 
 /** Stable listing the money sections reuse, so re-runs do not breed listings. */
 const MONEY_TITLE = 'E2E Host Money Path'
-/** Booking window this task owns. Nothing outside +250..+290 days. */
-const WINDOW = { from: 250, to: 288 }
+/**
+ * Booking window this suite owns. It used to be +250..+288, which sat straight
+ * across the identity window (+270..+300); the two suites never shared a listing
+ * so it never bit, but a window that overlaps a neighbour's is a collision
+ * waiting for the first fixture that does.
+ */
+const FX = FIXTURES.host
+const WINDOW = { from: FX.from, to: FX.to }
 const PRICE_PER_DAY = 500
 
 // ── Run the app's own modules, unmodified ───────────────────────────────────
@@ -168,25 +175,24 @@ function source(relPath) {
 const money = n => Math.round(Number(n) * 100) / 100
 
 /**
- * Book inside the +250..+288 window this task owns. Re-runs would otherwise pile
- * onto the same nights and start failing the overlap constraint, so pick a random
- * window and retry rather than hard-coding dates that rot after the first run.
+ * Book a fixed slot inside the window this suite owns.
+ *
+ * This used to pick a random start and retry twelve times, because re-runs piled
+ * onto the same nights and started failing the overlap constraint. Section 9 now
+ * releases every night this run held, so the offsets can be fixed and a failure
+ * here is a real failure rather than "the window filled up".
  */
-async function bookInWindow(token, listingId, label) {
-  for (let attempt = 0; attempt < 12; attempt++) {
-    const start = WINDOW.from + Math.floor(Math.random() * (WINDOW.to - WINDOW.from - 1))
-    const res = await createBooking(token, {
-      listingId, start: day(start), end: day(start + 2),
-    })
-    const id = res.body?.booking?.id ?? res.body?.booking_id ?? res.body?.id
-    if (res.status === 200 && id) return { id, start, body: res.body }
-    const msg = JSON.stringify(res.body ?? '')
-    if (!/avail|overlap|conflict|already|booked/i.test(msg)) {
-      step(false, `create booking (${label})`, `${res.status} ${msg}`)
-      finish()
-    }
+async function bookAt(token, listingId, offset, label) {
+  if (offset < WINDOW.from || offset + 2 > WINDOW.to) {
+    step(false, `create booking (${label})`, `+${offset}..+${offset + 2} is outside +${WINDOW.from}..+${WINDOW.to}`)
+    finish()
   }
-  step(false, `create booking (${label})`, `no free window in +${WINDOW.from}..+${WINDOW.to}`)
+  const res = await createBooking(token, {
+    listingId, start: day(offset), end: day(offset + 2),
+  })
+  const id = res.body?.booking?.id ?? res.body?.booking_id ?? res.body?.id
+  if (res.status === 200 && id) return { id, start: offset, body: res.body }
+  step(false, `create booking (${label})`, `${res.status} ${JSON.stringify(res.body ?? '')}`)
   finish()
 }
 
@@ -481,7 +487,23 @@ if (money(moneyListing.price_per_day) !== PRICE_PER_DAY || moneyListing.availabl
   await patch(host.token, 'rentivo_listings', `id=eq.${moneyListing.id}`, { price_per_day: PRICE_PER_DAY, available: true })
 }
 
-const booked = await bookInWindow(traveler.token, moneyListing.id, 'host money path')
+// The declared fixture, and the listing this suite actually found by title, have
+// to be the same row. fixtures.mjs shipped pointing `host` at "Villa Sol", which
+// belongs to the PROJECT OWNER's host record — a suite that took that at face
+// value would have booked and refunded the owner's own property.
+step(
+  moneyListing.id === FX.listing,
+  'the host money listing is the one fixtures.mjs declares',
+  `found ${moneyListing.id}, declared ${FX.listing}`,
+)
+const fixture = await assertFixture(sb, 'host', host.token)
+step(fixture.row.host_id === PRIVATE_HOSTS.host, 'and it is owned by the E2E host record, not anybody else', fixture.row.host_id)
+
+// An interrupted earlier run can leave paid bookings holding these nights.
+const preclean = await releaseWindow(traveler.token, moneyListing.id, WINDOW.from, WINDOW.to)
+step(preclean.stuck.length === 0, 'window clear before the run', `released ${preclean.released.length} of ${preclean.found}${preclean.stuck.length ? ' stuck: ' + preclean.stuck.join(', ') : ''}`)
+
+const booked = await bookAt(traveler.token, moneyListing.id, WINDOW.from + 4, 'host money path')
 step(!!booked.id, 'traveler created a booking on the host listing', `${booked.id} @ +${booked.start}d`)
 
 const expectedSubtotal = PRICE_PER_DAY * 2
@@ -618,9 +640,11 @@ const stampedRow = {
   guest_name: 'E2E Traveler',
 }
 // One per run is enough; reuse it so re-runs do not pile rows up.
-// Do NOT filter on status: this run confirms the row, so a status filter would
-// miss it next time and quietly create a second one every run.
-const existingStamped = await rows(traveler.token, `rentivo_bookings?listing_id=eq.${moneyListing.id}&host_id=eq.${hostRow.id}&payment_status=eq.pending&order=created_at.desc&select=id&limit=1`)
+// Scoped to this suite's window and to rows that are still live: section 9
+// cancels it, and a cancelled row must not be resurrected and re-confirmed —
+// that would test the cancelled-to-confirmed transition, which is not what this
+// section is about.
+const existingStamped = await rows(traveler.token, `rentivo_bookings?listing_id=eq.${moneyListing.id}&host_id=eq.${hostRow.id}&payment_status=eq.pending&status=neq.cancelled&start_date=gte.${day(WINDOW.from)}&start_date=lte.${day(WINDOW.to)}&order=created_at.desc&select=id&limit=1`)
 let stampedId = existingStamped.list[0]?.id ?? null
 if (!stampedId) {
   const ins = await insert(traveler.token, 'rentivo_bookings', stampedRow)
@@ -658,7 +682,7 @@ step(travelerStatus.status >= 400, 'and the traveler cannot drive the status the
 
 section('7 — The host declines a paid booking and a REAL Stripe refund is issued')
 
-const declineBooking = await bookInWindow(traveler.token, moneyListing.id, 'to be declined')
+const declineBooking = await bookAt(traveler.token, moneyListing.id, WINDOW.from + 10, 'to be declined')
 step(!!declineBooking.id, 'second booking created', `${declineBooking.id} @ +${declineBooking.start}d`)
 const declinePaid = await payBooking(traveler.token, declineBooking.id)
 step(declinePaid.ok, 'and paid', declinePaid.ok ? declinePaid.piId : `${declinePaid.stage}: ${JSON.stringify(declinePaid.detail)}`)
@@ -795,6 +819,18 @@ const stillLive = await rows(
   `rentivo_bookings?listing_id=eq.${moneyListing.id}&payment_status=in.(paid,processing)&status=neq.cancelled&select=id`,
 )
 step(stillLive.list.length === 0, 'no live money is left on the fixture listing', `n=${stillLive.list.length}`)
+
+// And release the nights, not just the money. The stamped booking from section 6
+// is unpaid, so the sweep above leaves it — and an unreleased night is what makes
+// the next run of this suite fail on availability instead of on the product.
+const released = await releaseWindow(traveler.token, moneyListing.id, WINDOW.from, WINDOW.to)
+step(released.stuck.length === 0, 'every night this run held was released', `${released.released.length} of ${released.found} released${released.stuck.length ? ', stuck: ' + released.stuck.join(', ') : ''}`)
+const heldAfter = await rows(
+  traveler.token,
+  `rentivo_bookings?listing_id=eq.${moneyListing.id}&status=neq.cancelled`
+  + `&start_date=gte.${day(WINDOW.from)}&start_date=lte.${day(WINDOW.to)}&select=id`,
+)
+step(heldAfter.list.length === 0, 'no booking of ours is still holding dates in the host window', `n=${heldAfter.list.length}`)
 
 as(host)
 let deleteError = null

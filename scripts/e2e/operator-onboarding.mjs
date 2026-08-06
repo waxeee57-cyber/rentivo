@@ -18,9 +18,10 @@
  */
 import { readFileSync } from 'node:fs'
 import {
-  sb, stripe, signIn, createBooking, cancelBooking,
+  sb, stripe, signIn, createBooking, cancelBooking, releaseWindow,
   step, section, finish, day, sleep, TEST_CONNECT_ACCOUNT,
 } from './_lib.mjs'
+import { FIXTURES, PRIVATE_OPERATORS, assertFixture } from './fixtures.mjs'
 
 const OPERATOR = ['e2e-newop@rentivo.domrol.com', 'e2e-NewOp-Pass-2026!']
 const OUTSIDER = ['e2e-host@rentivo.domrol.com', 'e2e-Host-Pass-2026!']
@@ -40,8 +41,13 @@ const HOME_COUNTRY = 'ES'
 const OTHER_COUNTRY = 'PT'
 /** Stable listing for the payout-gate section. */
 const GATE_TITLE = 'E2E Operator Not Onboarded'
-/** Booking window this task owns. Nothing outside +250..+290 days. */
-const WINDOW = { from: 252, to: 268 }
+/**
+ * Booking window this suite owns. It used to be +252..+268, which sat inside
+ * host-money-path's +250..+288 — two suites in one window, kept apart only by
+ * the fact that they happened to use different listings.
+ */
+const FX = FIXTURES.onboarding
+const WINDOW = { from: FX.from, to: FX.to }
 const PRICE_PER_DAY = 300
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -145,6 +151,11 @@ if (!existingOperator) {
   step(true, 'reusing the operator record from an earlier run', created.id)
 }
 const operatorRow = created
+step(
+  operatorRow?.id === PRIVATE_OPERATORS.onboarding,
+  'and it is the private onboarding operator fixtures.mjs declares',
+  `${operatorRow?.id} (declared ${PRIVATE_OPERATORS.onboarding})`,
+)
 step(operatorRow?.auth_id === operator.uid, 'the operator record is keyed to this auth user', operatorRow?.auth_id)
 step(operatorRow?.country === HOME_COUNTRY, `and records its own country (${HOME_COUNTRY})`, operatorRow?.country)
 
@@ -292,6 +303,16 @@ if (!gateListing) {
 } else {
   step(true, 'reusing the payout-gate listing from an earlier run', gateListing.id)
 }
+// This is the suite's declared fixture. `requireAvailable: false` because the
+// previous run deliberately parks it — an operator who never finished Connect
+// onboarding must not leave a bookable listing sitting on the marketplace — and
+// the very next line puts it back for the length of this run.
+const fixture = await assertFixture(sb, 'onboarding', operator.token, { requireAvailable: false })
+step(
+  gateListing.id === fixture.listing,
+  'the payout-gate listing is the one fixtures.mjs declares',
+  `found ${gateListing.id}, declared ${fixture.listing}`,
+)
 // The previous run parks it; put it back on the market so the gate below is
 // tested by the payout state and not by an "unavailable" short-circuit.
 await patch(operator.token, 'rentivo_listings', `id=eq.${gateListing.id}`, { available: true })
@@ -564,6 +585,12 @@ section('6 — Cleanup')
 await patch(operator.token, 'rentivo_operators', `id=eq.${operatorRow.id}`, { country: HOME_COUNTRY })
 const restored = (await rows(operator.token, `rentivo_operators?id=eq.${operatorRow.id}&select=country`)).list[0]
 step(restored?.country === HOME_COUNTRY, 'operator country restored', restored?.country)
+
+// Belt and braces on the dates. Today the payout gate refuses the booking so
+// there is nothing to release; if that gate ever regresses this suite must not
+// also start leaving nights held on the fixture.
+const released = await releaseWindow(traveler.token, gateListing.id, WINDOW.from, WINDOW.to)
+step(released.stuck.length === 0, 'the onboarding window holds no booking of ours', `${released.released.length} of ${released.found} released${released.stuck.length ? ', stuck: ' + released.stuck.join(', ') : ''}`)
 
 const parked = await patch(operator.token, 'rentivo_listings', `id=eq.${gateListing.id}`, { available: false })
 step(parked.status === 200 && parked.body?.length === 1, 'the payout-gate listing is parked as unavailable', `${parked.status} n=${parked.body?.length ?? 0}`)

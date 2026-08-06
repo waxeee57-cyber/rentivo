@@ -16,16 +16,35 @@
  */
 import { readFileSync } from 'node:fs'
 import {
-  sb, signIn, step, section, finish, day, createBooking,
+  sb, signIn, step, section, finish, day, createBooking, releaseWindow,
 } from './_lib.mjs'
+import { FIXTURES, PRIVATE_OPERATORS, assertFixture } from './fixtures.mjs'
 
 const ADMIN_EMAIL = 'e2e-admin@rentivo.domrol.com'
 const ADMIN_PASS = 'e2e-Admin-Pass-2026!'
-const USER_EMAIL = 'e2e-gdpr@rentivo.domrol.com'
-const USER_PASS = 'e2e-Gdpr-Pass-2026!'
 
-const LISTING = '2ef4cd6e-e925-4509-8d0b-b681fe8f521b'
-const OPERATOR = 'f7c4a6b1-d748-4e04-9afd-126f140201e3'
+/**
+ * Its own ban target.
+ *
+ * This used to ban and un-ban e2e-gdpr, the account gdpr.mjs builds its erasure
+ * residue with and identity-gate.mjs booked with. Banning somebody else's
+ * fixture account for the length of a section is the account-level version of
+ * suspending somebody else's operator.
+ */
+const USER_EMAIL = 'e2e-adminuser@rentivo.domrol.com'
+const USER_PASS = 'e2e-AdminUser-Pass-2026!'
+
+/**
+ * Its own listing, and its own operator to sanction.
+ *
+ * Sections 3 and 4 approve and suspend an operator. That used to be the seeded
+ * "Test Operator", whose auth_id is the PROJECT OWNER's account and whose
+ * listings four other suites book. The sanction operator below owns no
+ * listings: it exists to be approved, suspended and put back.
+ */
+const FX = FIXTURES.admin
+const LISTING = FX.listing
+const OPERATOR = PRIVATE_OPERATORS.admin
 const PROMO_CODE = 'E2EADMIN90'
 
 const confirmHint = email =>
@@ -94,6 +113,16 @@ async function main() {
   }
   step(true, 'signed in as admin', admin.uid)
   step(true, 'signed in as non-admin', user.uid)
+
+  // Fail loudly on the wrong vehicle rather than quietly booking it.
+  const fixture = await assertFixture(sb, 'admin', user.token)
+  step(true, 'admin fixture is ours', `${fixture.row.title} @ EUR ${fixture.row.price_per_day}/day, +${FX.from}..+${FX.to}`)
+  listingPricePerDay = Number(fixture.row.price_per_day)
+
+  // The promo sections below leave pending bookings on the fixture. Clearing
+  // first is what makes a second run of this suite behave like the first.
+  const preclean = await releaseWindow(user.token, LISTING, FX.from, FX.to)
+  step(preclean.stuck.length === 0, 'window clear before the run', `released ${preclean.released.length} of ${preclean.found}${preclean.stuck.length ? ' stuck: ' + preclean.stuck.join(', ') : ''}`)
 
   // Both accounts need a rentivo_users row: the admin because rentivo_is_admin()
   // reads is_admin off it, the non-admin because it is the ban target.
@@ -247,10 +276,13 @@ async function main() {
   // existing pending booking" branch returns a shorter payload with no
   // promo_discount field, so a second run of this script read `undefined` and
   // failed on a booking that had in fact been discounted correctly.
-  // 2 days x EUR 400 + 10% platform fee = EUR 880 undiscounted.
-  const FULL_PRICE = 880
+  // Derived from the fixture rather than written down: the undiscounted total is
+  // 2 days at the listing's own price plus the 10% platform fee, and hardcoding
+  // it meant re-pointing this suite at a differently-priced fixture silently
+  // broke both promo assertions.
+  const FULL_PRICE = listingPricePerDay * 2 * 1.1
   const active = await createBooking(user.token, {
-    listingId: LISTING, start: day(212), end: day(214),
+    listingId: LISTING, start: day(FX.from + 4), end: day(FX.from + 6),
     extra: { promo_code: PROMO_CODE },
   })
   step(
@@ -270,7 +302,7 @@ async function main() {
 
   // Different dates, so create-booking cannot reuse the pending row above.
   const dead = await createBooking(user.token, {
-    listingId: LISTING, start: day(216), end: day(218),
+    listingId: LISTING, start: day(FX.from + 10), end: day(FX.from + 12),
     extra: { promo_code: PROMO_CODE },
   })
   step(
@@ -408,10 +440,11 @@ let restoreOperator = null
 let ownOperatorId = null
 let promoCreated = false
 let reportId = null
+let listingPricePerDay = 0
 
 /**
- * The shared Test Operator and the promo table are not ours to leave dirty.
- * Runs whether main() passed, failed or threw.
+ * The sanction operator, the promo table and the fixture's dates are not ours to
+ * leave dirty. Runs whether main() passed, failed or threw.
  */
 async function cleanup() {
   const admin = await signIn(ADMIN_EMAIL, ADMIN_PASS)
@@ -420,22 +453,33 @@ async function cleanup() {
     return
   }
   section('cleanup')
+
+  // The two promo bookings are unpaid, so they block nothing — but leaving them
+  // means the next run reuses them instead of creating a booking, and a suite
+  // that quietly stops exercising create-booking still shows green.
+  const user = await signIn(USER_EMAIL, USER_PASS)
+  if (user.token) {
+    const released = await releaseWindow(user.token, LISTING, FX.from, FX.to)
+    step(
+      released.stuck.length === 0,
+      'the admin window holds no booking of ours',
+      `${released.released.length} of ${released.found} released${released.stuck.length ? ', stuck: ' + released.stuck.join(', ') : ''}`,
+    )
+  }
+
   if (restoreOperator) {
     const r = await patch(admin.token, `rentivo_operators?id=eq.${OPERATOR}`, {
       approved: restoreOperator.approved, suspended: restoreOperator.suspended,
     })
     step(
       Array.isArray(r.body) && r.body.length === 1,
-      'shared Test Operator restored',
+      'sanction operator restored',
       JSON.stringify(restoreOperator),
     )
   }
-  if (ownOperatorId) {
-    const user = await signIn(USER_EMAIL, USER_PASS)
-    if (user.token) {
-      const r = await sb(`/rest/v1/rentivo_operators?id=eq.${ownOperatorId}`, { method: 'DELETE' }, user.token)
-      step(r.status < 300, 'throwaway operator deleted', `status=${r.status}`)
-    }
+  if (ownOperatorId && user.token) {
+    const r = await sb(`/rest/v1/rentivo_operators?id=eq.${ownOperatorId}`, { method: 'DELETE' }, user.token)
+    step(r.status < 300, 'throwaway operator deleted', `status=${r.status}`)
   }
   if (promoCreated) {
     const r = await sb(`/rest/v1/rentivo_promo_codes?code=eq.${PROMO_CODE}`, { method: 'DELETE' }, admin.token)

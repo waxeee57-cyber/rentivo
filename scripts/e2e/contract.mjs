@@ -19,10 +19,20 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  sb, signIn, createBooking, payBooking, step, section, finish, day, SUPABASE_URL, ANON,
+  sb, signIn, createBooking, payBooking, releaseWindow,
+  step, section, finish, day, SUPABASE_URL, ANON,
 } from './_lib.mjs'
+import { FIXTURES, assertFixture } from './fixtures.mjs'
 
-const LISTING = 'e2ec0000-0000-4e2e-9000-00000000cafe'
+/**
+ * This suite used to share listing e2ec0000-…cafe and the +150..+188 window with
+ * messaging.mjs. Run together they raced each other for nights on the same
+ * vehicle until the window was full, and this script then reported "no free
+ * window in +150..+188" — a fixture collision that reads like a product bug.
+ * It now owns E2E Contract Car and +70..+110, and books nobody else's dates.
+ */
+const FX = FIXTURES.contract
+const LISTING = FX.listing
 const TRAVELER = ['e2e-chat@rentivo.domrol.com', 'e2e-Chat-Pass-2026!']
 const OPERATOR = ['e2e-operator@rentivo.domrol.com', 'e2e-Operator-Pass-2026!']
 const THIRD = ['e2e-third@rentivo.domrol.com', 'e2e-Third-Pass-2026!']
@@ -69,21 +79,25 @@ async function patchNoSelect(token, filter, payload) {
   }, token)
 }
 
-async function bookInWindow(token, label) {
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const start = 150 + Math.floor(Math.random() * 37)
-    const res = await createBooking(token, {
-      listingId: LISTING, start: day(start), end: day(start + 2),
-    })
-    const id = res.body?.booking_id ?? res.body?.booking?.id ?? res.body?.id
-    if (res.status === 200 && id) return { id, start }
-    const msg = JSON.stringify(res.body ?? '')
-    if (!/avail|overlap|conflict|already|booked/i.test(msg)) {
-      step(false, `create booking (${label})`, `${res.status} ${msg}`)
-      finish()
-    }
+/**
+ * Book a fixed slot inside this suite's own window.
+ *
+ * This used to pick a random start in +150..+188 and retry ten times, which is
+ * what you write when the window is shared and you cannot know what is free.
+ * With the window owned and cleared at startup the offsets can be fixed, so a
+ * failure here is a real failure rather than "somebody else got there first".
+ */
+async function bookAt(token, offset, label) {
+  if (offset < FX.from || offset + 2 > FX.to) {
+    step(false, `create booking (${label})`, `+${offset}..+${offset + 2} is outside +${FX.from}..+${FX.to}`)
+    finish()
   }
-  step(false, `create booking (${label})`, 'no free window in +150..+188 after 10 tries')
+  const res = await createBooking(token, {
+    listingId: LISTING, start: day(offset), end: day(offset + 2),
+  })
+  const id = res.body?.booking_id ?? res.body?.booking?.id ?? res.body?.id
+  if (res.status === 200 && id) return { id, start: offset }
+  step(false, `create booking (${label})`, `${res.status} ${JSON.stringify(res.body ?? '')}`)
   finish()
 }
 
@@ -154,7 +168,16 @@ const third = await login('third party', THIRD)
 section('Setup — a paid booking to hang a contract on')
 step(!!traveler.token && !!operator.token && !!third.token, 'three identities signed in')
 
-const A = await bookInWindow(traveler.token, 'contract A')
+// Fail loudly on the wrong vehicle rather than quietly signing a contract on it.
+const fixture = await assertFixture(sb, 'contract', traveler.token)
+step(true, 'contract fixture is ours', `${fixture.row.title}, +${FX.from}..+${FX.to}`)
+
+// An interrupted earlier run can leave a paid booking holding these nights.
+// Clearing first is what makes a second run of this suite behave like the first.
+const preclean = await releaseWindow(traveler.token, LISTING, FX.from, FX.to)
+step(preclean.stuck.length === 0, 'window clear before the run', `released ${preclean.released.length} of ${preclean.found}${preclean.stuck.length ? ' stuck: ' + preclean.stuck.join(', ') : ''}`)
+
+const A = await bookAt(traveler.token, FX.from + 4, 'contract A')
 step(!!A.id, 'booking A created', `${A.id} @ +${A.start}d`)
 const paidA = await payBooking(traveler.token, A.id)
 step(paidA.ok, 'booking A paid and webhook landed', paidA.ok ? paidA.piId : `${paidA.stage}: ${JSON.stringify(paidA.detail)}`)
@@ -275,7 +298,7 @@ async function signAs(token, bookingId, role, signature) {
   return { ok: true, row: statusWrote.body[0] }
 }
 
-const B = await bookInWindow(traveler.token, 'contract B')
+const B = await bookAt(traveler.token, FX.from + 10, 'contract B')
 step(!!B.id, 'booking B created for the reverse order', `${B.id} @ +${B.start}d`)
 
 const opFirst = await signAs(operator.token, B.id, 'operator', 'M5,5 L55,35')
@@ -417,5 +440,24 @@ step(
 // nothing in the app or in any edge function ever writes that column.
 const urlWriters = grepRepo(/contract_url\s*:/).filter(h => !/mockData\.ts|types\//.test(h))
 step(urlWriters.length > 0, 'something writes booking.contract_url', urlWriters[0] ?? 'nothing writes contract_url; the View contract button can never fire')
+
+section('Cleanup — release the nights this run held')
+
+// Booking A is paid, so it holds its dates until it is cancelled. Leaving it
+// there is what made the previous shape of this suite need a random start date
+// and ten retries. The signatures and the contract row survive the cancellation
+// — the evidence is on rentivo_bookings, not on the availability block.
+const cleaned = await releaseWindow(traveler.token, LISTING, FX.from, FX.to)
+step(cleaned.stuck.length === 0, 'every booking this run created was released', `${cleaned.released.length} released${cleaned.stuck.length ? ', stuck: ' + cleaned.stuck.join(', ') : ''}`)
+const leftLive = await rows(traveler.token,
+  `rentivo_bookings?listing_id=eq.${LISTING}&status=neq.cancelled`
+  + `&start_date=gte.${day(FX.from)}&start_date=lte.${day(FX.to)}&select=id`)
+step(leftLive.list.length === 0, 'no booking of ours is still holding dates in the contract window', `n=${leftLive.list.length}`)
+const signaturesSurvive = (await rows(traveler.token, `rentivo_bookings?id=eq.${A.id}&select=guest_signature,operator_signature_data,contract_status`)).list[0]
+step(
+  signaturesSurvive?.guest_signature === GUEST_SIG_A && signaturesSurvive?.operator_signature_data === OP_SIG_A,
+  'and the signed contract survived the cleanup',
+  signaturesSurvive?.contract_status,
+)
 
 finish()

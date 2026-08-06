@@ -22,15 +22,33 @@
  *
  * Run:  node scripts/e2e/identity-gate.mjs
  */
-import { sb, signIn, step, section, finish, day, createBooking } from './_lib.mjs'
+import { sb, signIn, step, section, finish, day, createBooking, releaseWindow } from './_lib.mjs'
+import { FIXTURES, PRIVATE_OPERATORS, assertFixture } from './fixtures.mjs'
 
 const ADMIN_EMAIL = 'e2e-admin@rentivo.domrol.com'
 const ADMIN_PASS = 'e2e-Admin-Pass-2026!'
-const USER_EMAIL = 'e2e-gdpr@rentivo.domrol.com'
-const USER_PASS = 'e2e-Gdpr-Pass-2026!'
 
-const LISTING = '2ef4cd6e-e925-4509-8d0b-b681fe8f521b'
-const OPERATOR = 'f7c4a6b1-d748-4e04-9afd-126f140201e3'
+/**
+ * Its own traveler, not the GDPR subject's account.
+ *
+ * This suite used to sign in as e2e-gdpr, which admin.mjs bans and un-bans
+ * mid-run and gdpr.mjs deletes outright in its erase phase. Three suites
+ * sharing one account is the same collision as three suites sharing one
+ * listing, one level up.
+ */
+const USER_EMAIL = 'e2e-identity@rentivo.domrol.com'
+const USER_PASS = 'e2e-Identity-Pass-2026!'
+
+/**
+ * Its own operator, too. Flipping requires_identity_verification is the whole
+ * point of this suite, and it used to flip it on the seeded "Test Operator" —
+ * whose auth_id is the PROJECT OWNER's account and whose listings four other
+ * suites were booking. They then got a correct-but-unwanted 403 "Identity
+ * verification required" from a gate working exactly as designed.
+ */
+const FX = FIXTURES.identity
+const LISTING = FX.listing
+const OPERATOR = PRIVATE_OPERATORS.identity
 
 const patch = (token, path, body) =>
   sb(`/rest/v1/${path}`, {
@@ -60,6 +78,15 @@ async function main() {
   }
   step(true, 'signed in as admin', admin.uid)
   step(true, 'signed in as traveler', user.uid)
+
+  // Fail loudly on the wrong operator rather than quietly gating somebody else's.
+  const fixture = await assertFixture(sb, 'identity', user.token)
+  step(true, 'identity fixture is ours', `${fixture.row.title}, +${FX.from}..+${FX.to}`)
+
+  // A previous run that got past the gate would have left a booking holding
+  // these nights. Clearing first is what makes a second run behave like the first.
+  const preclean = await releaseWindow(user.token, LISTING, FX.from, FX.to)
+  step(preclean.stuck.length === 0, 'window clear before the run', `released ${preclean.released.length} of ${preclean.found}${preclean.stuck.length ? ' stuck: ' + preclean.stuck.join(', ') : ''}`)
 
   // ── 1. A traveler may not write their own KYC verdict ─────────────────────
   section('1. the traveler cannot write rentivo_identity_verifications')
@@ -144,7 +171,7 @@ async function main() {
     step(true, 'precondition: traveler has no approved verification', JSON.stringify(newest))
 
     const blocked = await createBooking(user.token, {
-      listingId: LISTING, start: day(220), end: day(222),
+      listingId: LISTING, start: day(FX.from + 4), end: day(FX.from + 6),
     })
     // The client renders a lock screen; this call never went near the client.
     step(
@@ -176,7 +203,7 @@ async function main() {
   )
 
   const allowed = await createBooking(user.token, {
-    listingId: LISTING, start: day(224), end: day(226),
+    listingId: LISTING, start: day(FX.from + 10), end: day(FX.from + 12),
   })
   step(
     allowed.status === 200 && !!allowed.body?.booking_id,
@@ -194,13 +221,29 @@ async function main() {
 let restoreFlag = null
 
 async function cleanup() {
+  section('cleanup')
+
+  // Whatever the gate did, this suite must not leave nights held on its own
+  // listing: the open-gate branch books one, and an interrupted run can leave one
+  // behind either way. Cancelling is scoped to this suite's listing and window.
+  const user = await signIn(USER_EMAIL, USER_PASS)
+  if (user.token) {
+    const released = await releaseWindow(user.token, LISTING, FX.from, FX.to)
+    step(
+      released.stuck.length === 0,
+      'the identity window holds no booking of ours',
+      `${released.released.length} of ${released.found} released${released.stuck.length ? ', stuck: ' + released.stuck.join(', ') : ''}`,
+    )
+  } else {
+    step(false, 'could not sign in to release the identity window', 'bookings may be left holding dates')
+  }
+
   if (restoreFlag === null) return
   const admin = await signIn(ADMIN_EMAIL, ADMIN_PASS)
   if (!admin.token) {
     console.log(`  WARN  could not restore requires_identity_verification=${restoreFlag} on ${OPERATOR}`)
     return
   }
-  section('cleanup')
   const r = await patch(admin.token, `rentivo_operators?id=eq.${OPERATOR}`,
     { requires_identity_verification: restoreFlag })
   step(

@@ -21,9 +21,10 @@ import { existsSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
-  sb, stripe, signIn, createBooking, payBooking, readBooking, cancelBooking,
+  sb, stripe, signIn, createBooking, payBooking, readBooking, cancelBooking, releaseWindow,
   step, section, finish, sleep, day, TEST_CONNECT_ACCOUNT, SUPABASE_URL, ANON,
 } from './_lib.mjs'
+import { FIXTURES, SHARED_OPERATOR, assertFixture } from './fixtures.mjs'
 
 // ── Fixture ─────────────────────────────────────────────────────────────────
 // The fixture is an E2E-owned listing under an E2E-owned operator, NOT the seeded
@@ -32,27 +33,34 @@ import {
 // path against it required the owner's own credentials. Reaching for those is
 // never acceptable, and an earlier run of this suite did exactly that. Owning the
 // fixture end to end removes the temptation and the dependency.
-const LISTING_ID = 'e2e11111-0000-4e2e-9000-00000000da11'   // E2E Damage Fixture Car
-const OPERATOR_ID = 'b1e2c3d4-0000-4e2e-9000-0000000000e2'  // rentivo_operators.id
-const OPERATOR_AUTH_ID = 'e59ac702-a6aa-428d-a3b3-7f116a34cfdd'
+//
+// The window moved from +100..+140 to the declared damage window: +100..+110
+// overlapped contract.mjs, which is one of the pairs that made a combined run go
+// red on availability rather than on anything the product did wrong.
+const FX = FIXTURES.damage
+const LISTING_ID = FX.listing                              // E2E Damage Fixture Car
+const OPERATOR_ID = SHARED_OPERATOR.id                     // rentivo_operators.id
+const OPERATOR_AUTH_ID = SHARED_OPERATOR.authId
 const TRAVELER = { email: 'e2e-damage@rentivo.domrol.com', password: 'e2e-Damage-Pass-2026!' }
 const STRANGER = { email: 'e2e-damage-stranger@rentivo.domrol.com', password: 'e2e-Stranger-Pass-2026!' }
-const OPERATOR_EMAIL = process.env.E2E_OPERATOR_EMAIL ?? 'e2e-operator@rentivo.domrol.com'
-const OPERATOR_PASSWORD = process.env.E2E_OPERATOR_PASSWORD ?? 'e2e-Operator-Pass-2026!'
+const OPERATOR_EMAIL = process.env.E2E_OPERATOR_EMAIL ?? SHARED_OPERATOR.email
+const OPERATOR_PASSWORD = process.env.E2E_OPERATOR_PASSWORD ?? SHARED_OPERATOR.password
 
-/** Every booking below sits inside the +100..+140 window this test owns. */
-const WINDOW = { from: day(100), to: day(140) }
+/** Every booking below sits inside the window this test owns, and nowhere else. */
+const WINDOW = { from: day(FX.from), to: day(FX.to) }
 
 /**
  * This run's four bookings start at BASE, BASE+4, BASE+8, BASE+12 (each two
- * days long), so the last one ends at BASE+14 and BASE may run to +126.
+ * days long), so the last one ends at BASE+14 and BASE may run to WINDOW.to-14.
  *
- * The base has to move between runs. create-booking reuses an existing PENDING
- * booking for the same (user, listing, start, end), and its lookup does NOT
- * exclude status='cancelled' — so a re-run on the same dates is handed back the
- * booking the previous run cancelled, carrying its already-succeeded SetupIntent
- * and its stale deposit_status. `pickBase` below picks dates this traveler has
- * never used, which sidesteps that and keeps every run's state its own.
+ * The base used to have to move every single run: create-booking reused an
+ * existing booking for the same (user, listing, start, end) WITHOUT excluding
+ * status='cancelled', so a re-run on the same dates was handed back the booking
+ * the previous run cancelled, carrying its already-succeeded SetupIntent and its
+ * stale deposit_status. create-booking now excludes cancelled rows, so `pickBase`
+ * only has to avoid dates that are still LIVE — which, after this suite's own
+ * cleanup, is none of them, and the base sits at the start of the window on
+ * every run instead of walking forward until it runs out of window.
  */
 const SLOTS = [0, 1, 2, 3]
 const slotDates = (base, n) => ({ start: day(base + n * 4), end: day(base + n * 4 + 2) })
@@ -227,29 +235,14 @@ const inspection = (bookingId, type, over = {}) => ({
   ...over,
 })
 
-/** Cancel anything this traveler left behind in the window, so a re-run starts
- *  clean and the listing's dates outside +100..+140 are never touched. */
-async function resetFixture(token) {
-  const leftovers = await rows(
-    `rentivo_bookings?listing_id=eq.${LISTING_ID}&status=neq.cancelled`
-    + `&start_date=gte.${WINDOW.from}&start_date=lte.${WINDOW.to}&select=id,start_date,status`,
-    token,
-  )
-  for (const b of leftovers) {
-    const r = await cancelBooking(token, b.id)
-    if (r.status !== 200) console.log(`  note  could not clear ${b.id} (${r.status})`)
-  }
-  return leftovers.length
-}
-
-/** The first base whose four slots this traveler has never booked. */
+/** The first base whose four slots are not held by a LIVE booking. */
 async function pickBase(token) {
   const used = new Set((await rows(
-    `rentivo_bookings?listing_id=eq.${LISTING_ID}&select=start_date`
+    `rentivo_bookings?listing_id=eq.${LISTING_ID}&status=neq.cancelled&select=start_date`
     + `&start_date=gte.${WINDOW.from}&start_date=lte.${WINDOW.to}`,
     token,
   )).map(b => b.start_date))
-  for (let base = 100; base <= 126; base++) {
+  for (let base = FX.from; base <= FX.to - 14; base++) {
     if (SLOTS.every(n => !used.has(slotDates(base, n).start))) return base
   }
   return null
@@ -310,15 +303,18 @@ async function main() {
   step(!clientAuthError, 'supabase client signed in as the traveler', errText(clientAuthError ?? ''))
   if (clientAuthError) return finish()
 
-  const cleared = await resetFixture(traveler.token)
-  step(true, 'fixture window cleared', `${cleared} leftover booking(s) cancelled`)
+  // Fail loudly on the wrong vehicle rather than quietly charging a deposit on it.
+  const fixture = await assertFixture(sb, 'damage', traveler.token)
+  step(true, 'damage fixture is ours', `${fixture.row.title}, deposit EUR ${fixture.row.deposit_amount ?? '?'}, +${FX.from}..+${FX.to}`)
+
+  const cleared = await releaseWindow(traveler.token, LISTING_ID, FX.from, FX.to)
+  step(cleared.stuck.length === 0, 'fixture window cleared',
+    `${cleared.released.length} of ${cleared.found} leftover booking(s) cancelled${cleared.stuck.length ? ', stuck: ' + cleared.stuck.join(', ') : ''}`)
 
   const base = await pickBase(traveler.token)
   if (base === null) {
-    step(false, 'free dates inside +100..+140',
-      'every slot has been used by an earlier run — clear the old rows with:'
-      + ` delete from rentivo_bookings where listing_id = '${LISTING_ID}'`
-      + ` and status = 'cancelled' and start_date >= '${WINDOW.from}';`)
+    step(false, `free dates inside +${FX.from}..+${FX.to}`,
+      'every slot is held by a live booking — cancel them before re-running')
     return finish()
   }
   const slot = n => slotDates(base, n)

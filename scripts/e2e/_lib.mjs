@@ -220,3 +220,38 @@ export async function cancelBooking(token, bookingId) {
     body: JSON.stringify({ booking_id: bookingId }),
   }, token)
 }
+
+/**
+ * Cancel every booking this token owns on ONE listing inside ONE date window.
+ *
+ * Suites used to leave paid bookings behind, so the second run of the same suite
+ * found its own nights already sold and failed on availability — a fixture
+ * problem that reads exactly like a product bug, and the reason several suites
+ * had grown "pick a random start date and retry ten times" loops.
+ *
+ * The filters are deliberately narrow: one listing id, and a start_date between
+ * the window's own two days. Nothing outside a suite's own fixture can be
+ * reached from here even by accident, and RLS narrows it further — a traveler
+ * token only ever sees its own bookings.
+ *
+ * Returns what it found rather than asserting, so the caller decides whether a
+ * booking it could not release is fatal (a completed rental cannot be cancelled,
+ * and that is correct behaviour, not a cleanup failure).
+ */
+export async function releaseWindow(token, listingId, fromDay, toDay) {
+  const r = await sb(
+    `/rest/v1/rentivo_bookings?listing_id=eq.${listingId}&status=neq.cancelled`
+    + `&start_date=gte.${day(fromDay)}&start_date=lte.${day(toDay)}`
+    + '&select=id,start_date,status,payment_status',
+    {}, token,
+  )
+  const found = Array.isArray(r.body) ? r.body : []
+  const released = []
+  const stuck = []
+  for (const b of found) {
+    const res = await cancelBooking(token, b.id)
+    if (res.status === 200) released.push(b.id)
+    else stuck.push(`${b.id} ${b.start_date} ${b.status} -> ${res.status}`)
+  }
+  return { found: found.length, released, stuck }
+}
