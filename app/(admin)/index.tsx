@@ -51,6 +51,18 @@ export default function AdminDashboard() {
             .select('total_amount')
             .eq('payment_status', 'paid'),
         ])
+        // All four errors were discarded, so a broken dashboard and an empty
+        // platform rendered identically. Note this only catches hard failures:
+        // rentivo_bookings has admin RLS for neither SELECT nor anything else,
+        // so the two booking queries succeed and return nothing, and the
+        // "active bookings" and "revenue" tiles read 0 / EUR 0 no matter how
+        // much money the platform has taken. Fixing that needs an admin SELECT
+        // policy on rentivo_bookings; it cannot be done from this file.
+        const failed = [usersRes, opsRes, bookingsRes, revenueRes].filter(r => r.error)
+        if (failed.length > 0) {
+          setStats(null)
+          return
+        }
         const revenue = (revenueRes.data ?? []).reduce(
           (sum, b) => sum + ((b.total_amount as number | null) ?? 0), 0
         )

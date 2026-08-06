@@ -208,6 +208,25 @@ export default function OperatorBookingDetailScreen() {
               <Ionicons name="chevron-forward" size={15} color={C.textTertiary} importantForAccessibility="no" />
             </TouchableOpacity>
           )}
+
+          {/* Same story as the consumer side: the operator signature screen was
+              registered in the layout and reachable from nothing. Both parties
+              could sign a rental contract only via a deep link neither of them
+              had. */}
+          {(booking.status === 'confirmed' || booking.status === 'active')
+            && booking.contract_status !== 'fully_signed'
+            && booking.contract_status !== 'operator_signed' && (
+            <TouchableOpacity
+              style={styles.inspectionLink}
+              onPress={() => router.push(`/(operator)/bookings/sign/${booking.id}`)}
+              accessibilityRole="button"
+              accessibilityLabel={t('cbkSignAgreement', language)}
+            >
+              <Ionicons name="create-outline" size={15} color={C.text} importantForAccessibility="no" />
+              <Text style={styles.inspectionLinkText}>{t('cbkSignAgreement', language)}</Text>
+              <Ionicons name="chevron-forward" size={15} color={C.textTertiary} importantForAccessibility="no" />
+            </TouchableOpacity>
+          )}
         </Card>
 
         {/* Payout breakdown */}

@@ -1,0 +1,43 @@
+{
+  "_note": "Strings needed by the GDPR export / admin-action work. Not yet in constants/i18n.ts, so no code path calls t() with these keys. Add them to all three locales before using them.",
+  "cprDataExportBody": {
+    "_why": "REPLACEMENT for the existing key. The shipped English reads 'We will send your data to your email within 30 days.' That was never true and is now wrong in a different way: app/(consumer)/profile/privacy-settings.tsx builds the file on the spot and opens the share sheet. Until this key is corrected, the screen deliberately does not use it.",
+    "en": "Your data has been collected into a file you can save or share. GDPR Article 20 — data portability.",
+    "es": "Tus datos se han reunido en un archivo que puedes guardar o compartir. RGPD Artículo 20 — portabilidad de datos.",
+    "hu": "Adataidat egy fájlba gyűjtöttük, amelyet elmenthetsz vagy megoszthatsz. GDPR 20. cikk — adathordozhatóság."
+  },
+  "cprDataExportPreparing": {
+    "en": "Preparing your data export…",
+    "es": "Preparando la exportación de tus datos…",
+    "hu": "Adatexport előkészítése…"
+  },
+  "cprDataExportFailed": {
+    "en": "Could not build your data export. Please try again.",
+    "es": "No se pudo crear la exportación de tus datos. Inténtalo de nuevo.",
+    "hu": "Nem sikerült elkészíteni az adatexportot. Kérjük, próbáld újra."
+  },
+  "cprDataExportPartial": {
+    "_why": "Shown when GdprExportResult.unavailable is non-empty, so the subject is never handed a silently incomplete export.",
+    "en": "Some of your data could not be read and is missing from this file.",
+    "es": "Algunos de tus datos no se pudieron leer y faltan en este archivo.",
+    "hu": "Néhány adatodat nem sikerült beolvasni, ezek hiányoznak a fájlból."
+  },
+  "admFailLoadPromos": {
+    "_why": "app/(admin)/promo-codes.tsx discarded the PostgREST error entirely; it now needs a message to show.",
+    "en": "Could not load promo codes",
+    "es": "No se pudieron cargar los códigos promocionales",
+    "hu": "Nem sikerült betölteni a promóciós kódokat"
+  },
+  "admFailLoadStats": {
+    "_why": "app/(admin)/index.tsx discarded four query errors; the dashboard showed zeros instead of a failure.",
+    "en": "Could not load dashboard statistics",
+    "es": "No se pudieron cargar las estadísticas del panel",
+    "hu": "Nem sikerült betölteni az irányítópult statisztikáit"
+  },
+  "admWriteRefused": {
+    "_why": "A zero-row admin UPDATE is an RLS refusal, not a success. supabase-js reports no error for it, so the screens have to detect it from the returned row count and say so.",
+    "en": "That change was refused — you may not have permission.",
+    "es": "El cambio fue rechazado: puede que no tengas permiso.",
+    "hu": "A módosítás elutasítva — lehet, hogy nincs jogosultságod."
+  }
+}

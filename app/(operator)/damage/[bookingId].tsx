@@ -19,7 +19,8 @@ import { t } from '@/constants/i18n'
 import { fetchBooking } from '@/lib/api/bookings'
 import { fetchDamageReport } from '@/lib/api/damage'
 import {
-  chargeDeposit, fetchDepositState, depositBlockReason, DepositChargeError,
+  chargeDeposit, fetchDepositState, depositBlockReason, depositChargeFailed,
+  DepositChargeError,
 } from '@/lib/api/deposits'
 import type { DepositState, DepositBlockReason } from '@/lib/api/deposits'
 import { captureException } from '@/lib/sentry'
@@ -432,6 +433,13 @@ export default function OperatorDamageScreen() {
 
           {canCharge && (
             <View style={styles.chargeSection}>
+              {depositChargeFailed(deposit) && (
+                /* i18n-pending: opDmgLastAttemptDeclined */
+                <Text style={styles.warnText}>
+                  The last attempt was declined by the card issuer. You can try again — if it keeps
+                  failing, the renter has to sort their card out with their bank.
+                </Text>
+              )}
               {!returnReport && (
                 /* i18n-pending: opDmgChargeWithoutReturn */
                 <Text style={styles.warnText}>
@@ -547,9 +555,6 @@ function blockExplanation(
     case 'already_charged':
       // i18n-pending: opDmgBlockAlreadyCharged
       return 'The deposit for this booking has already been charged. A booking can only be charged once.'
-    case 'charge_failed':
-      // i18n-pending: opDmgBlockChargeFailed
-      return 'The last deposit charge was declined by the card issuer. It cannot be retried from the app — contact support to follow it up.'
     case 'not_authorized':
     default:
       // i18n-pending: opDmgBlockNotAuthorized

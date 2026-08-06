@@ -65,11 +65,14 @@ export default function AdminOperatorsScreen() {
 
   const approveOperator = useCallback(async (op: AdminOperator) => {
     if (!Config.useMock) {
-      const { error } = await supabase
+      // See users.tsx: a refused UPDATE matches zero rows and reports no error,
+      // so the returned rows are the only way to know the change landed.
+      const { data, error } = await supabase
         .from('rentivo_operators')
         .update({ approved: true })
         .eq('id', op.id)
-      if (error) {
+        .select('id, approved')
+      if (error || (data ?? []).length === 0) {
         showToast({ message: t('admFailApprove', language), type: 'error' })
         return
       }
@@ -80,11 +83,12 @@ export default function AdminOperatorsScreen() {
 
   const toggleSuspend = useCallback(async (op: AdminOperator) => {
     if (!Config.useMock) {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('rentivo_operators')
         .update({ suspended: !op.suspended })
         .eq('id', op.id)
-      if (error) {
+        .select('id, suspended')
+      if (error || (data ?? []).length === 0) {
         showToast({ message: t('admFailUpdate', language), type: 'error' })
         return
       }

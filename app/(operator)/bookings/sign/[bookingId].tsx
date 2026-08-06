@@ -17,6 +17,7 @@ import { Card } from '@/components/ui/Card'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
+import { captureException } from '@/lib/sentry'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -69,17 +70,46 @@ export default function OperatorSignScreen() {
     const signatureData = [...paths, currentPath].filter(Boolean).join(' ')
 
     if (!Config.useMock) {
-      const { error } = await supabase
+      const failSign = (err: unknown, scope: string) => {
+        showToast({ message: t('opBkToastSignFail', language), type: 'error' })
+        captureException(err, { scope, bookingId })
+        setSigning(false)
+      }
+
+      // The UPDATE had no `.select()`. supabase-js reports no error for an update
+      // that matched zero rows, so a booking this operator is not permitted to
+      // touch — or a bookingId that does not exist — produced "Contract signed"
+      // over a signature column still holding NULL. Reading the affected rows back
+      // is the only way to tell a write that landed from one that did not.
+      const { data, error } = await supabase
         .from('rentivo_bookings')
         .update({
           operator_signature_data: signatureData,
           operator_signed_at: new Date().toISOString(),
-          contract_status: 'fully_signed',
         })
         .eq('id', bookingId ?? '')
-      if (error) {
-        showToast({ message: t('opBkToastSignFail', language), type: 'error' })
-        setSigning(false)
+        .select('id, guest_signature, operator_signature_data')
+
+      if (error || !data || data.length === 0) {
+        failSign(error ?? new Error('Signature update matched no booking row'), 'opBooking.sign')
+        return
+      }
+
+      // contract_status was hardcoded to 'fully_signed'. Signing as the operator
+      // before the guest has signed therefore declared a two-party rental contract
+      // complete while guest_signature was still NULL. Derive it from what is
+      // actually stored: documented states are pending | guest_signed | fully_signed,
+      // so an operator-first signature leaves the contract pending until the guest
+      // signs, and operator_signed_at is what records that this side is done.
+      const bothSigned = !!data[0].guest_signature && !!data[0].operator_signature_data
+      const { data: statusData, error: statusError } = await supabase
+        .from('rentivo_bookings')
+        .update({ contract_status: bothSigned ? 'fully_signed' : 'pending' })
+        .eq('id', bookingId ?? '')
+        .select('id')
+
+      if (statusError || !statusData || statusData.length === 0) {
+        failSign(statusError ?? new Error('Contract status update matched no booking row'), 'opBooking.sign.status')
         return
       }
     }

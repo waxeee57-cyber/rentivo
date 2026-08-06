@@ -234,6 +234,23 @@ export default function BookingDetailScreen() {
           />
         )}
 
+        {/* Sign the rental agreement.
+            The signature screen existed, was registered in the layout, and NOTHING
+            navigated to it — not one router.push anywhere in the repo. A
+            legally-binding eIDAS signature flow that no user can reach is the same
+            as not having one, and "View contract" below opened a contract_url that
+            nothing could ever write. This is the entry point. */}
+        {(booking.status === 'confirmed' || booking.status === 'active')
+          && booking.contract_status !== 'fully_signed'
+          && booking.contract_status !== 'guest_signed' && (
+          <Button
+            title={t('cbkSignAgreement', language)}
+            onPress={() => router.push(`/(consumer)/booking/sign/${booking.id}`)}
+            fullWidth
+            style={{ marginBottom: Spacing.md }}
+          />
+        )}
+
         {/* View contract */}
         <TouchableOpacity
           style={styles.actionBtn}

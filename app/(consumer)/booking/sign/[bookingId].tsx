@@ -79,28 +79,47 @@ export default function ConsumerSignScreen() {
       // plus an empty-array check; that helper writes consumer_signature /
       // contract_signed_at, whereas the live contract flow this screen belongs to
       // uses guest_signature / guest_signed_at / contract_status (the operator
-      // side in app/(operator)/bookings/sign reads contract_status and moves it
-      // on to 'fully_signed'). Routing through the helper would write the wrong
-      // columns and never set contract_status, so the CHECK it performs is
-      // applied here instead of the columns being changed.
+      // side in app/(operator)/bookings/sign writes operator_signature_data).
+      // Routing through the helper would write the wrong columns and never set
+      // contract_status, so the CHECK it performs is applied here instead of the
+      // columns being changed.
+      const failSign = (err: unknown, scope: string) => {
+        // i18n-pending: csgSignFailed
+        showToast({ message: 'Signing failed. Please try again.', type: 'error' })
+        captureException(err, { scope, bookingId })
+        setSigning(false)
+      }
+
+      // Write the signature first and read the resulting row back, so the state of
+      // the OTHER party's column is known for certain before the contract is
+      // labelled. The signature columns are write-once (rentivo_bookings_write_guard),
+      // so this cannot clobber anything.
       const { data, error } = await supabase
         .from('rentivo_bookings')
         .update({
           guest_signature: signatureData,
           guest_signed_at: new Date().toISOString(),
-          contract_status: 'guest_signed',
         })
+        .eq('id', bookingId ?? '')
+        .select('id, guest_signature, operator_signature_data')
+
+      if (error || !data || data.length === 0) {
+        failSign(error ?? new Error('Signature update matched no booking row'), 'booking.sign')
+        return
+      }
+
+      // Derived, never assumed. The operator may have signed first, and a contract
+      // that says 'guest_signed' when both parties have signed understates a
+      // legally binding document just as badly as the reverse overstates it.
+      const bothSigned = !!data[0].guest_signature && !!data[0].operator_signature_data
+      const { data: statusData, error: statusError } = await supabase
+        .from('rentivo_bookings')
+        .update({ contract_status: bothSigned ? 'fully_signed' : 'guest_signed' })
         .eq('id', bookingId ?? '')
         .select('id')
 
-      if (error || !data || data.length === 0) {
-        // i18n-pending: csgSignFailed
-        showToast({ message: 'Signing failed. Please try again.', type: 'error' })
-        captureException(
-          error ?? new Error('Signature update matched no booking row'),
-          { scope: 'booking.sign', bookingId },
-        )
-        setSigning(false)
+      if (statusError || !statusData || statusData.length === 0) {
+        failSign(statusError ?? new Error('Contract status update matched no booking row'), 'booking.sign.status')
         return
       }
     }

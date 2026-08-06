@@ -148,21 +148,38 @@ export default function ConsumerChatScreen() {
       setMessages([...MOCK_MESSAGES].reverse())
       return
     }
-    const { data: convData } = await supabase
+    // maybeSingle, not single: a booking whose chat has never been opened has no
+    // conversation row, and `single()` turns that ordinary case into an error.
+    // Both results used to be read without their `error`, so an RLS denial or a
+    // network failure rendered as an empty thread — the user saw "no messages
+    // yet" over a conversation that exists and is simply unreadable right now.
+    const { data: convData, error: convError } = await supabase
       .from('rentivo_conversations')
       .select('*')
       .eq('booking_id', id)
-      .single()
+      .maybeSingle()
+    if (convError) {
+      captureException(convError, { scope: 'chat.conversation.load', bookingId: id })
+      // i18n-pending: cbkChatLoadFailed
+      showToast({ message: 'Could not load this conversation.', type: 'error' })
+      return
+    }
     if (convData) {
       setConversation(convData as Conversation)
-      const { data: msgData } = await supabase
+      const { data: msgData, error: msgError } = await supabase
         .from('rentivo_messages')
         .select('*')
         .eq('conversation_id', (convData as Conversation).id)
         .order('created_at', { ascending: false })
+      if (msgError) {
+        captureException(msgError, { scope: 'chat.messages.load', bookingId: id })
+        // i18n-pending: cbkChatLoadFailed
+        showToast({ message: 'Could not load this conversation.', type: 'error' })
+        return
+      }
       setMessages((msgData as Message[]) ?? [])
     }
-  }, [id])
+  }, [id, showToast])
 
   useEffect(() => {
     void loadMessages()
@@ -233,8 +250,7 @@ export default function ConsumerChatScreen() {
       setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id))
       setInputText(text)
       captureException(err, { scope, bookingId: id })
-      // i18n-pending: cbkChatSendFailed
-      showToast({ message: 'Message not sent. Please try again.', type: 'error' })
+      showToast({ message: t('cbkChatSendFailed', language), type: 'error' })
     }
 
     try {
@@ -282,12 +298,30 @@ export default function ConsumerChatScreen() {
           })
           .select()
           .single()
-        if (convError || !newConv) {
+        // booking_id carries a UNIQUE index, so two clients opening the thread in
+        // the same instant means one of them loses with 23505. That is a race, not
+        // a fault: the row the winner created is exactly the one this client wants,
+        // so re-read it and carry on instead of telling the user their message
+        // failed to send.
+        if (convError?.code === '23505') {
+          const { data: existing, error: reReadError } = await supabase
+            .from('rentivo_conversations')
+            .select('*')
+            .eq('booking_id', id)
+            .maybeSingle()
+          if (reReadError || !existing) {
+            failSend(reReadError ?? new Error('Conversation race lost and the winner is unreadable'), 'chat.conversation.race')
+            return
+          }
+          setConversation(existing as Conversation)
+          convId = (existing as Conversation).id
+        } else if (convError || !newConv) {
           failSend(convError ?? new Error('Conversation insert returned no row'), 'chat.conversation.insert')
           return
+        } else {
+          setConversation(newConv as Conversation)
+          convId = (newConv as Conversation).id
         }
-        setConversation(newConv as Conversation)
-        convId = (newConv as Conversation).id
       }
       // This insert discarded its error too. An RLS denial here is silent in
       // supabase-js (it resolves, it does not reject), so the bubble stayed up

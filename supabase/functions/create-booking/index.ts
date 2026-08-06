@@ -62,6 +62,37 @@ serve(async (req) => {
     if (!listing) return jsonError('Listing not found', 404)
     if (listing.available === false) return jsonError('Listing is not available', 409)
 
+    // ── Identity gate, enforced HERE.
+    //
+    // The only check was `app/(consumer)/booking/[listingId].tsx`, which decides
+    // whether to render a lock screen. That is a decision inside a bundle the
+    // renter is holding: calling this function directly skipped it entirely, and
+    // an operator who requires KYC got unverified renters at the counter with a
+    // confirmed, paid booking. Verified by calling create-booking with zero
+    // verification rows against an operator with requires_identity_verification
+    // set: HTTP 200.
+    let requiresIdentity = false
+    if (listing.operator_id) {
+      const { data: owner } = await supabase
+        .from('rentivo_operators')
+        .select('requires_identity_verification')
+        .eq('id', listing.operator_id)
+        .maybeSingle()
+      requiresIdentity = owner?.requires_identity_verification === true
+    }
+    if (requiresIdentity) {
+      const { data: verification } = await supabase
+        .from('rentivo_identity_verifications')
+        .select('status')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (verification?.status !== 'approved') {
+        return jsonError('Identity verification required before booking', 403)
+      }
+    }
+
     // ── Dates + day count (server-derived; client cannot pass total_days).
     const MS_PER_DAY = 86400000
     const startMs = new Date(start_date).getTime()
@@ -200,6 +231,12 @@ serve(async (req) => {
       .eq('start_date', start_date)
       .eq('end_date', end_date)
       .in('payment_status', ['pending'])
+      // A CANCELLED booking is not an abandoned cart to resume. Without this the
+      // reuse path handed back the cancelled row — status still 'cancelled', and
+      // carrying its stale deposit_setup_intent_id, deposit_status and
+      // deposit_charge_attempts — so re-booking the same dates produced a
+      // booking that could never be paid or deposited against.
+      .neq('status', 'cancelled')
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
@@ -249,6 +286,11 @@ serve(async (req) => {
         pickup_damage_done: false,
         return_damage_done: false,
         has_damage_claim: false,
+        // Record which regime this booking was taken under, so a later change to
+        // the operator's KYC setting cannot rewrite the history of what was
+        // required at the time.
+        requires_identity_verification: requiresIdentity,
+        identity_verified: requiresIdentity,
       })
       .select('id')
       .single()

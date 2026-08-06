@@ -35,23 +35,33 @@ export default function AdminPromoCodesScreen() {
   const { showToast } = useToastStore()
 
   useEffect(() => {
-    if (!Config.useMock) {
-      void supabase
+    if (Config.useMock) return
+    const load = async () => {
+      // The error was discarded here, so a failed load was indistinguishable
+      // from a platform with no promo codes: the list simply rendered empty.
+      const { data, error } = await supabase
         .from('rentivo_promo_codes')
         .select('id, code, discount_value, is_active, current_uses, max_uses')
-        .then(({ data }) => {
-          if (data) setPromos(data as PromoCodeAdmin[])
-        })
+      if (error) {
+        showToast({ message: t('admFailUpdate', language), type: 'error' })
+        return
+      }
+      setPromos((data ?? []) as PromoCodeAdmin[])
     }
-  }, [])
+    void load()
+  }, [showToast, language])
 
   const toggleActive = useCallback(async (p: PromoCodeAdmin) => {
     if (!Config.useMock) {
-      const { error } = await supabase
+      // See users.tsx: a refused UPDATE matches zero rows and reports no error.
+      // Deactivating a code that stays live is the difference between a campaign
+      // that stopped costing money and one that did not.
+      const { data, error } = await supabase
         .from('rentivo_promo_codes')
         .update({ is_active: !p.is_active })
         .eq('id', p.id)
-      if (error) {
+        .select('id, is_active')
+      if (error || (data ?? []).length === 0) {
         showToast({ message: t('admFailUpdate', language), type: 'error' })
         return
       }

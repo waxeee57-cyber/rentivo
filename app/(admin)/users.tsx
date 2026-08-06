@@ -67,11 +67,17 @@ export default function AdminUsersScreen() {
 
   const toggleBan = useCallback(async (u: AdminUser) => {
     if (!Config.useMock) {
-      const { error } = await supabase
+      // `.select()` is load-bearing, not decoration. An UPDATE that RLS refuses
+      // matches zero rows, and PostgREST answers 200 with an empty array —
+      // supabase-js reports error: null for it. Without the returned rows this
+      // screen cannot tell "user banned" from "the write hit nothing", which is
+      // exactly how it came to show a success toast over an unbanned user.
+      const { data, error } = await supabase
         .from('rentivo_users')
         .update({ is_banned: !u.is_banned })
         .eq('id', u.id)
-      if (error) {
+        .select('id, is_banned')
+      if (error || (data ?? []).length === 0) {
         showToast({ message: t('admFailUpdate', language), type: 'error' })
         return
       }

@@ -120,8 +120,16 @@ export type DepositBlockReason =
   /** deposit_status is not 'authorized' — nothing to charge against. */
   | 'not_authorized'
   | 'already_charged'
-  /** A previous off_session charge was declined; the server will not retry it. */
-  | 'charge_failed'
+
+/**
+ * `charge_failed` is NOT a block. It is the state a soft decline leaves behind
+ * (insufficient funds, expired card, a 3DS challenge on an off-session charge),
+ * and charge-deposit accepts it — `CHARGEABLE = ['authorized', 'charge_failed']`.
+ * Returning a block for it made the client refuse a retry the server was willing
+ * to perform, so one decline permanently ended the operator's ability to recover
+ * damage costs from the app. `charged` stays terminal; that one is real.
+ */
+const CHARGEABLE_STATUSES = ['authorized', 'charge_failed']
 
 export function depositBlockReason(state: DepositState | null): DepositBlockReason | null {
   if (!state) return 'not_authorized'
@@ -132,10 +140,15 @@ export function depositBlockReason(state: DepositState | null): DepositBlockReas
   if (!(state.depositAmount > 0)) return 'waived'
 
   if (state.depositStatus === 'charged') return 'already_charged'
-  if (state.depositStatus === 'charge_failed') return 'charge_failed'
   if (!state.hasVaultedCard) return 'no_card'
-  if (state.depositStatus !== 'authorized') return 'not_authorized'
+  if (!CHARGEABLE_STATUSES.includes(state.depositStatus)) return 'not_authorized'
   return null
+}
+
+/** True when a previous charge was declined and the next one is a retry. The
+ *  operator needs to be told, but it must not stop them from trying again. */
+export function depositChargeFailed(state: DepositState | null): boolean {
+  return state?.depositStatus === 'charge_failed'
 }
 
 /**
@@ -182,11 +195,17 @@ export interface ChargeDepositResult {
 /**
  * Charges the vaulted card against assessed damage.
  *
- * NOTE for callers: charge-deposit uses a FIXED Stripe idempotency key
- * (`rentivo_dep_<booking_id>`), so a booking gets exactly one deposit charge.
- * A second call with a different amount is rejected by Stripe, and the server
- * refuses anything that is not `deposit_status === 'authorized'` anyway.
- * Get the amount right the first time — hence the confirmation step upstream.
+ * NOTE for callers: charge-deposit's Stripe idempotency key is scoped to the
+ * booking, the recorded attempt number and the amount
+ * (`rentivo_dep_<booking_id>_<attempt>_<cents>`). Two taps of the same button
+ * read the same attempt number and collapse into ONE charge, while a retry
+ * after a recorded decline gets a fresh key and reaches Stripe properly. It was
+ * a fixed per-booking key, which meant Stripe replayed the first response for
+ * 24 hours and a retry could never succeed.
+ *
+ * A successful charge is still terminal: the server only accepts
+ * `deposit_status` of 'authorized' or 'charge_failed'. Get the amount right the
+ * first time — hence the confirmation step upstream.
  */
 export async function chargeDeposit(input: ChargeDepositInput): Promise<ChargeDepositResult> {
   const amount = roundEuros(input.assessedAmount)

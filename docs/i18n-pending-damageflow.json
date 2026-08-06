@@ -1,0 +1,12 @@
+{
+  "cdmgInspectionAlreadyFiled": {
+    "en": "This inspection has already been filed for this booking.",
+    "es": "Esta inspección ya se ha registrado para esta reserva.",
+    "hu": "Ehhez a foglaláshoz már rögzítettek ilyen állapotfelmérést."
+  },
+  "opDmgLastAttemptDeclined": {
+    "en": "The last attempt was declined by the card issuer. You can try again — if it keeps failing, the renter has to sort their card out with their bank.",
+    "es": "El último intento fue rechazado por el emisor de la tarjeta. Puedes volver a intentarlo; si sigue fallando, el inquilino debe resolverlo con su banco.",
+    "hu": "A legutóbbi kísérletet a kártyakibocsátó elutasította. Újra megpróbálhatod – ha továbbra sem sikerül, a bérlőnek a bankjával kell rendeznie a kártyát."
+  }
+}

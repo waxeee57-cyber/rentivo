@@ -35,6 +35,10 @@ const incoming = { ...EXTRA }
 for (const f of pendingFiles) {
   const parsed = JSON.parse(readFileSync(join(DOCS, f), 'utf8'))
   for (const [key, value] of Object.entries(parsed)) {
+    // Underscore-prefixed entries are notes to the reader, not keys. A pending
+    // file that carried one aborted the whole merge and left every other area's
+    // strings unmerged.
+    if (key.startsWith('_')) continue
     if (incoming[key]) {
       console.error(`duplicate key "${key}" across pending files (${f})`)
       process.exit(1)

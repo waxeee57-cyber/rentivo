@@ -1,0 +1,17 @@
+{
+  "cbkChatLoadFailed": {
+    "en": "Could not load this conversation.",
+    "es": "No se pudo cargar esta conversación.",
+    "hu": "Nem sikerült betölteni ezt a beszélgetést."
+  },
+  "opBkChatLoadFailed": {
+    "en": "Could not load this conversation.",
+    "es": "No se pudo cargar esta conversación.",
+    "hu": "Nem sikerült betölteni ezt a beszélgetést."
+  },
+  "opBkChatSendFailed": {
+    "en": "Message not sent. Please try again.",
+    "es": "No se envió el mensaje. Inténtalo de nuevo.",
+    "hu": "Az üzenet nem lett elküldve. Kérjük, próbáld újra."
+  }
+}

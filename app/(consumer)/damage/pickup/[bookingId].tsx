@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/Button'
 import { DamagePhotoGrid } from '@/components/damage/DamagePhotoGrid'
 import { SignatureCanvas } from '@/components/booking/SignatureCanvas'
 import { Card } from '@/components/ui/Card'
-import { createDamageReport } from '@/lib/api/damage'
+import { createDamageReport, DamageReportExistsError } from '@/lib/api/damage'
 import { uploadDamagePhoto } from '@/lib/storage'
 import { useToastStore } from '@/lib/store/useToastStore'
 import { getError } from '@/lib/errors'
@@ -177,6 +177,19 @@ export default function PickupDamageScreen() {
       showToast({ message: t('cdmgPickupComplete', language), type: 'success' })
       router.back()
     } catch (e) {
+      // "Already filed" is the correct answer to a second submission (a back
+      // navigation, a double tap, two staff members at the same counter), not a
+      // fault to report. Say so plainly rather than showing "something went
+      // wrong" after six photos have finished uploading.
+      if (e instanceof DamageReportExistsError) {
+        showToast({
+          // i18n-pending: cdmgInspectionAlreadyFiled
+          message: 'This inspection has already been filed for this booking.',
+          type: 'error',
+        })
+        router.back()
+        return
+      }
       // The bare `catch` here is what hid the UUID bug above for as long as it
       // existed: six photos uploaded, the row rejected, and a generic toast.
       // Report it so the next failure of this kind is visible in Sentry rather

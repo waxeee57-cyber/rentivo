@@ -17,6 +17,7 @@ import { sendChatNotification } from '@/lib/notifications'
 import { translateMessage } from '@/lib/api/translate'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import { useToastStore } from '@/lib/store/useToastStore'
+import { captureException } from '@/lib/sentry'
 import type { Message, Conversation } from '@/types'
 import { format } from 'date-fns'
 import { useColors } from '@/lib/hooks/useColors'
@@ -133,21 +134,38 @@ export default function OperatorChatScreen() {
       setMessages([...MOCK_MESSAGES].reverse())
       return
     }
-    const { data: convData } = await supabase
+    // maybeSingle, not single: a booking whose chat has never been opened has no
+    // conversation row, and `single()` turns that ordinary case into an error.
+    // Neither result used to be read with its `error`, so an RLS denial or a
+    // network failure rendered as an empty thread — the operator saw "no messages"
+    // over a guest conversation that exists and is simply unreadable right now.
+    const { data: convData, error: convError } = await supabase
       .from('rentivo_conversations')
       .select('*')
       .eq('booking_id', id)
-      .single()
+      .maybeSingle()
+    if (convError) {
+      captureException(convError, { scope: 'opChat.conversation.load', bookingId: id })
+      // i18n-pending: opBkChatLoadFailed
+      showToast({ message: 'Could not load this conversation.', type: 'error' })
+      return
+    }
     if (convData) {
       setConversation(convData as Conversation)
-      const { data: msgData } = await supabase
+      const { data: msgData, error: msgError } = await supabase
         .from('rentivo_messages')
         .select('*')
         .eq('conversation_id', (convData as Conversation).id)
         .order('created_at', { ascending: false })
+      if (msgError) {
+        captureException(msgError, { scope: 'opChat.messages.load', bookingId: id })
+        // i18n-pending: opBkChatLoadFailed
+        showToast({ message: 'Could not load this conversation.', type: 'error' })
+        return
+      }
       setMessages((msgData as Message[]) ?? [])
     }
-  }, [id])
+  }, [id, showToast])
 
   useEffect(() => {
     void loadMessages()
@@ -202,34 +220,93 @@ export default function OperatorChatScreen() {
         showToast({ message: t('ternLoginRequired', language), type: 'error' })
         return
       }
+      // Every failure below has to hand the operator their text back and say so.
+      // The old code cleared the input, swallowed the error and returned, so a
+      // reply that never reached the guest looked exactly like one that did.
+      const failSend = (err: unknown, scope: string) => {
+        setInput(text)
+        captureException(err, { scope, bookingId: id })
+        // i18n-pending: opBkChatSendFailed
+        showToast({ message: 'Message not sent. Please try again.', type: 'error' })
+      }
+
       let convId = conversation?.id
       if (!convId) {
-        const { data: newConv } = await supabase
+        // `?? ''` is not a uuid. rentivo_bookings.operator_id is NULL for every
+        // host-owned listing, so the old code handed Postgres an empty string and
+        // was rejected with 22P02 — silently, because the error was discarded.
+        // rentivo_conversations also carries CHECK (num_nonnulls(operator_id,
+        // host_id) = 1), so host_id has to be sent too and exactly one of the two
+        // may be set.
+        const listingId = booking?.listing_id ?? null
+        const operatorId = booking?.operator_id ?? null
+        const hostId = booking?.host_id ?? null
+        if (!listingId || (operatorId === null) === (hostId === null)) {
+          failSend(
+            new Error(`Booking ${id} has no listing_id, or not exactly one owner id, for a conversation`),
+            'opChat.conversation.ids',
+          )
+          return
+        }
+        const { data: newConv, error: convError } = await supabase
           .from('rentivo_conversations')
           .insert({
             booking_id: id,
-            listing_id: booking?.listing_id ?? '',
-            operator_id: booking?.operator_id ?? '',
-            user_id: session?.user?.id ?? null,
+            listing_id: listingId,
+            operator_id: operatorId,
+            host_id: hostId,
+            // The TRAVELER, not this operator. conv_participant_read matches the
+            // guest with `auth.uid() = user_id`, so writing the operator's own id
+            // here locked the guest out of their own thread — and the column is a
+            // FK to rentivo_users, which an operator account need not have a row in.
+            user_id: booking?.user_id ?? null,
           })
           .select()
           .single()
-        if (newConv) {
+        // booking_id carries a UNIQUE index, so the guest opening the thread at the
+        // same moment makes one side lose with 23505. Re-read the winner's row
+        // rather than reporting a failed send.
+        if (convError?.code === '23505') {
+          const { data: existing, error: reReadError } = await supabase
+            .from('rentivo_conversations')
+            .select('*')
+            .eq('booking_id', id)
+            .maybeSingle()
+          if (reReadError || !existing) {
+            failSend(reReadError ?? new Error('Conversation race lost and the winner is unreadable'), 'opChat.conversation.race')
+            return
+          }
+          setConversation(existing as Conversation)
+          convId = (existing as Conversation).id
+        } else if (convError || !newConv) {
+          failSend(convError ?? new Error('Conversation insert returned no row'), 'opChat.conversation.insert')
+          return
+        } else {
           setConversation(newConv as Conversation)
           convId = (newConv as Conversation).id
         }
       }
-      if (!convId) return
-      await supabase.from('rentivo_messages').insert({
+      // An RLS denial resolves rather than rejects in supabase-js, so without the
+      // error this reply vanished with the input box already cleared.
+      const { error: msgError } = await supabase.from('rentivo_messages').insert({
         conversation_id: convId,
         sender_role: 'operator',
         sender_id: authUserId,
         content: text,
       })
-      await supabase
+      if (msgError) {
+        failSend(msgError, 'opChat.message.insert')
+        return
+      }
+      // The reply IS stored past this point, so a failed preview update must not
+      // put the text back in the box — the only casualty is the guest's badge.
+      const { error: previewError } = await supabase
         .from('rentivo_conversations')
         .update({ last_message: text, last_message_at: new Date().toISOString(), unread_consumer: (conversation?.unread_consumer ?? 0) + 1 })
         .eq('id', convId)
+      if (previewError) {
+        captureException(previewError, { scope: 'opChat.conversation.preview', conversationId: convId })
+      }
       // Notify consumer about new operator message
       if (booking?.user_id) {
         void sendChatNotification({

@@ -12,6 +12,7 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
+import { exportMyData } from '@/lib/api/gdpr'
 
 function PrivacySettingsSkeleton() {
   const C = useColors()
@@ -152,13 +153,27 @@ export default function PrivacySettingsScreen() {
     void updateConsent('analytics', value)
   }
 
-  const handleExport = () => {
-    Alert.alert(
-      t('cprDataExportTitle', language),
-      t('cprDataExportBody', language),
-      [{ text: 'OK' }],
-    )
-  }
+  // GDPR Art. 20. This used to raise an Alert promising the data by email within
+  // 30 days and then do nothing whatsoever — no job, no mail, no file. The export
+  // is now produced on the spot and handed to the share sheet.
+  const [exporting, setExporting] = useState(false)
+
+  const handleExport = useCallback(async () => {
+    if (exporting) return
+    setExporting(true)
+    try {
+      const result = await exportMyData()
+      if (!result.ok) {
+        Alert.alert(t('opFleet2Error', language), result.error ?? 'export-failed')
+        return
+      }
+      // Body is the file name, not prose: the share sheet has already opened and
+      // the only thing left to tell the user is what the file is called.
+      Alert.alert(t('cprDataExportTitle', language), result.fileName ?? '')
+    } finally {
+      setExporting(false)
+    }
+  }, [exporting, language])
 
   if (loading) {
     return <PrivacySettingsSkeleton />
@@ -246,15 +261,19 @@ export default function PrivacySettingsScreen() {
 
             <TouchableOpacity
               style={styles.actionRow}
-              onPress={handleExport}
+              onPress={() => void handleExport()}
+              disabled={exporting}
               accessibilityLabel={t('cprExportMyData', language)}
               accessibilityRole="button"
+              accessibilityState={{ disabled: exporting, busy: exporting }}
             >
               <View style={styles.actionLabelRow}>
                 <Ionicons name="download-outline" size={16} color={C.text} importantForAccessibility="no" />
                 <Text style={styles.actionText}>{t('cprExportMyData', language)}</Text>
               </View>
-              <Text style={styles.chevron}>›</Text>
+              {exporting
+                ? <ActivityIndicator color={C.primary} size="small" />
+                : <Text style={styles.chevron}>›</Text>}
             </TouchableOpacity>
 
             <View style={styles.divider} />

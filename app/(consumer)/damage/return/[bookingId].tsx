@@ -12,7 +12,7 @@ import { DamagePhotoGrid } from '@/components/damage/DamagePhotoGrid'
 import { SignatureCanvas } from '@/components/booking/SignatureCanvas'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { Card } from '@/components/ui/Card'
-import { createDamageReport, fetchDamageReport } from '@/lib/api/damage'
+import { createDamageReport, fetchDamageReport, DamageReportExistsError } from '@/lib/api/damage'
 import { captureException } from '@/lib/sentry'
 import { uploadDamagePhoto } from '@/lib/storage'
 import { useToastStore } from '@/lib/store/useToastStore'
@@ -65,7 +65,12 @@ export default function ReturnDamageScreen() {
       const { data, error } = await supabase.functions.invoke('damage-detector', {
         body: { before_image_url: beforeUrl, after_image_url: afterUrl },
       })
-      if (!error && data) {
+      // Advisory, so a failure must not block a completed inspection — but it
+      // was discarded entirely, which is how a detector that has been broken
+      // for weeks looks exactly like a detector that found nothing.
+      if (error) {
+        captureException(error, { where: 'damage/return.damage-detector', bookingId: bkId })
+      } else if (data) {
         setAiResult({ has_damage: data.has_damage as boolean, analysis: data.analysis as string })
       }
     } finally {
@@ -150,6 +155,17 @@ export default function ReturnDamageScreen() {
       showToast({ message: t('cdmgReturnComplete', language), type: 'success' })
       router.back()
     } catch (e) {
+      // Same reasoning as the pickup screen: a second submission of an
+      // inspection that already exists is an answer, not a fault.
+      if (e instanceof DamageReportExistsError) {
+        showToast({
+          // i18n-pending: cdmgInspectionAlreadyFiled
+          message: 'This inspection has already been filed for this booking.',
+          type: 'error',
+        })
+        router.back()
+        return
+      }
       captureException(e, { screen: 'damage/return', bookingId: bkId })
       showToast({ message: t('cdmgSomethingWentWrong', language), type: 'error' })
     } finally {
