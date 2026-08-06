@@ -504,19 +504,46 @@ const bogus = await sb('/functions/v1/create-stripe-account-link', {
 }, 'not-a-real-jwt')
 step(bogus.status === 401, 'a forged token is rejected', `${bogus.status}`)
 
-// A signed-in user who owns no operator record gets nothing, however they ask.
+// The "outsider" owns no OPERATOR record — but they are a HOST, and hosts can now
+// request their own onboarding link too. Before that, a private host could list a
+// vehicle, take a booking and never be paid; their payout row could only be filled
+// in by hand in the database.
+//
+// So the property to assert is no longer "this person gets nothing". It is that
+// whatever they get belongs to THEM: a caller can only ever onboard their own
+// payout account, never somebody else's.
 const outsiderOperator = await rows(outsider.token, `rentivo_operators?auth_id=eq.${outsider.uid}&select=id`)
 step(outsiderOperator.list.length === 0, 'the outsider owns no operator record', `n=${outsiderOperator.list.length}`)
+const outsiderHost = await rows(outsider.token, `rentivo_hosts?auth_id=eq.${outsider.uid}&select=id,stripe_account_id`)
+const outsiderAcct = outsiderHost.list[0]?.stripe_account_id ?? null
 const outsiderPlain = await accountLink(outsider.token)
-step(outsiderPlain.status === 404, 'and gets no onboarding link', `${outsiderPlain.status} ${JSON.stringify(outsiderPlain.body).slice(0, 100)}`)
-step(typeof outsiderPlain.body?.url !== 'string', 'certainly no URL', String(outsiderPlain.body?.url))
+if (outsiderHost.list.length > 0) {
+  step(outsiderPlain.status === 200, 'a host gets their own onboarding link', `${outsiderPlain.status}`)
+  step(
+    typeof outsiderPlain.body?.url === 'string' && String(outsiderPlain.body.url).includes(String(outsiderAcct)),
+    'and it is for THEIR account, not the operator they are not',
+    `${String(outsiderPlain.body?.url).slice(0, 80)} (want ${outsiderAcct})`,
+  )
+} else {
+  step(outsiderPlain.status === 404, 'a caller who owns no payout profile gets no link', `${outsiderPlain.status}`)
+  step(typeof outsiderPlain.body?.url !== 'string', 'certainly no URL', String(outsiderPlain.body?.url))
+}
 
 // Naming someone else's operator in the body must not redirect the function.
 const impersonate = await sb('/functions/v1/create-stripe-account-link', {
   method: 'POST',
   body: JSON.stringify({ operator_id: operatorRow.id, account_id: opAcctId, auth_id: operator.uid }),
 }, outsider.token)
-step(impersonate.status !== 200, "naming another operator in the body does not hand over their link", `${impersonate.status} ${JSON.stringify(impersonate.body).slice(0, 110)}`)
+// A host caller now legitimately receives a 200 — for their OWN account. The
+// property under test is that the body cannot redirect the function at somebody
+// else's, so assert on WHOSE account came back, not on the status code.
+const impersonatedSomeoneElse =
+  impersonate.status === 200
+  && typeof impersonate.body?.url === 'string'
+  && !!opAcctId
+  && String(impersonate.body.url).includes(String(opAcctId))
+  && String(opAcctId) !== String(outsiderAcct)
+step(!impersonatedSomeoneElse, "naming another operator in the body does not hand over their link", `${impersonate.status} ${JSON.stringify(impersonate.body).slice(0, 110)}`)
 step(
   /\.eq\('auth_id', user\.id\)/.test(linkSrc ?? '') && !/req\.json\(\)/.test(linkSrc ?? ''),
   'because the operator is resolved from the JWT and the body is never read',

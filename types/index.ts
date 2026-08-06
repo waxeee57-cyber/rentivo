@@ -152,6 +152,22 @@ export interface RentivoUser {
   is_banned?: boolean
 }
 
+/**
+ * `rentivo_bookings.deposit_status`. NOT a free-text column — the database
+ * enforces
+ *   CHECK (deposit_status = ANY (ARRAY['none','authorized','charged',
+ *                                      'charge_failed','released']))
+ * so any other value is rejected at write time. Note there is deliberately no
+ * 'pending': a booking goes straight from 'none' to 'authorized' when the
+ * setup_intent.succeeded webhook lands.
+ */
+export type DepositStatus =
+  | 'none'
+  | 'authorized'
+  | 'charged'
+  | 'charge_failed'
+  | 'released'
+
 export interface Booking {
   id: string
   listing_id: string
@@ -216,6 +232,25 @@ export interface Booking {
   // Identity verification
   requires_identity_verification?: boolean
   identity_verified?: boolean
+  // Deposit Model B workflow columns on rentivo_bookings. Optional because most
+  // select() calls in lib/api ask for an explicit column list that omits them —
+  // a Booking legitimately may not carry them. The `| null` mirrors
+  // information_schema.is_nullable exactly:
+  //   deposit_status            text     NOT NULL default 'none'
+  //   deposit_setup_intent_id   text     NULL
+  //   deposit_payment_method_id text     NULL
+  //   deposit_charged_amount    numeric  NOT NULL default 0
+  //   deposit_charge_attempts   integer  NOT NULL default 0
+  deposit_status?: DepositStatus
+  deposit_setup_intent_id?: string | null
+  deposit_payment_method_id?: string | null
+  deposit_charged_amount?: number
+  deposit_charge_attempts?: number
+  // Cancellation + refund. Both nullable in the schema; refund_amount already
+  // defaults to 0 but is likewise only present when explicitly selected.
+  cancelled_at?: string | null
+  refund_id?: string | null
+  refund_amount?: number
 }
 
 export interface DamageReport {

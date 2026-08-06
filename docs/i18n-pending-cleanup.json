@@ -1,0 +1,37 @@
+{
+  "cdmgNoDamage": {
+    "en": "No damage",
+    "es": "Sin daños",
+    "hu": "Nincs kár"
+  },
+  "cbkDepositChargeDeclined": {
+    "en": "The deposit charge on your saved card was declined.",
+    "es": "El cargo de la fianza a tu tarjeta guardada fue rechazado.",
+    "hu": "A kaució terhelése az elmentett kártyádon elutasításra került."
+  },
+  "cbkDepositCardNote": {
+    "en": "You can replace the card your deposit would be charged to. Nothing is charged now.",
+    "es": "Puedes cambiar la tarjeta a la que se cargaría tu fianza. No se cobra nada ahora.",
+    "hu": "Lecserélheted azt a kártyát, amelyet a kaució terhelése érintene. Most semmilyen összeget nem vonunk le."
+  },
+  "cbkDepositUseDifferentCard": {
+    "en": "Use a different card",
+    "es": "Usar otra tarjeta",
+    "hu": "Másik kártya használata"
+  },
+  "cbkDepositUseDifferentCardA11y": {
+    "en": "Use a different card for the security deposit",
+    "es": "Usar otra tarjeta para la fianza",
+    "hu": "Másik kártya használata a kaucióhoz"
+  },
+  "cbkDepositCardSubmitted": {
+    "en": "New card submitted. It replaces your deposit card once confirmed.",
+    "es": "Tarjeta nueva enviada. Sustituirá a tu tarjeta de fianza una vez confirmada.",
+    "hu": "Az új kártyát elküldtük. A megerősítés után ez váltja fel a kaucióhoz tartozó kártyádat."
+  },
+  "cbkDepositCardSetupUnavailable": {
+    "en": "We could not start a new card setup for this booking. Please contact support.",
+    "es": "No pudimos iniciar el registro de una tarjeta nueva para esta reserva. Contacta con soporte.",
+    "hu": "Nem tudtunk új kártyaregisztrációt indítani ehhez a foglaláshoz. Kérjük, fordulj az ügyfélszolgálathoz."
+  }
+}

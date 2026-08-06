@@ -35,10 +35,26 @@ const cprT = (key: string, lang: 'en' | 'es' | 'hu'): string =>
  * reads and writes. Those are wired up for real below.
  *
  * The other six rows (booking confirmed / cancelled / reminder, new message, new
- * review, payment received) have no column anywhere in the schema. Rather than
- * keep offering a switch that cannot be saved, they are shown as what they
- * actually are: service messages attached to a booking, always sent. Consent law
- * agrees with the schema here — those are contractual, not marketing.
+ * review, payment received) have been REMOVED rather than given columns of their
+ * own. They were briefly rendered as non-interactive "Always on" badges, which
+ * was honest but still put six non-controls on a screen whose entire job is
+ * controls. Making them real was the tempting alternative and is the wrong call,
+ * on evidence:
+ *
+ *   - No sender would honour them. The ONLY consent-aware sender in the repo is
+ *     supabase/functions/broadcast-push, which inner-joins rentivo_consent and
+ *     filters `marketing_push = true` — and it sends marketing broadcasts only.
+ *     No transactional push or email path reads rentivo_consent at all.
+ *   - So adding `ntf_booking_confirmed` &c. would produce a switch that stores a
+ *     value nothing ever reads: the user flips it off, the write succeeds, and
+ *     the notification arrives anyway. That is precisely the defect this screen
+ *     was just fixed for (the rentivo_notification_prefs upsert against a table
+ *     that does not exist), rebuilt on a table that does.
+ *   - Consent law points the same way: booking and payment notices are performance
+ *     of the rental contract, not marketing, so there is no opt-out to offer.
+ *
+ * If these should ever become real preferences, the sender has to learn to read
+ * them FIRST; the column and the switch come after. The SQL is in the report.
  */
 interface MarketingPrefs {
   marketing_push: boolean
@@ -69,36 +85,6 @@ const MARKETING_ITEMS: Array<{
     labelKey: 'cprMarketingEmails',
     descKey: 'cprMarketingEmailsDesc',
     a11yKey: 'cprMarketingEmailsToggle',
-  },
-]
-
-interface SectionDef {
-  titleKey: string
-  items: Array<{ key: string; labelKey: string; descKey: string }>
-}
-
-/** Rendered without switches — nothing stores an opt-out for these. */
-const SERVICE_SECTIONS: SectionDef[] = [
-  {
-    titleKey: 'cprSectionBookings',
-    items: [
-      { key: 'booking_confirmed', labelKey: 'cprNtfBookingConfirmed', descKey: 'cprNtfBookingConfirmedDesc' },
-      { key: 'booking_cancelled', labelKey: 'cprNtfBookingCancelled', descKey: 'cprNtfBookingCancelledDesc' },
-      { key: 'booking_reminder', labelKey: 'cprNtfBookingReminder', descKey: 'cprNtfBookingReminderDesc' },
-    ],
-  },
-  {
-    titleKey: 'cprSectionCommunication',
-    items: [
-      { key: 'new_message', labelKey: 'cprNtfNewMessage', descKey: 'cprNtfNewMessageDesc' },
-      { key: 'review_received', labelKey: 'cprNtfNewReview', descKey: 'cprNtfNewReviewDesc' },
-    ],
-  },
-  {
-    titleKey: 'cprSectionPayments',
-    items: [
-      { key: 'payment_received', labelKey: 'cprNtfPaymentReceived', descKey: 'cprNtfPaymentReceivedDesc' },
-    ],
   },
 ]
 
@@ -251,43 +237,10 @@ export default function NotificationsScreen() {
                 ))}
               </View>
 
-              {/* No switches here on purpose: nothing in the schema can store an
-                  opt-out, so offering one would be the same lie the removed
-                  rentivo_notification_prefs upsert was telling. */}
-              {SERVICE_SECTIONS.map(section => (
-                <View key={section.titleKey} style={styles.section}>
-                  <Text style={styles.sectionLabel}>
-                    {cprT(section.titleKey, language)}
-                  </Text>
-
-                  {section.items.map((item, idx) => (
-                    <React.Fragment key={item.key}>
-                      {idx > 0 && <View style={styles.divider} />}
-                      <View style={styles.switchRow}>
-                        <View style={styles.switchContent}>
-                          <Text style={styles.switchTitle}>
-                            {cprT(item.labelKey, language)}
-                          </Text>
-                          <Text style={styles.switchDesc}>
-                            {cprT(item.descKey, language)}
-                          </Text>
-                        </View>
-                        <View style={styles.alwaysOnBadge}>
-                          {/* i18n-pending: cprNtfAlwaysOn */}
-                          <Text style={styles.alwaysOnText}>Always on</Text>
-                        </View>
-                      </View>
-                    </React.Fragment>
-                  ))}
-                </View>
-              ))}
-
-              {/* Explains the badges above, so it sits with them rather than
-                  joining the general footer at the bottom of the screen. */}
-              {/* i18n-pending: cprNtfServiceMessagesNote */}
-              <Text style={styles.serviceNote}>
-                Booking and payment updates are part of your rental agreement, so they are always sent.
-              </Text>
+              {/* Booking / payment / message notices used to be listed here as
+                  six "Always on" rows. They are gone: see the header comment —
+                  no sender reads a per-user flag for them, so neither a switch
+                  nor a badge belongs on a settings screen. */}
             </>
           )}
 
@@ -359,21 +312,6 @@ function makeStyles(C: ReturnType<typeof useColors>) {
   switchContent: { flex: 1, marginRight: Spacing.md },
   switchTitle: { fontSize: 14, fontFamily: Fonts.semibold, color: C.text },
   switchDesc: { fontFamily: Fonts.regular, fontSize: 12, color: C.textTertiary, marginTop: 2 },
-  // Reads as state, not as a control: no border, no press affordance, sitting
-  // where the switch used to be so the row still scans as a settings row.
-  alwaysOnBadge: {
-    backgroundColor: C.surfaceWarm,
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-  },
-  alwaysOnText: { fontSize: 12, fontFamily: Fonts.semibold, color: C.textSecondary },
-  serviceNote: {
-    fontFamily: Fonts.regular, fontSize: 12,
-    color: C.textTertiary,
-    lineHeight: 18,
-    paddingHorizontal: Spacing.xs,
-  },
   divider: { height: 1, backgroundColor: C.border, marginVertical: Spacing.sm },
   footer: {
     fontFamily: Fonts.regular, fontSize: 12,

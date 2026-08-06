@@ -1,10 +1,17 @@
 import { Config } from '@/constants/config'
 
-export const PLATFORM_FEE_RATE = 0.10 // 10%
-
 /**
  * Returns the platform fee portion of a given amount.
- * Current rate: 10% (Config.platformCut = 0.10)
+ *
+ * `Config.platformCut` (EXPO_PUBLIC_PLATFORM_CUT, default 0.10) is the ONLY
+ * source of truth for this rate. A second exported `PLATFORM_FEE_RATE = 0.10`
+ * used to sit here: it had no callers, but it meant the number the whole
+ * business runs on was declared twice, and a deploy that changed the env var
+ * would silently have left the constant behind at the old rate.
+ *
+ * Display only. The authoritative fee is computed server-side by
+ * `create-booking` / `create-payment-intent` from the listing row.
+ *
  * TODO: Stripe production — pass fee via application_fee_amount on PaymentIntent
  */
 export function calculatePlatformFee(amountEur: number): number {

@@ -34,13 +34,46 @@ serve(async (req) => {
       })
     }
 
-    const { data: operator, error: opError } = await supabase
-      .from('rentivo_operators')
-      .select('id, stripe_account_id, stripe_account_country, country')
-      .eq('auth_id', user.id)
-      .single()
+    // HOSTS TOO. This function only ever knew about rentivo_operators, and
+    // nothing anywhere requested a Connect link for a host — so a private host
+    // could list a vehicle, take a booking, and never be paid. Their payout row
+    // could only be filled in by hand in the database, which is what the test
+    // fixtures had been doing. `rentivo_hosts` carries the same
+    // stripe_account_id / stripe_onboarded / stripe_account_country columns, so
+    // the whole flow below works unchanged once the right table is selected.
+    const OWNER_TABLES = ['rentivo_operators', 'rentivo_hosts'] as const
+    let ownerTable: (typeof OWNER_TABLES)[number] | null = null
+    let operator: {
+      id: string
+      stripe_account_id: string | null
+      stripe_account_country: string | null
+      country: string | null
+    } | null = null
 
-    if (opError || !operator) {
+    for (const table of OWNER_TABLES) {
+      const { data, error } = await supabase
+        .from(table)
+        .select('id, stripe_account_id, stripe_account_country, country')
+        .eq('auth_id', user.id)
+        .maybeSingle()
+      // A hard error must not read as "no such owner": that is how a missing
+      // column turned into 404 "Operator profile not found" for every operator
+      // on the platform.
+      if (error) {
+        console.error('[create-stripe-account-link] owner lookup failed', table, error)
+        return new Response(JSON.stringify({ error: 'Could not load your payout profile' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      if (data) {
+        ownerTable = table
+        operator = data as typeof operator
+        break
+      }
+    }
+
+    if (!operator || !ownerTable) {
       return new Response(JSON.stringify({ error: 'Operator profile not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -98,7 +131,7 @@ serve(async (req) => {
       // Record the country alongside the id so the mismatch guard above has
       // something to compare against on the next attempt.
       await supabase
-        .from('rentivo_operators')
+        .from(ownerTable)
         .update({ stripe_account_id: accountId, stripe_account_country: country })
         .eq('id', operator.id)
     }

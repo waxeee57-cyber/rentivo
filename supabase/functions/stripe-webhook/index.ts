@@ -195,9 +195,25 @@ serve(async (req) => {
           break
         }
 
-        // Rental payment. `.neq('payment_status','paid')` keeps paid_at and
-        // stripe_charge_id stable across retries; `.neq('status','cancelled')`
-        // closes the window between the read above and this write.
+        // Dates FIRST, then the payment flags.
+        //
+        // The order matters because `payment_status = 'paid'` is what every other
+        // party treats as "this booking is done": the app, the operator screens
+        // and the tests all poll for it. Blocking the calendar afterwards left a
+        // window — small normally, wide under load — in which a booking read as
+        // paid while its dates were still sellable. That is exactly the state a
+        // double sale needs, and it produced a genuinely flaky money-path test,
+        // which is the same bug wearing a different hat.
+        //
+        // Doing it in this order means the flag can only be observed once the
+        // work behind it is already committed.
+        await blockDates(supabase, booking as unknown as {
+          id: string; listing_id: string; start_date: string; end_date: string
+        })
+
+        // `.neq('payment_status','paid')` keeps paid_at and stripe_charge_id
+        // stable across retries; `.neq('status','cancelled')` closes the window
+        // between the read above and this write.
         await supabase.from('rentivo_bookings').update({
           payment_status: 'paid',
           status: 'confirmed',
@@ -207,10 +223,6 @@ serve(async (req) => {
           .eq('id', bookingId)
           .neq('payment_status', 'paid')
           .neq('status', 'cancelled')
-
-        await blockDates(supabase, booking as unknown as {
-          id: string; listing_id: string; start_date: string; end_date: string
-        })
         break
       }
       case 'payment_intent.payment_failed': {
@@ -260,12 +272,20 @@ serve(async (req) => {
           ? si.payment_method
           : si.payment_method?.id ?? null
         if (bookingId && paymentMethodId) {
+          // `.eq('deposit_status', 'none')` was too narrow: it only accepted the
+          // FIRST card. A renter re-vaulting after their deposit card declined is
+          // at 'charge_failed' (or 'authorized'), so their new card matched zero
+          // rows and was silently discarded — they entered it, Stripe stored it,
+          // and the booking kept charging the dead one.
+          //
+          // 'charged' and 'released' stay excluded: those are terminal, and a
+          // late SetupIntent must not reopen a deposit that is already settled.
           await supabase.from('rentivo_bookings').update({
             deposit_payment_method_id: paymentMethodId,
             deposit_status: 'authorized',
           })
             .eq('id', bookingId)
-            .eq('deposit_status', 'none') // only flip from the initial state
+            .in('deposit_status', ['none', 'authorized', 'charge_failed'])
         }
         break
       }

@@ -6,6 +6,9 @@ import { Badge } from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils/formatDate'
 import type { DamageReport as DamageReportType } from '@/types'
 import { useColors } from '@/lib/hooks/useColors'
+import { useAuthStore } from '@/lib/store/useAuthStore'
+import { t } from '@/constants/i18n'
+import type { TranslationKey } from '@/constants/i18n'
 
 interface DamageReportProps {
   report: DamageReportType
@@ -14,23 +17,39 @@ interface DamageReportProps {
 export function DamageReport({ report }: DamageReportProps) {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
-  const photos = [
-    { label: 'Front',    uri: report.photo_front },
-    { label: 'Back',     uri: report.photo_back },
-    { label: 'Left',     uri: report.photo_left },
-    { label: 'Right',    uri: report.photo_right },
-    { label: 'Interior', uri: report.photo_interior },
-    { label: 'Extra',    uri: report.photo_extra },
-  ].filter(p => p.uri)
+  // This component renders the signed record of a vehicle's condition — the
+  // evidence a deposit charge is justified against. Every visible string here
+  // was hardcoded English inside an otherwise fully translated app. All the keys
+  // used below already existed in constants/i18n.ts; only `cdmgNoDamage` is new
+  // (staged in docs/i18n-pending-cleanup.json).
+  const language = useAuthStore(s => s.language)
+  // `photos` keys the slot label the same way DamagePhotoGrid does, so the
+  // capture screen and the report screen cannot disagree about what a photo is.
+  // Annotated BEFORE .filter(): a contextual type does not flow through the
+  // call, so filtering the literal inline widens labelKey to `string` and it
+  // stops satisfying TranslationKey.
+  const allPhotos: { labelKey: TranslationKey; uri: string | null }[] = [
+    { labelKey: 'photoFront',    uri: report.photo_front },
+    { labelKey: 'photoBack',     uri: report.photo_back },
+    { labelKey: 'photoLeft',     uri: report.photo_left },
+    { labelKey: 'photoRight',    uri: report.photo_right },
+    { labelKey: 'photoInterior', uri: report.photo_interior },
+    { labelKey: 'photoExtra',    uri: report.photo_extra },
+  ]
+  const photos = allPhotos.filter(p => p.uri)
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
+        {/* One key per whole phrase, not "Pickup" + " Inspection": Hungarian
+            compounds this into a single word (Átvételi állapotfelmérés), so a
+            concatenation could not be translated correctly at all. */}
         <Text style={styles.title}>
-          {report.type === 'pickup' ? 'Pickup' : 'Return'} Inspection
+          {t(report.type === 'pickup' ? 'pickupInspection' : 'returnInspection', language)}
         </Text>
         <Badge
-          label={report.damage_found ? 'Damage found' : 'No damage'}
+          // i18n-pending: cdmgNoDamage
+          label={report.damage_found ? t('damageFound', language) : 'No damage'}
           variant={report.damage_found ? 'error' : 'success'}
         />
       </View>
@@ -41,27 +60,36 @@ export function DamageReport({ report }: DamageReportProps) {
         <View style={styles.photos}>
           {photos.map(p => (
             <Image
-              key={p.label}
+              key={p.labelKey}
               source={{ uri: p.uri! }}
               style={styles.photo}
               contentFit="cover"
+              accessibilityLabel={t(p.labelKey, language)}
             />
           ))}
         </View>
       )}
 
       <View style={styles.details}>
-        {report.mileage && <Detail label="Mileage" value={`${report.mileage} km`} />}
-        {report.fuel_level && <Detail label="Fuel level" value={report.fuel_level.replace('_', ' ')} />}
-        {report.notes && <Detail label="Notes" value={report.notes} />}
+        {/* `mileage` already reads "Mileage (km)" / "Kilométeróra (km)", so the
+            value carries the bare number rather than repeating the unit. */}
+        {report.mileage && <Detail label={t('mileage', language)} value={String(report.mileage)} />}
+        {report.fuel_level && (
+          <Detail label={t('fuelLevel', language)} value={report.fuel_level.replace('_', ' ')} />
+        )}
+        {report.notes && <Detail label={t('cdmgGeneralNotes', language)} value={report.notes} />}
         {report.damage_found && report.damage_notes && (
-          <Detail label="Damage notes" value={report.damage_notes} highlight />
+          <Detail
+            label={t('cdmgDamageDescriptionA11y', language)}
+            value={report.damage_notes}
+            highlight
+          />
         )}
       </View>
 
       <View style={styles.signatures}>
-        <SigStatus label="Operator" signed={report.operator_signed} />
-        <SigStatus label="Renter" signed={report.consumer_signed} />
+        <SigStatus label={t('contractOperator', language)} signed={report.operator_signed} />
+        <SigStatus label={t('contractSectionRenter', language)} signed={report.consumer_signed} />
       </View>
     </ScrollView>
   )
@@ -81,11 +109,12 @@ function Detail({ label, value, highlight }: { label: string; value: string; hig
 function SigStatus({ label, signed }: { label: string; signed: boolean }) {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
+  const language = useAuthStore(s => s.language)
   return (
     <View style={styles.sigRow}>
       <Text style={styles.sigLabel}>{label}</Text>
       <Text style={[styles.sigStatus, { color: signed ? C.success : C.textTertiary }]}>
-        {signed ? '✓ Signed' : 'Pending'}
+        {signed ? `✓ ${t('opDmgSigned', language)}` : t('pending', language)}
       </Text>
     </View>
   )

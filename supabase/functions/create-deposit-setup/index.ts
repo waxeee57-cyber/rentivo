@@ -47,7 +47,7 @@ serve(async (req) => {
     // ── Load booking; only its renter may vault a deposit card.
     const { data: booking, error: bookingError } = await supabase
       .from('rentivo_bookings')
-      .select('id, user_id, deposit_amount, currency, deposit_setup_intent_id')
+      .select('id, user_id, deposit_amount, currency, deposit_setup_intent_id, deposit_status, deposit_charge_attempts')
       .eq('id', booking_id)
       .maybeSingle()
 
@@ -59,13 +59,26 @@ serve(async (req) => {
       return jsonError('No deposit required for this booking', 400)
     }
 
-    // ── Idempotency: reuse the existing SetupIntent if one was already created.
+    // ── Idempotency: reuse an existing SetupIntent only while it is still USABLE.
+    //
+    // This used to return the stored intent unconditionally. After the first card
+    // is vaulted that intent is `succeeded`, and a succeeded SetupIntent cannot be
+    // confirmed again — so a renter whose deposit card later declined was handed
+    // back a dead object and had no way to supply a different card, for the life
+    // of the booking. Combined with charge-deposit's one-attempt-per-decline
+    // behaviour, a soft decline permanently ended deposit collection.
     if (booking.deposit_setup_intent_id) {
       const existing = await stripe.setupIntents.retrieve(booking.deposit_setup_intent_id)
-      return new Response(
-        JSON.stringify({ client_secret: existing.client_secret, setup_intent_id: existing.id }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      const reusable = existing.status === 'requires_payment_method'
+        || existing.status === 'requires_confirmation'
+        || existing.status === 'requires_action'
+      if (reusable) {
+        return new Response(
+          JSON.stringify({ client_secret: existing.client_secret, setup_intent_id: existing.id, reused: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      // Otherwise fall through and mint a fresh one below.
     }
 
     // ── Ensure a PLATFORM Stripe Customer for the renter (bookings.user_id maps
@@ -104,7 +117,10 @@ serve(async (req) => {
         payment_method_types: ['card'],
         metadata: { booking_id, user_id: user.id, platform: 'rentivo' },
       },
-      { idempotencyKey: `rentivo_si_${booking_id}` }
+      // Attempt-scoped, not booking-scoped. A fixed key made Stripe replay the
+      // first SetupIntent for 24 hours, so even after the early return above was
+      // fixed the renter would have been handed the same dead object back.
+      { idempotencyKey: `rentivo_si_${booking_id}_${Number(booking.deposit_charge_attempts ?? 0)}_${booking.deposit_setup_intent_id ?? 'first'}` }
     )
 
     // Persist the SetupIntent id. deposit_status flips to 'authorized' and the

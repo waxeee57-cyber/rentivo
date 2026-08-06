@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { Config } from '@/constants/config'
+import { createDepositSetup } from '@/lib/api/payments'
+import type { DepositStatus } from '@/types'
 
 /**
  * Deposit Model B. The renter's card is vaulted at booking time by
@@ -23,16 +25,21 @@ import { Config } from '@/constants/config'
  * edge function is what multiplies by 100 for Stripe. Never send cents.
  */
 
-/** Values written to `rentivo_bookings.deposit_status` by create-deposit-setup,
- *  charge-deposit and stripe-webhook. The column is plain text, so this is a
- *  documentation type rather than a constraint. */
-export type KnownDepositStatus =
-  | 'none'
-  | 'pending'
-  | 'authorized'
-  | 'charged'
-  | 'charge_failed'
-  | 'released'
+/**
+ * Values written to `rentivo_bookings.deposit_status` by create-deposit-setup,
+ * charge-deposit and stripe-webhook.
+ *
+ * This used to be declared here as its own union with the note "the column is
+ * plain text, so this is a documentation type rather than a constraint". Both
+ * halves were wrong. The database enforces
+ *   rentivo_bookings_deposit_status_check
+ *   CHECK (deposit_status = ANY (ARRAY['none','authorized','charged',
+ *                                      'charge_failed','released']))
+ * and the old union additionally listed 'pending', which that constraint
+ * REJECTS — so the type advertised a state no row can ever hold. It is now one
+ * alias of the single definition in types/index.ts.
+ */
+export type KnownDepositStatus = DepositStatus
 
 export interface DepositState {
   bookingId: string
@@ -43,12 +50,18 @@ export interface DepositState {
   /** True once the setup_intent.succeeded webhook stored a vaulted card. */
   hasVaultedCard: boolean
   currency: string
+  /** `deposit_setup_intent_id`. Needed to tell a FRESH SetupIntent from the
+   *  stale one create-deposit-setup replays — see startDepositRevault. */
+  setupIntentId: string | null
 }
 
 /**
- * The deposit_* workflow columns are NOT on the `Booking` type in types/index.ts,
- * so a screen cannot learn from `fetchBooking` whether a charge is even possible.
- * Read them explicitly.
+ * Reads the deposit_* workflow columns for one booking.
+ *
+ * These are now declared on `Booking` (types/index.ts) too, but they are
+ * OPTIONAL there because most select() lists omit them — `fetchBooking` is one
+ * of those, so a screen still cannot learn the deposit state from it. Read them
+ * explicitly.
  */
 export async function fetchDepositState(bookingId: string): Promise<DepositState | null> {
   if (!bookingId) return null
@@ -62,6 +75,7 @@ export async function fetchDepositState(bookingId: string): Promise<DepositState
       depositChargedAmount: 0,
       hasVaultedCard: true,
       currency: 'EUR',
+      setupIntentId: 'seti_mock',
     }
   }
 
@@ -70,7 +84,7 @@ export async function fetchDepositState(bookingId: string): Promise<DepositState
     // One literal, NOT a concatenation: supabase-js parses the select string as
     // a literal type to infer the row shape, and `'a' + 'b'` widens to `string`,
     // which collapses the inference to GenericStringError.
-    .select('id, deposit_amount, deposit_status, deposit_charged_amount, deposit_payment_method_id, currency')
+    .select('id, deposit_amount, deposit_status, deposit_charged_amount, deposit_payment_method_id, deposit_setup_intent_id, currency')
     .eq('id', bookingId)
     .single()
 
@@ -88,6 +102,7 @@ export async function fetchDepositState(bookingId: string): Promise<DepositState
     deposit_status: string | null
     deposit_charged_amount: number | string | null
     deposit_payment_method_id: string | null
+    deposit_setup_intent_id: string | null
     currency: string | null
   }
 
@@ -98,6 +113,7 @@ export async function fetchDepositState(bookingId: string): Promise<DepositState
     depositChargedAmount: toEuros(row.deposit_charged_amount),
     hasVaultedCard: !!row.deposit_payment_method_id,
     currency: row.currency ?? 'EUR',
+    setupIntentId: row.deposit_setup_intent_id,
   }
 }
 
@@ -280,4 +296,144 @@ export async function chargeDeposit(input: ChargeDepositInput): Promise<ChargeDe
 function roundEuros(value: number): number {
   if (!Number.isFinite(value)) return NaN
   return Math.round(value * 100) / 100
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * Replacing the card on file (deposit re-vault)
+ *
+ * When charge-deposit is declined the booking lands on
+ * deposit_status='charge_failed'. The retry path is attempt-scoped now, so a
+ * retry does reach Stripe — but it retries THE SAME DEAD CARD, which is
+ * pointless. There was no route anywhere in the app for the renter to supply a
+ * different one: `createDepositSetup` was called from exactly one place, the
+ * checkout screen in app/(consumer)/booking/[listingId].tsx, and never again.
+ *
+ * SERVER DEPENDENCY — this flow is not fully live until two things change in
+ * supabase/ (out of scope here; both are written up in the report):
+ *
+ *   1. create-deposit-setup returns the EXISTING SetupIntent verbatim whenever
+ *      booking.deposit_setup_intent_id is set. After the first card was vaulted
+ *      that intent has status 'succeeded', and a succeeded SetupIntent cannot be
+ *      confirmed again — Stripe rejects it with setup_intent_unexpected_state.
+ *      Its fixed idempotency key `rentivo_si_<booking_id>` would replay the same
+ *      object even if that early return were removed.
+ *   2. The setup_intent.succeeded webhook writes the new payment_method only
+ *      `.eq('deposit_status', 'none')`, so a re-vault from 'charge_failed' or
+ *      'authorized' matches zero rows and the new card is silently discarded.
+ *
+ * Until (1) ships, `startDepositRevault` returns reusedExistingIntent=true and
+ * the confirm step fails with a specific, honest message rather than a generic
+ * card error. That is deliberate: a button that quietly does nothing is worse
+ * than one that says exactly which server-side guard blocked it.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** Statuses a renter may replace the card from. 'charged' and 'released' are
+ *  terminal — the money question is settled and a new card buys nothing.
+ *  'none' means the card was never vaulted, which is checkout's job, not this. */
+const REVAULTABLE_STATUSES = ['authorized', 'charge_failed']
+
+/**
+ * True when the renter should be offered a "use a different card" control.
+ *
+ * A EUR 0 deposit (paid damage waiver) is excluded first and independently of
+ * status, for the same reason depositBlockReason does it: there is no card to
+ * replace, and prompting for one would misrepresent the product they bought.
+ */
+export function canRevaultDepositCard(state: DepositState | null): boolean {
+  if (!state) return false
+  if (!(state.depositAmount > 0)) return false
+  return REVAULTABLE_STATUSES.includes(state.depositStatus)
+}
+
+export type DepositRevaultCode =
+  /** Booking is not in a state where replacing the card means anything. */
+  | 'not_revaultable'
+  /** No Supabase session — create-deposit-setup 401s without one. */
+  | 'unauthorized'
+  /** create-deposit-setup returned non-2xx. */
+  | 'request_failed'
+
+export class DepositRevaultError extends Error {
+  readonly code: DepositRevaultCode
+
+  constructor(message: string, code: DepositRevaultCode) {
+    super(message)
+    this.name = 'DepositRevaultError'
+    this.code = code
+    // Required for `instanceof` to survive TS's ES5-class downlevelling.
+    Object.setPrototypeOf(this, DepositRevaultError.prototype)
+  }
+}
+
+export interface DepositRevaultSetup {
+  /** Pass to confirmSetupIntent() with the renter's new card. */
+  clientSecret: string
+  setupIntentId: string
+  /**
+   * True when the server handed back the SetupIntent already stored on the
+   * booking instead of minting a new one. The caller must treat a confirm
+   * failure as the server-side limitation documented above, not as a card
+   * problem — telling a renter their new card was declined when it was never
+   * charged would be a lie.
+   */
+  reusedExistingIntent: boolean
+}
+
+/**
+ * Asks create-deposit-setup for a SetupIntent the renter can confirm with a new
+ * card. Confirming it is the CALLER's job: confirmSetupIntent() comes from the
+ * useStripe() hook and only exists inside a component.
+ *
+ * Does not mutate anything itself — the payment_method is attached by Stripe on
+ * confirm and persisted by the setup_intent.succeeded webhook.
+ */
+export async function startDepositRevault(state: DepositState): Promise<DepositRevaultSetup> {
+  if (!canRevaultDepositCard(state)) {
+    throw new DepositRevaultError(
+      'This booking has no deposit card to replace',
+      'not_revaultable',
+    )
+  }
+
+  // Mock mode must not reach the real function — same guard as chargeDeposit.
+  if (Config.useMock) {
+    await new Promise(resolve => setTimeout(resolve, 400))
+    return {
+      clientSecret: `seti_mock_secret_${Date.now()}`,
+      setupIntentId: `seti_mock_${Date.now()}`,
+      reusedExistingIntent: false,
+    }
+  }
+
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  // supabase-js RESOLVES on failure: getSession returns { data, error } rather
+  // than rejecting, so this branch is the only thing standing between an
+  // expired refresh token and an unexplained 401 from the edge function.
+  if (sessionError) {
+    throw new DepositRevaultError(sessionError.message, 'unauthorized')
+  }
+  const accessToken = session?.access_token
+  if (!accessToken) {
+    throw new DepositRevaultError('Unauthorized', 'unauthorized')
+  }
+
+  let result: { clientSecret: string; setup_intent_id: string }
+  try {
+    result = await createDepositSetup({ bookingId: state.bookingId, accessToken })
+  } catch (e) {
+    // createDepositSetup throws Error(<edge function's own jsonError body>),
+    // which is human-readable copy ("No deposit required for this booking",
+    // "Booking does not belong to caller") — safe to surface directly.
+    throw new DepositRevaultError(
+      e instanceof Error && e.message ? e.message : 'Failed to start card update',
+      'request_failed',
+    )
+  }
+
+  return {
+    clientSecret: result.clientSecret,
+    setupIntentId: result.setup_intent_id,
+    reusedExistingIntent:
+      !!state.setupIntentId && state.setupIntentId === result.setup_intent_id,
+  }
 }
