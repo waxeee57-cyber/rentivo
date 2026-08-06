@@ -135,6 +135,9 @@ const RPC_ALLOWLIST = {
 const ARG_PROBES = {
   increment_promo_use: { p_code: 'ANY-CODE-AT-ALL' },
   rentivo_lookup_promo: { p_code: 'ANY-CODE-AT-ALL' },
+  // service_role-only (revoked from anon/authenticated). Probed so the sweep
+  // does not silently skip it; anon must get 401, never reach the failure counter.
+  increment_webhook_failure: { webhook_id: '00000000-0000-0000-0000-000000000000' },
 }
 
 const listSize = body => (Array.isArray(body) ? body.length : null)
