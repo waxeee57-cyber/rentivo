@@ -83,17 +83,50 @@ docs/           audits/, ops/, requirements.md
   `user_id` (NEM `traveler_id`) a bookings táblában; push_token nullázás
   `.eq('auth_id', userId)`; `DELETED_USER_ID = '00000000-0000-0000-0000-000000000001'`
 
-## HOL TART
-- Utolsó commit: 2026-07-15 — `fix(payments): surface real edge-function error instead of generic Payment failed`
-- Branch: `feat/payments-deposit-model-b`
-- Uncommitted: 0
-- Ismert korlátok (forrás: `.claude/CLAUDE.md`):
-  - expo-router v6: tab name = mappa neve (`/index` nélkül)
-  - Expo Go natív route overlay — production EAS buildben nem jelenik meg
-  - `operator/fleet/[id].tsx` ~147. sor: `setTimeout(600)` mock-szag a KYC ágban
-    (a fő mentés valódi, csak ez az ág) — NEM javítva, scope-on kívül
-  - `supabase/functions/stripe-webhook | ical-export | ical-import`: léteznek és nem
-    üres placeholderek, de funkcionális end-to-end ellenőrzés még ajánlott
+## HOL TART (2026-08-06)
+- Branch: `feat/payments-deposit-model-b` — **nincs pusholva**, a helyi VM-nek nincs
+  hálózata. Egy `git push origin feat/payments-deposit-model-b` kell a te gépedről.
+- Utolsó commitok:
+  `314fc13` hét migráció, ami élesben futott és hiányzott a repóból
+  `dee6312` két élő lyuk a promo rendszerben + `anon-surface` teszt
+  `7f27c32` GDPR törlés és a KYC-kapu nyitott ága bizonyítva
+  `27a4faa` minden tesztcsomag saját fixtúrát kapott
+
+### A bizonyíték, nem az érzés
+`node scripts/e2e/all.mjs` — 11 csomag, **1035 állítás, 0 bukás**, az ÉLES
+deployment ellen, valódi Stripe test-mode pénzzel. `--parallel` ugyanazokat a
+csomagonkénti számokat adja: ez a bizonyíték arra, hogy a csomagok nem
+zavarják egymást, nem a sebesség. Ha a két mód eltér, az eltérés maga a hiba.
+
+Két lépés futás közben szolgáltatói jogot igényel, és a script megvárja
+(kiírja a SQL-t, majd pollingol) — nem tud magától továbbmenni:
+- `cancellation-matrix`: `start_date` tolás a visszatérítési sávokba
+- `identity-gate --prove-open`: a Didit webhookot helyettesítő jóváhagyott sor
+
+`gdpr.mjs` fázisai külön futnak (`build` → SETUP SQL → `erase` → `residue`,
+plusz `export`), mert az `erase` törli az alany fiókját. Egy teljes törlési
+kör **véglegesen eléget egy dátumhelyet** a +220..+260 ablakból (a megtartott,
+anonimizált foglalás Art. 17(3)(b) szerint örökre fogja) — ~19 kör fér bele,
+utána hangosan elhasal.
+
+### Ismert korlátok
+- expo-router v6: tab name = mappa neve (`/index` nélkül)
+- Expo Go natív route overlay — production EAS buildben nem jelenik meg
+- `operator/fleet/[id].tsx` ~147. sor: `setTimeout(600)` mock-szag a KYC ágban
+  (a fő mentés valódi, csak ez az ág) — NEM javítva, scope-on kívül
+- **Supabase dashboard-kapcsolók, amiket kódból nem lehet átállítani:**
+  Auth → leaked password protection KI van kapcsolva (HaveIBeenPwned ellenőrzés);
+  Auth connection pool fixen 10 kapcsolat, százalék-alapúra érdemes váltani.
+- **Szándékosan nem javított linter-találatok** (mérve, nem feltételezve):
+  - `btree_gist` a `public` sémában — áthelyezése a `rentivo_bookings_no_overlap`
+    exclusion constraintet érinti, ami a dupla foglalás ellen véd. A haszon
+    kozmetikai, a kockázat nem az.
+  - `rentivo_is_admin()` hívható `anon`-ként — MINDEN rá épülő policy `public`
+    role-hoz kötött, tehát a visszavonása kilövi az anonim katalógus-olvasást.
+    Csak azt árulja el, hogy TE admin vagy-e.
+  - 103 × `multiple_permissive_policies`, 19 × `unused_index` — valós, de
+    teljesítmény-jellegű; a policy-k összevonása pont azt az RLS-réteget
+    kockáztatná, amit most bizonyítottunk. Külön, mért körben.
 
 ## FIGYELEM
 - **`.claude/CLAUDE.md` elavult ponton**: azt írja "Reanimated v3 (nem v4 —
