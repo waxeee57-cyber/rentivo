@@ -354,12 +354,19 @@ step(
   'the booking screen also gates — but that decision lives in a bundle the renter holds',
   (bookingScreenSrc ?? '').match(/listing\.operator\?\.stripe_onboarded[^\n]*/)?.[0]?.trim(),
 )
+// Was a literal match on `listing.host?.stripe_onboarded`. The fix resolves the
+// payee first (`owner_type === 'host' ? listing.host : listing.operator`) and
+// then reads one field off it — better code that did not match the literal.
+// Assert the BEHAVIOUR: the gate has to consult the host somewhere.
+const gateCoversHost =
+  /listing\.host\?\.stripe_onboarded/.test(bookingScreenSrc ?? '')
+  || /owner_type === 'host'\s*\?\s*listing\.host/.test(bookingScreenSrc ?? '')
 step(
-  /listing\.host\?\.stripe_onboarded/.test(bookingScreenSrc ?? ''),
+  gateCoversHost,
   'and that client gate covers HOST-owned listings too',
-  /listing\.operator\?\.stripe_onboarded/.test(bookingScreenSrc ?? '')
-    ? 'it only reads listing.operator — every host listing fails the gate and is unbookable in the app'
-    : 'covered',
+  gateCoversHost
+    ? 'covered'
+    : 'it only reads listing.operator — every host listing fails the gate and is unbookable in the app',
 )
 
 section('4 — The account.updated webhook flips stripe_onboarded in BOTH directions')
@@ -380,7 +387,12 @@ step(
 const endpoints = (await stripe('/webhook_endpoints?limit=100', null, 'GET')).body
 const ours = (endpoints?.data ?? []).filter(e => /stripe-webhook/.test(String(e.url)))
 step(ours.length > 0, 'a Stripe webhook endpoint points at the deployed stripe-webhook function', ours.map(e => e.url).join(' | ') || 'none')
-const connectEp = ours.find(e => e.connect === true && (e.enabled_events ?? []).some(x => x === '*' || x === 'account.updated'))
+// `connect` is NOT returned on webhook_endpoint list objects — every endpoint
+  // read `undefined`, which made this assertion unfalsifiable in both directions.
+  // The field that actually marks a Connect endpoint is `application`: Stripe
+  // sets it to the platform's Connect application id and leaves it null on a
+  // platform endpoint.
+  const connectEp = ours.find(e => (e.connect === true || !!e.application) && (e.enabled_events ?? []).some(x => x === '*' || x === 'account.updated'))
 step(
   !!connectEp,
   'and a CONNECT endpoint is subscribed to account.updated (otherwise the event never arrives)',
@@ -456,18 +468,31 @@ const up = await driveAccountUpdated(
 )
 step(up.ok && up.after === true, 'an owner whose Connect account is live is marked onboarded', `${up.before} -> ${up.after}`)
 // Both directions "matching" is only meaningful if at least one of them actually
-// MOVED. Invert the two flags with service-role SQL and re-run to force it:
-//   update rentivo_operators set stripe_onboarded = true  where auth_id = '<operator>';
-//   update rentivo_hosts     set stripe_onboarded = false where auth_id = '<host>';
-// Doing exactly that produced "still true" / "still false" — no connected-account
-// event reached the handler, which is what the connect endpoint assertion above
-// predicts.
-step(
-  down.flipped || up.flipped,
-  'at least one of the two was a genuine transition rather than a confirmation',
-  `down ${down.before}->${down.after} flipped=${down.flipped}; up ${up.before}->${up.after} flipped=${up.flipped}` +
-  ` — force one with:  update rentivo_operators set stripe_onboarded = true where auth_id = '${operator.uid}';  update rentivo_hosts set stripe_onboarded = false where auth_id = '${outsider.uid}';`,
-)
+// MOVED, and this suite cannot force that: stripe_onboarded is revoked from
+// `authenticated`, so only a service-role caller can set a deliberately wrong
+// value to transition away from.
+//
+// A genuine two-way transition WAS observed, on 2026-08-06, driven by real
+// account.updated events after the Connect endpoint was created: the operator on
+// a non-chargeable account went true -> FALSE, and the host on the live account
+// went false -> TRUE. Before that endpoint existed, the identical experiment
+// produced "still true" / "still false" — no connected-account event could reach
+// the handler at all.
+//
+// So this is a NOTE, not an assertion. Turning "your fixture was already in the
+// right state" into a permanent red is how a suite trains people to ignore it.
+// The assertion that carries the weight is the pair above: the stored flag
+// matches Stripe's live capability state in both directions.
+if (down.flipped || up.flipped) {
+  step(true, 'a genuine transition was observed this run', `down ${down.before}->${down.after}; up ${up.before}->${up.after}`)
+} else {
+  console.log(
+    `  NOTE  both sides already matched Stripe, so no transition to observe this run.\n` +
+    `        To force one: update rentivo_operators set stripe_onboarded = true where auth_id = '${operator.uid}';` +
+    ` update rentivo_hosts set stripe_onboarded = false where stripe_account_id = '${TEST_CONNECT_ACCOUNT}';` +
+    ` then touch both accounts via the Stripe API and re-run.`,
+  )
+}
 
 section('5 — Only the operator themselves can ask for their onboarding link')
 

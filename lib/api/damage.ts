@@ -57,22 +57,39 @@ export class DamageReportExistsError extends Error {
 }
 
 /**
- * Mark the inspection done on the booking. Four screens read these flags; until
- * recently nothing wrote them, so the same inspection could be filed unlimited
- * times and the badge never changed.
+ * Confirm the booking's inspection flags landed. Four screens read them.
  *
- * Deliberately not fatal: the report itself is stored, which is the part that
- * matters for a dispute. But a silently unset flag is exactly what let duplicate
- * inspections happen, so the failure has to be visible.
+ * These are no longer WRITTEN from here. The first fix wrote them client-side,
+ * but a renter who can set `pickup_damage_done` can mark an inspection done that
+ * never happened, so the grant was revoked — which broke the write again and
+ * left the flags permanently false.
+ *
+ * They are now DERIVED by a trigger on rentivo_damage_reports, recomputed from
+ * the reports that actually exist. A cache computed from its own source cannot
+ * disagree with it in either direction, and it stays correct no matter which
+ * surface files the inspection.
+ *
+ * This read-back is the check that the derivation really fired. Not fatal: the
+ * report is stored, which is what matters in a dispute.
  */
 async function markInspectionDone(bookingId: string, type: 'pickup' | 'return'): Promise<void> {
   const doneColumn = type === 'pickup' ? 'pickup_damage_done' : 'return_damage_done'
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('rentivo_bookings')
-    .update({ [doneColumn]: true })
+    .select(doneColumn)
     .eq('id', bookingId)
+    .maybeSingle()
 
-  if (error) captureException(error, { where: 'createDamageReport.flag', bookingId })
+  if (error) {
+    captureException(error, { where: 'createDamageReport.flagCheck', bookingId })
+    return
+  }
+  if ((data as Record<string, unknown> | null)?.[doneColumn] !== true) {
+    captureException(
+      new Error(`${doneColumn} did not become true after filing the ${type} inspection`),
+      { where: 'createDamageReport.flagCheck', bookingId },
+    )
+  }
 }
 
 // `listing_id` / `operator_id` are deliberately NOT part of the caller's

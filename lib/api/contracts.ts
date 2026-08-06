@@ -1,35 +1,16 @@
-import { supabase } from '@/lib/supabase'
-import { Config } from '@/constants/config'
-import type { Booking } from '@/types'
-
-export async function saveContractSignature(
-  bookingId: string,
-  role: 'consumer' | 'operator',
-  signature: string,
-): Promise<void> {
-  if (Config.useMock) return
-
-  const field = role === 'consumer' ? 'consumer_signature' : 'operator_signature'
-  const updates: Partial<Booking> & { updated_at: string } = {
-    [field]: signature,
-    updated_at: new Date().toISOString(),
-  }
-
-  if (role === 'consumer') {
-    (updates as Record<string, unknown>).contract_signed_at = new Date().toISOString()
-  }
-
-  const { data, error } = await supabase
-    .from('rentivo_bookings')
-    .update(updates)
-    .eq('id', bookingId)
-    .select('id')
-
-  if (error) throw error
-  // supabase-js reports no error for a zero-row UPDATE. This one writes a SIGNATURE
-  // on the rental contract: reporting success for a write that never landed would
-  // leave both parties believing a contract is signed when nothing was stored.
-  if (!data || data.length === 0) {
-    throw new Error('Booking not found, or you are not permitted to sign it')
-  }
-}
+/**
+ * Deliberately empty.
+ *
+ * `saveContractSignature` lived here, had zero callers, and wrote a DIFFERENT
+ * pair of columns from the ones the live signature flow uses: it set
+ * `consumer_signature` / `operator_signature` / `contract_signed_at`, while both
+ * signing screens write `guest_signature` / `operator_signature_data` plus
+ * `contract_status`. Wiring it in would have written the wrong columns and never
+ * moved `contract_status`, breaking the handoff between the two parties.
+ *
+ * Deleting it rather than adding a caller: two competing signature schemas on
+ * the same table is how a rental contract ends up with a signature nobody can
+ * find. The live path is the two sign screens plus `lib/api/finalizeContract.ts`,
+ * which renders and stores the document once both signatures exist.
+ */
+export {}

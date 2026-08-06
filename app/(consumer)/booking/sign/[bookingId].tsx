@@ -19,6 +19,7 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import { captureException } from '@/lib/sentry'
+import { finalizeContract } from '@/lib/api/finalizeContract'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
 
@@ -122,6 +123,11 @@ export default function ConsumerSignScreen() {
         failSign(statusError ?? new Error('Contract status update matched no booking row'), 'booking.sign.status')
         return
       }
+
+      // Second signature completes the contract, so render and store the actual
+      // document. Until this existed, both parties signed and no rental
+      // agreement was ever produced.
+      if (bothSigned) await finalizeContract(bookingId ?? '')
     }
 
     // i18n-pending: csgSigned

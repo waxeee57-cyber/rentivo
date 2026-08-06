@@ -400,8 +400,18 @@ step(uploadCallers.length > 0, 'uploadContractPDF has a caller', uploadCallers[0
 const buildCallers = grepRepo(/buildContractPDF\s*\(/).filter(h => !/lib\/utils\/generateContract\.ts/.test(h))
 step(buildCallers.length > 0, 'buildContractPDF has a caller', buildCallers[0] ?? 'declared in lib/utils/generateContract.ts, called by nothing')
 
-const saveSigCallers = grepRepo(/saveContractSignature\s*\(/).filter(h => !/lib\/api\/contracts\.ts/.test(h))
-step(saveSigCallers.length > 0, 'saveContractSignature has a caller', saveSigCallers[0] ?? 'declared in lib/api/contracts.ts, called by nothing')
+// `saveContractSignature` was dead code that wrote a COMPETING pair of signature
+// columns (consumer_signature / operator_signature) from the ones the live flow
+// uses (guest_signature / operator_signature_data). The resolution was to delete
+// it, not to give it a caller: two signature schemas on one table is how a signed
+// contract ends up with a signature nobody can find. So the assertion is now that
+// it does not exist — a declaration coming back is the regression to catch.
+const saveSigDecl = grepRepo(/(export\s+)?(async\s+)?function\s+saveContractSignature\b/)
+step(
+  saveSigDecl.length === 0,
+  'the competing saveContractSignature schema stays deleted',
+  saveSigDecl[0] ?? 'gone; the live path is the two sign screens plus finalizeContract',
+)
 
 // The booking screen offers "View contract" and opens booking.contract_url — but
 // nothing in the app or in any edge function ever writes that column.

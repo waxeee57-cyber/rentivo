@@ -103,7 +103,19 @@ serve(async (req) => {
         .eq('id', operator.id)
     }
 
-    const appUrl = Deno.env.get('APP_URL') ?? 'rentivo://app'
+    // Stripe requires PUBLIC http(s) URLs here and rejects a custom scheme with
+    // 400 "Not a valid URL". The default was `rentivo://app`, so with APP_URL
+    // unset — which it is — every single call to this function 500'd on the very
+    // last step, after the Connect account had already been created. That is
+    // worse than failing early: it left an account id on the operator row with
+    // no way for them to ever finish onboarding it.
+    //
+    // The web domain is the landing point; it deep-links back into the app.
+    const rawAppUrl = Deno.env.get('APP_URL')?.trim()
+    const appUrl = rawAppUrl && /^https?:\/\//i.test(rawAppUrl)
+      ? rawAppUrl.replace(/\/+$/, '')
+      : 'https://rentivo.domrol.com'
+
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
       refresh_url: `${appUrl}/operator/stripe-refresh`,

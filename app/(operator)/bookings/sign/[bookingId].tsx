@@ -18,6 +18,7 @@ import { useToastStore } from '@/lib/store/useToastStore'
 import { Config } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import { captureException } from '@/lib/sentry'
+import { finalizeContract } from '@/lib/api/finalizeContract'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -112,6 +113,11 @@ export default function OperatorSignScreen() {
         failSign(statusError ?? new Error('Contract status update matched no booking row'), 'opBooking.sign.status')
         return
       }
+
+      // Second signature completes the contract, so render and store the actual
+      // document. Non-fatal by design: the signatures are already committed and
+      // they are what carries the legal weight.
+      if (bothSigned) await finalizeContract(bookingId ?? '')
     }
 
     showToast({ message: t('opBkToastSigned', language), type: 'success' })

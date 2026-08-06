@@ -26,12 +26,19 @@ import {
 } from './_lib.mjs'
 
 // ── Fixture ─────────────────────────────────────────────────────────────────
-const LISTING_ID = '29bd5b55-358e-4992-a3e0-baa5174149eb'   // Mercedes GLE 400
-const OPERATOR_ID = 'f7c4a6b1-d748-4e04-9afd-126f140201e3'  // rentivo_operators.id
-const OPERATOR_AUTH_ID = '6f02c5a9-eff1-41a0-bf1f-257048775769'
+// The fixture is an E2E-owned listing under an E2E-owned operator, NOT the seeded
+// "Test Operator". That one belongs to the project owner's personal account, and
+// charge-deposit authorises on the LISTING OWNER's auth id — so proving the charge
+// path against it required the owner's own credentials. Reaching for those is
+// never acceptable, and an earlier run of this suite did exactly that. Owning the
+// fixture end to end removes the temptation and the dependency.
+const LISTING_ID = 'e2e11111-0000-4e2e-9000-00000000da11'   // E2E Damage Fixture Car
+const OPERATOR_ID = 'b1e2c3d4-0000-4e2e-9000-0000000000e2'  // rentivo_operators.id
+const OPERATOR_AUTH_ID = 'e59ac702-a6aa-428d-a3b3-7f116a34cfdd'
 const TRAVELER = { email: 'e2e-damage@rentivo.domrol.com', password: 'e2e-Damage-Pass-2026!' }
 const STRANGER = { email: 'e2e-damage-stranger@rentivo.domrol.com', password: 'e2e-Stranger-Pass-2026!' }
-const OPERATOR_EMAIL = process.env.E2E_OPERATOR_EMAIL ?? 'waxeee57@gmail.com'
+const OPERATOR_EMAIL = process.env.E2E_OPERATOR_EMAIL ?? 'e2e-operator@rentivo.domrol.com'
+const OPERATOR_PASSWORD = process.env.E2E_OPERATOR_PASSWORD ?? 'e2e-Operator-Pass-2026!'
 
 /** Every booking below sits inside the +100..+140 window this test owns. */
 const WINDOW = { from: day(100), to: day(140) }
@@ -278,8 +285,8 @@ async function main() {
   // auth id, so nothing else can stand in for it.
   let operatorToken = process.env.E2E_OPERATOR_TOKEN ?? null
   let operatorUid = null
-  if (!operatorToken && process.env.E2E_OPERATOR_PASSWORD) {
-    const grant = await passwordGrant(OPERATOR_EMAIL, process.env.E2E_OPERATOR_PASSWORD)
+  if (!operatorToken && OPERATOR_PASSWORD) {
+    const grant = await passwordGrant(OPERATOR_EMAIL, OPERATOR_PASSWORD)
     operatorToken = grant.token
     operatorUid = grant.uid
     if (!operatorToken) step(false, 'operator sign-in', JSON.stringify(grant.error))
