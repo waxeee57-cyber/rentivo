@@ -93,15 +93,35 @@ docs/           audits/, ops/, requirements.md
   `27a4faa` minden tesztcsomag saját fixtúrát kapott
 
 ### A bizonyíték, nem az érzés
-`node scripts/e2e/all.mjs` — 11 csomag, **1035 állítás, 0 bukás**, az ÉLES
+`node scripts/e2e/all.mjs` — **12 csomag, 1041 állítás, 0 bukás**, az ÉLES
 deployment ellen, valódi Stripe test-mode pénzzel. `--parallel` ugyanazokat a
 csomagonkénti számokat adja: ez a bizonyíték arra, hogy a csomagok nem
 zavarják egymást, nem a sebesség. Ha a két mód eltér, az eltérés maga a hiba.
 
-Két lépés futás közben szolgáltatói jogot igényel, és a script megvárja
+Három lépés futás közben szolgáltatói jogot igényel, és a script megvárja
 (kiírja a SQL-t, majd pollingol) — nem tud magától továbbmenni:
 - `cancellation-matrix`: `start_date` tolás a visszatérítési sávokba
 - `identity-gate --prove-open`: a Didit webhookot helyettesítő jóváhagyott sor
+- `didit-webhook --prove-open`: jóváhagyott KYC sikeres ága (lásd lent)
+
+### Stripe és Didit — mit bizonyítottam, mit nem
+**Stripe:** teljes pénzút test-mode-ban bizonyítva — foglalás→payment intent→
+webhook→confirmed+dátumblokk, host pénzút, visszatérítési mátrix (valódi
+Stripe refundokkal), letét vaultolás+terhelés+decline/retry+plafon+waiver,
+Connect onboarding+account country, webhook aláírás (dupla titok)+dedupe.
+Mind a három Stripe titok be van állítva a deployolt függvényeken.
+**Egyetlen hiány: éles mód** (`sk_live`) — soha nem futott, éles KYC kell hozzá.
+Ez strukturálisan blokkolt, nem hiba.
+
+**Didit:** `didit-webhook.mjs` bizonyítja, hogy az aláírás-kapu **él** —
+aláírás nélküli / rossz aláírású / rossz titokkal aláírt hívás mind 401, és a
+`DIDIT_WEBHOOK_SECRET` be van állítva (nem 500). A handler kódja helyes
+(HMAC-SHA256 nyers törzsön, konstans idejű, fail-closed). A **sikeres ág**
+(helyesen aláírt "Approved" → jóváhagyott sor + `identity_status=verified`)
+innen csak a titokkal és egy privilegizált SQL sorral mérhető
+(`--prove-open`). Amit SEMMI innen futó teszt nem tud: hogy a Didit VALÓDI
+éles aláírása (fejlécnév, hex vs base64) egyezik-e a handler feltevésével —
+ez éles Didit-session, go-live checklist tétel.
 
 `gdpr.mjs` fázisai külön futnak (`build` → SETUP SQL → `erase` → `residue`,
 plusz `export`), mert az `erase` törli az alany fiókját. Egy teljes törlési
@@ -134,15 +154,48 @@ Javítva ma:
 abban `site_url = "http://127.0.0.1:3000"` áll, tehát a push visszaírná a fenti
 hibát élesbe.
 
-### 🔴 A LEGNAGYOBB NYITOTT TÉTEL: e-mail kapacitás
-`rate_limit_email_sent = 2` **óránként, projekt-szinten** — ez a beépített
-Supabase SMTP kapacitása, amit a Supabase maga is csak tesztre ajánl.
-Indulás napján a harmadik regisztráló **semmilyen megerősítő e-mailt nem kap**,
-hibaüzenet nélkül. Ez nem finomhangolás, ez a tölcsér teteje.
+### 🔴 A LEGNAGYOBB NYITOTT TÉTEL: e-mail + push konfiguráció
+A kód kész, a TITKOK nincsenek beállítva — mérve `supabase secrets list`-tel:
 
-Megoldás előkészítve: `scripts/configure-auth-smtp.ps1`. Kell hozzá egy Resend
-fiók, a domrol.com igazolása (SPF + DKIM + return-path CNAME), és
-`RESEND_API_KEY=re_...` a `.env`-be. Utána egy parancs, és a limit 100/óra.
+- **Auth e-mailek** (regisztráció-megerősítés, jelszó-reset): a beépített
+  Supabase SMTP-n mennek, `rate_limit_email_sent = 2` **óránként, projekt-
+  szinten**. Indulás napján a harmadik regisztráló **semmilyen megerősítő
+  e-mailt nem kap**, hibaüzenet nélkül. Ez a tölcsér teteje.
+- **Tranzakciós app-emailek** (`send-email` függvény, pl. foglalás-
+  visszaigazolás): a `RESEND_API_KEY` **nincs beállítva** a függvény
+  környezetében → ez az út is **halott**.
+- **Marketing push** (`broadcast-push`): az `ADMIN_BROADCAST_SECRET` nincs
+  beállítva → fail-closed, tehát **senki (admin sem) nem tud broadcastot
+  küldeni**. Nem kihasználható (biztonságos alapállapot), de a funkció ki van
+  kapcsolva.
+
+Mindhárom ugyanarra a Resend-setupra vár. Megoldás előkészítve:
+`scripts/configure-auth-smtp.ps1` — kell hozzá Resend fiók, a domrol.com
+igazolása (SPF + DKIM + return-path CNAME), és `RESEND_API_KEY=re_...` a
+`.env`-be. Utána egy parancs, és az auth-limit 100/óra + az SMTP valódi.
+A `send-email`-hez és a broadcasthoz a titkokat `supabase secrets set
+RESEND_API_KEY=... ADMIN_BROADCAST_SECRET=...` állítja be.
+
+### Teszt-fixtúra karbantartás (cancellation-matrix)
+Minden `cancellation-matrix` futás hagy egy `completed` foglalást (a
+"completed nem mondható le" eset), ami terminális és **örökre fogja a napjait**
+a +350..+420 ablakban. Elég futás után (~10-14) az ablak megtelik, és a
+`pickFarBase` hangosan elhasal: "every base is blocked... completed-rental
+fixtures have filled the window". Ez NEM termékhiba — ilyenkor törölni kell a
+felhalmozott teszt-rekordokat (service role):
+```sql
+delete from public.rentivo_availability a using public.rentivo_bookings b
+  where a.booking_id=b.id and b.listing_id::text like 'e2ecafe1-0000-4e2e-9000-%'
+    and b.status='completed' and b.notes like 'E2E-CANCEL-MATRIX:%';
+delete from public.rentivo_loyalty l using public.rentivo_bookings b
+  where l.booking_id=b.id and b.listing_id::text like 'e2ecafe1-0000-4e2e-9000-%'
+    and b.status='completed' and b.notes like 'E2E-CANCEL-MATRIX:%';
+delete from public.rentivo_bookings b where b.listing_id::text like 'e2ecafe1-0000-4e2e-9000-%'
+    and b.status='completed' and b.notes like 'E2E-CANCEL-MATRIX:%';
+```
+Ha egy `--parallel` futás DNS/hálózati baki miatt elhal a cleanup előtt,
+ugyanígy törmeléket hagy a `e2ecafe1` fixtúrákon — ezt is így kell takarítani
+(status not in cancelled/completed → cancelled).
 - **Szándékosan nem javított linter-találatok** (mérve, nem feltételezve):
   - `btree_gist` a `public` sémában — áthelyezése a `rentivo_bookings_no_overlap`
     exclusion constraintet érinti, ami a dupla foglalás ellen véd. A haszon

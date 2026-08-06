@@ -45,6 +45,9 @@ const SUITES = [
   { name: 'messaging', file: 'messaging.mjs' },
   { name: 'gdpr', file: 'gdpr.mjs', args: ['build'] },
   { name: 'identity-gate', file: 'identity-gate.mjs' },
+  // The guard half only (no --prove-success): forges callbacks and proves each
+  // is rejected. Mutates nothing, so it is safe in the unattended run.
+  { name: 'didit-webhook', file: 'didit-webhook.mjs' },
   { name: 'admin', file: 'admin.mjs' },
   { name: 'cancellation-matrix', file: 'cancellation-matrix.mjs', needsShift: true },
   { name: 'host-money-path', file: 'host-money-path.mjs' },
