@@ -16,14 +16,27 @@
  *     React Native bundle the renter is holding. Section 2 skips the screen
  *     entirely and calls create-booking the way any HTTP client can.
  *
- * The script adapts to the fixture it finds: with no approved verification it
- * proves the closed gate, and once an approved row exists (inserted by SQL,
- * standing in for the Didit webhook) it proves the open one. Run it twice.
+ * A gate has two branches and only one of them is security-critical, so the
+ * closed one runs every time. The OPEN branch — an approved renter gets through —
+ * needs a row no client token may write, which is the point of section 1. The
+ * script used to "adapt to the fixture it finds", which sounds accommodating and
+ * meant in practice that whichever branch had run last was the only one anybody
+ * had evidence for.
  *
- * Run:  node scripts/e2e/identity-gate.mjs
+ * So: the closed branch always runs, and `--prove-open` additionally waits for
+ * the approved row to appear (printing the statement, polling for it — the same
+ * shape as the start_date shift in cancellation-matrix), proves the gate opens,
+ * then waits for it to be removed again so the next run starts closed. That is
+ * also what the Didit webhook does in production: it flips the state mid-session.
+ *
+ * Run:  node scripts/e2e/identity-gate.mjs                # closed branch, unattended
+ *       node scripts/e2e/identity-gate.mjs --prove-open   # both branches, two SQL steps
  */
-import { sb, signIn, step, section, finish, day, createBooking, releaseWindow } from './_lib.mjs'
+import { sb, signIn, step, section, finish, day, sleep, createBooking, releaseWindow } from './_lib.mjs'
 import { FIXTURES, PRIVATE_OPERATORS, assertFixture } from './fixtures.mjs'
+
+const PROVE_OPEN = process.argv.includes('--prove-open')
+const WAIT_TIMEOUT_MS = Number(process.env.E2E_IDENTITY_TIMEOUT_MS ?? 900000)
 
 const ADMIN_EMAIL = 'e2e-admin@rentivo.domrol.com'
 const ADMIN_PASS = 'e2e-Admin-Pass-2026!'
@@ -140,8 +153,16 @@ async function main() {
     {}, user.token)
   step(ownRead.status === 200, 'the traveler can still READ their own verification rows', `status=${ownRead.status}`)
   const newest = Array.isArray(ownRead.body) ? ownRead.body[0] ?? null : null
-  const approved = newest?.status === 'approved'
   step(true, 'newest verification row for this traveler', JSON.stringify(newest))
+
+  // The closed branch is the one that matters, so a leftover approved row from an
+  // interrupted --prove-open run is a fixture failure, not a reason to skip it.
+  if (newest?.status === 'approved') {
+    step(false, 'precondition: the traveler starts UNVERIFIED',
+      'an approved verification is left over from an earlier --prove-open run; remove it and re-run: '
+      + `delete from public.rentivo_identity_verifications where user_id = '${user.uid}';`)
+    return
+  }
 
   // ── 2. Turn the operator's requirement on ─────────────────────────────────
   section('2. operator requires identity verification')
@@ -166,48 +187,63 @@ async function main() {
     JSON.stringify(asSeenByClient[0]?.operator),
   )
 
-  if (!approved) {
-    section('2b. UNVERIFIED traveler — is the gate enforced on the server?')
-    step(true, 'precondition: traveler has no approved verification', JSON.stringify(newest))
+  // ── 2b. The closed gate — always ──────────────────────────────────────────
+  section('2b. UNVERIFIED traveler — is the gate enforced on the server?')
+  step(true, 'precondition: traveler has no approved verification', JSON.stringify(newest))
 
-    const blocked = await createBooking(user.token, {
-      listingId: LISTING, start: day(FX.from + 4), end: day(FX.from + 6),
-    })
-    // The client renders a lock screen; this call never went near the client.
+  const blocked = await createBooking(user.token, {
+    listingId: LISTING, start: day(FX.from + 4), end: day(FX.from + 6),
+  })
+  // The client renders a lock screen; this call never went near the client.
+  step(
+    blocked.status >= 400,
+    'create-booking REFUSES an unverified renter when the operator requires KYC',
+    `status=${blocked.status} ${JSON.stringify(blocked.body).slice(0, 200)}`,
+  )
+  if (blocked.status === 200) {
+    const created = await rows(user.token,
+      `rentivo_bookings?id=eq.${blocked.body?.booking_id}&select=id,status,payment_status,requires_identity_verification,identity_verified`)
     step(
-      blocked.status >= 400,
-      'create-booking REFUSES an unverified renter when the operator requires KYC',
-      `status=${blocked.status} ${JSON.stringify(blocked.body).slice(0, 200)}`,
+      false,
+      'CRITICAL: the gate is client-side only — an unverified renter booked by calling create-booking directly',
+      JSON.stringify(created[0]),
     )
-    if (blocked.status === 200) {
-      const created = await rows(user.token,
-        `rentivo_bookings?id=eq.${blocked.body?.booking_id}&select=id,status,payment_status,requires_identity_verification,identity_verified`)
-      step(
-        false,
-        'CRITICAL: the gate is client-side only — an unverified renter booked by calling create-booking directly',
-        JSON.stringify(created[0]),
-      )
-    }
+  }
 
-    console.log('\n  NEXT  insert an approved verification (stands in for the Didit webhook) and re-run:')
-    console.log(`  insert into public.rentivo_identity_verifications (user_id, didit_session_id, status, document_type, document_country, document_number, full_name, date_of_birth, face_match_score, liveness_passed, verified_at) values ('${user.uid}', 'e2e-didit-${Date.now()}', 'approved', 'passport', 'ES', 'E2E-DOC-001', 'E2E Traveler', '1990-01-01', 98.5, true, now());`)
+  if (!PROVE_OPEN) {
+    console.log('\n  NOTE  the OPEN branch was not exercised. To prove both in one run:')
+    console.log('        node scripts/e2e/identity-gate.mjs --prove-open')
     return
   }
 
   // ── 3. Approved verification — the gate opens ─────────────────────────────
-  section('3. APPROVED traveler — booking proceeds')
-  step(true, 'precondition: traveler has an approved verification', JSON.stringify(newest))
-  step(
-    newest?.status === 'approved',
-    'the booking screen would compute isIdentityApproved = true and render the form',
-  )
+  section('3. APPROVED traveler — the gate opens')
 
+  const INSERT_SQL = `insert into public.rentivo_identity_verifications (user_id, didit_session_id, status, document_type, document_country, document_number, full_name, date_of_birth, face_match_score, liveness_passed, verified_at)\nvalues ('${user.uid}', 'e2e-didit-${Date.now()}', 'approved', 'passport', 'ES', 'E2E-DOC-001', 'E2E Traveler', '1990-01-01', 98.5, true, now());`
+  const DELETE_SQL = `delete from public.rentivo_identity_verifications where user_id = '${user.uid}';`
+
+  const approvedRow = await waitFor(
+    'an approved verification appears (stands in for the Didit webhook)',
+    INSERT_SQL,
+    async () => {
+      const list = await rows(user.token,
+        `rentivo_identity_verifications?user_id=eq.${user.uid}&status=eq.approved&select=status,verified_at`)
+      return list[0] ?? null
+    },
+  )
+  if (!approvedRow) return
+  approvedRowExists = true
+  step(true, 'the booking screen would compute isIdentityApproved = true and render the form',
+    JSON.stringify(approvedRow))
+
+  // A different slot from the refused attempt: that one never created a booking,
+  // but a previous --prove-open run's booking may still hold its nights.
   const allowed = await createBooking(user.token, {
     listingId: LISTING, start: day(FX.from + 10), end: day(FX.from + 12),
   })
   step(
     allowed.status === 200 && !!allowed.body?.booking_id,
-    'create-booking accepts the verified renter',
+    'create-booking ACCEPTS the same renter once verified',
     `status=${allowed.status} ${JSON.stringify(allowed.body).slice(0, 200)}`,
   )
   if (allowed.body?.booking_id) {
@@ -215,13 +251,57 @@ async function main() {
       `rentivo_bookings?id=eq.${allowed.body.booking_id}&select=id,status,payment_status,total_amount`))[0]
     step(!!row, 'the booking is readable back by the renter', JSON.stringify(row))
   }
+
+  // Put the account back to UNVERIFIED, or every later run silently skips the
+  // closed branch — the exact failure this rewrite exists to remove.
+  const gone = await waitFor(
+    'the verification is removed again, so the next run starts closed',
+    DELETE_SQL,
+    async () => {
+      const list = await rows(user.token,
+        `rentivo_identity_verifications?user_id=eq.${user.uid}&select=status`)
+      return list.length === 0 ? { cleared: true } : null
+    },
+  )
+  if (gone) approvedRowExists = false
+}
+
+/**
+ * Print a statement only a privileged role can run, then poll until it lands.
+ *
+ * Same contract as the start_date shift in cancellation-matrix: the script does
+ * not pretend it can do this itself, and it does not silently continue without
+ * it either — it blocks, says exactly what it is waiting for, and fails loudly
+ * on the timeout.
+ */
+async function waitFor(label, sql, probe) {
+  console.log('\n  Run this with the service role (Supabase MCP execute_sql):\n')
+  console.log(sql.split('\n').map(l => '    ' + l).join('\n'))
+  console.log('')
+  const deadline = Date.now() + WAIT_TIMEOUT_MS
+  while (Date.now() < deadline) {
+    const hit = await probe()
+    if (hit) { step(true, label, JSON.stringify(hit)); return hit }
+    await sleep(5000)
+  }
+  step(false, label, `timed out after ${WAIT_TIMEOUT_MS}ms`)
+  return null
 }
 
 // Fixture state main() mutates and cleanup() must put back.
 let restoreFlag = null
+let approvedRowExists = false
 
 async function cleanup() {
   section('cleanup')
+
+  // An interrupted --prove-open run leaves the account verified, and the next
+  // run then refuses to start rather than quietly proving only the open branch.
+  // Say so here, while the operator is still looking at the output.
+  if (approvedRowExists) {
+    console.log('  WARN  this run left an approved verification behind. Remove it before the next run:')
+    console.log('        delete from public.rentivo_identity_verifications where user_id = (select id from auth.users where email = \'' + USER_EMAIL + '\');')
+  }
 
   // Whatever the gate did, this suite must not leave nights held on its own
   // listing: the open-gate branch books one, and an interrupted run can leave one

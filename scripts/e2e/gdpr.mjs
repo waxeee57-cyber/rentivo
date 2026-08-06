@@ -52,9 +52,9 @@ const USER_PASS = 'e2e-Gdpr-Pass-2026!'
 const FX = FIXTURES.gdpr
 const LISTING = FX.listing
 const OPERATOR = SHARED_OPERATOR.id
-/** Fixed slot inside the window, cleared at the start of every build. */
-const BOOKING_DAY = FX.from + 4
 const PLACEHOLDER = '00000000-0000-0000-0000-000000000001'
+/** Nights the fixture booking occupies. */
+const STAY = 2
 
 /** Distinctive enough that the residue sweep cannot match it by accident. */
 const PII = {
@@ -110,6 +110,33 @@ select coalesce(jsonb_agg(jsonb_build_object('table', tbl, 'column', col, 'needl
 from _gdpr_sweep;
 `.trim()
 
+/**
+ * The first slot inside this suite's own window whose nights are all free.
+ *
+ * It reads `rentivo_availability` — the calendar `create-booking` itself checks —
+ * rather than `rentivo_bookings`, and that distinction is the whole point:
+ * bookings are visible only to the caller who owns them, while the blocked
+ * nights left by a previous subject's RETAINED booking are visible to everyone.
+ * Looking at the wrong one is what made a build pick a slot that was demonstrably
+ * free by its own query and still 409 on the server.
+ *
+ * `blocked_date`..`end_date` is a half-open range, so a stay ending on a blocked
+ * row's `blocked_date` does not overlap it.
+ */
+async function pickFreeSlot(token) {
+  const held = await rows(token,
+    `rentivo_availability?listing_id=eq.${LISTING}`
+    + `&blocked_date=lte.${day(FX.to)}&end_date=gte.${day(FX.from)}`
+    + '&select=blocked_date,end_date')
+  const ranges = held.map(r => [r.blocked_date, r.end_date ?? r.blocked_date])
+  for (let start = FX.from; start + STAY <= FX.to; start++) {
+    const from = day(start)
+    const to = day(start + STAY)
+    if (ranges.every(([bFrom, bTo]) => to <= bFrom || from >= bTo)) return start
+  }
+  return null
+}
+
 /** Build a subject with real residue in every table the erasure must touch. */
 async function buildResidue(token, uid) {
   section('build: a user with something to erase')
@@ -129,12 +156,8 @@ async function buildResidue(token, uid) {
   // rentivo_bookings.user_id -> auth.users is ON DELETE NO ACTION.
   //
   // A build leaves this booking behind on purpose — retaining it past erasure is
-  // the whole point of Art. 17(3)(b), and the `erase` phase needs it. So the
-  // cleanup for this suite runs at the START of a build rather than the end:
-  // release whatever the previous build left in this window, then take one fixed
-  // slot. That is what lets a second build find free dates, and it replaced a
-  // "scan forward from +200 in steps of two until something is free" loop that
-  // silently walked into whichever suite owned the next window along.
+  // the whole point of Art. 17(3)(b) — so the cleanup for this suite runs at the
+  // START of a build rather than the end.
   const released = await releaseWindow(token, LISTING, FX.from, FX.to)
   step(
     released.stuck.length === 0,
@@ -142,15 +165,37 @@ async function buildResidue(token, uid) {
     `${released.released.length} of ${released.found} released${released.stuck.length ? ', stuck: ' + released.stuck.join(', ') : ''}`,
   )
 
+  // ...but releasing is not enough, and a fixed slot is why.
+  //
+  // The `erase` phase repoints the retained booking at the PLACEHOLDER user and
+  // strips its PII. That row is exactly what Art. 17(3)(b) requires to survive —
+  // and from that moment the next subject can neither see it (RLS scopes reads
+  // to the caller's own bookings) nor cancel it. It holds its nights forever.
+  // With a fixed slot the very next build therefore died on 409 "Selected dates
+  // are not available", which reads as a product bug and is not one: a full
+  // erase cycle simply burns one slot, permanently.
+  //
+  // So the slot is chosen by looking at the calendar the booking guard actually
+  // reads, not at the subject's own bookings. Each erase cycle costs one slot
+  // and the window holds ~19 of them, after which this fails loudly with
+  // "the window is full" rather than colliding.
+  const bookingDay = await pickFreeSlot(token)
+  if (bookingDay === null) {
+    step(false, `a free ${STAY}-night slot inside +${FX.from}..+${FX.to}`,
+      'every slot is held by a retained (anonymised) booking from a previous erase — widen FIXTURES.gdpr')
+    return null
+  }
+  step(true, 'this build owns a free slot', `+${bookingDay}..+${bookingDay + STAY}`)
+
   const created = await createBooking(token, {
-    listingId: LISTING, start: day(BOOKING_DAY), end: day(BOOKING_DAY + 2), extra: PII,
+    listingId: LISTING, start: day(bookingDay), end: day(bookingDay + STAY), extra: PII,
   })
   if (created.status !== 200 || !created.body?.booking_id) {
     step(false, 'booking created',
       `status=${created.status} ${JSON.stringify(created.body).slice(0, 160)}`)
     return null
   }
-  step(true, 'booking created', `+${BOOKING_DAY}..+${BOOKING_DAY + 2} days, id=${created.body.booking_id}`)
+  step(true, 'booking created', `+${bookingDay}..+${bookingDay + STAY} days, id=${created.body.booking_id}`)
   const bookingId = created.body.booking_id
 
   const paid = await payBooking(token, bookingId)
