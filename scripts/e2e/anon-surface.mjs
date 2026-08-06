@@ -95,14 +95,20 @@ const refusedByGrant = r =>
  * Tables an anonymous visitor is SUPPOSED to be able to read, and why.
  *
  * This is the storefront. Somebody browsing rentivo.domrol.com without an
- * account has to see the vehicles, who rents them out and what previous renters
- * said, or there is no marketplace. Everything not on this list must return
- * zero rows to a caller with no session.
+ * account has to see the vehicles, what previous renters said, and the calendar,
+ * or there is no marketplace. Everything not on this list must return zero rows
+ * to a caller with no session.
+ *
+ * NOTE the two owner tables are deliberately NOT here anymore. rentivo_operators
+ * and rentivo_hosts leaked every column to anon (stripe_account_id, email, the
+ * host's auth UUID) through a permissive policy + table grant. anon SELECT on the
+ * base is now REVOKED and the storefront reads curated *_public VIEWS instead —
+ * asserted in section 1b, both directions. Leaving them off this list means the
+ * sweep in §1 now GUARDS them: if anon can ever read the base again it returns
+ * rows, is not on the allowlist, and turns red.
  */
 const PUBLIC_READ = {
   rentivo_listings: 'the catalogue — a marketplace nobody can browse is not a marketplace',
-  rentivo_operators: 'the rental company behind a listing, shown on the listing page',
-  rentivo_hosts: 'the private host behind a C2C listing, same reason',
   rentivo_reviews: 'social proof, shown before signup',
   rentivo_availability: 'the calendar on a listing page, so dates show as taken before login',
   rentivo_blackout_periods: 'same calendar, owner-declared closures',
@@ -210,6 +216,54 @@ for (const [table, what] of [
     r.status >= 400 || n === 0,
     `a stranger cannot read ${table} — ${what}`,
     `status=${r.status} rows=${n ?? 'n/a'}`,
+  )
+}
+
+// ── 1b. operators/hosts: base shut, public view open ────────────────────────
+//
+// The two profile tables used to hand an anonymous caller every column —
+// stripe_account_id, email, phone, the host's auth.users UUID — through a
+// permissive SELECT policy plus a table grant (measured HIGH, audit 2026-08-06).
+// The fix is a two-part shape the storefront now depends on: anon SELECT on the
+// BASE tables is revoked, and a curated *_public VIEW (marketing columns, active
+// rows) is what the clients read instead. So the assertion is two-sided — the
+// base must be shut AND the view must be open — because a fix that only did one
+// half is the exact failure this suite exists to refuse to read off the schema.
+section('1b. operators/hosts leak: base shut, public view open')
+
+for (const [base, sensitive] of [
+  ['rentivo_operators', 'stripe_account_id,email,phone'],
+  ['rentivo_hosts', 'auth_id,email,stripe_account_id'],
+]) {
+  const r = await sb(`/rest/v1/${base}?select=*&limit=1`, {})
+  step(
+    refusedByGrant(r) || (listSize(r.body) ?? 0) === 0,
+    `a stranger cannot read the base ${base} — anon SELECT is revoked`,
+    `status=${r.status} rows=${listSize(r.body) ?? 'n/a'}`,
+  )
+  // Name the columns explicitly: a column-scoped grant would let select=* fail
+  // while a named read still leaked. Ask for the exact payout/PII columns.
+  const c = await sb(`/rest/v1/${base}?select=${sensitive}&limit=1`, {})
+  step(
+    refusedByGrant(c) || (listSize(c.body) ?? 0) === 0,
+    `...and cannot name its sensitive columns to get around it (${sensitive})`,
+    `status=${c.status} rows=${listSize(c.body) ?? 'n/a'}`,
+  )
+}
+
+for (const [view, why] of [
+  ['rentivo_operators_public', 'the rental company behind a listing, shown on the listing page'],
+  ['rentivo_hosts_public', 'the private host behind a C2C listing, same reason'],
+]) {
+  const r = await sb(`/rest/v1/${view}?select=*&limit=1`, {})
+  step(r.status === 200, `${view} IS readable — ${why}`, `status=${r.status} rows=${listSize(r.body)}`)
+  // The projection must not carry a sensitive column even when asked by name;
+  // if it did, the view would just be the leak with an extra step.
+  const leak = await sb(`/rest/v1/${view}?select=stripe_account_id&limit=1`, {})
+  step(
+    leak.status >= 400,
+    `${view} does not expose stripe_account_id — the column is not in the projection`,
+    `status=${leak.status} ${JSON.stringify(leak.body).slice(0, 90)}`,
   )
 }
 

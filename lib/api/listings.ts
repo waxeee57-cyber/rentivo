@@ -26,6 +26,50 @@ export interface PagedListings {
 }
 
 /**
+ * Attach `operator` / `host` to listing rows from the PUBLIC views, in a second
+ * query rather than a PostgREST embed.
+ *
+ * Why not embed: rentivo_operators / rentivo_hosts expose sensitive columns
+ * (stripe_account_id, email, phone, auth_id, legal_name, vat_number, kyc_*,
+ * push_token, …) and anon held a table-level SELECT grant, so an embed —
+ * operator:rentivo_operators(*) — returned every one of them to an unauthenticated
+ * browser. Column-scoping the base table breaks embeds (PostgREST resolves the FK
+ * on the base and needs table SELECT even to read a curated view), so the base
+ * SELECT is revoked from anon entirely and the marketing columns come from the
+ * rentivo_operators_public / rentivo_hosts_public views instead. Those views have
+ * no FK, so they cannot be embedded — hence this explicit id -> row join.
+ *
+ * Two `.in()` reads, deduped, run in parallel; a missing owner row leaves the
+ * field null exactly as a left-join embed would.
+ */
+async function hydrateOwners(rows: Listing[]): Promise<Listing[]> {
+  if (rows.length === 0) return rows
+  const opIds = [...new Set(rows.map(r => (r as { operator_id?: string }).operator_id).filter(Boolean))] as string[]
+  const hostIds = [...new Set(rows.map(r => (r as { host_id?: string }).host_id).filter(Boolean))] as string[]
+
+  const [ops, hosts] = await Promise.all([
+    opIds.length
+      ? supabase.from('rentivo_operators_public').select('*').in('id', opIds)
+      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+    hostIds.length
+      ? supabase.from('rentivo_hosts_public').select('*').in('id', hostIds)
+      : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+  ])
+
+  const opMap = new Map((ops.data ?? []).map(o => [(o as { id: string }).id, o]))
+  const hostMap = new Map((hosts.data ?? []).map(h => [(h as { id: string }).id, h]))
+
+  return rows.map(r => {
+    const row = r as Listing & { operator_id?: string; host_id?: string }
+    return {
+      ...row,
+      operator: row.operator_id ? opMap.get(row.operator_id) ?? null : null,
+      host: row.host_id ? hostMap.get(row.host_id) ?? null : null,
+    } as Listing
+  })
+}
+
+/**
  * Overloaded on purpose: passing `paging` opts into the `{ data, hasMore }` shape the
  * infinite-scroll hook needs, while the historic single-argument form still returns a
  * plain array so existing callers (e.g. lib/api/unifiedSearch.ts) compile unchanged.
@@ -54,7 +98,7 @@ export async function fetchListings(
 
   let query = supabase
     .from('rentivo_listings')
-    .select('*, operator:rentivo_operators(*)')
+    .select('*')
     .eq('available', true)
 
   if (filters?.category) query = query.eq('category', filters.category)
@@ -74,7 +118,8 @@ export async function fetchListings(
   const rows = (data as Listing[]) ?? []
   const hasMore = rows.length > pageSize
   const pageRows = hasMore ? rows.slice(0, pageSize) : rows
-  return paging ? { data: pageRows, hasMore } : pageRows
+  const hydrated = await hydrateOwners(pageRows)
+  return paging ? { data: hydrated, hasMore } : hydrated
 }
 
 export async function fetchListing(id: string): Promise<Listing | null> {
@@ -84,13 +129,7 @@ export async function fetchListing(id: string): Promise<Listing | null> {
 
   const { data, error } = await supabase
     .from('rentivo_listings')
-    // The host has to come back too. The booking screen decides whether the
-    // owner can be paid from `listing.operator`, and a host-owned listing has no
-    // operator join — so that check was false for EVERY host listing however
-    // well onboarded the host was, and the screen refused the booking with "the
-    // operator has not finished setting up payments yet". No host listing was
-    // bookable in the app at all.
-    .select('*, operator:rentivo_operators(*), host:rentivo_hosts(*)')
+    .select('*')
     .eq('id', id)
     .single()
 
@@ -101,7 +140,12 @@ export async function fetchListing(id: string): Promise<Listing | null> {
     if (error.code === 'PGRST116') return null
     throw error
   }
-  return data as Listing
+  // operator AND host are attached from the public views. The booking screen
+  // decides whether the owner can be paid from `listing.operator` (or `.host` for
+  // a host-owned listing), so both have to be present or a well-onboarded host's
+  // listing reads as "payments not set up" and refuses the booking.
+  const [hydrated] = await hydrateOwners([data as Listing])
+  return hydrated
 }
 
 export async function fetchOperatorListings(operatorId: string, paging?: PagingOptions): Promise<Listing[]> {
@@ -265,12 +309,12 @@ export async function getAvailableTodayListings(): Promise<Listing[]> {
   }
   const { data, error } = await supabase
     .from('rentivo_listings')
-    .select('*, operator:rentivo_operators(*)')
+    .select('*')
     .eq('available', true)
     .eq('instant_book', true)
     .limit(6)
   if (error) throw error
-  return (data as Listing[]) ?? []
+  return hydrateOwners((data as Listing[]) ?? [])
 }
 
 export async function getLastMinuteListings(): Promise<Listing[]> {
@@ -279,10 +323,10 @@ export async function getLastMinuteListings(): Promise<Listing[]> {
   }
   const { data, error } = await supabase
     .from('rentivo_listings')
-    .select('*, operator:rentivo_operators(*)')
+    .select('*')
     .eq('available', true)
     .order('created_at', { ascending: false })
     .limit(6)
   if (error) throw error
-  return (data as Listing[]) ?? []
+  return hydrateOwners((data as Listing[]) ?? [])
 }
