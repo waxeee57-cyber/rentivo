@@ -152,13 +152,22 @@ serve(async (req) => {
         // parameters). The attempt number only moves after a recorded failure,
         // so two taps of the same button still read the same number and collapse
         // into a single charge.
-        { idempotencyKey: `rentivo_dep_${booking_id}_${attempt}_${amountCents}` }
+        // Amount is deliberately NOT in the key. It used to be, so two concurrent
+        // charges for the same booking+attempt with DIFFERENT assessed amounts got
+        // different keys and BOTH charged the card (double-charge past the cap).
+        // Same key => Stripe collapses same-amount duplicates and rejects a
+        // different-amount second request; the card is charged once. Retries still
+        // get a fresh key because the attempt counter bumps on a recorded failure.
+        { idempotencyKey: `rentivo_dep_${booking_id}_${attempt}` }
       )
 
+      // Guarded: only the race winner (status still chargeable) marks 'charged',
+      // so a colliding second request cannot double-write or reopen it.
       await supabase
         .from('rentivo_bookings')
         .update({ deposit_status: 'charged', deposit_charged_amount: assessedNum })
         .eq('id', booking_id)
+        .in('deposit_status', ['authorized', 'charge_failed'])
 
       return new Response(
         JSON.stringify({
@@ -173,10 +182,13 @@ serve(async (req) => {
       // Record the failure and surface it — do NOT swallow.
       // Bump the attempt counter so the next try gets a fresh idempotency key
       // rather than replaying this decline out of Stripe's cache.
+      // neq('charged'): a race-loser whose Stripe idempotency error lands here must
+      // NOT clobber a sibling request that already succeeded.
       await supabase
         .from('rentivo_bookings')
         .update({ deposit_status: 'charge_failed', deposit_charge_attempts: attempt + 1 })
         .eq('id', booking_id)
+        .neq('deposit_status', 'charged')
 
       const message = chargeErr instanceof Error ? chargeErr.message : 'Deposit charge failed'
       const code = (chargeErr as Stripe.errors.StripeError)?.code ?? null
