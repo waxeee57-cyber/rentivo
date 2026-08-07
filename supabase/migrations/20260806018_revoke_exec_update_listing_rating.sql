@@ -1,0 +1,17 @@
+-- Migration 016 made update_listing_rating() SECURITY DEFINER (so the rating
+-- recompute runs as owner and actually updates the listing when a traveler inserts
+-- a review). But it left the default EXECUTE grant in place, so anon/authenticated
+-- could call it directly via /rest/v1/rpc/update_listing_rating -- a DEFINER function
+-- exposed as an RPC (Supabase advisors 0028/0029) and an anon-surface allowlist miss.
+-- Calling it directly is near-inert (it is a trigger fn: NEW is unset -> WHERE id=NULL
+-- updates 0 rows), but a DEFINER function must not be publicly callable.
+--
+-- Trigger execution does NOT require EXECUTE on the function, so revoking it keeps the
+-- AFTER INSERT/UPDATE/DELETE trigger on rentivo_reviews working while removing the RPC
+-- surface. This completes 016.
+--
+-- APPLIED LIVE 2026-08-06 via the Supabase MCP (the device git link was down at the
+-- time); this file exists so the repo matches the live DB. Verified: anon POST to
+-- /rest/v1/rpc/update_listing_rating -> 404 PGRST202 (not callable); security advisor
+-- no longer lists update_listing_rating under lint 0028/0029.
+revoke execute on function public.update_listing_rating() from public, anon, authenticated;

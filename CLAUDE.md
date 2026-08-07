@@ -318,3 +318,47 @@ $env:SENTRY_DISABLE_AUTO_UPLOAD = 'true'                              # különb
   Korábban `text: ".*€.*"` volt — „az első euró-jeles szöveg a képernyőn" —, ami némán átcélzott egy
   nem-kattintható ár-feliratra, amint a feed fölé került egy „From €25/day" horgony. Szándékra célzunk, ne szövegre.
 - Utolsó teljes futás: **20/20 zöld** (17 az első körben + 3 a selector-javítás után), ~14 perc.
+
+
+---
+
+## HARDENING LOG (2026-08-06, 2. kör + lint-zárás)
+
+Mérve, nem feltételezve. A javítások commitjai: `357b2c3` (leak), `65a084f`
+(rating/chat/damage/promo), `a34606c` (host gombok + naptár), `2c3f042` (néma
+írások), `20952fc` (audit doc), `#018` (rating RPC-revoke).
+
+### Javítva + élőben verifikálva
+- **operators/hosts anon oszlop-szivárgás** (migr 012–015): publikus nézetek +
+  kliens két-lekérdezés + anon alap-SELECT revoke + listing owner-policy
+  `authenticated`-re. Anon: szenzitív oszlop 401, nézet 200, listings 200. e2e 1047/0.
+- **update_listing_rating** (016 + **018**): SECURITY DEFINER (különben a
+  travelerként futó trigger 0 sort frissít), **majd EXECUTE revoke** anon/authenticated-től
+  (a trigger nem függ tőle). Anon RPC → 404. Advisor 0028/0029 tiszta erre.
+- **chat sender-spoofing** (017): a `msg_participant_insert` köti a `sender_id`-t.
+- **damage-detector** (deploy v11): `claude-opus-4-7` (nem létező) → `claude-haiku-4-5-20251001`.
+- **create-booking promo** (CLI deploy): `max_uses NULL` = korlátlan (volt: `0<0` → eldobta). money-path e2e 26/0.
+- **host confirm/decline** (a34606c): valós `updateBookingStatus` / `cancelBooking` (Stripe-refund).
+- **naptár availability** (a34606c): ranged sor kibontva; a ma előtt indult aktív bérlés is blokkol.
+- **néma írások** (2c3f042): API-kulcs-revoke + tag-törlés rowcount-ellenőrzéssel.
+
+### Advisor-alapvonal (Supabase security + performance, 2026-08-06)
+- **Security ERROR = 2**, MINDKETTŐ SZÁNDÉKOS: `rentivo_operators_public` /
+  `rentivo_hosts_public` DEFINER nézet. Indok: publikus marketing-projekció (csak
+  biztonságos oszlop, aktív sor), anon-nak nincs alap-hozzáférése → bizonyítottan nem
+  szivárog. `security_invoker`-re váltás = anon oszlop-scoped alap-grant (ekvivalens
+  biztonság) + a bázis SELECT-policy ellenőrzése → CSAK device-up + `anon-surface`
+  e2e mellett módosítható (G3). Addig: dokumentáltan elfogadva.
+- **Security WARN = 5** (mind szándékos): `btree_gist in public` (áthelyezése a
+  dupla-foglalás exclusion constraintet érinti — halasztva); `is_admin` + `lookup_promo`
+  anon/authenticated-hívható RPC (szándékos, ártalmatlan).
+- **Security INFO = 1**: `stripe_events` RLS-policy nélkül — SZÁNDÉKOS (service-role-only ledger).
+- **Performance: 0 ERROR.** 77 × `multiple_permissive_policies` + 19 × `unused_index` —
+  szándékosan halasztva (policy-összevonás az imént bizonyított RLS-réteget kockáztatná).
+
+### Nyitva (nem hiba — útravágva)
+- **#5 web storefront**: a `city/country` javítás kész; élesítés a fixtúra-törléssel +
+  első valós operatorral (most 100% teszt-adat → teszt-szemetet mutatna).
+- **Resend e-mail/push**: fiók + domrol.com DNS (SPF/DKIM/return-path CNAME) + secrets — user-feladat.
+- **#3 nyers hibaüzenetek edge-ekben** (LOW): generikus üzenet + logba a részlet — külön higiénia-kör.
+- Éles Stripe/Didit (`sk_live` + valós KYC): strukturálisan blokkolt launchig.
