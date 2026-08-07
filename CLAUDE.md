@@ -362,3 +362,14 @@ Mérve, nem feltételezve. A javítások commitjai: `357b2c3` (leak), `65a084f`
 - **Resend e-mail/push**: fiók + domrol.com DNS (SPF/DKIM/return-path CNAME) + secrets — user-feladat.
 - **#3 nyers hibaüzenetek edge-ekben** (LOW): generikus üzenet + logba a részlet — külön higiénia-kör.
 - Éles Stripe/Didit (`sk_live` + valós KYC): strukturálisan blokkolt launchig.
+
+### 2. iteráció (2026-08-06) — nyers hibaüzenet-genericizálás (#3 lezárva)
+8 edge-function KLIENS-oldali hibakimenete genericizálva („Internal error"), a részlet
+`console.error`-ba (szerver-log) kerül — nem szivárog séma/Stripe/DB-belső a hívónak:
+`create-booking` (insert + outer), `create-deposit-setup`, `cancel-booking` (outer +
+a "refund issued but update failed" kritikus ág), `create-payment-intent`,
+`charge-deposit` (outer — a 402 Stripe-DECLINE üzenet SZÁNDÉKOSAN marad, ez UX),
+`create-stripe-account-link`, `ical-import`, `didit-webhook`. `delete-account`
+kihagyva (a detail az audit-logba megy, az helyes). CLI-deploy a pontos repo-fájlból
+(verify_jwt a config.toml-ból); a teljes e2e-háló **1047/0** (nincs regresszió a
+pénz/KYC/booking utakon).

@@ -334,7 +334,8 @@ serve(async (req) => {
       if (insertError?.message?.includes('rentivo_bookings_no_overlap')) {
         return jsonError('These dates are no longer available', 409)
       }
-      return jsonError(insertError?.message ?? 'Failed to create booking', 500)
+      console.error('create-booking insert failed:', insertError)
+      return jsonError('Failed to create booking', 500)
     }
 
     // ── Redeem the promo. Nothing incremented current_uses before this, so
@@ -373,6 +374,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : 'Unknown error', 500)
+    console.error('create-booking:', error)
+    return jsonError('Internal error', 500)
   }
 })

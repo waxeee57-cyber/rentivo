@@ -132,8 +132,9 @@ serve(async (req) => {
     .eq('didit_session_id', session_id)
 
   if (updateError) {
+    console.error('didit-webhook update failed:', updateError)
     return new Response(
-      JSON.stringify({ error: updateError.message }),
+      JSON.stringify({ error: 'Internal error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   }

@@ -329,6 +329,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : 'Unknown error', 500)
+    console.error('create-payment-intent:', error)
+    return jsonError('Internal error', 500)
   }
 })

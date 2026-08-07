@@ -186,6 +186,7 @@ serve(async (req) => {
       )
     }
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : 'Unknown error', 500)
+    console.error('charge-deposit:', error)
+    return jsonError('Internal error', 500)
   }
 })

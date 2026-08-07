@@ -206,8 +206,9 @@ serve(async (req) => {
     if (updateError) {
       // The money already moved. Surface loudly rather than reporting success —
       // a silent failure here leaves a refunded-but-active booking.
+      console.error('cancel-booking: refund issued but booking update failed', { refundId, updateError })
       return jsonError(
-        `Refund issued (${refundId ?? 'n/a'}) but the booking could not be updated: ${updateError.message}`,
+        'Refund issued but the booking could not be updated. Please contact support.',
         500
       )
     }
@@ -233,6 +234,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    return jsonError(error instanceof Error ? error.message : 'Unknown error', 500)
+    console.error('cancel-booking:', error)
+    return jsonError('Internal error', 500)
   }
 })
