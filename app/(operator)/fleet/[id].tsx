@@ -132,10 +132,17 @@ export default function EditVehicleScreen() {
         operatorId,
       )
       if (!Config.useMock && requiresKyc !== (listing?.operator?.requires_identity_verification ?? false)) {
-        await supabase
+        // supabase-js does NOT error on a 0-row update (RLS/stale id), so a silently
+        // failed KYC toggle used to still report success. Check the rowcount and let
+        // the catch below surface the save-failed toast instead.
+        const { data, error } = await supabase
           .from('rentivo_operators')
           .update({ requires_identity_verification: requiresKyc })
           .eq('id', operatorId)
+          .select('id')
+        if (error || !data || data.length === 0) {
+          throw new Error('KYC setting update affected 0 rows')
+        }
       }
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       showToast({ message: t('opFleetToastUpdated', language), type: 'success' })

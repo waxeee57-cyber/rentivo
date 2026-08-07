@@ -12,6 +12,7 @@ import { useAuthStore } from '@/lib/store/useAuthStore'
 import { Config } from '@/constants/config'
 import { useColors } from '@/lib/hooks/useColors'
 import { t } from '@/constants/i18n'
+import { captureException } from '@/lib/sentry'
 
 const DISPUTE_REASONS = [
   'Vehicle damage by guest',
@@ -26,7 +27,7 @@ export default function OperatorDisputeScreen() {
   const C = useColors()
   const styles = useMemo(() => makeStyles(C), [C])
   const { bookingId } = useLocalSearchParams<{ bookingId: string }>()
-  const { user, language } = useAuthStore()
+  const { language } = useAuthStore()
   const { showToast } = useToastStore()
   const [selectedReason, setSelectedReason] = useState('')
   const [description, setDescription] = useState('')
@@ -40,9 +41,16 @@ export default function OperatorDisputeScreen() {
     setSubmitting(true)
     try {
       if (!Config.useMock) {
+        // raised_by_auth_id is NOT NULL and must equal auth.uid(). Reading it from
+        // the persisted Zustand user (user?.auth_id) can send undefined into the
+        // column while a live Supabase session exists — the consumer dispute screen
+        // was fixed the same way. Read the live session id instead.
+        const { data: { session } } = await supabase.auth.getSession()
+        const authUserId = session?.user?.id
+        if (!authUserId) throw new Error('No active session')
         const { error } = await supabase.from('rentivo_disputes').insert({
           booking_id: bookingId,
-          raised_by_auth_id: user?.auth_id,
+          raised_by_auth_id: authUserId,
           raised_by_role: 'operator',
           reason: selectedReason,
           description: description.trim() || null,
@@ -52,7 +60,8 @@ export default function OperatorDisputeScreen() {
       }
       showToast({ message: t('opBkToastDisputeOk', language), type: 'success' })
       router.back()
-    } catch {
+    } catch (e) {
+      captureException(e, { screen: 'operator/dispute', bookingId })
       showToast({ message: t('opBkToastDisputeFail', language), type: 'error' })
     } finally {
       setSubmitting(false)
