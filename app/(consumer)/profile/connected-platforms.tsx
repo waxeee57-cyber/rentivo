@@ -31,6 +31,8 @@ interface Connection {
   icalEnabled: boolean
   /** Feed the sync actually pulls. Null means there is nothing to sync. */
   icalUrl: string | null
+  /** The listing whose calendar this feed blocks. ical-import requires it. */
+  listingId?: string | null
 }
 
 const PLATFORM_META: Record<string, { icon: Connection['icon']; label: string }> = {
@@ -92,7 +94,7 @@ export default function ConnectedPlatformsScreen() {
     if (!session?.user) return
     const { data, error } = await supabase
       .from('rentivo_connected_platforms')
-      .select('id, platform, ical_url, active, last_synced_at')
+      .select('id, platform, ical_url, active, last_synced_at, listing_id')
       .eq('owner_id', session.user.id)
       .order('created_at', { ascending: false })
     if (error || !data) return
@@ -107,6 +109,7 @@ export default function ConnectedPlatformsScreen() {
         lastSynced: (row.last_synced_at as string | null) ?? '—',
         icalEnabled: row.active !== false,
         icalUrl: (row.ical_url as string | null) ?? null,
+        listingId: (row.listing_id as string | null) ?? null,
       }
     }))
   }, [])
@@ -119,22 +122,45 @@ export default function ConnectedPlatformsScreen() {
     setSyncing(id)
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
 
-    // Was `setTimeout(1200)` + an unconditional success toast with no network call and
-    // no mock gate: the user was told their Airbnb/Booking calendar had synced when
-    // nothing had happened. performICalSync is the real path (and mock-aware itself).
-    const result = await performICalSync({ ical_url: conn.icalUrl })
-
-    if (!Config.useMock && result.error === null) {
-      // Persist the timestamp so the next screen open shows the truth.
-      await supabase
-        .from('rentivo_connected_platforms')
-        .update({ last_synced_at: new Date().toISOString() })
-        .eq('id', id)
+    // performICalSync only PARSES the feed and returns the blocked dates — it writes
+    // NOTHING. The old handler threw result.blocked away, so a "synced" calendar
+    // blocked zero dates and those nights stayed sellable (cross-platform double
+    // booking). The real path is the ical-import edge function: the only writer of
+    // rentivo_availability (service role, deduped, half-open ranges), exactly what
+    // the operator ical-sync screen already posts to.
+    let syncError: string | null = null
+    if (Config.useMock) {
+      syncError = (await performICalSync({ ical_url: conn.icalUrl })).error
+    } else if (!conn.icalUrl) {
+      syncError = 'This connection has no calendar URL to sync.'
+    } else if (!conn.listingId) {
+      syncError = 'This calendar is not linked to a listing yet.'
+    } else {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) throw new Error('Not signed in')
+        const res = await fetch(`${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/ical-import`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ listing_id: conn.listingId, ical_url: conn.icalUrl }),
+        })
+        const body = (await res.json().catch(() => ({}))) as { count?: number; error?: string }
+        if (!res.ok) throw new Error(body.error ?? 'Sync failed')
+        await supabase
+          .from('rentivo_connected_platforms')
+          .update({ last_synced_at: new Date().toISOString() })
+          .eq('id', id)
+      } catch (e) {
+        syncError = e instanceof Error ? e.message : 'Sync failed'
+      }
     }
 
     setSyncing(null)
-    if (result.error !== null) {
-      showToast({ message: result.error, type: 'error' })
+    if (syncError !== null) {
+      showToast({ message: syncError, type: 'error' })
       setConnections(prev => prev.map(c => c.id === id ? { ...c, status: 'error' } : c))
       return
     }

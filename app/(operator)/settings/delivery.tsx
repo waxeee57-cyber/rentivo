@@ -114,7 +114,7 @@ export default function DeliverySettingsScreen() {
         return
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('rentivo_operators')
         .update({
           delivery_enabled: deliveryEnabled,
@@ -123,8 +123,11 @@ export default function DeliverySettingsScreen() {
           delivery_zones: zones,
         })
         .eq('id', operatorId)
+        .select('id')
 
-      if (error) {
+      // A 0-row update (RLS/stale id) is not an error to supabase-js; check rows so
+      // a save that hit nothing surfaces the failed toast instead of "saved".
+      if (error || !data || data.length === 0) {
         showToast({ message: tr('opSetDeliverySaveFailed', language), type: 'error' })
         return
       }
