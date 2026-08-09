@@ -19,7 +19,7 @@ export default function VerifyScreen() {
   const [code, setCode] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const inputs = useRef<(TextInput | null)[]>([])
-  const { role, setSession, setUser, setOperator, language } = useAuthStore()
+  const { role, setSession, setUser, setOperator, setHost, language } = useAuthStore()
 
   useEffect(() => {
     AsyncStorage.getItem('pending_otp_phone').then(saved => {
@@ -81,7 +81,22 @@ export default function VerifyScreen() {
           router.replace('/auth/operator-setup')
         }
       } else if (role === 'host') {
-        router.replace('/(host)/dashboard')
+        // Mirror the operator branch above: a host role with no rentivo_hosts
+        // row yet (first login right after picking "host", or a device
+        // switch before setup was ever completed) must not land on the
+        // dashboard — every host screen looks the row up by
+        // `.eq('auth_id', user.id)` and would show "host not found".
+        const { data: host } = await supabase
+          .from('rentivo_hosts')
+          .select('*')
+          .eq('auth_id', data.session!.user.id)
+          .maybeSingle()
+        if (host) {
+          setHost(host as unknown as Parameters<typeof setHost>[0])
+          router.replace('/(host)/dashboard')
+        } else {
+          router.replace('/auth/host-setup')
+        }
       } else if (role === 'consumer') {
         router.replace('/(consumer)/explore')
       } else {

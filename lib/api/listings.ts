@@ -49,10 +49,10 @@ async function hydrateOwners(rows: Listing[]): Promise<Listing[]> {
 
   const [ops, hosts] = await Promise.all([
     opIds.length
-      ? supabase.from('rentivo_operators_public').select('*').in('id', opIds)
+      ? supabase.from('rentivo_operators_public').select('*').in('id', opIds).limit(opIds.length)
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
     hostIds.length
-      ? supabase.from('rentivo_hosts_public').select('*').in('id', hostIds)
+      ? supabase.from('rentivo_hosts_public').select('*').in('id', hostIds).limit(hostIds.length)
       : Promise.resolve({ data: [] as Record<string, unknown>[] }),
   ])
 

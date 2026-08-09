@@ -26,9 +26,15 @@ export async function finalizeContract(bookingId: string): Promise<string | null
   if (Config.useMock) return null
 
   try {
+    // Only the columns the contract actually renders (lib/contract.ts uses
+    // operator.name + operator.address; host is currently unused there).
+    // Deliberately NOT `*`: the RLS policy on rentivo_operators/rentivo_hosts
+    // now lets a booking counterparty read the row at all, but a `select *`
+    // would still hand the signing traveler stripe_account_id, push_token,
+    // suspension_reason, etc. for no reason the contract needs.
     const { data: booking, error } = await supabase
       .from('rentivo_bookings')
-      .select('*, listing:rentivo_listings(*), operator:rentivo_operators(*), host:rentivo_hosts(*)')
+      .select('*, listing:rentivo_listings(*), operator:rentivo_operators(id,name,address,city,country), host:rentivo_hosts(id,name,city,country)')
       .eq('id', bookingId)
       .maybeSingle()
 

@@ -151,11 +151,16 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "http://127.0.0.1:3000"
+# Was the localhost default -- a `supabase config push` (or any tool that syncs
+# this file to the hosted project) would have overwritten the live Auth site_url
+# with http://127.0.0.1:3000, breaking every email-confirmation / magic-link URL
+# in production. Set to the real production origin; localhost is kept below in
+# additional_redirect_urls so `supabase start` local dev still works.
+site_url = "https://rentivo.domrol.com"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+additional_redirect_urls = ["https://rentivo.domrol.com", "https://127.0.0.1:3000"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.

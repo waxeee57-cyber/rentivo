@@ -76,11 +76,19 @@ export default function RoleSelectionScreen() {
 
   const handleSelect = (role: 'consumer' | 'operator' | 'host') => {
     setRole(role)
-    if (role === 'host') {
-      router.push('/auth/host-setup')
-    } else if (Config.useMock && role === 'operator') {
+    if (Config.useMock && role === 'operator') {
       router.replace('/(operator)/dashboard')
+    } else if (Config.useMock && role === 'host') {
+      router.push('/auth/host-setup')
     } else {
+      // Host-setup collects a full profile (name, city, bio, categories) that
+      // can only be persisted against a real session — rentivo_hosts.upsert()
+      // needs auth.uid(). Routing there BEFORE login let someone fill all
+      // three steps, then get bounced to login on the final "Complete setup"
+      // tap with everything discarded. Login first, same as every other
+      // live-mode role; verify.tsx sends a role==='host' user who still has
+      // no rentivo_hosts row to /auth/host-setup right after verification
+      // (mirrors the existing operator branch there).
       router.push('/auth/login')
     }
   }

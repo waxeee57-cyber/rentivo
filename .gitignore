@@ -1,6 +1,6 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Learn more: https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
+# Dependencies
 node_modules/
 
 # Expo
@@ -9,7 +9,7 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Next.js
+# Next.js (stray artifacts should not appear in this Expo repo)
 .next/
 out/
 
@@ -25,43 +25,45 @@ out/
 # Metro
 .metro-health-check*
 
-# debug
+# Debug / logs
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+*.log
+build-log.txt
 
-# macOS
+# macOS / Windows
 .DS_Store
 *.pem
+Thumbs.db
 
-# local env files
+# Local env files
 .env
 .env.*
 .env*.local
+*.stash-backup
+# The .env.* rule above would also hide the committed example; this negation keeps it.
+!.env.example
 
 # Google Play service account key
 google-play-service-account.json
 
-# typescript
+# TypeScript
 *.tsbuildinfo
 
-# generated native folders
+# Generated native folders
 /ios
 /android
-# --- higiénia-audit 2026-07-07: bináris/python szemét ---
+
+# Binary / Python scratch (hygiene audit)
 *.exe
 __pycache__/
 *.pyc
 
-# --- baseline-audit 2026-07-18: hiányzó kötelező minimum ---
-# FONTOS: a fenti `.env.*` szabály a `.env.example`-t is kizárná — ez a negáció
-# engedi vissza a példafájlt, hogy a repóban maradhasson.
-!.env.example
+# Build output
 build/
 .vercel/
 coverage/
-*.log
-Thumbs.db
 
 # Release signing
 android/keystore.properties
